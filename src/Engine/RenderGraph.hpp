@@ -322,6 +322,32 @@ namespace ENGINE
             this->compShader= shader; 
         }
 
+        void SetVertShaderInstant(std::string name)
+        {
+            if (shadersProxyRef->contains(name))
+            {
+                shaders.at("vert")= shadersProxyRef->at(name).get();
+            }
+        }
+
+        void SetFragShaderInstant(std::string name)
+        {
+            if (shadersProxyRef->contains(name))
+            {
+                shaders.at("frag")= shadersProxyRef->at(name).get();
+            }
+        }
+
+        void SetCompShaderInstant(std::string name)
+        {
+            if (shadersProxyRef->contains(name))
+            {
+                shaders.at("comp")= shadersProxyRef->at(name).get();
+            }
+        }
+
+
+
         void AddColorAttachmentInput(std::string name)
         {
             if (outColAttachmentsProxyRef->contains(name))
@@ -483,7 +509,6 @@ namespace ENGINE
         vk::PipelineLayoutCreateInfo pipelineLayoutCI;
         vk::PushConstantRange pushConstantRange;
         vk::PipelineBindPoint pipelineType;
-        // std::map<std::string, std::unique_ptr<Descriptorca>>
         DynamicRenderPass dynamicRenderPass;
         std::string passName;
         bool active = true;
@@ -491,7 +516,6 @@ namespace ENGINE
     private:
         
         friend class RenderGraph;
-        
         Shader* vertShader = nullptr;
         Shader* fragShader = nullptr;
         Shader* compShader = nullptr;
@@ -505,8 +529,8 @@ namespace ENGINE
         std::vector<AttachmentInfo> colAttachments;
         AttachmentInfo depthAttachment;
         ImageView* depthImage = nullptr;
-        std::map<std::string, std::unique_ptr<DescriptorCache>> descriptorCaches;
-        std::map<std::string, std::unique_ptr<Shader>> shaders;
+        std::map<std::string, DescriptorCache*> descriptorCaches;
+        std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
         
         std::unordered_map<std::string, ImageView*> imagesAttachment;
         std::unordered_map<std::string, ImageView*> storageImages;
@@ -523,6 +547,7 @@ namespace ENGINE
         std::unordered_map<std::string, BufferKey>* bufferProxyRef;
         std::unordered_map<std::string, AttachmentInfo>* outColAttachmentsProxyRef;
         std::unordered_map<std::string, AttachmentInfo>* outDepthAttachmentProxyRef;
+        std::unordered_map<std::string, std::unique_ptr<Shader>>* shadersProxyRef;
         
     };
 
@@ -536,8 +561,8 @@ namespace ENGINE
         std::unordered_map<std::string, BufferKey> buffersProxy;
         std::unordered_map<std::string, AttachmentInfo> outColAttachmentsProxy;
         std::unordered_map<std::string, AttachmentInfo> outDepthAttachmentProxy;
-        
-        
+        std::unordered_map<std::string, std::unique_ptr<Shader>> shadersProxy;
+        std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descriptorsCaches;
         
         Core* core;
         RenderGraph(Core* core)
@@ -569,6 +594,7 @@ namespace ENGINE
                 renderGraphNode->outColAttachmentsProxyRef = &outColAttachmentsProxy;
                 renderGraphNode->outDepthAttachmentProxyRef = &outColAttachmentsProxy;
                 renderGraphNode->bufferProxyRef = &buffersProxy;
+                renderGraphNode->shadersProxyRef = &shadersProxy;
                 renderGraphNode->core = core;
                 
                 renderNodes.try_emplace(name,std::move(renderGraphNode));
@@ -579,6 +605,8 @@ namespace ENGINE
                 return nullptr;
             }
         }
+
+        
         ImageView* AddColorImageResource(std::string passName,std::string name, ImageView* imageView)
         {
             assert(imageView && "ImageView is null");
