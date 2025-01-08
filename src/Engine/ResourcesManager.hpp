@@ -327,6 +327,8 @@ namespace ENGINE
             imageShippers.clear();
             images.clear();
             samplerPool.reset();
+            descriptorAllocator.reset();
+            
         }
 
         void UpdateImages()
@@ -414,6 +416,10 @@ namespace ENGINE
             storageImagesViews.reserve(BASE_SIZE);
             imageViews.reserve(BASE_SIZE);
             images.reserve(BASE_SIZE);
+            
+            descriptorAllocator = std::make_unique<DescriptorAllocator>();
+            descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
+            
             samplerPool = std::make_unique<SamplerPool>();
             
             shipperSampler = samplerPool->AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
@@ -494,6 +500,14 @@ namespace ENGINE
         std::vector<std::unique_ptr<Image>> images;
         std::vector<std::string> storageImagesToClear;
         std::unique_ptr<SamplerPool> samplerPool;
+        std::unique_ptr<DescriptorAllocator> descriptorAllocator;
+        std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {
+            {vk::DescriptorType::eSampler, 1.5f},
+            {vk::DescriptorType::eStorageBuffer, 1.5f},
+            {vk::DescriptorType::eUniformBuffer, 1.5f},
+            {vk::DescriptorType::eStorageImage, 1.5f},
+        };
+        
         Sampler* shipperSampler;
 
         bool invalidateBuffers = false;

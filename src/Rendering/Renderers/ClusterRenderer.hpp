@@ -437,9 +437,9 @@ namespace Rendering
             //gbuffer
 
             gVertShader = std::make_unique<Shader>(logicalDevice,
-                                                           "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirv\\ClusterRendering\\gBuffer.vert.spv");
+                                                           "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv");
             gFragShader = std::make_unique<Shader>(logicalDevice,
-                                                           "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirv\\ClusterRendering\\gBuffer.frag.spv");
+                                                           "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv");
             gBuffDescCache->AddShaderInfo(gVertShader->sParser.get());
             gBuffDescCache->AddShaderInfo(gFragShader->sParser.get());
             gBuffDescCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
@@ -482,8 +482,8 @@ namespace Rendering
 
             //light pass//
 
-            lVertShader = std::make_unique<Shader>(logicalDevice, "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirv\\Common\\Quad.vert.spv");
-            lFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirv\\ClusterRendering\\light.frag.spv");
+            lVertShader = std::make_unique<Shader>(logicalDevice, "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\Common\\Quad.vert.spv");
+            lFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\light.frag.spv");
 
             lightDecCache->AddShaderInfo(lVertShader->sParser.get());
             lightDecCache->AddShaderInfo(lFragShader->sParser.get());

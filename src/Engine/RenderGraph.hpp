@@ -15,6 +15,7 @@
 
 
 
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -26,6 +27,10 @@ namespace ENGINE
         BufferUsageTypes srcUsage;
         BufferUsageTypes dstUsage;
         Buffer* buffer;
+    };
+    struct RenderNodeConfigs
+    {
+        bool AutomaticCache = false;
     };
 
     class RenderGraph;
@@ -41,9 +46,37 @@ namespace ENGINE
             pipeline.reset();
             pipelineLayout.reset();
             ReloadShaders();
+            Shader* vertShader = shaders.at("vert");
+            Shader* fragShader = shaders.at("frag");
+            Shader* compShader = shaders.at("comp");
             
             if (fragShader && vertShader)
             {
+                if (configs.AutomaticCache)
+                {
+                    descCache = std::make_unique<DescriptorCache>(core);
+                    descCache->AddShaderInfo(vertShader->sParser.get());
+                    descCache->AddShaderInfo(fragShader->sParser.get());
+                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
+                                                     vk::ShaderStageFlagBits::eFragment |
+                                                     vk::ShaderStageFlagBits::eVertex);
+                    if (pushConstantSize != 0)
+                    {
+                        auto paintingPushConstantRanges = vk::PushConstantRange()
+                                                          .setOffset(0)
+                                                          .setStageFlags(
+                                                              vk::ShaderStageFlagBits::eVertex |
+                                                              vk::ShaderStageFlagBits::eFragment)
+                                                          .setSize(pushConstantSize);
+                        auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+                                                        .setSetLayoutCount(1)
+                                                        .setPushConstantRanges(paintingPushConstantRanges)
+                                                        .setPSetLayouts(&descCache->dstLayout.get());
+                        SetPipelineLayoutCI(paintingLayoutCreateInfo);
+                    }                   
+                }
+
+                
                 std::vector<vk::Format> colorFormats;
                 colorFormats.reserve(colAttachments.size());
                 std::vector<vk::RenderingAttachmentInfo> renderingAttachmentInfos;
@@ -68,6 +101,27 @@ namespace ENGINE
                 
             }else if(compShader)
             {
+                if (configs.AutomaticCache)
+                {
+                    descCache = std::make_unique<DescriptorCache>(core);
+                    descCache->AddShaderInfo(compShader->sParser.get());
+                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
+                                                     vk::ShaderStageFlagBits::eCompute);
+                    if (pushConstantSize != 0)
+                    {
+                        auto paintingPushConstantRanges = vk::PushConstantRange()
+                                                          .setOffset(0)
+                                                          .setStageFlags(
+                                                              vk::ShaderStageFlagBits::eCompute)
+                                                          .setSize(pushConstantSize);
+                        auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+                                                        .setSetLayoutCount(1)
+                                                        .setPushConstantRanges(paintingPushConstantRanges)
+                                                        .setPSetLayouts(&descCache->dstLayout.get());
+                        SetPipelineLayoutCI(paintingLayoutCreateInfo);
+                    }
+                }
+
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
                 std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
                     core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
@@ -84,10 +138,42 @@ namespace ENGINE
         void BuildRenderGraphNode()
         {
             assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
+
             auto pipelineCacheCreateInfo = vk::PipelineCacheCreateInfo();
             pipelineCache = core->logicalDevice->createPipelineCacheUnique(pipelineCacheCreateInfo);
+            
+            Shader* vertShader = shaders.at("vert");
+            Shader* fragShader = shaders.at("frag");
+            Shader* compShader = shaders.at("comp");
+            
             if (fragShader && vertShader)
             {
+                if (configs.AutomaticCache)
+                {
+                    descCache.reset();
+                    descCache = std::make_unique<DescriptorCache>(core);
+                    descCache->AddShaderInfo(vertShader->sParser.get());
+                    descCache->AddShaderInfo(fragShader->sParser.get());
+                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
+                                                     vk::ShaderStageFlagBits::eFragment |
+                                                     vk::ShaderStageFlagBits::eVertex);
+
+                    if (pushConstantSize != 0)
+                    {
+                        auto paintingPushConstantRanges = vk::PushConstantRange()
+                                                          .setOffset(0)
+                                                          .setStageFlags(
+                                                              vk::ShaderStageFlagBits::eFragment |
+                                                              vk::ShaderStageFlagBits::eVertex)
+                                                          .setSize(pushConstantSize);
+                        auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+                                                        .setSetLayoutCount(1)
+                                                        .setPushConstantRanges(paintingPushConstantRanges)
+                                                        .setPSetLayouts(&descCache->dstLayout.get());
+
+                        SetPipelineLayoutCI(paintingLayoutCreateInfo);
+                    }
+                }
                 std::vector<vk::Format> colorFormats;
                 colorFormats.reserve(colAttachments.size());
                 std::vector<vk::RenderingAttachmentInfo> renderingAttachmentInfos;
@@ -99,7 +185,6 @@ namespace ENGINE
                 dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
             
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-
                
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
                     core->logicalDevice.get(), vertShader->sModule->shaderModuleHandle.get(),
@@ -114,6 +199,27 @@ namespace ENGINE
                 
             }else if(compShader)
             {
+                if (configs.AutomaticCache)
+                {
+                    descCache.reset();
+                    descCache = std::make_unique<DescriptorCache>(core);
+                    descCache->AddShaderInfo(compShader->sParser.get());
+                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
+                                                     vk::ShaderStageFlagBits::eCompute);
+                    if (pushConstantSize != 0)
+                    {
+                        auto paintingPushConstantRanges = vk::PushConstantRange()
+                                                          .setOffset(0)
+                                                          .setStageFlags(
+                                                              vk::ShaderStageFlagBits::eCompute)
+                                                          .setSize(pushConstantSize);
+                        auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+                                                        .setSetLayoutCount(1)
+                                                        .setPushConstantRanges(paintingPushConstantRanges)
+                                                        .setPSetLayouts(&descCache->dstLayout.get());
+                        SetPipelineLayoutCI(paintingLayoutCreateInfo);
+                    }
+                }
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
                 std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
                     core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(), 
@@ -184,6 +290,10 @@ namespace ENGINE
         }
         void ReloadShaders()
         {
+            
+            Shader* vertShader = shaders.at("vert");
+            Shader* fragShader = shaders.at("frag");
+            Shader* compShader = shaders.at("comp");
             if (vertShader && fragShader)
             {
                 vertShader->Reload();
@@ -293,7 +403,10 @@ namespace ENGINE
                 this->pushConstantRange.stageFlags = createInfo.pPushConstantRanges->stageFlags;
                 this->pipelineLayoutCI.setPushConstantRanges(this->pushConstantRange);
             }
-            
+        }
+        void SetPushConstantSize(size_t size)
+        {
+            pushConstantSize = size;
         }
 
         void SetRasterizationConfigs(RasterizationConfigs rasterizationConfigs)
@@ -311,41 +424,41 @@ namespace ENGINE
 
         void SetVertShader(Shader* shader)
         {
-            this->vertShader = shader; 
+            shaders.at("vert") = shader;
         }
         void SetFragShader(Shader* shader)
         {
-            this->fragShader = shader; 
+            shaders.at("frag") = shader;
         }
         void SetCompShader(Shader* shader)
         {
-            this->compShader= shader; 
+            shaders.at("comp") = shader;
         }
 
-        void SetVertShaderInstant(std::string name)
+        void SetVertShader_IMode(std::string path)
         {
-            if (shadersProxyRef->contains(name))
+            if (shadersProxyRef->contains(path))
             {
-                shaders.at("vert")= shadersProxyRef->at(name).get();
+                shaders.at("vert")= shadersProxyRef->at(path).get();
             }
         }
 
-        void SetFragShaderInstant(std::string name)
+        void SetFragShader_IMode(std::string path)
         {
-            if (shadersProxyRef->contains(name))
+            if (shadersProxyRef->contains(path))
             {
-                shaders.at("frag")= shadersProxyRef->at(name).get();
+                shaders.at("frag")= shadersProxyRef->at(path).get();
             }
         }
 
-        void SetCompShaderInstant(std::string name)
+        void SetCompShader_IMode(std::string path)
         {
-            if (shadersProxyRef->contains(name))
+            if (shadersProxyRef->contains(path))
             {
-                shaders.at("comp")= shadersProxyRef->at(name).get();
+                shaders.at("comp")= shadersProxyRef->at(path).get();
             }
         }
-
+        
 
 
         void AddColorAttachmentInput(std::string name)
@@ -502,6 +615,10 @@ namespace ENGINE
                 bufferProxyRef->at(name)= buffer;
             }
         }
+        void SetConfigs(RenderNodeConfigs configs)
+        {
+            this->configs = configs;
+        }
         
         vk::UniquePipeline pipeline;
         vk::UniquePipelineLayout pipelineLayout;
@@ -510,26 +627,25 @@ namespace ENGINE
         vk::PushConstantRange pushConstantRange;
         vk::PipelineBindPoint pipelineType;
         DynamicRenderPass dynamicRenderPass;
+        std::unique_ptr<DescriptorCache> descCache;
         std::string passName;
         bool active = true;
         
     private:
         
         friend class RenderGraph;
-        Shader* vertShader = nullptr;
-        Shader* fragShader = nullptr;
-        Shader* compShader = nullptr;
-        
+
+        RenderNodeConfigs configs;
         RasterizationConfigs rasterizationConfigs = R_FILL;
         std::vector<BlendConfigs> colorBlendConfigs;
         DepthConfigs depthConfig = D_NONE;
         VertexInput vertexInput;
         glm::uvec2 frameBufferSize;
+        size_t pushConstantSize = 0;
         
         std::vector<AttachmentInfo> colAttachments;
         AttachmentInfo depthAttachment;
         ImageView* depthImage = nullptr;
-        std::map<std::string, DescriptorCache*> descriptorCaches;
         std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
         
         std::unordered_map<std::string, ImageView*> imagesAttachment;
@@ -548,6 +664,8 @@ namespace ENGINE
         std::unordered_map<std::string, AttachmentInfo>* outColAttachmentsProxyRef;
         std::unordered_map<std::string, AttachmentInfo>* outDepthAttachmentProxyRef;
         std::unordered_map<std::string, std::unique_ptr<Shader>>* shadersProxyRef;
+        //unused
+        std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descriptorsCachesRef;
         
     };
 
@@ -562,7 +680,7 @@ namespace ENGINE
         std::unordered_map<std::string, AttachmentInfo> outColAttachmentsProxy;
         std::unordered_map<std::string, AttachmentInfo> outDepthAttachmentProxy;
         std::unordered_map<std::string, std::unique_ptr<Shader>> shadersProxy;
-        std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descriptorsCaches;
+        std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
         
         Core* core;
         RenderGraph(Core* core)
@@ -606,7 +724,17 @@ namespace ENGINE
             }
         }
 
-        
+
+        DescriptorCache* AddDescCache(std::string name){
+            if (descCachesProxy.contains(name))
+            {
+                return descCachesProxy.at(name).get();
+            }else
+            {
+                descCachesProxy.try_emplace(name, std::make_unique<DescriptorCache>(core));
+                return descCachesProxy.at(name).get();
+            }
+        }
         ImageView* AddColorImageResource(std::string passName,std::string name, ImageView* imageView)
         {
             assert(imageView && "ImageView is null");

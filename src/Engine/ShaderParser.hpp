@@ -21,7 +21,6 @@ namespace ENGINE
             S_UNKNOWN
         };
 
-
         ShaderParser(std::vector<uint32_t>& byteCode)
         {
             spirv_cross::CompilerGLSL glsl((byteCode));
@@ -113,6 +112,16 @@ namespace ENGINE
             }
             
         }
+        void CompileIntoSpirv(const std::string& path)
+        {
+            std::filesystem::path shaderPath(path);
+
+            if (shaderPath.extension() != ".slang")
+            {
+                assert(false && "Unsuported extension for compiling into spirv at runtime");
+            }
+            
+        }
 
         void GetBinding(std::vector<ShaderResource>& resources, DescriptorLayoutBuilder& builder)
         {
@@ -201,7 +210,6 @@ namespace ENGINE
             sModule.reset();
             sParser = std::make_unique<ShaderParser>(byteCode);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
-            
         }
         std::unique_ptr<ShaderParser> sParser;
         std::unique_ptr<ShaderModule> sModule;

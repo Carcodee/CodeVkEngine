@@ -6,6 +6,8 @@
 
 
 
+
+
 // Created by carlo on 2024-12-02.
 //
 
@@ -171,26 +173,28 @@ namespace Rendering
 
 
             paintCompShader = std::make_unique<Shader>(logicalDevice,
-                                                       shaderPath + "\\spirv\\Compute\\paintingGen.comp.spv");
+                                                       shaderPath + "\\spirvGlsl\\Compute\\paintingGen.comp.spv");
 
-            paintingCache->AddShaderInfo(paintCompShader.get()->sParser.get());
-            paintingCache->BuildDescriptorsCache(descriptorAllocator,
-                                                 vk::ShaderStageFlagBits::eCompute |
-                                                 vk::ShaderStageFlagBits::eFragment);
-
-            auto paintingPushConstantRanges = vk::PushConstantRange()
-                                              .setOffset(0)
-                                              .setStageFlags(
-                                                  vk::ShaderStageFlagBits::eCompute)
-                                              .setSize(sizeof(PaintingPc));
-            auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-                                            .setSetLayoutCount(1)
-                                            .setPushConstantRanges(paintingPushConstantRanges)
-                                            .setPSetLayouts(&paintingCache->dstLayout.get());
+            // paintingCache->AddShaderInfo(paintCompShader.get()->sParser.get());
+            // paintingCache->BuildDescriptorsCache(descriptorAllocator,
+                                                 // vk::ShaderStageFlagBits::eCompute |
+                                                 // vk::ShaderStageFlagBits::eFragment);
+            //
+            // auto paintingPushConstantRanges = vk::PushConstantRange()
+            //                                   .setOffset(0)
+            //                                   .setStageFlags(
+            //                                       vk::ShaderStageFlagBits::eCompute)
+            //                                   .setSize(sizeof(PaintingPc));
+            // auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+            //                                 .setSetLayoutCount(1)
+            //                                 .setPushConstantRanges(paintingPushConstantRanges)
+            //                                 .setPSetLayouts(&paintingCache->dstLayout.get());
 
             auto* paintingNode = renderGraph->AddPass(paintingPassName);
             paintingNode->SetCompShader(paintCompShader.get());
-            paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
+            // paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
+            paintingNode->SetPushConstantSize(sizeof(PaintingPc));
+            paintingNode->SetConfigs({true});
             paintingNode->AddStorageResource("PaintingStorage", paintingLayers[0]);
             paintingNode->AddStorageResource("OcluddersStorage", paintingLayers[1]);
             paintingNode->AddStorageResource("DebugLayer", paintingLayers[2]);
@@ -202,9 +206,9 @@ namespace Rendering
 
 
             probesVertShader = std::make_unique<Shader>(logicalDevice,
-                                                        shaderPath + "\\spirv\\Common\\Quad.vert.spv");
+                                                        shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
             probesFragShader = std::make_unique<Shader>(logicalDevice,
-                                                        shaderPath + "\\spirv\\FlatRendering\\cascadeGen.frag.spv");
+                                                        shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv");
             probesGenCache->AddShaderInfo(probesVertShader->sParser.get());
             probesGenCache->AddShaderInfo(probesFragShader->sParser.get());
             probesGenCache->BuildDescriptorsCache(descriptorAllocator,
@@ -243,9 +247,9 @@ namespace Rendering
 
 
             vertShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirv\\Common\\Quad.vert.spv");
+                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
             fragShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirv\\FlatRendering\\rCascadesOutput.frag.spv");
+                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv");
             outputCache->AddShaderInfo(vertShader->sParser.get());
             outputCache->AddShaderInfo(fragShader->sParser.get());
             outputCache->BuildDescriptorsCache(descriptorAllocator,
@@ -286,9 +290,9 @@ namespace Rendering
                 glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore);
 
             mergeVertShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirv\\Common\\Quad.vert.spv");
+                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
             mergeFragShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirv\\FlatRendering\\cascadesMerge.frag.spv");
+                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv");
             mergeCascadesCache->AddShaderInfo(mergeVertShader->sParser.get());
             mergeCascadesCache->AddShaderInfo(mergeFragShader->sParser.get());
             mergeCascadesCache->BuildDescriptorsCache(descriptorAllocator,
@@ -328,9 +332,9 @@ namespace Rendering
 
             
             resultVertShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirv\\Common\\Quad.vert.spv");
+                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
             resultFragShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirv\\FlatRendering\\cascadesResult.frag.spv");
+                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv");
             cascadesResultCache->AddShaderInfo(resultVertShader->sParser.get());
             cascadesResultCache->AddShaderInfo(resultFragShader->sParser.get());
             cascadesResultCache->BuildDescriptorsCache(descriptorAllocator,
@@ -376,16 +380,16 @@ namespace Rendering
                         paintingPc.painting = 0;
                     }
                     
-                    paintingCache->SetStorageImageArray("PaintingLayers",paintingLayers);
 
                     auto& renderNode = renderGraph->renderNodes.at(paintingPassName);
+                    renderNode->descCache->SetStorageImageArray("PaintingLayers",paintingLayers);
                     commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eCompute,
                                                 0, sizeof(PaintingPc), &paintingPc);
                     commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
-                                                     &paintingCache->dstSet.get(), 0, nullptr);
+                                                     &renderNode->descCache->dstSet.get(), 0, nullptr);
                     commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
                     commandBuffer.dispatch(paintingPc.radius, paintingPc.radius, 1);
                     

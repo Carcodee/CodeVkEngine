@@ -71,7 +71,6 @@ void run(WindowProvider* windowProvider)
         {vk::DescriptorType::eUniformBuffer, 1.5f},
         {vk::DescriptorType::eStorageImage, 1.5f},
     };
-    
     descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
 
     std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>> renderers;
