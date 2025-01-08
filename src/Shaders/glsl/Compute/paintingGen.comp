@@ -1,0 +1,47 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_scalar_block_layout :enable
+#extension GL_EXT_debug_printf : enable
+
+#include "../Utils/uRendering.glsl"
+#include "../Utils/uStructs.glsl"
+#include "../Utils/uMath.glsl"
+
+layout(push_constant) uniform pushConstants{
+    vec4 color;
+    int layerSelected;
+    int painting;
+    int xMouseCoord;
+    int yMouseCoord;
+    int radius;
+}pc;
+
+layout (set = 0, binding = 0, rgba8) uniform image2D PaintingLayers[];
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+void main() {
+
+    
+    int posX =int(gl_GlobalInvocationID.x - float(pc.radius / 2.0) + 1);
+    int posY =int(gl_GlobalInvocationID.y - float(pc.radius / 2.0) + 1);
+    
+
+    int xCoord = (pc.xMouseCoord - int(gl_WorkGroupSize.x) + int(posX));
+    int yCoord = (pc.yMouseCoord - int(gl_WorkGroupSize.y) + int(posY));
+    
+    vec2 dir = vec2(xCoord, yCoord) - vec2(pc.xMouseCoord, pc.yMouseCoord);
+    float squaredD = pow(2.0, dir.x) + pow(2.0, dir.y);
+    
+    if(distance(vec2(xCoord, yCoord), vec2(pc.xMouseCoord, pc.yMouseCoord)) < pc.radius/2.0){
+        ivec2 xy = ivec2(xCoord, yCoord);
+        bool painting = (pc.painting == 1);
+        if(painting && pc.layerSelected == 0){
+            imageStore(PaintingLayers[0], xy , pc.color);
+        }
+        if(painting && pc.layerSelected == 1){
+            imageStore(PaintingLayers[1], xy , vec4(1.0));
+        }       
+    }
+}

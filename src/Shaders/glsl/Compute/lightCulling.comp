@@ -1,0 +1,139 @@
+﻿#version 450
+
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_scalar_block_layout :enable
+
+#include "../Utils/uStructs.glsl"
+#include "../Utils/uMath.glsl"
+#include "../Utils/uRendering.glsl"
+
+layout (set = 0, binding = 0, scalar) buffer PointLights{
+    u_PointLight[] pointLights;
+};
+layout (set = 0, binding = 1, scalar) writeonly buffer LightMap{
+    u_ArrayIndexer[] lightMap;
+};
+layout (set = 0, binding = 2, scalar) writeonly buffer LightIndices{
+    int[] lightIndices;
+};
+layout(set = 0, binding = 3, scalar) uniform CameraProperties{
+    mat4 invProj;
+    mat4 invView;
+    vec3 camPos;
+    float zNear;
+    float zFar;
+}cProps;
+
+layout(push_constant)uniform pushConstants{
+    int sWidth;
+    int sHeight;
+    int pointLightsCount;
+    uint tileCountX;
+    uint tileCountY;
+    int xTileSizePx;
+    int yTileSizePx;
+}pc;
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+shared mat4 view;
+void main() {
+
+    uvec3 clusterId = gl_GlobalInvocationID;
+    uint threatSize = gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_NumWorkGroups.z;
+    
+    vec2 tileSizePX = vec2(pc.xTileSizePx, pc.yTileSizePx);
+    vec2 screenSize = vec2(pc.sWidth, pc.sHeight);
+
+    vec2 ndcSizePerTile = 2.0 * (tileSizePX/screenSize);
+    vec2 upperLeft = vec2(-1.0);
+
+    //ndc space
+    vec2 topL = (upperLeft + clusterId.xy * ndcSizePerTile);
+    vec2 topR = vec2(topL.x + ndcSizePerTile.x, topL.y);
+    vec2 bottonR = (topL + ndcSizePerTile);
+    vec2 bottonL = vec2(topL.x, topL.y + ndcSizePerTile);
+
+
+    //** TILE RENDERING START **//
+    // screen to view
+    vec3 nearTopL =  u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, topL);
+    vec3 nearTopR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, topR);
+    vec3 nearBottomL = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, bottonL);
+    vec3 nearBottomR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, bottonR);
+
+    vec3 farTopL = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, topL);
+    vec3 farTopR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, topR);
+    vec3 farBottomL = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, bottonL);
+    vec3 farBottomR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, bottonR);
+
+    u_Frustum tileFrustum;
+    
+    //left
+    tileFrustum.planes[0] = u_GetPlane(nearTopL, cProps.camPos, nearBottomL);
+
+    // Right Plane
+    tileFrustum.planes[1] = u_GetPlane(cProps.camPos, nearTopR, nearBottomR);
+
+    // Top Plane
+    tileFrustum.planes[2] = u_GetPlane(cProps.camPos, nearTopL, nearTopR);
+
+    // Bottom Plane
+    tileFrustum.planes[3] = u_GetPlane(cProps.camPos, nearBottomR, nearBottomL);
+
+    // Near Plane
+    tileFrustum.planes[4] = u_GetPlane(nearTopL, nearBottomR, nearBottomL);
+
+    // Far Plane
+    tileFrustum.planes[5] = u_GetPlane(farTopL, farBottomL, farBottomR);
+
+    //** TILE RENDERING END **//
+
+    float tileNear  = -cProps.zNear * pow(cProps.zFar / cProps.zNear, float(gl_WorkGroupID.z) / float(gl_NumWorkGroups.z));
+    float tileFar   = -cProps.zNear * pow(cProps.zFar / cProps.zNear, float(gl_WorkGroupID.z + 1) / float(gl_NumWorkGroups.z));
+
+
+    vec3 maxPointVs = u_ScreenToViewNDC(cProps.invProj, 0.0, topR.xy).xyz;
+    vec3 minPointVs = u_ScreenToViewNDC(cProps.invProj, 0.0, bottonL.xy).xyz;
+    
+    vec3 minPointNear = u_LineIntersectionToZPlane(vec3(0.0), minPointVs, tileNear);
+    vec3 minPointFar = u_LineIntersectionToZPlane(vec3(0.0), minPointVs, tileFar);
+    vec3 maxPointNear = u_LineIntersectionToZPlane(vec3(0.0), maxPointVs, tileNear);
+    vec3 maxPointFar = u_LineIntersectionToZPlane(vec3(0.0), maxPointVs, tileFar);
+    
+    vec3 minPointAABB = min(min(minPointNear, minPointFar), min(maxPointNear, maxPointFar));
+    vec3 maxPointAABB = max(max(minPointNear, minPointFar), max(maxPointNear, maxPointFar));
+    
+    //just to prevent collision for testing, even if is less likely to have all lights in the same tile
+    int maxLightsPerTile= pc.pointLightsCount;
+    
+    uint idxIndexer = clusterId.x + (clusterId.y * pc.tileCountX) + (clusterId.z * pc.tileCountX * pc.tileCountY);
+    int idxLightIndicesStart = int(idxIndexer) * maxLightsPerTile;
+    
+    int lightCount = 0;
+
+    for(int i = 0; i < pc.pointLightsCount; i++){
+
+        //** start tile rendering
+//        bool insideFrustum = true;
+//        for(int j = 0; j < 6; j++){
+//            int planeIdx = j;
+//            if(!u_SphereInsidePlane(pointLights[i].pos, pointLights[i].radius, tileFrustum.planes[planeIdx].xyz, tileFrustum.planes[planeIdx].w)){
+//                insideFrustum = false;
+//                break;
+//            }
+//        }
+        //** end tile rendering
+        mat4 view = inverse(cProps.invView);
+        vec4 posLightVs = view * vec4(pointLights[i].pos, 1.0);
+        if(u_AABB_Sphere(minPointAABB.xyz, maxPointAABB.xyz, posLightVs.xyz, pointLights[i].radius)){
+            if(lightCount < maxLightsPerTile){
+                int idx = idxLightIndicesStart + lightCount;
+                lightIndices[idx] = i;
+                lightCount++;
+            }
+        };
+    }
+    atomicAdd(lightMap[idxIndexer].offset, idxLightIndicesStart);
+    atomicAdd(lightMap[idxIndexer].size, lightCount);
+}

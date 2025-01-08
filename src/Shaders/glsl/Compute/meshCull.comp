@@ -1,0 +1,61 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_scalar_block_layout :enable
+
+#include "../Utils/uStructs.glsl"
+#include "../Utils/uMath.glsl"
+#include "../Utils/uRendering.glsl"
+
+layout (set = 0, binding = 0, scalar) writeonly buffer IndirectCmds{
+    u_DrawIndirectIndexedCmd[] indirectCmds;
+};
+layout (set = 0, binding = 1, scalar) buffer MeshesSpheres{
+    u_Sphere[] meshesSpheres;
+};
+layout(set = 0, binding = 2, scalar) uniform CamProps{
+    mat4 invProj;
+    mat4 invView;
+    vec3 camPos;
+    float zNear;
+    float zFar;
+}cProps;
+
+layout(set = 0, binding = 3, scalar) uniform CullInfo{
+    u_Frustum frustum;
+}cullInfo;
+
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main(){
+
+    u_Frustum camFrustum = cullInfo.frustum;
+    
+    vec3 eye = vec3(0.0);
+
+    uint threadId = gl_GlobalInvocationID.x;
+    int instanceCountToAdd = 1;
+    vec4 viewSpacePos = -inverse(cProps.invView) * vec4(meshesSpheres[threadId].center, 1.0);
+    for(int i = 0; i < 5; i++){
+        int idx = i;
+//        vec4 viewSpacePos = -inverse(cProps.invView) * vec4(0.0, 0.0, 0.0, 1.0);
+//        if(!u_SphereInsidePlane(viewSpacePos.xyz , 1.0f, camFrustum.planes[idx].xyz, camFrustum.planes[idx].w)){
+//            instanceCountToAdd = 0;
+//            break;
+//        }
+        if(distance(viewSpacePos.xyz, eye) < meshesSpheres[threadId].radius ){
+            break;
+        }
+        if(!u_SphereInsidePlane(viewSpacePos.xyz , meshesSpheres[threadId].radius, camFrustum.planes[i].xyz, camFrustum.planes[i].w)){
+            instanceCountToAdd = 0;
+            break;
+        }
+    }
+    //they point to the same dir
+//    if(dot(camFrustum.planes[2].xyz, camFrustum.planes[3].xyz) > 0){
+//        instanceCountToAdd = 0;
+//    }
+    atomicAdd(indirectCmds[threadId].instanceCount, instanceCountToAdd);
+}
