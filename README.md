@@ -1,6 +1,6 @@
-# CodeVkRenderer: A Vulkan-Based Renderer
+# CodeVkEngine: A Vulkan-Based Renderer
 
-CodeVkRenderer Is my personal Renderer that I extend from this [**public template**](https://github.com/Carcodee/Vulkan-Renderer-Template). Here I implement diferent rendering techniques such as, Radiance Cascades in 2d, GPU oclussion culling, Cluster Rendering and more.
+CodeVkEngine Is my personal graphics engine that I extend from this [**public template**](https://github.com/Carcodee/Vulkan-Renderer-Template). Here I implement diferent rendering techniques such as, Radiance Cascades in 2d, GPU oclussion culling, Cluster Rendering and more.
 
 ## Features
 
