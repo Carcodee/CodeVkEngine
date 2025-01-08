@@ -14,6 +14,7 @@
 
 
 
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -482,6 +483,7 @@ namespace ENGINE
         vk::PipelineLayoutCreateInfo pipelineLayoutCI;
         vk::PushConstantRange pushConstantRange;
         vk::PipelineBindPoint pipelineType;
+        // std::map<std::string, std::unique_ptr<Descriptorca>>
         DynamicRenderPass dynamicRenderPass;
         std::string passName;
         bool active = true;
@@ -502,8 +504,10 @@ namespace ENGINE
         
         std::vector<AttachmentInfo> colAttachments;
         AttachmentInfo depthAttachment;
-        
         ImageView* depthImage = nullptr;
+        std::map<std::string, std::unique_ptr<DescriptorCache>> descriptorCaches;
+        std::map<std::string, std::unique_ptr<Shader>> shaders;
+        
         std::unordered_map<std::string, ImageView*> imagesAttachment;
         std::unordered_map<std::string, ImageView*> storageImages;
         std::unordered_map<std::string, ImageView*> sampledImages;
@@ -533,7 +537,7 @@ namespace ENGINE
         std::unordered_map<std::string, AttachmentInfo> outColAttachmentsProxy;
         std::unordered_map<std::string, AttachmentInfo> outDepthAttachmentProxy;
         
-        SamplerPool samplerPool;
+        
         
         Core* core;
         RenderGraph(Core* core)

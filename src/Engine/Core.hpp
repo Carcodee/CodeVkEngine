@@ -82,7 +82,43 @@ namespace ENGINE
         QueueFamilyIndices queueFamilyIndices;
         
     };
+    
+    class ExecuteOnceCommand
+    {
+    public:
+        ExecuteOnceCommand(Core* core)
+        {
+            this->core = core;
+            commandBufferHandle = std::move(core->AllocateCommandBuffers(1)[0]);
+        }
 
+        vk::CommandBuffer BeginCommandBuffer()
+        {
+            auto bufferBeginInfo = vk::CommandBufferBeginInfo()
+                .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+            commandBufferHandle->begin(bufferBeginInfo);
+            return commandBufferHandle.get();
+        }
+
+        void EndCommandBuffer()
+        {
+            commandBufferHandle->end();
+            vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eAllCommands};
+
+            auto submitInfo = vk::SubmitInfo()
+                              .setWaitSemaphoreCount(0)
+                              .setPWaitDstStageMask(waitStages)
+                              .setCommandBufferCount(1)
+                              .setPCommandBuffers(&commandBufferHandle.get())
+                              .setSignalSemaphoreCount(0);
+
+            core->graphicsQueue.submit({submitInfo}, nullptr);
+            core->graphicsQueue.waitIdle();
+        }
+
+        Core* core;
+        vk::UniqueCommandBuffer commandBufferHandle;
+    };
     
 }
 

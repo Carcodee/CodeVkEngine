@@ -39,8 +39,7 @@ namespace Rendering
                                                                    vk::ImageLayout::eUndefined);
             computeImageView = std::make_unique<ENGINE::ImageView>(logicalDevice, computeImageData.get(), 0, 1, 0, 1);
             
-            ENGINE::Sampler* computeImageSampler = renderGraphRef->samplerPool.GetSampler(
-                vk::SamplerAddressMode::eRepeat, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+            ENGINE::Sampler* computeImageSampler = ENGINE::ResourcesManager::GetInstance()->shipperSampler;
 
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
             compShader = std::make_unique<ENGINE::Shader>(logicalDevice,shaderPath + "\\spirv\\Examples\\cSample.comp.spv");

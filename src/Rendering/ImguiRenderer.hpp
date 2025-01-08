@@ -590,8 +590,7 @@ namespace Rendering
 	    }
     	void AddImage(std::string name, ImageView* imageView,glm::vec2 size)
 	    {
-		    Sampler* sampler = core->renderGraphRef->samplerPool.GetSampler(
-			    vk::SamplerAddressMode::eRepeat, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+		    Sampler* sampler = ResourcesManager::GetInstance()->shipperSampler;
 	    	LayoutPatterns lastLayout = imageView->imageData->currentLayout;
 	    	layoutPatternsesToRecover.push_back(lastLayout);
 	    	imageViewsToRecover.push_back(imageView);

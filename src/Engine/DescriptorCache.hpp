@@ -42,9 +42,9 @@ namespace ENGINE
             resourcesManagerRef->Attach(this);
             ImageShipper* defaultShipper = resourcesManagerRef->GetShipperFromName("default_tex");
             this->defaultImageView = defaultShipper->imageView.get();
-            this->defaultSampler = defaultShipper->sampler;
+            this->defaultSampler = resourcesManagerRef->shipperSampler;
             this->defaultStorageImageView = resourcesManagerRef->GetStorageFromName("default_storage");
-            this->defaultStorageSampler = defaultShipper->sampler;
+            this->defaultStorageSampler = resourcesManagerRef->shipperSampler;
             
         }
         void UpdateWatcher() override

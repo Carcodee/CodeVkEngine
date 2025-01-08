@@ -29,7 +29,7 @@ namespace ENGINE
             this->size =size;
         }
 
-        void BuildImage(Core* core, uint32_t arrayLayersCount, uint32_t mipsCount, vk::Format format, LayoutPatterns dstPattern, std::string name, int32_t id)
+        void BuildImage(Core* core, Sampler* sampler, uint32_t arrayLayersCount, uint32_t mipsCount, vk::Format format, LayoutPatterns dstPattern, std::string name, int32_t id)
         {
             assert(this->data && "variable \"data\" is not set or is invalid");
             vk::ImageUsageFlags usage = GetGeneralUsageFlags(format);
@@ -65,8 +65,7 @@ namespace ENGINE
                 free(this->data);
                 data = nullptr;
             }
-            sampler = core->renderGraphRef->samplerPool.GetSampler(vk::SamplerAddressMode::eRepeat,
-                                                vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+            this->sampler = sampler;
         }
 
         std::unique_ptr<Image> ShipImage()

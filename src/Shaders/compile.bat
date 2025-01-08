@@ -7,7 +7,7 @@ set "errorfound="
 
 for /r glsl/ %%I in (*.vert) do (
     set outname=%%I
-    set outname=!outname:\glsl\=\spirv\!
+    set outname=!outname:\glsl\=\spirvGlsl\!
     @echo compiling %%I
     @echo To !outname!
     
@@ -17,7 +17,7 @@ for /r glsl/ %%I in (*.vert) do (
 
 for /r glsl/ %%I in (*.frag) do (
     set outname=%%I
-    set outname=!outname:\glsl\=\spirv\!
+    set outname=!outname:\glsl\=\spirvGlsl\!
     @echo compiling %%I
     @echo To !outname!
     
@@ -26,7 +26,7 @@ for /r glsl/ %%I in (*.frag) do (
 
 for /r glsl/ %%I in (*.comp) do (
     set outname=%%I
-    set outname=!outname:\glsl\=\spirv\!
+    set outname=!outname:\glsl\=\spirvGlsl\!
     @echo compiling %%I
     @echo To !outname!
     

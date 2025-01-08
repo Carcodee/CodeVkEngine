@@ -49,18 +49,17 @@ void run(WindowProvider* windowProvider)
         glfwExtensions, glfwExtensionCount, &windowDesc, enableDebugging);
  
     
+    
     std::unique_ptr<ENGINE::RenderGraph> renderGraph = core->CreateRenderGraph();
-    renderGraph->samplerPool.AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
-                                                vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
     
     std::unique_ptr<ENGINE::InFlightQueue> inFlightQueue = std::make_unique<ENGINE::InFlightQueue>(
         core.get(),renderGraph.get(), windowDesc, imageCount, vk::PresentModeKHR::eMailbox,
         windowProvider->GetWindowSize());
     
+    ENGINE::ResourcesManager* resourcesManager = ENGINE::ResourcesManager::GetInstance(core.get());
     std::unique_ptr<ENGINE::DescriptorAllocator> descriptorAllocator = std::make_unique<ENGINE::DescriptorAllocator>();
 
 
-    ENGINE::ResourcesManager* resourcesManager = ENGINE::ResourcesManager::GetInstance(core.get());
 
     Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());

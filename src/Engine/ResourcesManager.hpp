@@ -5,6 +5,7 @@
 //
 
 
+
 #ifndef RESOURCESMANAGER_HPP
 #define RESOURCESMANAGER_HPP
 
@@ -63,7 +64,7 @@ namespace ENGINE
             if (imageShipper->image == nullptr)
             {
                 imageShipper->SetDataFromPath(path);
-                imageShipper->BuildImage(core, arrayLayersCount, mipsCount, format, dstPattern, name, id);
+                imageShipper->BuildImage(core, shipperSampler, arrayLayersCount, mipsCount, format, dstPattern, name, id);
             }
             return imageShipper;
         }
@@ -92,7 +93,7 @@ namespace ENGINE
             if (imageShipper->image == nullptr)
             {
                 imageShipper->SetDataRaw(data, width, height, size);
-                imageShipper->BuildImage(core, arrayLayersCount, mipsCount, format, dstPattern, name, id);
+                imageShipper->BuildImage(core, shipperSampler, arrayLayersCount, mipsCount, format, dstPattern, name, id);
             }
             return imageShipper;
         }
@@ -325,6 +326,7 @@ namespace ENGINE
             imageViews.clear();
             imageShippers.clear();
             images.clear();
+            samplerPool.reset();
         }
 
         void UpdateImages()
@@ -336,7 +338,7 @@ namespace ENGINE
                 if (updateInfo.bufferState == INVALID)
                 {
                     imageShippers[i]->SetDataFromPath(updateInfo.path);
-                    imageShippers[i]->BuildImage(core, updateInfo.arrayLayersCount, updateInfo.mipsCount,
+                    imageShippers[i]->BuildImage(core, shipperSampler, updateInfo.arrayLayersCount, updateInfo.mipsCount,
                                                  updateInfo.format, updateInfo.dstPattern, updateInfo.name,
                                                  updateInfo.id);
                     updateInfo.bufferState = VALID;
@@ -412,6 +414,11 @@ namespace ENGINE
             storageImagesViews.reserve(BASE_SIZE);
             imageViews.reserve(BASE_SIZE);
             images.reserve(BASE_SIZE);
+            samplerPool = std::make_unique<SamplerPool>();
+            
+            shipperSampler = samplerPool->AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
+                                                vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+            
             std::string defaultTexturePath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +
                 "\\Images\\default_texture.jpg";
 
@@ -425,6 +432,7 @@ namespace ENGINE
                 vk::ImageUsageFlagBits::eStorage);
 
             ImageView* defaultStorage = GetImage("default_storage", imageInfo, 0, 0);
+            
         }
 
         void RequestStorageImageClear(std::string name)
@@ -474,7 +482,7 @@ namespace ENGINE
         std::unordered_map<std::string, int32_t> storageImagesNames;
         std::unordered_map<std::string, int32_t> imagesShippersNames;
 
-
+        
         std::vector<std::unique_ptr<Buffer>> buffers;
         std::vector<std::unique_ptr<StagedBuffer>> stagedBuffers;
         std::vector<BufferUpdateInfo> buffersState;
@@ -485,6 +493,8 @@ namespace ENGINE
         std::vector<ImagesUpdateInfo> imagesUpdateInfos;
         std::vector<std::unique_ptr<Image>> images;
         std::vector<std::string> storageImagesToClear;
+        std::unique_ptr<SamplerPool> samplerPool;
+        Sampler* shipperSampler;
 
         bool invalidateBuffers = false;
         bool updateImagesShippers = false;
