@@ -2,7 +2,6 @@
 cd /d "%~dp0"
 setlocal EnableExtensions EnableDelayedExpansion
 set CompilerExe="%VULKAN_SDK%\Bin\glslangValidator.exe"
-set OptimizerExe="%VULKAN_SDK%\Bin\spirv.exe"
 set OptimizerConfig="OptimizerConfig.cfg"
 set "errorfound="
 
