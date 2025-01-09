@@ -4,7 +4,7 @@
 [[vk::binding(0, 0)]]
 Texture2D<float4> InTex;
 
-[[vk::binding(0, 0)]]
+[[vk::binding(0, 1)]]
 RWTexture2D<float4> OutTex;
 
 [shader("compute")]
