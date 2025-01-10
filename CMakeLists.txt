@@ -25,6 +25,7 @@ set(TINYGLTF_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/tinygltf-release")
 set(IMGUI_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/imgui-docking")
 set(PROFILER_EXT_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/LegitProfiler")
 set(IMGUI_NODE_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/imgui-node-editor-master")
+set(SLANG_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/Slang/include")
 
 
 include_directories("${Vulkan_INCLUDE_DIRS}")
@@ -36,6 +37,7 @@ include_directories("${TINYGLTF_INCLUDE_DIR}")
 include_directories("${IMGUI_INCLUDE_DIR}")
 include_directories("${PROFILER_EXT_INCLUDE_DIR}")
 include_directories("${IMGUI_NODE_INCLUDE_DIR}")
+include_directories("${SLANG_INCLUDE_DIR}")
 
 
 file(GLOB_RECURSE dep_sources "${SPIRVCROSS_INCLUDE_DIR}/*.cpp" "${IMGUI_INCLUDE_DIR}/*.cpp" "${IMGUI_NODE_INCLUDE_DIR}/*.cpp")

@@ -21,7 +21,7 @@
 #define TINYGLTF_IMPLEMENTATION
 #include <tiny_gltf.h>
 
-#include <spirv_glsl.hpp>
+
 
 #include <ProfilerTask.h>
 #include <vulkan/vulkan.hpp>

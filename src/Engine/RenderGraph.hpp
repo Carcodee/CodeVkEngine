@@ -687,7 +687,10 @@ namespace ENGINE
         {
             this->core = core;
         }
-        ~RenderGraph() =default;
+        ~RenderGraph()
+        {
+            
+        };
 
         
         RenderGraphNode* GetNode(std::string name)

@@ -7,6 +7,10 @@
 #ifndef SHADERPARSER_HPP
 #define SHADERPARSER_HPP
 
+#include <spirv_glsl.hpp>
+#include <glslang/Include/glslang_c_interface.h>
+#include <slang.h>
+
 namespace ENGINE
 {
     class ShaderParser
@@ -112,20 +116,55 @@ namespace ENGINE
             }
             
         }
-        void CompileIntoSpirv(const std::string& path)
+        std::vector<uint32_t>& CompileIntoSpirv(const std::string& path ,const std::string& code, const std::string& entryPoint, ShaderStage stage)
         {
-            std::filesystem::path shaderPath(path);
-
-            if (shaderPath.extension() == ".slang")
+            SlangStage slangStage = SLANG_STAGE_NONE;
+            switch (stage)
             {
+            case S_VERT:
+                slangStage = SLANG_STAGE_VERTEX;
+                break;
+            case S_FRAG:
                 
+                slangStage = SLANG_STAGE_FRAGMENT;
+                break;
+            case S_COMP:
+                slangStage = SLANG_STAGE_COMPUTE;
+                break;
+            case S_UNKNOWN:
+                assert(false&& "unsuported stage");
+                break;
             }
-            if (shaderPath.extension() == ".frag" || shaderPath.extension() == ".vert" || shaderPath.extension() == ".comp")
+            SlangSession* session = spCreateSession(nullptr);
+            if (!session)
             {
-                
+                assert(false&& "failed to create session");
+            }
+            SlangCompileRequest* request = spCreateCompileRequest(session);
+            if (!session)
+            {
+                spDestroySession(session);
+                assert(false&& "failed to create compilation request");
             }
 
-            assert(false && "Unsuported extension for compiling into spirv at runtime");
+            spSetCodeGenTarget(request, SLANG_SPIRV);
+            int translationUnitIndex= spAddTranslationUnit(request, SLANG_SOURCE_LANGUAGE_SLANG, nullptr);
+
+            spAddEntryPoint(request, translationUnitIndex, entryPoint.c_str(), slangStage);
+            
+            spAddTranslationUnitSourceString(request, translationUnitIndex, entryPoint.c_str(), code.c_str());
+
+            if (spCompile(request) != SLANG_OK)
+            {
+                const char* diagnostics = spGetDiagnosticOutput(request);
+                printf("Compilation failed: %s\n", diagnostics);
+            }
+            size_t spirvSize = 0;
+            const void* spirvCode = spGetEntryPointCode(request, 0, &spirvSize);
+            
+
+
+            // assert(false && "Unsuported extension for compiling into spirv at runtime");
         }
 
         void GetBinding(std::vector<ShaderResource>& resources, DescriptorLayoutBuilder& builder)

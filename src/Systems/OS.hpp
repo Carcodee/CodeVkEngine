@@ -104,6 +104,18 @@ namespace SYSTEMS
 			}
 		}
 
+		void WriteFile(const std::string& path, const)
+		{
+			std::ofstream dst(path, std::ios::binary);
+			if (!dst)
+			{
+				assert(false &&"Impossible to create dst file");
+			}
+
+			Logger::GetInstance()->Log("File: " + path + " was created");
+			
+		}
+
 		void CopyFileInto(const std::string& srcFile, const std::string& dstFile)
 		{
 			std::ifstream src(srcFile, std::ios::binary);
