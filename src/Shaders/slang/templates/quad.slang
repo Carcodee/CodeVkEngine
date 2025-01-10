@@ -27,12 +27,10 @@ struct PSOutput {
 // Binding set = 0, binding = 0 for texture, binding = 1 for sampler
 
 [[vk::binding(0, 0)]]
-Texture2D<float4> myTexture; // Texture at set 0, binding 0
-SamplerState sampler; // Implicitly associated with `texture`
-
+Sampler2D myTexture; // Texture at set 0, binding 0
 
 PSOutput mainFS(PSInput input) {
     PSOutput output;
-    output.color = myTexture.Sample(sampler, input.uv); // Sample the texture
+    output.color = myTexture.Sample(input.uv); // Sample the texture
     return output;
 }

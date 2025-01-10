@@ -116,11 +116,16 @@ namespace ENGINE
         {
             std::filesystem::path shaderPath(path);
 
-            if (shaderPath.extension() != ".slang")
+            if (shaderPath.extension() == ".slang")
             {
-                assert(false && "Unsuported extension for compiling into spirv at runtime");
+                
             }
-            
+            if (shaderPath.extension() == ".frag" || shaderPath.extension() == ".vert" || shaderPath.extension() == ".comp")
+            {
+                
+            }
+
+            assert(false && "Unsuported extension for compiling into spirv at runtime");
         }
 
         void GetBinding(std::vector<ShaderResource>& resources, DescriptorLayoutBuilder& builder)

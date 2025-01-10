@@ -1,10 +1,9 @@
 ﻿// BasicComputeShader.slang
 
-
 [[vk::binding(0, 0)]]
-Texture2D<float4> InTex;
+Sampler2D InTex;
 
-[[vk::binding(0, 1)]]
+[[vk::binding(1, 0)]]
 RWTexture2D<float4> OutTex;
 
 [shader("compute")]

@@ -54,7 +54,6 @@ for /r slang/ %%I in (*.slang) do (
         %SlangCompExe% -target spirv -stage fragment -entry mainFS "%%I" -o "!outname!"FS.spv || set "errorfound=1"
     )
 )
-    pause
 if defined errorfound (
     echo.
     echo Errors were found during compilation.
