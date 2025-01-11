@@ -84,7 +84,7 @@ namespace SYSTEMS
 			return shadersPath.string();
 		}
 		
-		std::string ReadFile(const std::string& path)
+		static std::string ReadFile(const std::string& path)
 		{
 			std::ifstream inFile(path);
 			std::string data;
@@ -95,7 +95,7 @@ namespace SYSTEMS
 			return data;
 		}
 
-		void CreateFileAt(const std::string dstFile)
+		static void CreateFileAt(const std::string dstFile)
 		{
 			std::ofstream dst(dstFile, std::ios::binary);
 			if (!dst)
@@ -104,19 +104,20 @@ namespace SYSTEMS
 			}
 		}
 
-		void WriteFile(const std::string& path, const)
+		static void WriteFile(const std::string& path, const char* text, size_t size)
 		{
-			std::ofstream dst(path, std::ios::binary);
-			if (!dst)
+			std::ofstream file(path, std::ios::binary);
+			if (!file.is_open())
 			{
-				assert(false &&"Impossible to create dst file");
+				assert(false &&"Impossible to write file");
 			}
+			file.write(text, size);
 
-			Logger::GetInstance()->Log("File: " + path + " was created");
+			Logger::GetInstance()->Log("File: " + path + " was writed succesfully");
 			
 		}
 
-		void CopyFileInto(const std::string& srcFile, const std::string& dstFile)
+		static void CopyFileInto(const std::string& srcFile, const std::string& dstFile)
 		{
 			std::ifstream src(srcFile, std::ios::binary);
 			if (!src)
