@@ -48,13 +48,12 @@ for /r slang/ %%I in (*.slang) do (
     @echo To !outname!
     
     findstr /c:"mainCS" "%%I" >nul && (
-        %SlangCompExe% -target spirv -stage compute -entry mainCS "%%I" -o "!outname!"CS.spv || set "errorfound=1"
+        %SlangCompExe% -target spirv -stage compute -entry mainCS "%%I" -o "!outname!"_CS.spv || set "errorfound=1"
     ) || (
-        %SlangCompExe% -target spirv -stage vertex -entry mainVS "%%I" -o "!outname!"VS.spv || set "errorfound=1"
-        %SlangCompExe% -target spirv -stage fragment -entry mainFS "%%I" -o "!outname!"FS.spv || set "errorfound=1"
+        %SlangCompExe% -target spirv -stage vertex -entry mainVS "%%I" -o "!outname!"_VS.spv || set "errorfound=1"
+        %SlangCompExe% -target spirv -stage fragment -entry mainFS "%%I" -o "!outname!"_FS.spv || set "errorfound=1"
     )
 )
-pause
 if defined errorfound (
     echo.
     echo Errors were found during compilation.

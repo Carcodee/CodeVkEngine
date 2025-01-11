@@ -42,7 +42,7 @@ namespace Rendering
             ENGINE::Sampler* computeImageSampler = ENGINE::ResourcesManager::GetInstance()->shipperSampler;
 
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
-            compShader = std::make_unique<ENGINE::Shader>(logicalDevice,shaderPath + "\\spirv\\Examples\\cSample.comp.spv");
+            compShader = std::make_unique<ENGINE::Shader>(logicalDevice,shaderPath + "\\spirv\\Examples\\cSample.comp.spv", ENGINE::ShaderStage::S_COMP);
             
             ENGINE::DescriptorLayoutBuilder builder;
 

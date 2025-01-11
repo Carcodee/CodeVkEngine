@@ -8,6 +8,7 @@
 
 
 
+
 // Created by carlo on 2024-12-02.
 //
 
@@ -176,7 +177,7 @@ namespace Rendering
                                                        // shaderPath + "\\spirvGlsl\\Compute\\paintingGen.comp.spv");
             
             paintCompShader = std::make_unique<Shader>(logicalDevice,
-                                                       shaderPath + "\\spirvSlang\\test\\paintingGen.slangCS.spv");
+                                                       shaderPath + "\\spirvSlang\\test\\paintingGen.slang_CS.spv", S_COMP);
 
             // paintingCache->AddShaderInfo(paintCompShader.get()->sParser.get());
             // paintingCache->BuildDescriptorsCache(descriptorAllocator,
@@ -209,9 +210,9 @@ namespace Rendering
 
 
             probesVertShader = std::make_unique<Shader>(logicalDevice,
-                                                        shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
+                                                        shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
             probesFragShader = std::make_unique<Shader>(logicalDevice,
-                                                        shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv");
+                                                        shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv", S_FRAG);
             probesGenCache->AddShaderInfo(probesVertShader->sParser.get());
             probesGenCache->AddShaderInfo(probesFragShader->sParser.get());
             probesGenCache->BuildDescriptorsCache(descriptorAllocator,
@@ -250,9 +251,9 @@ namespace Rendering
 
 
             vertShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
+                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
             fragShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv");
+                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv", S_FRAG);
             outputCache->AddShaderInfo(vertShader->sParser.get());
             outputCache->AddShaderInfo(fragShader->sParser.get());
             outputCache->BuildDescriptorsCache(descriptorAllocator,
@@ -293,9 +294,9 @@ namespace Rendering
                 glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore);
 
             mergeVertShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
+                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
             mergeFragShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv");
+                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
             mergeCascadesCache->AddShaderInfo(mergeVertShader->sParser.get());
             mergeCascadesCache->AddShaderInfo(mergeFragShader->sParser.get());
             mergeCascadesCache->BuildDescriptorsCache(descriptorAllocator,
@@ -335,9 +336,9 @@ namespace Rendering
 
             
             resultVertShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv");
+                                                  shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
             resultFragShader = std::make_unique<Shader>(logicalDevice,
-                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv");
+                                                  shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv", S_FRAG);
             cascadesResultCache->AddShaderInfo(resultVertShader->sParser.get());
             cascadesResultCache->AddShaderInfo(resultFragShader->sParser.get());
             cascadesResultCache->BuildDescriptorsCache(descriptorAllocator,

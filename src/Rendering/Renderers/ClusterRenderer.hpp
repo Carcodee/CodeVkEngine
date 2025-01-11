@@ -397,7 +397,7 @@ namespace Rendering
             //Cull meshes
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
-            cullMeshesCompShader = std::make_unique<Shader>(logicalDevice, shaderPath + "\\spirv\\Compute\\meshCull.comp.spv");
+            cullMeshesCompShader = std::make_unique<Shader>(logicalDevice, shaderPath + "\\spirv\\Compute\\meshCull.comp.spv", S_COMP);
 
             cullMeshesCache->AddShaderInfo(cullMeshesCompShader.get()->sParser.get());
             cullMeshesCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
@@ -413,7 +413,7 @@ namespace Rendering
             
             //Cull pass//
 
-            cullCompShader = std::make_unique<Shader>(logicalDevice, shaderPath+ "\\spirv\\Compute\\lightCulling.comp.spv");
+            cullCompShader = std::make_unique<Shader>(logicalDevice, shaderPath+ "\\spirv\\Compute\\lightCulling.comp.spv", S_COMP);
 
             computeDescCache->AddShaderInfo(cullCompShader.get()->sParser.get());
             computeDescCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
@@ -436,10 +436,8 @@ namespace Rendering
 
             //gbuffer
 
-            gVertShader = std::make_unique<Shader>(logicalDevice,
-                                                           "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv");
-            gFragShader = std::make_unique<Shader>(logicalDevice,
-                                                           "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv");
+            gVertShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv", S_VERT);
+            gFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
             gBuffDescCache->AddShaderInfo(gVertShader->sParser.get());
             gBuffDescCache->AddShaderInfo(gFragShader->sParser.get());
             gBuffDescCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
@@ -482,8 +480,8 @@ namespace Rendering
 
             //light pass//
 
-            lVertShader = std::make_unique<Shader>(logicalDevice, "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\Common\\Quad.vert.spv");
-            lFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\light.frag.spv");
+            lVertShader = std::make_unique<Shader>(logicalDevice, "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
+            lFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\light.frag.spv", S_FRAG);
 
             lightDecCache->AddShaderInfo(lVertShader->sParser.get());
             lightDecCache->AddShaderInfo(lFragShader->sParser.get());

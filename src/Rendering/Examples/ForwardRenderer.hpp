@@ -68,8 +68,8 @@ namespace Rendering
 
             std::string shadersPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
             
-            vertShader = std::make_unique<ENGINE::Shader>(logicalDevice, shadersPath + "\\spirv\\Examples\\fSample.vert.spv");
-            fragShader = std::make_unique<ENGINE::Shader>(logicalDevice, shadersPath + "\\spirv\\Examples\\fSample.frag.spv");
+            vertShader = std::make_unique<ENGINE::Shader>(logicalDevice, shadersPath + "\\spirv\\Examples\\fSample.vert.spv", ENGINE::ShaderStage::S_FRAG);
+            fragShader = std::make_unique<ENGINE::Shader>(logicalDevice, shadersPath + "\\spirv\\Examples\\fSample.frag.spv", ENGINE::ShaderStage::S_VERT);
            
             ENGINE::DescriptorLayoutBuilder builder;
             

@@ -57,9 +57,9 @@ namespace Rendering{
                 auto logicalDevice = core->logicalDevice.get();
                 std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
                 modelVShader = std::make_unique<Shader>(logicalDevice,
-                                                        shaderPath + "\\spirv\\DebugRendering\\debug.vert.spv");
+                                                        shaderPath + "\\spirv\\DebugRendering\\debug.vert.spv", S_VERT);
                 modelFShader = std::make_unique<Shader>(logicalDevice,
-                                                        shaderPath + "\\spirv\\DebugRendering\\debug.frag.spv");
+                                                        shaderPath + "\\spirv\\DebugRendering\\debug.frag.spv", S_FRAG);
                 mDebuggerCache->AddShaderInfo(modelVShader->sParser.get());
                 mDebuggerCache->AddShaderInfo(modelFShader->sParser.get());
                 mDebuggerCache->BuildDescriptorsCache(descriptorAllocator,

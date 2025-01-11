@@ -248,10 +248,11 @@ namespace ENGINE
     class Shader 
     {
     public:
-        Shader(vk::Device logicalDevice, std::string path)
+        Shader(vk::Device logicalDevice, std::string path, ShaderStage stage)
         {
             assert(std::filesystem::exists(path) && "Path does not exist");
-            this->path = path;
+            this->stage = stage;
+            HandlePathReceived(path);
             this->logicalDevice = logicalDevice;
             std::vector<uint32_t> byteCode = GetByteCode(path);
             sParser = std::make_unique<ShaderParser>(byteCode);
@@ -259,16 +260,120 @@ namespace ENGINE
         }
         void Reload()
         {
-            //wrong needs to be the code path
-            // std::string code = SYSTEMS::OS::ReadFile(path);
-            // CompileIntoSpirv(path, )
-            std::vector<uint32_t> byteCode = GetByteCode(path);
+            std::string code = SYSTEMS::OS::ReadFile(path);
+            std::vector<uint32_t> byteCode = GetByteCode(spirvPath);
+            if (std::filesystem::path(path).extension() == "slang")
+            {
+                std::string entryPoint = "";
+                switch (stage)
+                {
+                case S_VERT:
+                    entryPoint = "mainVS";
+                    break;
+                case S_FRAG:
+                    entryPoint = "mainFS";
+                    break;
+                case S_COMP:
+                    entryPoint = "mainCS";
+                    break;
+                case S_UNKNOWN:
+                    assert(false && "uknown stage");
+                    break;
+                }
+                byteCode = CompileIntoSpirv(code, path, entryPoint, stage);
+            }
+            
             sParser.reset();
             sModule.reset();
             sParser = std::make_unique<ShaderParser>(byteCode);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
         }
 
+        void HandlePathReceived(const std::string& path)
+        {
+            std::filesystem::path filePath(path);
+            bool glsl = false;
+
+            if (filePath.extension() == ".spv")
+            {
+                std::filesystem::path shaderPath;
+                for (auto& dirsParts : filePath)
+                {
+                    if (dirsParts.string() == "spirvSlang")
+                    {
+                        shaderPath /= "slang";
+                    }
+                    else if (dirsParts.string() == "spirvGlsl")
+                    {
+                        glsl = true;
+                        shaderPath /= "glsl";
+                    }
+                    else
+                    {
+                        if (dirsParts.extension() == ".spv")
+                        {
+                            int firstDotPos = dirsParts.string().find_first_of('.');
+                            std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
+                            std::string extension = ".slang";
+                            if (glsl)
+                            {
+                                switch (stage)
+                                {
+                                case S_VERT:
+                                    extension = ".vert";
+                                    break;
+                                case S_FRAG:
+                                    extension = ".frag";
+                                    break;
+                                case S_COMP:
+                                    extension = ".comp";
+                                    break;
+                                case S_UNKNOWN:
+                                    extension = ".invalid";
+                                    break;
+                                }
+                            }
+                            std::string pathName = fileNameNoExt + extension;
+                            shaderPath /= pathName;
+                        }
+                        else
+                        {
+                            shaderPath /= dirsParts;
+                        }
+                    }
+                }
+                assert((std::filesystem::exists(shaderPath) && shaderPath != filePath) && "invalid shader path");
+                this->path = shaderPath.string();
+                this->spirvPath = path;
+            }
+                
+            // }else
+            // {
+            //     std::filesystem::path spirvPath;
+            //     if (filePath.extension() == ".slang" || filePath.extension() == ".frag" || filePath.extension() == ".vert" || filePath.extension() == ".comp")
+            //     {
+            //         for (auto& dirsParts : filePath)
+            //         {
+            //             if (dirsParts.c_str() == L"slang")
+            //             {
+            //                 spirvPath /= "spirvSlang";
+            //             }else if(dirsParts.c_str() == L"glsl")
+            //             {
+            //                 spirvPath /= "spirvGlsl";
+            //             }else 
+            //             {
+            //                 spirvPath /= dirsParts;
+            //             }
+            //         }
+            //     }
+            //     assert(spirvPath.c_str() == filePath && "invalid shader path");
+            //     this->spirvPath = spirvPath.string();
+            //     this->path = path;
+            // }
+            
+            
+            
+        }
         
         std::unique_ptr<ShaderParser> sParser;
         std::unique_ptr<ShaderModule> sModule;
@@ -276,6 +381,7 @@ namespace ENGINE
         ShaderStage stage;
         //spirv path
         std::string path;
+        std::string spirvPath;
         
         
     };
