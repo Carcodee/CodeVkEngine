@@ -908,15 +908,15 @@ namespace ENGINE
         }
         void RecompileShaders()
         {
-            int result = std::system("C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\shaders\\compile.bat");
-            if (result == 0)
-            {
-                std::cout << "Shaders compiled\n";
-            }
-            else
-            {
-                assert(false &&"reload shaders failed");
-            }
+            // int result = std::system("C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\shaders\\compile.bat");
+            // if (result == 0)
+            // {
+                // std::cout << "Shaders compiled\n";
+            // }
+            // else
+            // {
+                // assert(false &&"reload shaders failed");
+            // }
         }
 
         void ExecuteAll(FrameResources* currentFrame)

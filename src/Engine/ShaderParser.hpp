@@ -11,9 +11,7 @@
 #include <slang.h>
 
 #include <spirv_glsl.hpp>
-#include <glslang/Public/ShaderLang.h>
-#include <glslang/Public/ResourceLimits.h>
-#include <glslang/SPIRV/GlslangToSpv.h>
+#include <shaderc/shaderc.hpp>
 
 namespace ENGINE
 {
@@ -35,7 +33,6 @@ namespace ENGINE
             slangStage = SLANG_STAGE_VERTEX;
             break;
         case S_FRAG:
-
             slangStage = SLANG_STAGE_FRAGMENT;
             break;
         case S_COMP:
@@ -66,7 +63,8 @@ namespace ENGINE
         if (spCompile(request) != SLANG_OK)
         {
             const char* diagnostics = spGetDiagnosticOutput(request);
-            printf("Compilation failed: %s\n", diagnostics);
+            printf("Compilation failed using last shader version: %s\n", diagnostics);
+            return std::vector<uint32_t>();
         }
         size_t spirvSize = 0;
         const void* spirvCode = spGetEntryPointCode(request, 0, &spirvSize);
@@ -86,55 +84,31 @@ namespace ENGINE
         return std::vector<uint32_t>();
     }
 
-    static std::vector<uint32_t> CompileGlslIntoSpirv(const std::string& outFile,
-                                                       const std::string& code,
-                                                        ShaderStage stage)
+    static void CompileGlslIntoSpirv(const std::string& path ,
+                                                      const std::string& outFile)
     {
-        EShLanguage shaderStage;
-        switch (stage)
-        {
-        case S_VERT:
-            shaderStage = EShLangVertex;
-            break;
-        case S_FRAG:
-            shaderStage = EShLangFragment;
-            break;
-        case S_COMP:
-            shaderStage = EShLangCompute;
-            break;
-        case S_UNKNOWN:
-            break;
-        }
-        glslang::TShader shader(shaderStage); // Vertex shader type
-        const char* shaderCode = code.c_str();
-        shader.setStrings(&shaderCode, 1);
-        shader.setEnvInput(glslang::EShSourceGlsl, shaderStage, glslang::EShClientVulkan, 450);
-        shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
-        shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+        std::string tempFilePath = SYSTEMS::OS::GetInstance()->GetShadersPath() + "\\tempFile.bat";
+        SYSTEMS::OS::CreateFileAt(tempFilePath);
 
+        // Start constructing the batch file content
+        std::string command = R"(@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set CompilerExe="%VULKAN_SDK%\Bin\glslangValidator.exe"
+set OptimizerConfig="OptimizerConfig.cfg"
+set "errorfound=")";
 
-        if (!shader.parse(GetDefaultResources(), 450, false, EShMsgDefault))
-        {
-            std::cout << "GLSL Syntax Error in file: " << outFile << "\n"
-                << shader.getInfoLog() << "\n"
-                << shader.getInfoDebugLog() << std::endl;
-        }
-
-        glslang::TProgram program;
-        program.addShader(&shader);
-
-        if (program.link(EShMsgDefault))
-        {
-            assert(false && "Unable to link glsl");
-        }
-
-        std::vector<uint32_t> spirv;
-        glslang::GlslangToSpv(*program.getIntermediate(shaderStage), spirv);
-
-        SYSTEMS::OS::WriteFile(outFile, reinterpret_cast<const char*>(spirv.data()), spirv.size() * sizeof(uint32_t));
+        command += "%CompilerExe% -V \"" + path + "\" -l --target-env vulkan1.2 -o \"" + outFile +
+                   "\" || set \"errorfound=1\"\n";
         
-        return spirv;
-    
+        SYSTEMS::OS::WriteFile(tempFilePath, command.c_str(), command.size());
+
+        int result = std::system(tempFilePath.c_str());
+        if (result != 0)
+        {
+            assert(false && "invalid bat file");
+        }
+
+        std::remove(tempFilePath.c_str());
     }
     class ShaderParser
     {
@@ -318,7 +292,6 @@ namespace ENGINE
         void Reload()
         {
             std::string code = SYSTEMS::OS::ReadFile(path);
-            // std::vector<uint32_t> byteCode = GetByteCode(spirvPath);
             std::vector<uint32_t> byteCode;
             if (std::filesystem::path(path).extension() == ".slang")
             {
@@ -339,11 +312,17 @@ namespace ENGINE
                     break;
                 }
                 byteCode = CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
+                if (byteCode.empty())
+                {
+                    byteCode = GetByteCode(spirvPath);
+                }
             }
             else if (std::filesystem::path(path).extension() == ".frag" || std::filesystem::path(path).extension() == ".vert"
                 || std::filesystem::path(path).extension() == ".comp")
             {
-                byteCode = CompileGlslIntoSpirv(spirvPath, code, stage);
+                
+                CompileGlslIntoSpirv(path,spirvPath);
+                byteCode = GetByteCode(spirvPath);
             }else
             {
                 assert(false && "invalid shader file extension");
@@ -353,6 +332,8 @@ namespace ENGINE
             sModule.reset();
             sParser = std::make_unique<ShaderParser>(byteCode);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
+            SYSTEMS::Logger::GetInstance()->LogMessage("Shader compiled: "+ path);
+            SYSTEMS::Logger::GetInstance()->LogMessage("SPIRV: "+ spirvPath);
         }
 
         void HandlePathReceived(const std::string& path)
@@ -411,6 +392,7 @@ namespace ENGINE
                 assert((std::filesystem::exists(shaderPath) && shaderPath != filePath) && "invalid shader path");
                 this->path = shaderPath.string();
                 this->spirvPath = path;
+                
             }
                 
             // }else

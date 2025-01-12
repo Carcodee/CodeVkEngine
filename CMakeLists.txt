@@ -32,11 +32,6 @@ set(IMGUI_NODE_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/imgui-node-editor-maste
 set(SLANG_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/Slang/include")
 set(SLANG_LIBRARIES "${SOLUTION_DIR}/dependencies/Slang/lib/slang.lib")
 
-set(GLSLANG_LIBRARIES
-        "${Vulkan_Base_Path}/Lib/glslangd.lib"
-        "${Vulkan_Base_Path}/Lib/glslang-default-resource-limitsd.lib"
-        "${Vulkan_Base_Path}/Lib/SPIRVd.lib"
-)
         
 include_directories("${Vulkan_INCLUDE_DIRS}")
 include_directories("${GLFW3_INCLUDE_DIR}")
@@ -68,11 +63,11 @@ target_sources(Engine PRIVATE
         ${engine_headers}
         ${engine_sources})
 
-target_link_libraries(Engine 
+target_link_libraries(Engine
+        ${SLANG_LIBRARIES}
         ${Vulkan_LIBRARIES}
         ${GLFW3_LIBRARIES}
-        ${SLANG_LIBRARIES}
-        ${GLSLANG_LIBRARIES})
+)
 
 set_target_properties(Engine PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

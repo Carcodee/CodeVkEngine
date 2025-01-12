@@ -78,11 +78,11 @@ vec4 CastInterval(vec2 intervalStart, vec2 intervalEnd, int cascadeIndex, vec2 f
             accumulatedRadiance += vec4(vec3(0.1), 1.0) * normalMapCombined;
             sampleCount++;
         }
-        if(spriteCol.w > 0.3){
-            occluded = true;
-            accumulatedRadiance += spriteCol * spriteCol.w;
-            sampleCount++;
-        }       
+//        if(spriteCol.w > 0.3){
+//            occluded = true;
+//            accumulatedRadiance += spriteCol * spriteCol.w;
+//            sampleCount++;
+//        }       
         if(sampleCol.w > 0.01){
             occluded = true;
             accumulatedRadiance = sampleCol * sampleCol.w;

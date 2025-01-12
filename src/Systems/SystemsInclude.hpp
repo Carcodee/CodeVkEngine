@@ -44,5 +44,6 @@
 #include "OS.hpp"
 #include "InputSystem.hpp"
 #include "ObserverSystem.hpp"
+#include "FileWatcher.hpp"
 
 #endif //SYSTEMSINCLUDE_HPP
