@@ -86,13 +86,16 @@ namespace SYSTEMS
 		
 		static std::string ReadFile(const std::string& path)
 		{
-			std::ifstream inFile(path);
-			std::string data;
-
-			while (std::getline(inFile, data))
+			std::ifstream inFile(path, std::ios::in || std::ios::binary);
+			if (!inFile)
 			{
+				assert(false && "impossible to open the path");
 			}
-			return data;
+			std::ostringstream oss;
+
+			oss << inFile.rdbuf();
+			
+			return oss.str();
 		}
 
 		static void CreateFileAt(const std::string dstFile)
