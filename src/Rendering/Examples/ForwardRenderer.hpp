@@ -79,7 +79,7 @@ namespace Rendering
             //automatic descriptor handler
             descriptorCache->AddShaderInfo(vertShader->sParser.get());
             descriptorCache->AddShaderInfo(fragShader->sParser.get());
-            descriptorCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment );
+            descriptorCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment );
 
             auto pushConstantRange = vk::PushConstantRange()
             .setOffset(0)

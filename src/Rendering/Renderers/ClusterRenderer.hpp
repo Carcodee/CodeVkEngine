@@ -22,13 +22,11 @@ namespace Rendering
     using namespace ENGINE;
     class ClusterRenderer : public BaseRenderer {
     public:
-        ClusterRenderer(Core* core, WindowProvider* windowProvider,
-                        DescriptorAllocator* descriptorAllocator)
+        ClusterRenderer(Core* core, WindowProvider* windowProvider)
         {
             this->core = core;
             this->renderGraphRef = core->renderGraphRef;
             this->windowProvider = windowProvider;
-            this->descriptorAllocatorRef = descriptorAllocator;
             computeDescCache = std::make_unique<DescriptorCache>(this->core);
             lightDecCache = std::make_unique<DescriptorCache>(this->core);
             gBuffDescCache = std::make_unique<DescriptorCache>(this->core);
@@ -400,7 +398,7 @@ namespace Rendering
             cullMeshesCompShader = std::make_unique<Shader>(logicalDevice, shaderPath + "\\spirv\\Compute\\meshCull.comp.spv", S_COMP);
 
             cullMeshesCache->AddShaderInfo(cullMeshesCompShader.get()->sParser.get());
-            cullMeshesCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
+            cullMeshesCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
 
             auto meshCullLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
                                         .setSetLayoutCount(1)
@@ -416,7 +414,7 @@ namespace Rendering
             cullCompShader = std::make_unique<Shader>(logicalDevice, shaderPath+ "\\spirv\\Compute\\lightCulling.comp.spv", S_COMP);
 
             computeDescCache->AddShaderInfo(cullCompShader.get()->sParser.get());
-            computeDescCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
+            computeDescCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
 
             auto cullPushConstantRange = vk::PushConstantRange()
                                          .setOffset(0)
@@ -440,7 +438,7 @@ namespace Rendering
             gFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
             gBuffDescCache->AddShaderInfo(gVertShader->sParser.get());
             gBuffDescCache->AddShaderInfo(gFragShader->sParser.get());
-            gBuffDescCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+            gBuffDescCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
             auto pushConstantRange = vk::PushConstantRange()
                                      .setOffset(0)
@@ -485,7 +483,7 @@ namespace Rendering
 
             lightDecCache->AddShaderInfo(lVertShader->sParser.get());
             lightDecCache->AddShaderInfo(lFragShader->sParser.get());
-            lightDecCache->BuildDescriptorsCache(descriptorAllocatorRef, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+            lightDecCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
             auto lPushConstantRange = vk::PushConstantRange()
                                       .setOffset(0)
@@ -608,7 +606,6 @@ namespace Rendering
             camera.UpdateCam();
         };
 
-        DescriptorAllocator* descriptorAllocatorRef;
         WindowProvider* windowProvider;
         Core* core;
         RenderGraph* renderGraphRef;

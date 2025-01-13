@@ -1,6 +1,7 @@
 ﻿//
 
 
+
 // Created by carlo on 2024-09-21.
 //
 
@@ -78,8 +79,7 @@ void run(WindowProvider* windowProvider)
     
     // renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
         // core.get(), windowProvider, descriptorAllocator.get()));
-     renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(
-                              core.get(), windowProvider, descriptorAllocator.get()));
+     renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core.get(), windowProvider));
     
     // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
     // clusterRenderer->SetRenderOperation(inFlightQueue.get());
@@ -91,7 +91,7 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
 
     std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
-        core.get(), windowProvider, descriptorAllocator.get(), renderers);
+        core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation(inFlightQueue.get());
 
 

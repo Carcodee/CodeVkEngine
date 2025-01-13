@@ -17,7 +17,7 @@ namespace Rendering{
         ~DebugRenderer() override = default;
         
         DebugRenderer(Core* core, WindowProvider* windowProvider,
-                        DescriptorAllocator* descriptorAllocator, std::map<std::string, std::unique_ptr<BaseRenderer>>& renderers)
+                        std::map<std::string, std::unique_ptr<BaseRenderer>>& renderers)
         {
             this->core = core;
             this->renderGraph = core->renderGraphRef;
@@ -63,8 +63,7 @@ namespace Rendering{
                                                         shaderPath + "\\spirv\\DebugRendering\\debug.frag.spv", S_FRAG);
                 mDebuggerCache->AddShaderInfo(modelVShader->sParser.get());
                 mDebuggerCache->AddShaderInfo(modelFShader->sParser.get());
-                mDebuggerCache->BuildDescriptorsCache(descriptorAllocator,
-                                                      vk::ShaderStageFlagBits::eVertex |
+                mDebuggerCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex |
                                                       vk::ShaderStageFlagBits::eFragment);
 
                 auto pushConstantRange = vk::PushConstantRange()

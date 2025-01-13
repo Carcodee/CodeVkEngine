@@ -123,7 +123,7 @@ namespace ENGINE
             
         }
 
-        void BuildDescriptorsCache(DescriptorAllocator* descriptorAllocatorRef, vk::ShaderStageFlags stageFlags)
+        void BuildDescriptorsCache(vk::ShaderStageFlags stageFlags)
         {
 
             assert((imageBindingsKeys.size() + bufferBindingsKeys.size()) == dstSetBuilder.bindings.size() && "Resources and builder must have the same size");

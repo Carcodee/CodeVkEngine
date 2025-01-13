@@ -24,6 +24,7 @@
 
 
 
+
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
 
@@ -34,13 +35,11 @@ namespace Rendering
     class FlatRenderer : public BaseRenderer
     {
     public:
-        FlatRenderer(Core* core, WindowProvider* windowProvider,
-                     DescriptorAllocator* descriptorAllocator)
+        FlatRenderer(Core* core, WindowProvider* windowProvider)
         {
             this->core = core;
             this->renderGraph = core->renderGraphRef;
             this->windowProvider = windowProvider;
-            this->descriptorAllocator = descriptorAllocator;
             outputCache = std::make_unique<DescriptorCache>(core);
             probesGenCache = std::make_unique<DescriptorCache>(core);
             paintingCache = std::make_unique<DescriptorCache>(core);
@@ -215,8 +214,7 @@ namespace Rendering
                                                         shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv", S_FRAG);
             probesGenCache->AddShaderInfo(probesVertShader->sParser.get());
             probesGenCache->AddShaderInfo(probesFragShader->sParser.get());
-            probesGenCache->BuildDescriptorsCache(descriptorAllocator,
-                                                  vk::ShaderStageFlagBits::eVertex |
+            probesGenCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex |
                                                   vk::ShaderStageFlagBits::eFragment);
 
 
@@ -256,8 +254,7 @@ namespace Rendering
                                                   shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv", S_FRAG);
             outputCache->AddShaderInfo(vertShader->sParser.get());
             outputCache->AddShaderInfo(fragShader->sParser.get());
-            outputCache->BuildDescriptorsCache(descriptorAllocator,
-                                               vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+            outputCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
             AttachmentInfo outputColInfo = GetColorAttachmentInfo(
                 glm::vec4(0.0f), core->swapchainRef->GetFormat());
@@ -299,8 +296,7 @@ namespace Rendering
                                                   shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
             mergeCascadesCache->AddShaderInfo(mergeVertShader->sParser.get());
             mergeCascadesCache->AddShaderInfo(mergeFragShader->sParser.get());
-            mergeCascadesCache->BuildDescriptorsCache(descriptorAllocator,
-                                               vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+            mergeCascadesCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
             auto mergeLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
                                     .setSetLayoutCount(1)
@@ -341,8 +337,7 @@ namespace Rendering
                                                   shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv", S_FRAG);
             cascadesResultCache->AddShaderInfo(resultVertShader->sParser.get());
             cascadesResultCache->AddShaderInfo(resultFragShader->sParser.get());
-            cascadesResultCache->BuildDescriptorsCache(descriptorAllocator,
-                                               vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+            cascadesResultCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
             auto resultLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
                                     .setSetLayoutCount(1)
@@ -590,7 +585,6 @@ namespace Rendering
         Core* core;
         RenderGraph* renderGraph;
         WindowProvider* windowProvider;
-        DescriptorAllocator* descriptorAllocator;
 
         std::string paintingPassName = "PaintingPass";
         std::string rCascadesPassName = "rCascadesPass";

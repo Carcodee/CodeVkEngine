@@ -3,19 +3,6 @@
 //
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -28,28 +15,30 @@ namespace ENGINE
         BufferUsageTypes dstUsage;
         Buffer* buffer;
     };
+
     struct RenderNodeConfigs
     {
         bool AutomaticCache = false;
     };
 
     class RenderGraph;
+
     struct RenderGraphNode
     {
-
-        RenderGraphNode(){
+        RenderGraphNode()
+        {
         }
 
         void RecreateResources()
         {
-             assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
+            assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
             pipeline.reset();
             pipelineLayout.reset();
             ReloadShaders();
             Shader* vertShader = shaders.at("vert");
             Shader* fragShader = shaders.at("frag");
             Shader* compShader = shaders.at("comp");
-            
+
             if (fragShader && vertShader)
             {
                 if (configs.AutomaticCache)
@@ -57,9 +46,8 @@ namespace ENGINE
                     descCache = std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(vertShader->sParser.get());
                     descCache->AddShaderInfo(fragShader->sParser.get());
-                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
-                                                     vk::ShaderStageFlagBits::eFragment |
-                                                     vk::ShaderStageFlagBits::eVertex);
+                    descCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eFragment |
+                        vk::ShaderStageFlagBits::eVertex);
                     if (pushConstantSize != 0)
                     {
                         auto paintingPushConstantRanges = vk::PushConstantRange()
@@ -73,10 +61,10 @@ namespace ENGINE
                                                         .setPushConstantRanges(paintingPushConstantRanges)
                                                         .setPSetLayouts(&descCache->dstLayout.get());
                         SetPipelineLayoutCI(paintingLayoutCreateInfo);
-                    }                   
+                    }
                 }
 
-                
+
                 std::vector<vk::Format> colorFormats;
                 colorFormats.reserve(colAttachments.size());
                 std::vector<vk::RenderingAttachmentInfo> renderingAttachmentInfos;
@@ -98,15 +86,15 @@ namespace ENGINE
                 pipeline = std::move(graphicsPipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eGraphics;
                 std::cout << "Graphics pipeline created\n";
-                
-            }else if(compShader)
+            }
+            else if (compShader)
             {
                 if (configs.AutomaticCache)
                 {
                     descCache = std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(compShader->sParser.get());
-                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
-                                                     vk::ShaderStageFlagBits::eCompute);
+                    descCache->BuildDescriptorsCache(
+                        vk::ShaderStageFlagBits::eCompute);
                     if (pushConstantSize != 0)
                     {
                         auto paintingPushConstantRanges = vk::PushConstantRange()
@@ -129,23 +117,24 @@ namespace ENGINE
                 pipeline = std::move(computePipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eCompute;
                 std::cout << "Compute pipeline created\n";
-            }else
+            }
+            else
             {
                 std::cout << "Not viable shader configuration set\n";
             }
-                       
         }
+
         void BuildRenderGraphNode()
         {
             assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
 
             auto pipelineCacheCreateInfo = vk::PipelineCacheCreateInfo();
             pipelineCache = core->logicalDevice->createPipelineCacheUnique(pipelineCacheCreateInfo);
-            
+
             Shader* vertShader = shaders.at("vert");
             Shader* fragShader = shaders.at("frag");
             Shader* compShader = shaders.at("comp");
-            
+
             if (fragShader && vertShader)
             {
                 if (configs.AutomaticCache)
@@ -154,9 +143,9 @@ namespace ENGINE
                     descCache = std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(vertShader->sParser.get());
                     descCache->AddShaderInfo(fragShader->sParser.get());
-                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
-                                                     vk::ShaderStageFlagBits::eFragment |
-                                                     vk::ShaderStageFlagBits::eVertex);
+                    descCache->BuildDescriptorsCache(
+                        vk::ShaderStageFlagBits::eFragment |
+                        vk::ShaderStageFlagBits::eVertex);
 
                     if (pushConstantSize != 0)
                     {
@@ -183,29 +172,29 @@ namespace ENGINE
                     renderingAttachmentInfos.push_back(colAttachment.attachmentInfo);
                 }
                 dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
-            
+
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-               
+
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
                     core->logicalDevice.get(), vertShader->sModule->shaderModuleHandle.get(),
                     fragShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
-                    dynamicRenderPass.pipelineRenderingCreateInfo,rasterizationConfigs,
+                    dynamicRenderPass.pipelineRenderingCreateInfo, rasterizationConfigs,
                     colorBlendConfigs, depthConfig,
                     vertexInput, pipelineCache.get()
                 );
                 pipeline = std::move(graphicsPipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eGraphics;
                 std::cout << "Graphics pipeline created\n";
-                
-            }else if(compShader)
+            }
+            else if (compShader)
             {
                 if (configs.AutomaticCache)
                 {
                     descCache.reset();
                     descCache = std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(compShader->sParser.get());
-                    descCache->BuildDescriptorsCache(ResourcesManager::GetInstance()->descriptorAllocator.get(),
-                                                     vk::ShaderStageFlagBits::eCompute);
+                    descCache->BuildDescriptorsCache(
+                        vk::ShaderStageFlagBits::eCompute);
                     if (pushConstantSize != 0)
                     {
                         auto paintingPushConstantRanges = vk::PushConstantRange()
@@ -222,17 +211,18 @@ namespace ENGINE
                 }
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
                 std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
-                    core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(), 
+                    core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
                     pipelineCache.get());
                 pipeline = std::move(computePipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eCompute;
                 std::cout << "Compute pipeline created\n";
-            }else
+            }
+            else
             {
                 std::cout << "No compute or graphics shaders were set\n";
             }
-            
         }
+
         void TransitionImages(vk::CommandBuffer commandBuffer)
         {
             for (auto& storageImage : storageImages)
@@ -276,8 +266,9 @@ namespace ENGINE
                 // }
                 TransitionImage(sampler.second->imageData, dstPattern, sampler.second->GetSubresourceRange(),
                                 commandBuffer);
-            }           
+            }
         }
+
         void SyncBuffers(vk::CommandBuffer commandBuffer)
         {
             for (auto& pair : buffers)
@@ -288,9 +279,9 @@ namespace ENGINE
                 CreateMemBarrier(srcPattern, dstPattern, commandBuffer);
             }
         }
+
         void ReloadShaders()
         {
-            
             Shader* vertShader = shaders.at("vert");
             Shader* fragShader = shaders.at("frag");
             Shader* compShader = shaders.at("comp");
@@ -298,16 +289,17 @@ namespace ENGINE
             {
                 vertShader->Reload();
                 fragShader->Reload();
-            }else if(compShader)
+            }
+            else if (compShader)
             {
                 compShader->Reload();
             }
         }
+
         void ExecutePass(vk::CommandBuffer commandBuffer)
         {
- 
             dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
-            commandBuffer.setViewport(0,1,&dynamicRenderPass.viewport);
+            commandBuffer.setViewport(0, 1, &dynamicRenderPass.viewport);
             commandBuffer.setScissor(0, 1, &dynamicRenderPass.scissor);
 
             assert(imagesAttachment.size()== colAttachments.size()&& "Not all color attachments were set");
@@ -318,7 +310,8 @@ namespace ENGINE
             {
                 if (IsImageTransitionNeeded(imagePair.second->imageData->currentLayout, COLOR_ATTACHMENT))
                 {
-                    TransitionImage(imagePair.second->imageData, COLOR_ATTACHMENT, imagePair.second->GetSubresourceRange(), commandBuffer);
+                    TransitionImage(imagePair.second->imageData, COLOR_ATTACHMENT,
+                                    imagePair.second->GetSubresourceRange(), commandBuffer);
                 }
                 colAttachments[index].attachmentInfo.setImageView(imagePair.second->imageView.get());
                 attachmentInfos.push_back(colAttachments[index].attachmentInfo);
@@ -343,8 +336,9 @@ namespace ENGINE
             commandBuffer.bindPipeline(pipelineType, pipeline.get());
             commandBuffer.beginRendering(dynamicRenderPass.renderInfo);
             (*renderOperations)(commandBuffer);
-            commandBuffer.endRendering();           
+            commandBuffer.endRendering();
         }
+
         void ExecuteCompute(vk::CommandBuffer commandBuffer)
         {
             TransitionImages(commandBuffer);
@@ -357,7 +351,7 @@ namespace ENGINE
         {
             for (int i = 0; i < tasks.size(); ++i)
             {
-                if (tasks[i]!= nullptr)
+                if (tasks[i] != nullptr)
                 {
                     (*tasks[i])();
                 }
@@ -379,20 +373,23 @@ namespace ENGINE
         void SetVertexInput(VertexInput vertexInput)
         {
             this->vertexInput = vertexInput;
-            
         }
+
         void SetFramebufferSize(glm::uvec2 size)
         {
             this->frameBufferSize = size;
         }
+
         void SetRenderOperation(std::function<void(vk::CommandBuffer& commandBuffer)>* renderOperations)
         {
-            this->renderOperations =renderOperations;
+            this->renderOperations = renderOperations;
         }
+
         void AddTask(std::function<void()>* task)
         {
             this->tasks.push_back(task);
         }
+
         void SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
         {
             this->pipelineLayoutCI = createInfo;
@@ -404,6 +401,7 @@ namespace ENGINE
                 this->pipelineLayoutCI.setPushConstantRanges(this->pushConstantRange);
             }
         }
+
         void SetPushConstantSize(size_t size)
         {
             pushConstantSize = size;
@@ -413,10 +411,12 @@ namespace ENGINE
         {
             this->rasterizationConfigs = rasterizationConfigs;
         }
+
         void SetDepthConfig(DepthConfigs dephtConfig)
         {
             this->depthConfig = dephtConfig;
         }
+
         void AddColorBlendConfig(BlendConfigs blendConfig)
         {
             this->colorBlendConfigs.push_back(blendConfig);
@@ -426,10 +426,12 @@ namespace ENGINE
         {
             shaders.at("vert") = shader;
         }
+
         void SetFragShader(Shader* shader)
         {
             shaders.at("frag") = shader;
         }
+
         void SetCompShader(Shader* shader)
         {
             shaders.at("comp") = shader;
@@ -439,7 +441,7 @@ namespace ENGINE
         {
             if (shadersProxyRef->contains(path))
             {
-                shaders.at("vert")= shadersProxyRef->at(path).get();
+                shaders.at("vert") = shadersProxyRef->at(path).get();
             }
         }
 
@@ -447,7 +449,7 @@ namespace ENGINE
         {
             if (shadersProxyRef->contains(path))
             {
-                shaders.at("frag")= shadersProxyRef->at(path).get();
+                shaders.at("frag") = shadersProxyRef->at(path).get();
             }
         }
 
@@ -455,10 +457,9 @@ namespace ENGINE
         {
             if (shadersProxyRef->contains(path))
             {
-                shaders.at("comp")= shadersProxyRef->at(path).get();
+                shaders.at("comp") = shadersProxyRef->at(path).get();
             }
         }
-        
 
 
         void AddColorAttachmentInput(std::string name)
@@ -466,12 +467,13 @@ namespace ENGINE
             if (outColAttachmentsProxyRef->contains(name))
             {
                 colAttachments.push_back(outColAttachmentsProxyRef->at(name));
-            }else
-            {
-                std::cout << "Attachment input: " << "\""<< name << "\"" << " does not exist";
             }
-            
+            else
+            {
+                std::cout << "Attachment input: " << "\"" << name << "\"" << " does not exist";
+            }
         }
+
         void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo)
         {
             if (!outColAttachmentsProxyRef->contains(name))
@@ -483,7 +485,6 @@ namespace ENGINE
             {
                 std::cout << "Attachment: " << "\"" << name << "\"" << " already exist";
             }
-            
         }
 
         void SetDepthAttachmentInput(std::string name)
@@ -491,12 +492,13 @@ namespace ENGINE
             if (outDepthAttachmentProxyRef->contains(name))
             {
                 depthAttachment = outDepthAttachmentProxyRef->at(name);
-            }else
-            {
-                std::cout << "Attachment input: " << "\""<< name << "\"" << " does not exist";
             }
-            
+            else
+            {
+                std::cout << "Attachment input: " << "\"" << name << "\"" << " does not exist";
+            }
         }
+
         void SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
         {
             if (!outDepthAttachmentProxyRef->contains(name))
@@ -509,16 +511,18 @@ namespace ENGINE
                 std::cout << "Attachment: " << "\"" << name << "\"" << " already exist";
             }
         }
-        
+
         void SetDepthImageResource(std::string name, ImageView* imageView)
         {
             depthImage = imageView;
             AddImageToProxy(name, imageView);
         }
+
         void ActivateNode(bool value)
         {
             this->active = value;
         }
+
         //We change the image view if the name already exist when using resources
         void AddColorImageResource(std::string name, ImageView* imageView)
         {
@@ -529,7 +533,7 @@ namespace ENGINE
             }
             else
             {
-                imagesAttachment.at(name)= imageView;
+                imagesAttachment.at(name) = imageView;
             }
             AddImageToProxy(name, imageView);
         }
@@ -543,7 +547,7 @@ namespace ENGINE
             }
             else
             {
-                sampledImages.at(name)= imageView;
+                sampledImages.at(name) = imageView;
             }
             AddImageToProxy(name, imageView);
         }
@@ -574,18 +578,20 @@ namespace ENGINE
             }
             AddBufferToProxy(name, buffer);
         }
+
         void DependsOn(std::string dependency)
         {
             if (!dependencies.contains(dependency))
             {
                 dependencies.insert(dependency);
-            }else
+            }
+            else
             {
-                std::cout << "Renderpass \""<<this->passName<<" Already depends on \"" <<dependency <<"\" \n";
+                std::cout << "Renderpass \"" << this->passName << " Already depends on \"" << dependency << "\" \n";
             }
         }
 
-         void ClearOperations()
+        void ClearOperations()
         {
             delete renderOperations;
             for (auto& task : tasks)
@@ -595,31 +601,36 @@ namespace ENGINE
             renderOperations = nullptr;
             tasks.clear();
         }
+
         void AddImageToProxy(std::string name, ImageView* imageView)
         {
             if (!imagesProxyRef->contains(name))
             {
                 imagesProxyRef->try_emplace(name, imageView);
-            }else
+            }
+            else
             {
-                imagesProxyRef->at(name)= imageView;
+                imagesProxyRef->at(name) = imageView;
             }
         }
+
         void AddBufferToProxy(std::string name, BufferKey buffer)
         {
             if (!bufferProxyRef->contains(name))
             {
                 bufferProxyRef->try_emplace(name, buffer);
-            }else
+            }
+            else
             {
-                bufferProxyRef->at(name)= buffer;
+                bufferProxyRef->at(name) = buffer;
             }
         }
+
         void SetConfigs(RenderNodeConfigs configs)
         {
             this->configs = configs;
         }
-        
+
         vk::UniquePipeline pipeline;
         vk::UniquePipelineLayout pipelineLayout;
         vk::UniquePipelineCache pipelineCache;
@@ -630,9 +641,8 @@ namespace ENGINE
         std::unique_ptr<DescriptorCache> descCache;
         std::string passName;
         bool active = true;
-        
+
     private:
-        
         friend class RenderGraph;
 
         RenderNodeConfigs configs;
@@ -642,22 +652,22 @@ namespace ENGINE
         VertexInput vertexInput;
         glm::uvec2 frameBufferSize;
         size_t pushConstantSize = 0;
-        
+
         std::vector<AttachmentInfo> colAttachments;
         AttachmentInfo depthAttachment;
         ImageView* depthImage = nullptr;
         std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
-        
+
         std::unordered_map<std::string, ImageView*> imagesAttachment;
         std::unordered_map<std::string, ImageView*> storageImages;
         std::unordered_map<std::string, ImageView*> sampledImages;
         std::unordered_map<std::string, BufferKey> buffers;
-        
+
         std::function<void(vk::CommandBuffer& commandBuffer)>* renderOperations = nullptr;
         std::vector<std::function<void()>*> tasks;
 
         std::set<std::string> dependencies;
-        
+
         Core* core;
         std::unordered_map<std::string, ImageView*>* imagesProxyRef;
         std::unordered_map<std::string, BufferKey>* bufferProxyRef;
@@ -666,7 +676,6 @@ namespace ENGINE
         std::unordered_map<std::string, std::unique_ptr<Shader>>* shadersProxyRef;
         //unused
         std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descriptorsCachesRef;
-        
     };
 
 
@@ -681,24 +690,26 @@ namespace ENGINE
         std::unordered_map<std::string, AttachmentInfo> outDepthAttachmentProxy;
         std::unordered_map<std::string, std::unique_ptr<Shader>> shadersProxy;
         std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
-        
+
         Core* core;
+
         RenderGraph(Core* core)
         {
             this->core = core;
         }
+
         ~RenderGraph()
         {
-            
         };
 
-        
+
         RenderGraphNode* GetNode(std::string name)
         {
             if (renderNodes.contains(name))
             {
                 return renderNodes.at(name).get();
-            }else
+            }
+            else
             {
                 PrintInvalidResource("Renderpass", name);
                 return nullptr;
@@ -717,28 +728,32 @@ namespace ENGINE
                 renderGraphNode->bufferProxyRef = &buffersProxy;
                 renderGraphNode->shadersProxyRef = &shadersProxy;
                 renderGraphNode->core = core;
-                
-                renderNodes.try_emplace(name,std::move(renderGraphNode));
+
+                renderNodes.try_emplace(name, std::move(renderGraphNode));
                 renderNodesSorted.push_back(renderNodes.at(name).get());
                 return renderNodes.at(name).get();
-            }else
+            }
+            else
             {
                 return nullptr;
             }
         }
 
 
-        DescriptorCache* AddDescCache(std::string name){
+        DescriptorCache* AddDescCache(std::string name)
+        {
             if (descCachesProxy.contains(name))
             {
                 return descCachesProxy.at(name).get();
-            }else
+            }
+            else
             {
                 descCachesProxy.try_emplace(name, std::make_unique<DescriptorCache>(core));
                 return descCachesProxy.at(name).get();
             }
         }
-        ImageView* AddColorImageResource(std::string passName,std::string name, ImageView* imageView)
+
+        ImageView* AddColorImageResource(std::string passName, std::string name, ImageView* imageView)
         {
             assert(imageView && "ImageView is null");
             if (!imagesProxy.contains(name))
@@ -752,13 +767,15 @@ namespace ENGINE
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
-            }else
+            }
+            else
             {
                 imagesProxy.at(name) = imageView;
                 if (renderNodes.contains(passName))
                 {
                     renderNodes.at(passName)->AddColorImageResource(name, imageView);
-                }else
+                }
+                else
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
@@ -775,19 +792,21 @@ namespace ENGINE
                 imagesProxy.try_emplace(name, imageView);
                 if (renderNodes.contains(passName))
                 {
-                    renderNodes.at(passName)->SetDepthImageResource(name ,imageView);
+                    renderNodes.at(passName)->SetDepthImageResource(name, imageView);
                 }
                 else
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
-            }else
+            }
+            else
             {
                 imagesProxy.at(name) = imageView;
                 if (renderNodes.contains(passName))
                 {
-                    renderNodes.at(passName)->SetDepthImageResource(name ,imageView);
-                }else
+                    renderNodes.at(passName)->SetDepthImageResource(name, imageView);
+                }
+                else
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
@@ -795,7 +814,8 @@ namespace ENGINE
             }
             return imageView;
         }
-        ImageView* AddSamplerResource(std::string passName,std::string name, ImageView* imageView)
+
+        ImageView* AddSamplerResource(std::string passName, std::string name, ImageView* imageView)
         {
             assert(imageView && "ImageView is null");
             if (!imagesProxy.contains(name))
@@ -809,13 +829,15 @@ namespace ENGINE
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
-            }else
+            }
+            else
             {
                 imagesProxy.at(name) = imageView;
                 if (renderNodes.contains(passName))
                 {
                     renderNodes.at(passName)->AddSamplerResource(name, imageView);
-                }else
+                }
+                else
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
@@ -838,13 +860,15 @@ namespace ENGINE
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
-            }else
+            }
+            else
             {
                 imagesProxy.at(name) = imageView;
                 if (renderNodes.contains(passName))
                 {
                     renderNodes.at(passName)->AddStorageResource(name, imageView);
-                }else
+                }
+                else
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
@@ -852,6 +876,7 @@ namespace ENGINE
             }
             return imageView;
         }
+
         BufferKey& AddBufferSync(std::string passName, std::string name, BufferKey buffer)
         {
             assert(buffer.buffer && "ImageView is null");
@@ -866,13 +891,15 @@ namespace ENGINE
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
-            }else
+            }
+            else
             {
                 buffersProxy.at(name) = buffer;
                 if (renderNodes.contains(passName))
                 {
                     renderNodes.at(passName)->AddBufferSync(name, buffer);
-                }else
+                }
+                else
                 {
                     std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
                 }
@@ -890,6 +917,7 @@ namespace ENGINE
             PrintInvalidResource("Resource", name);
             return nullptr;
         }
+
         BufferKey& GetBufferResource(std::string name)
         {
             if (buffersProxy.contains(name))
@@ -899,6 +927,7 @@ namespace ENGINE
             PrintInvalidResource("Resource", name);
             assert(false && "Invalid name requested");
         }
+
         void RecreateFrameResources()
         {
             for (auto& renderNode : renderNodes)
@@ -906,6 +935,7 @@ namespace ENGINE
                 renderNode.second->ClearOperations();
             }
         }
+
         void RecompileShaders()
         {
             for (auto& node : renderNodes)
@@ -913,9 +943,11 @@ namespace ENGINE
                 node.second->RecreateResources();
             }
         }
+
         void DebugShadersCompilation()
         {
-            int result = std::system("C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\shaders\\compile.bat");
+            int result = std::system(
+                "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\shaders\\compile.bat");
             if (result == 0)
             {
                 std::cout << "Shaders compiled\n";
@@ -933,9 +965,10 @@ namespace ENGINE
             int idx = 0;
             for (auto& renderNode : renderNodesSorted)
             {
-                if (!renderNode->active){continue;}
-                
-                Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
+                if (!renderNode->active) { continue; }
+
+                Profiler::GetInstance()->
+                    AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
                 RenderGraphNode* node = renderNode;
                 bool dependancyNeed = false;
                 std::string dependancyName = "";
@@ -950,7 +983,9 @@ namespace ENGINE
                 if (dependancyNeed)
                 {
                     RenderGraphNode* dependancyNode = renderNodes.at(dependancyName).get();
-                    if (!dependancyNode->active){}
+                    if (!dependancyNode->active)
+                    {
+                    }
                     BufferUsageTypes lastNodeType = (dependancyNode->pipelineType == vk::PipelineBindPoint::eGraphics)
                                                         ? B_GRAPHICS_WRITE
                                                         : B_COMPUTE_WRITE;
@@ -965,7 +1000,6 @@ namespace ENGINE
                 Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
                 allPassesNames.push_back(node->passName);
                 idx++;
-                
             }
         }
     };
