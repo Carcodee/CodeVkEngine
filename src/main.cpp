@@ -10,6 +10,7 @@
 
 
 
+
 double deltaTime;
 double previousTime;
 
@@ -128,10 +129,12 @@ void run(WindowProvider* windowProvider)
                 profiler->AddProfilerCpuSpot(legit::Colors::sunFlower,"Cpu");
                 if (glfwGetKey(windowProvider->window, GLFW_KEY_R))
                 {
-                    renderGraph->RecompileShaders();
                     // clusterRenderer->ReloadShaders();
-                    debugRenderer->ReloadShaders();
-                    flatRenderer->ReloadShaders();
+                    renderGraph->RecompileShaders();
+                }
+                if (glfwGetKey(windowProvider->window, GLFW_KEY_LEFT_CONTROL) && glfwGetKey(windowProvider->window, GLFW_KEY_R))
+                {
+                    renderGraph->DebugShadersCompilation();
                 }
 
                 renderingResManager->UpdateResources();

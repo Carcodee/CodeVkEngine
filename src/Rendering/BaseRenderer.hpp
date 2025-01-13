@@ -13,6 +13,7 @@ namespace Rendering
         virtual ~BaseRenderer() = default;
         virtual void RecreateSwapChainResources() = 0;
         virtual void SetRenderOperation(ENGINE::InFlightQueue* inflightQueue) = 0;
+        //maybe remove this
         virtual void ReloadShaders() = 0;
     };
 }
