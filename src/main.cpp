@@ -174,8 +174,8 @@ void run(WindowProvider* windowProvider)
         profiler->UpdateProfiler();
         
     }
-    ENGINE::ResourcesManager::GetInstance()->DestroyResources();
     imguiRenderer->Destroy();
+    ENGINE::ResourcesManager::GetInstance()->DestroyResources();
     windowProvider->DestroyWindow();
 }
 

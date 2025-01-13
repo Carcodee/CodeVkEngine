@@ -393,7 +393,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
-                                                     &renderNode->descCache->dstSet.get(), 0, nullptr);
+                                                     &renderNode->descCache->dstSet, 0, nullptr);
                     commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
                     commandBuffer.dispatch(paintingPc.radius, paintingPc.radius, 1);
                     
@@ -420,7 +420,7 @@ namespace Rendering
                         commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                          renderNode->pipelineLayout.get(), 0,
                                                          1,
-                                                         &probesGenCache->dstSet.get(), 0, nullptr);
+                                                         &probesGenCache->dstSet, 0, nullptr);
 
                         commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
                                                     vk::ShaderStageFlagBits::eVertex |
@@ -464,7 +464,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
-                                                     &outputCache->dstSet.get(), 0, nullptr);
+                                                     &outputCache->dstSet, 0, nullptr);
                     vk::DeviceSize offset = 0;
                     commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                     commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
@@ -505,7 +505,7 @@ namespace Rendering
                         commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                          renderNode->pipelineLayout.get(), 0,
                                                          1,
-                                                         &mergeCascadesCache->dstSet.get(), 0, nullptr);
+                                                         &mergeCascadesCache->dstSet, 0, nullptr);
                         vk::DeviceSize offset = 0;
                         commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                         commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
@@ -547,7 +547,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
-                                                     &cascadesResultCache->dstSet.get(), 0, nullptr);
+                                                     &cascadesResultCache->dstSet, 0, nullptr);
                     vk::DeviceSize offset = 0;
                     commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                     commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);

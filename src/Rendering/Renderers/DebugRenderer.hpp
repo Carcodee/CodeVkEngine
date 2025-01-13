@@ -6,6 +6,7 @@
 
 
 
+
 #ifndef DEBUGRENDERER_HPP
 #define DEBUGRENDERER_HPP
 namespace Rendering{
@@ -124,7 +125,7 @@ namespace Rendering{
                         commandBuffer.bindDescriptorSets(node->pipelineType,
                                                          node->pipelineLayout.get(), 0,
                                                          1,
-                                                         &mDebuggerCache->dstSet.get(), 0, nullptr);
+                                                         &mDebuggerCache->dstSet, 0, nullptr);
 
                         commandBuffer.bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
 

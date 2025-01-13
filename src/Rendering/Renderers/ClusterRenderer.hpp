@@ -83,7 +83,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
-                                                     &cullMeshesCache->dstSet.get(), 0, nullptr);
+                                                     &cullMeshesCache->dstSet, 0, nullptr);
                     commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
                     commandBuffer.dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
 
@@ -132,7 +132,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
-                                                     &computeDescCache->dstSet.get(), 0, nullptr);
+                                                     &computeDescCache->dstSet, 0, nullptr);
                     commandBuffer.pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eCompute,
                                                 0, sizeof(ScreenDataPc), &cullDataPc);
@@ -187,7 +187,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderGraphRef->GetNode(gBufferPassName)->pipelineType,
                                                      renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(), 0,
                                                      1,
-                                                     &gBuffDescCache->dstSet.get(), 0, nullptr);
+                                                     &gBuffDescCache->dstSet, 0, nullptr);
 
 
                     pc.projView = camera.matrices.perspective * camera.matrices.view;
@@ -248,7 +248,7 @@ namespace Rendering
                     commandBuffer.bindDescriptorSets(renderGraphRef->GetNode(lightPassName)->pipelineType,
                                                      renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
                                                      0, 1,
-                                                     &lightDecCache->dstSet.get(), 0, nullptr);
+                                                     &lightDecCache->dstSet, 0, nullptr);
                     commandBuffer.bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
                     commandBuffer.bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 

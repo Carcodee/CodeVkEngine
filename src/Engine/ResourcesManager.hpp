@@ -450,6 +450,11 @@ namespace ENGINE
             }
             storageImagesToClear.push_back(name);
         }
+        vk::DescriptorSet AllocateDset(vk::DescriptorSetLayout dstSetLayout)
+        {
+            dsets.emplace_back(descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout));
+            return dsets.back().get();
+        }
 
         static ResourcesManager* GetInstance(Core* coreRef = nullptr)
         {
@@ -501,6 +506,8 @@ namespace ENGINE
         std::vector<std::string> storageImagesToClear;
         std::unique_ptr<SamplerPool> samplerPool;
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
+        std::vector<vk::UniqueDescriptorSet> dsets;
+        
         std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {
             {vk::DescriptorType::eSampler, 1.5f},
             {vk::DescriptorType::eStorageBuffer, 1.5f},

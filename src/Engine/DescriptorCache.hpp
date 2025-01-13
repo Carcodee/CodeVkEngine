@@ -139,8 +139,7 @@ namespace ENGINE
 
             dstLayout = dstSetBuilder.BuildBindings(core->logicalDevice.get(), stageFlags, &bindingsFlagsCreateInfo, vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPoolEXT);
 
-            dstSet = descriptorAllocatorRef->Allocate(core->logicalDevice.get(), dstLayout.get());
-
+            dstSet = resourcesManagerRef->AllocateDset(dstLayout.get());
             for (auto& buffBinding : bufferBindingsKeys)
             {
                 Buffer* buffer = buffersResources.at(buffBinding.second.binding);
@@ -180,7 +179,7 @@ namespace ENGINE
                 }
 
             }
-            writerBuilder.UpdateSet(core->logicalDevice.get(), dstSet.get());
+            writerBuilder.UpdateSet(core->logicalDevice.get(), dstSet);
         }
 
         void UpdateDescriptor()
@@ -223,7 +222,7 @@ namespace ENGINE
                 }
                 
             }
-            writerBuilder.UpdateSet(core->logicalDevice.get(), dstSet.get());
+            writerBuilder.UpdateSet(core->logicalDevice.get(), dstSet);
         }
         template<typename T>
         void SetBuffer(std::string name, std::vector<T>& bufferData)
@@ -536,7 +535,7 @@ namespace ENGINE
         
         DescriptorWriterBuilder writerBuilder;
         vk::UniqueDescriptorSetLayout dstLayout;
-        vk::UniqueDescriptorSet dstSet;
+        vk::DescriptorSet dstSet;
         
         DescriptorLayoutBuilder dstSetBuilder;
         vk::DescriptorSetLayout* dstSetLayoutHandle;

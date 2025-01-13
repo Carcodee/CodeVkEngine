@@ -156,7 +156,7 @@ namespace Rendering
                     vk::DeviceSize offset = 0;
                     commandBuffer.bindDescriptorSets(renderGraphRef->GetNode(forwardPassName)->pipelineType,
                                                      renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(), 0, 1,
-                                                     &descriptorCache->dstSet.get(), 0 , nullptr);
+                                                     &descriptorCache->dstSet, 0 , nullptr);
 
                     commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
                     commandBuffer.bindIndexBuffer(indexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
