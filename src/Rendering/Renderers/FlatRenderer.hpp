@@ -176,7 +176,7 @@ namespace Rendering
                                                        // shaderPath + "\\spirvGlsl\\Compute\\paintingGen.comp.spv");
             
             paintCompShader = std::make_unique<Shader>(logicalDevice,
-                                                       shaderPath + "\\spirvSlang\\test\\paintingGen.slang_CS.spv", S_COMP);
+                                                       shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
 
             // paintingCache->AddShaderInfo(paintCompShader.get()->sParser.get());
             // paintingCache->BuildDescriptorsCache(descriptorAllocator,

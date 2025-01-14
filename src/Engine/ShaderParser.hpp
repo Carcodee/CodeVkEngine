@@ -256,13 +256,10 @@ set "errorfound=")";
             {
             case S_VERT:
                 return vk::ShaderStageFlagBits::eVertex;
-                break;
             case S_FRAG:
                 return vk::ShaderStageFlagBits::eFragment;
-                break;
             case S_COMP:
                 return vk::ShaderStageFlagBits::eCompute;
-                break;
             case S_UNKNOWN:
                 assert(false&& "not valid stage");
                 break;
@@ -392,32 +389,52 @@ set "errorfound=")";
                 assert((std::filesystem::exists(shaderPath) && shaderPath != filePath) && "invalid shader path");
                 this->path = shaderPath.string();
                 this->spirvPath = path;
-                
             }
-                
-            // }else
-            // {
-            //     std::filesystem::path spirvPath;
-            //     if (filePath.extension() == ".slang" || filePath.extension() == ".frag" || filePath.extension() == ".vert" || filePath.extension() == ".comp")
-            //     {
-            //         for (auto& dirsParts : filePath)
-            //         {
-            //             if (dirsParts.c_str() == L"slang")
-            //             {
-            //                 spirvPath /= "spirvSlang";
-            //             }else if(dirsParts.c_str() == L"glsl")
-            //             {
-            //                 spirvPath /= "spirvGlsl";
-            //             }else 
-            //             {
-            //                 spirvPath /= dirsParts;
-            //             }
-            //         }
-            //     }
-            //     assert(spirvPath.c_str() == filePath && "invalid shader path");
-            //     this->spirvPath = spirvPath.string();
-            //     this->path = path;
-            // }
+            else if(filePath.extension() == ".slang" || filePath.extension() == ".frag" || filePath.extension() == ".vert" || filePath.extension() == ".comp")
+            {
+
+                std::filesystem::path spirvPath;
+                for (auto& dirsParts : filePath)
+                {
+                    if (dirsParts.string() == "slang")
+                    {
+                        spirvPath /= "spirvSlang";
+                    }
+                    else if (dirsParts.string() == "glsl")
+                    {
+                        spirvPath /= "spirvGlsl";
+                    }
+                    else if(dirsParts.extension() == ".slang")
+                    {
+                        int firstDotPos = dirsParts.string().find_first_of('.');
+                        std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
+                        std::string extension = ".slang";
+                        switch (stage)
+                        {
+                        case S_VERT:
+                            extension += "_VS.spv";
+                            break;
+                        case S_FRAG:
+                            extension += "_FS.spv";
+                            break;
+                        case S_COMP:
+                            extension += "_CS.spv";
+                            break;
+                        case S_UNKNOWN:
+                            assert(false && "invalid stage");
+                            break;
+                        }
+                        spirvPath /= fileNameNoExt + extension;
+                    }
+                    else{
+                        
+                        spirvPath /= dirsParts;
+                    }
+                }
+                assert((std::filesystem::exists(spirvPath) && spirvPath != filePath) && "invalid shader path");
+                this->spirvPath = spirvPath.string();
+                this->path = path;
+            }
             
             
             
