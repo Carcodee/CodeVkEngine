@@ -5,6 +5,7 @@
 
 
 
+
 #ifndef SHADERPARSER_HPP
 #define SHADERPARSER_HPP
 
@@ -95,11 +96,18 @@ namespace ENGINE
 setlocal EnableExtensions EnableDelayedExpansion
 set CompilerExe="%VULKAN_SDK%\Bin\glslangValidator.exe"
 set OptimizerConfig="OptimizerConfig.cfg"
-set "errorfound=")";
+set "errorfound="
+        )";
 
         command += "%CompilerExe% -V \"" + path + "\" -l --target-env vulkan1.2 -o \"" + outFile +
                    "\" || set \"errorfound=1\"\n";
-        
+
+        command += R"(if defined errorfound (
+        echo.
+        echo Errors were found during compilation.
+        pause
+)
+)";
         SYSTEMS::OS::WriteFile(tempFilePath, command.c_str(), command.size());
 
         int result = std::system(tempFilePath.c_str());
@@ -285,9 +293,15 @@ set "errorfound=")";
             std::vector<uint32_t> byteCode = GetByteCode(spirvPath);
             sParser = std::make_unique<ShaderParser>(byteCode);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
+            shaderFileInfo = std::make_unique<SYSTEMS::FileInfo>(this->path);
         }
         void Reload()
         {
+            shaderFileInfo->CheckLastTimeWrite();
+            if (!shaderFileInfo->modified)
+            {
+                return;
+            }
             std::string code = SYSTEMS::OS::ReadFile(path);
             std::vector<uint32_t> byteCode;
             if (std::filesystem::path(path).extension() == ".slang")
@@ -331,6 +345,7 @@ set "errorfound=")";
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
             SYSTEMS::Logger::GetInstance()->LogMessage("Shader compiled: "+ path);
             SYSTEMS::Logger::GetInstance()->LogMessage("SPIRV: "+ spirvPath);
+            shaderFileInfo->FlushModification();
         }
 
         void HandlePathReceived(const std::string& path)
@@ -436,8 +451,6 @@ set "errorfound=")";
                 this->path = path;
             }
             
-            
-            
         }
         
         std::unique_ptr<ShaderParser> sParser;
@@ -447,6 +460,7 @@ set "errorfound=")";
         //spirv path
         std::string path;
         std::string spirvPath;
+        std::unique_ptr<SYSTEMS::FileInfo> shaderFileInfo;
         
         
     };

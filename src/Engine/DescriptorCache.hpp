@@ -4,6 +4,8 @@
 
 
 
+
+
 // Created by carlo on 2024-11-19.
 //
 
@@ -45,7 +47,10 @@ namespace ENGINE
             this->defaultSampler = resourcesManagerRef->shipperSampler;
             this->defaultStorageImageView = resourcesManagerRef->GetStorageFromName("default_storage");
             this->defaultStorageSampler = resourcesManagerRef->shipperSampler;
-            
+        }
+        ~DescriptorCache()
+        {
+            resourcesManagerRef->DeallocateDset(dsetsInfo.id);
         }
         void UpdateWatcher() override
         {
@@ -139,7 +144,8 @@ namespace ENGINE
 
             dstLayout = dstSetBuilder.BuildBindings(core->logicalDevice.get(), stageFlags, &bindingsFlagsCreateInfo, vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPoolEXT);
 
-            dstSet = resourcesManagerRef->AllocateDset(dstLayout.get());
+            dsetsInfo = resourcesManagerRef->AllocateDset(dstLayout.get());
+            dstSet = dsetsInfo.dset;
             for (auto& buffBinding : bufferBindingsKeys)
             {
                 Buffer* buffer = buffersResources.at(buffBinding.second.binding);
@@ -179,7 +185,7 @@ namespace ENGINE
                 }
 
             }
-            writerBuilder.UpdateSet(core->logicalDevice.get(), dstSet);
+            writerBuilder.UpdateSet(core->logicalDevice.get(), dsetsInfo.dset);
         }
 
         void UpdateDescriptor()
@@ -222,7 +228,7 @@ namespace ENGINE
                 }
                 
             }
-            writerBuilder.UpdateSet(core->logicalDevice.get(), dstSet);
+            writerBuilder.UpdateSet(core->logicalDevice.get(), dsetsInfo.dset);
         }
         template<typename T>
         void SetBuffer(std::string name, std::vector<T>& bufferData)
@@ -536,6 +542,7 @@ namespace ENGINE
         DescriptorWriterBuilder writerBuilder;
         vk::UniqueDescriptorSetLayout dstLayout;
         vk::DescriptorSet dstSet;
+        ResourcesManager::DsetsInfo dsetsInfo;
         
         DescriptorLayoutBuilder dstSetBuilder;
         vk::DescriptorSetLayout* dstSetLayoutHandle;

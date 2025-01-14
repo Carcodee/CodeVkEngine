@@ -40,6 +40,11 @@ namespace ENGINE
             std::string name;
             int32_t id;
         };
+        struct DsetsInfo
+        {
+            vk::DescriptorSet dset;
+            int32_t id;
+        };
 
         ImageShipper* GetShipper(std::string name, std::string path, uint32_t arrayLayersCount, uint32_t mipsCount,
                                  vk::Format format,
@@ -327,6 +332,8 @@ namespace ENGINE
             imageShippers.clear();
             images.clear();
             samplerPool.reset();
+            dsets.clear();
+            dsetsIds.clear();
             descriptorAllocator.reset();
             
         }
@@ -431,7 +438,6 @@ namespace ENGINE
             ImageShipper* shipper = GetShipper("default_tex", defaultTexturePath, 1, 1, g_ShipperFormat,
                                                LayoutPatterns::GRAPHICS_READ);
 
-
             auto imageInfo = ENGINE::Image::CreateInfo2d(
                 glm::uvec2(core->swapchainRef->extent.width, core->swapchainRef->extent.height), 1, 1,
                 ENGINE::g_32bFormat,
@@ -450,10 +456,33 @@ namespace ENGINE
             }
             storageImagesToClear.push_back(name);
         }
-        vk::DescriptorSet AllocateDset(vk::DescriptorSetLayout dstSetLayout)
+        DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
         {
-            dsets.emplace_back(descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout));
-            return dsets.back().get();
+            if (!freeIdsBucket.empty())
+            {
+                for (auto& id : freeIdsBucket)
+                {
+                    SYSTEMS::Logger::GetInstance()->LogMessage("Free Id: " + id);
+                }
+                int32_t id = freeIdsBucket.front();
+                freeIdsBucket.erase(freeIdsBucket.begin());
+                dsets.at(id) = descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout);
+                return DsetsInfo{dsets.at(id).get(), id};
+            }else
+            {
+                int32_t id = dsets.size();
+                dsetsIds.insert(id);
+                dsets.emplace_back(descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout));
+                return DsetsInfo{dsets.back().get(), id};
+            }
+        }
+        void DeallocateDset(int id)
+        {
+            if (dsetsIds.contains(id))
+            {
+                dsets.at(id).reset();
+                freeIdsBucket.emplace_back(id);
+            }
         }
 
         static ResourcesManager* GetInstance(Core* coreRef = nullptr)
@@ -492,6 +521,7 @@ namespace ENGINE
         std::unordered_map<std::string, int32_t> imagesNames;
         std::unordered_map<std::string, int32_t> storageImagesNames;
         std::unordered_map<std::string, int32_t> imagesShippersNames;
+        std::set<int32_t> dsetsIds;
 
         
         std::vector<std::unique_ptr<Buffer>> buffers;
@@ -507,6 +537,8 @@ namespace ENGINE
         std::unique_ptr<SamplerPool> samplerPool;
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
         std::vector<vk::UniqueDescriptorSet> dsets;
+        std::vector<int32_t> freeIdsBucket;
+
         
         std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {
             {vk::DescriptorType::eSampler, 1.5f},

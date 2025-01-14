@@ -43,7 +43,8 @@ namespace ENGINE
             {
                 if (configs.AutomaticCache)
                 {
-                    descCache = std::make_unique<DescriptorCache>(core);
+                    descCache.reset();
+                    descCache =std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(vertShader->sParser.get());
                     descCache->AddShaderInfo(fragShader->sParser.get());
                     descCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eFragment |
@@ -63,8 +64,6 @@ namespace ENGINE
                         SetPipelineLayoutCI(paintingLayoutCreateInfo);
                     }
                 }
-
-
                 std::vector<vk::Format> colorFormats;
                 colorFormats.reserve(colAttachments.size());
                 std::vector<vk::RenderingAttachmentInfo> renderingAttachmentInfos;
@@ -85,12 +84,12 @@ namespace ENGINE
                 );
                 pipeline = std::move(graphicsPipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eGraphics;
-                std::cout << "Graphics pipeline created\n";
             }
             else if (compShader)
             {
                 if (configs.AutomaticCache)
                 {
+                    descCache.reset();
                     descCache = std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(compShader->sParser.get());
                     descCache->BuildDescriptorsCache(
@@ -116,7 +115,6 @@ namespace ENGINE
                     pipelineCache.get());
                 pipeline = std::move(computePipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eCompute;
-                std::cout << "Compute pipeline created\n";
             }
             else
             {
@@ -942,6 +940,7 @@ namespace ENGINE
             {
                 node.second->RecreateResources();
             }
+            SYSTEMS::Logger::GetInstance()->LogMessage("Graphics Pipelines Recreated");
         }
 
         void DebugShadersCompilation()

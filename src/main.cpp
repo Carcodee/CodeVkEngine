@@ -107,13 +107,12 @@ void run(WindowProvider* windowProvider)
             try
             {
                 profiler->AddProfilerCpuSpot(legit::Colors::sunFlower, "Cpu");
-                if (glfwGetKey(windowProvider->window, GLFW_KEY_R))
+                if (ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {
                     // clusterRenderer->ReloadShaders();
                     renderGraph->RecompileShaders();
                 }
-                if (glfwGetKey(windowProvider->window, GLFW_KEY_LEFT_CONTROL) && glfwGetKey(
-                    windowProvider->window, GLFW_KEY_R))
+                if (ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false) && ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {
                     renderGraph->DebugShadersCompilation();
                 }
