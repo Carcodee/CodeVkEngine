@@ -88,9 +88,8 @@ namespace Rendering{
                 renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
                 renderNode->SetPipelineLayoutCI(layoutCreateInfo);
                 renderNode->SetVertexInput(vertexInput);
-                renderNode->AddColorAttachmentOutput("modelCol", colInfo);
+                renderNode->AddColorAttachmentOutput("modelCol", colInfo, BlendConfigs::B_OPAQUE);
                 renderNode->SetRasterizationConfigs(RasterizationConfigs::R_LINE);
-                renderNode->AddColorBlendConfig(BlendConfigs::B_OPAQUE);
                 renderNode->SetDepthConfig(DepthConfigs::D_NONE);
                 renderNode->DependsOn("light");
                 renderNode->BuildRenderGraphNode();

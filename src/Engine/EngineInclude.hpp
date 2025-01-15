@@ -26,6 +26,7 @@
 #include <ProfilerTask.h>
 #include <vulkan/vulkan.hpp>
 
+#include "Enums.hpp"
 #include "Structs.hpp"
 #include "UtilVk.hpp"
 #include "Buffer.hpp"

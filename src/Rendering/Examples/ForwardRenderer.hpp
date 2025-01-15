@@ -105,9 +105,8 @@ namespace Rendering
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetPipelineLayoutCI(layoutCreateInfo);
             renderNode->SetVertexInput(vertexInput);
-            renderNode->AddColorAttachmentOutput("color", colInfo);
+            renderNode->AddColorAttachmentOutput("color", colInfo, ENGINE::BlendConfigs::B_OPAQUE);
             renderNode->SetDepthAttachmentOutput("depth", depthInfo);
-            renderNode->AddColorBlendConfig(ENGINE::BlendConfigs::B_OPAQUE);
             renderNode->SetDepthConfig(ENGINE::DepthConfigs::D_ENABLE);
             renderNode->AddSamplerResource("sampler", imageShipper->imageView.get());
             renderNode->AddStorageResource("storageImage", computeStorage);

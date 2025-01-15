@@ -3,6 +3,8 @@
 //
 
 
+
+
 #ifndef STRUCTS_HPP
 namespace ENGINE
 {
@@ -47,41 +49,12 @@ namespace ENGINE
 
         vk::UniqueCommandBuffer commandBuffer;
     };
-
-    //Sync
-    enum struct QueueFamilyTypes
+        struct AttachmentInfo
     {
-        GRAPHICS,
-        TRANSFER,
-        COMPUTE,
-        PRESENT,
-        UNDEFINED
-      };
-
-    enum LayoutPatterns
-    {
-        GRAPHICS_READ,
-        GRAPHICS_WRITE,
-        COMPUTE,
-        COMPUTE_WRITE,
-        TRANSFER_SRC,
-        TRANSFER_DST,
-        COLOR_ATTACHMENT,
-        DEPTH_ATTACHMENT,
-        PRESENT,
-        EMPTY,
+        vk::RenderingAttachmentInfo attachmentInfo;
+        vk::Format format = vk::Format::eUndefined;
     };
 
-    enum BufferUsageTypes
-    {
-        B_VERTEX_BUFFER,
-        B_GRAPHICS_WRITE,
-        B_COMPUTE_WRITE,
-        B_TRANSFER_DST,
-        B_TRANSFER_SRC,
-        B_DRAW_INDIRECT,
-        B_EMPTY
-    };
 
     struct ImageAccessPattern
     {

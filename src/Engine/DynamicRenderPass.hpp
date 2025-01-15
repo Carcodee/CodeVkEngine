@@ -9,13 +9,6 @@ namespace ENGINE
 {
 
     //TODO: set base configs 
-
-    struct AttachmentInfo
-    {
-        vk::RenderingAttachmentInfo attachmentInfo;
-        vk::Format format = vk::Format::eUndefined;
-    };
-
     static AttachmentInfo GetColorAttachmentInfo(glm::vec4 clearCol = glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
                                                  vk::Format format = g_32bFormat,
                                                  vk::AttachmentLoadOp loadOp = vk::AttachmentLoadOp::eClear,

@@ -43,25 +43,25 @@ namespace SYSTEMS
         std::filesystem::file_time_type lastTimeCheck;
         
     };
-    
-    class FileWatcher 
-    {
-        void CheckChanges()
-        {
-            for (auto& file : filesToWatch)
-            {
-                file.CheckLastTimeWrite();
-            }
-        }
-        // FileInfo& GetFile(const std::string& path)
-        // {
-        //     filesToWatch.emplace_back(FileInfo(path));
-        //     return filesToWatch.back();
-        // }
-
-        std::vector<FileInfo> filesToWatch;
-        std::thread watcherThreat;
-    };
+    //use background threat for this eventually
+    // class FileWatcher 
+    // {
+    //     void CheckChanges()
+    //     {
+    //         for (auto& file : filesToWatch)
+    //         {
+    //             file.CheckLastTimeWrite();
+    //         }
+    //     }
+    //     // FileInfo& GetFile(const std::string& path)
+    //     // {
+    //     //     filesToWatch.emplace_back(FileInfo(path));
+    //     //     return filesToWatch.back();
+    //     // }
+    //
+    //     std::vector<FileInfo> filesToWatch;
+    //     std::thread watcherThreat;
+    // };
 
 }
 

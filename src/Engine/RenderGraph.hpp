@@ -415,11 +415,6 @@ namespace ENGINE
             this->depthConfig = dephtConfig;
         }
 
-        void AddColorBlendConfig(BlendConfigs blendConfig)
-        {
-            this->colorBlendConfigs.push_back(blendConfig);
-        }
-
         void SetVertShader(Shader* shader)
         {
             shaders.at("vert") = shader;
@@ -472,12 +467,13 @@ namespace ENGINE
             }
         }
 
-        void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo)
+        void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
         {
             if (!outColAttachmentsProxyRef->contains(name))
             {
                 outColAttachmentsProxyRef->try_emplace(name, attachmentInfo);
                 colAttachments.push_back(outColAttachmentsProxyRef->at(name));
+                colorBlendConfigs.push_back(blendConfig);
             }
             else
             {

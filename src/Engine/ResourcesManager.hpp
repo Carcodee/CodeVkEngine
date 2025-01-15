@@ -334,6 +334,7 @@ namespace ENGINE
             samplerPool.reset();
             dsets.clear();
             dsetsIds.clear();
+            freeIdsBucket.clear();
             descriptorAllocator.reset();
             
         }
@@ -460,10 +461,10 @@ namespace ENGINE
         {
             if (!freeIdsBucket.empty())
             {
-                for (auto& id : freeIdsBucket)
-                {
-                    SYSTEMS::Logger::GetInstance()->LogMessage("Free Id: " + id);
-                }
+                // for (auto& id : freeIdsBucket)
+                // {
+                    // SYSTEMS::Logger::GetInstance()->LogMessage("Free Id: " + std::to_string(id));
+                // }
                 int32_t id = freeIdsBucket.front();
                 freeIdsBucket.erase(freeIdsBucket.begin());
                 dsets.at(id) = descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout);
@@ -537,7 +538,7 @@ namespace ENGINE
         std::unique_ptr<SamplerPool> samplerPool;
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
         std::vector<vk::UniqueDescriptorSet> dsets;
-        std::vector<int32_t> freeIdsBucket;
+        std::deque<int32_t> freeIdsBucket;
 
         
         std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {

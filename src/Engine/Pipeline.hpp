@@ -9,28 +9,6 @@
 
 namespace ENGINE
 {
-    enum BlendConfigs
-    {
-        B_NONE,
-        B_OPAQUE,
-        B_ADD,
-        B_MIX,
-        B_ALPHA_BLEND
-    };
-
-    enum DepthConfigs
-    {
-        D_NONE,
-        D_ENABLE,
-        D_DISABLE
-    };
-
-    enum RasterizationConfigs
-    {
-        R_FILL,
-        R_LINE,
-        R_POINT
-    };
 
     static vk::PipelineRasterizationStateCreateInfo GetRasterizationInfo(RasterizationConfigs configs)
     {

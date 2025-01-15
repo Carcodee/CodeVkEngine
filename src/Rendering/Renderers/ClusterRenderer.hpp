@@ -462,11 +462,9 @@ namespace Rendering
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetPipelineLayoutCI(layoutCreateInfo);
             renderNode->SetVertexInput(vertexInput);
-            renderNode->AddColorAttachmentOutput("gColor", colInfo);
-            renderNode->AddColorAttachmentOutput("gNorm", colInfo);
+            renderNode->AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
+            renderNode->AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
-            renderNode->AddColorBlendConfig(BlendConfigs::B_OPAQUE);
-            renderNode->AddColorBlendConfig(BlendConfigs::B_OPAQUE);
             renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->AddColorImageResource("gColor", colAttachmentView);
@@ -507,8 +505,7 @@ namespace Rendering
             lRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             lRenderNode->SetPipelineLayoutCI(lLayoutCreateInfo);
             lRenderNode->SetVertexInput(lVertexInput);
-            lRenderNode->AddColorAttachmentOutput("lColor", lColInfo);
-            lRenderNode->AddColorBlendConfig(BlendConfigs::B_OPAQUE);
+            lRenderNode->AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
             lRenderNode->AddSamplerResource("colGSampler", colAttachmentView);
             lRenderNode->AddSamplerResource("normGSampler", normAttachmentView);
             lRenderNode->AddSamplerResource("depthGSampler", depthAttachmentView);
