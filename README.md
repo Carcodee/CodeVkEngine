@@ -10,7 +10,9 @@ CodeVkEngine Is my personal graphics engine that I extend from this [**public te
 
 - Resource Manager.
 
-- **Visual Pipeline Node Editor**: A node-based editor designed to create render nodes (shaders), enabling rapid prototyping and iteration of rendering techniques.
+- Slang/Glsl as main shading languages.
+
+- **Visual Pipeline Node Editor**: A node-based editor designed to create render nodes (shaders), enabling rapid prototyping and iteration of rendering techniques (Under developmnt).
 
 - **Modular Vulkan Interface**: Built with modularity in mind, allowing rapid iteration and customization (including automatic descriptor setup).
   
