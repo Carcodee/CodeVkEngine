@@ -454,7 +454,6 @@ namespace ENGINE
             }
         }
 
-
         void AddColorAttachmentInput(std::string name)
         {
             if (outColAttachmentsProxyRef->contains(name))

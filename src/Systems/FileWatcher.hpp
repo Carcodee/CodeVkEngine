@@ -32,7 +32,7 @@ namespace SYSTEMS
                 lastTimeCheck = fTime;
             }
         }
-        void FlushModification()
+        void Invalidate()
         {
             modified = false;
         }

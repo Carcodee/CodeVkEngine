@@ -95,6 +95,7 @@ namespace SYSTEMS
 
 			oss << inFile.rdbuf();
 			
+			inFile.close();
 			return oss.str();
 		}
 
@@ -115,6 +116,7 @@ namespace SYSTEMS
 				assert(false &&"Impossible to write file");
 			}
 			file.write(text, size);
+			file.close();
 
 			Logger::GetInstance()->Log("File: " + path + " was writed succesfully");
 			
@@ -134,7 +136,9 @@ namespace SYSTEMS
 			}
 
 			dst << src.rdbuf();
-			Logger::GetInstance()->Log("File: "+dstFile + " was created");
+			Logger::GetInstance()->Log("File: "+srcFile + " was copied to: " + dstFile);
+			src.close();
+			dst.close();
 			
 		}
 		

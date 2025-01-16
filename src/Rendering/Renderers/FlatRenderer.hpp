@@ -179,22 +179,6 @@ namespace Rendering
             probesFragShader = std::make_unique<Shader>(logicalDevice,
                                                         shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv",
                                                         S_FRAG);
-            // probesGenCache->AddShaderInfo(probesVertShader->sParser.get());
-            // probesGenCache->AddShaderInfo(probesFragShader->sParser.get());
-            // probesGenCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex |
-                // vk::ShaderStageFlagBits::eFragment);
-
-
-            // auto genPushConstantRange = vk::PushConstantRange()
-                                        // .setOffset(0)
-                                        // .setStageFlags(
-                                            // vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-                                        // .setSize(sizeof(ProbesGenPc));
-
-            // auto genLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-                                       // .setSetLayoutCount(1)
-                                       // .setPushConstantRanges(genPushConstantRange)
-                                       // .setPSetLayouts(&probesGenCache->dstLayout.get());
 
             for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
             {

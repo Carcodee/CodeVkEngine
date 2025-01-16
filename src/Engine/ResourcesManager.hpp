@@ -271,57 +271,6 @@ namespace ENGINE
         }
 
 
-        ImageView* GetImageViewFromName(std::string name)
-        {
-            if (!imagesNames.contains(name))
-            {
-                SYSTEMS::Logger::GetInstance()->Log("Image View With Name: " + name + "Does not exist");
-                return nullptr;
-            }
-            return imageViews.at(imagesNames.at(name)).get();
-        }
-
-        ImageShipper* GetShipperFromName(std::string name)
-        {
-            if (!imagesShippersNames.contains(name))
-            {
-                SYSTEMS::Logger::GetInstance()->Log("Image Shipper With Name: " + name + "Does not exist");
-                return nullptr;
-            }
-            return imageShippers.at(imagesShippersNames.at(name)).get();
-        }
-
-        ImageView* GetStorageFromName(std::string name)
-        {
-            if (!storageImagesNames.contains(name))
-            {
-                return nullptr;
-            }
-            return storageImagesViews.at(storageImagesNames.at(name)).get();
-        }
-
-        Buffer* GetBuffFromName(std::string name)
-        {
-            if (!bufferNames.contains(name))
-            {
-                return nullptr;
-            }
-            return buffers.at(bufferNames.at(name)).get();
-        }
-
-        StagedBuffer* GetStagedBuffFromName(std::string name)
-        {
-            if (!stagedBufferNames.contains(name))
-            {
-                return nullptr;
-            }
-            return stagedBuffers.at(stagedBufferNames.at(name)).get();
-        }
-
-        int GetShipperID(std::string name)
-        {
-            return imagesShippersNames.at(name);
-        }
 
         void DestroyResources()
         {
@@ -486,6 +435,58 @@ namespace ENGINE
             }
         }
 
+        
+        ImageView* GetImageViewFromName(std::string name)
+        {
+            if (!imagesNames.contains(name))
+            {
+                SYSTEMS::Logger::GetInstance()->Log("Image View With Name: " + name + "Does not exist");
+                return nullptr;
+            }
+            return imageViews.at(imagesNames.at(name)).get();
+        }
+
+        ImageShipper* GetShipperFromName(std::string name)
+        {
+            if (!imagesShippersNames.contains(name))
+            {
+                SYSTEMS::Logger::GetInstance()->Log("Image Shipper With Name: " + name + "Does not exist");
+                return nullptr;
+            }
+            return imageShippers.at(imagesShippersNames.at(name)).get();
+        }
+
+        ImageView* GetStorageFromName(std::string name)
+        {
+            if (!storageImagesNames.contains(name))
+            {
+                return nullptr;
+            }
+            return storageImagesViews.at(storageImagesNames.at(name)).get();
+        }
+
+        Buffer* GetBuffFromName(std::string name)
+        {
+            if (!bufferNames.contains(name))
+            {
+                return nullptr;
+            }
+            return buffers.at(bufferNames.at(name)).get();
+        }
+
+        StagedBuffer* GetStagedBuffFromName(std::string name)
+        {
+            if (!stagedBufferNames.contains(name))
+            {
+                return nullptr;
+            }
+            return stagedBuffers.at(stagedBufferNames.at(name)).get();
+        }
+
+        int GetShipperID(std::string name)
+        {
+            return imagesShippersNames.at(name);
+        }
         static ResourcesManager* GetInstance(Core* coreRef = nullptr)
         {
             if (instance == nullptr && coreRef != nullptr)

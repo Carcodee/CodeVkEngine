@@ -6,6 +6,7 @@
 
 
 
+
 #ifndef SHADERPARSER_HPP
 #define SHADERPARSER_HPP
 
@@ -284,7 +285,7 @@ set "errorfound="
     class Shader 
     {
     public:
-        Shader(vk::Device logicalDevice, std::string path, ShaderStage stage)
+        Shader(vk::Device logicalDevice, const std::string& path, ShaderStage stage)
         {
             assert(std::filesystem::exists(path) && "Path does not exist");
             this->stage = stage;
@@ -294,6 +295,20 @@ set "errorfound="
             sParser = std::make_unique<ShaderParser>(byteCode);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
             shaderFileInfo = std::make_unique<SYSTEMS::FileInfo>(this->path);
+        }
+        void CreateShaderFromTemplate(const std::filesystem::path path)
+        {
+            if (path.extension() == ".slang")
+            {
+                
+            }else if(path.extension() == ".frag" || path.extension() == ".vert" || path.extension() == ".comp")
+            {
+                
+            }else
+            {
+                assert(false && "impossible to create file at that location");
+            }
+            
         }
         void Reload()
         {
@@ -345,14 +360,13 @@ set "errorfound="
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
             SYSTEMS::Logger::GetInstance()->LogMessage("Shader compiled: "+ path);
             SYSTEMS::Logger::GetInstance()->LogMessage("SPIRV: "+ spirvPath);
-            shaderFileInfo->FlushModification();
+            shaderFileInfo->Invalidate();
         }
 
         void HandlePathReceived(const std::string& path)
         {
             std::filesystem::path filePath(path);
             bool glsl = false;
-
             if (filePath.extension() == ".spv")
             {
                 std::filesystem::path shaderPath;
@@ -446,6 +460,7 @@ set "errorfound="
                         spirvPath /= dirsParts;
                     }
                 }
+
                 assert((std::filesystem::exists(spirvPath) && spirvPath != filePath) && "invalid shader path");
                 this->spirvPath = spirvPath.string();
                 this->path = path;
