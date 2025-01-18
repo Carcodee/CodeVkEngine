@@ -111,54 +111,36 @@ namespace UI{
             ed::PinId outputId;
         };
 
-        struct GraphNode
+                struct GraphNode
         {
-
             ed::NodeId nodeId;
-            std::vector<ed::PinId> inputNodes;
-            std::vector<ed::PinId> outputNodes;
+            std::map<int, std::string> inputNodes;
+            std::map<int, std::string> outputNodes;
             std::string name;
             bool firstFrame = true;
-            
-            void SetName(std::string name)
-            {
-                this->name = name;
-            }
-            void SetNodeId(int id)
-            {
-                nodeId = id;
-            }
-            void AddInput(int id)
-            {
-                inputNodes.push_back(id);
-            }
-            void AddOutput(int id)
-            {
-                outputNodes.push_back(id);
-            }
+
             void Draw()
             {
-                // if (firstFrame)
-                // {
-                //     ed::SetNodePosition(nodeId, ImVec2(0, 10));
-                // }
+                if (firstFrame)
+                {
+                    ed::SetNodePosition(nodeId, ImVec2(0, 10));
+                }
                 ImGui::PushID(nodeId.Get());
                 ed::BeginNode(nodeId);
                 ImGui::Text(name.c_str());
                 for (auto input : inputNodes)
                 {
-                    ImGui::PushID(input.Get());
-                    ed::BeginPin(input, ed::PinKind::Input);
-                    ImGui::Text("-> In");
+                    ImGui::PushID(input.first);
+                    ed::BeginPin(input.first, ed::PinKind::Input);
+                    ImGui::Text(input.second.c_str());
                     ed::EndPin();
                     ImGui::PopID();
-                    
                 }
                 for (auto output : outputNodes)
                 {
-                    ImGui::PushID(output.Get());
-                    ed::BeginPin(output, ed::PinKind::Output);
-                    ImGui::Text("-> Out");
+                    ImGui::PushID(output.first);
+                    ed::BeginPin(output.first, ed::PinKind::Output);
+                    ImGui::Text(output.second.c_str());
                     ed::EndPin();
                     ImGui::PopID();
                 }
@@ -166,8 +148,46 @@ namespace UI{
                 ImGui::PopID();
                 firstFrame = false;
             }
+        };
+        struct GraphNodeBuilder
+        {
+
+            ed::NodeId nodeId;
+            std::map<int, std::string> inputNodes;
+            std::map<int, std::string> outputNodes;
+            std::string name;
+            
+            GraphNodeBuilder* SetNodeId(ed::NodeId id, std::string name)
+            {
+                nodeId = id;
+                this->name = name;
+                return this;
+            }
+            GraphNodeBuilder* AddInput(int id, std::string name)
+            {
+                inputNodes.try_emplace(id, name);
+                return this;
+            }
+            GraphNodeBuilder* AddOutput(int id, std::string name)
+            {
+                outputNodes.try_emplace(id, name);
+                return this;
+            }
+
+            GraphNode Build()
+            {
+                GraphNode graphNode = {nodeId, inputNodes, outputNodes, name, true};
+                inputNodes.clear();
+                outputNodes.clear();
+                nodeId = -1;
+                name = "";
+                return graphNode;
+            }
+            
+            
 
         };
+
 
         static void BaseNode(bool firstFrame)
         {

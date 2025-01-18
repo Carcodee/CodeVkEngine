@@ -4,6 +4,9 @@
 
 
 
+
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -21,24 +24,22 @@ namespace UI
 
     public:
         ImVector<Nodes::LinkInfo> links;
+        Nodes::GraphNodeBuilder builder;
         std::vector<Nodes::GraphNode> nodes;
         void Init()
         {
             if (firstFrame)
             {
-                nodes.push_back(Nodes::GraphNode());
-                nodes.back().SetName("A");
-                nodes.back().SetNodeId(11);
-                nodes.back().AddInput(1);
-                nodes.back().AddOutput(2);
+                builder.SetNodeId(11, "A");
+                builder.AddInput(1, "In");
+                builder.AddOutput(2, "Out");
+                nodes.push_back(builder.Build());
                 
-                nodes.push_back(Nodes::GraphNode());
-                nodes.back().SetName("B");
-                nodes.back().SetNodeId(12);
-                nodes.back().AddInput(3);
-                nodes.back().AddOutput(4);
+                builder.SetNodeId(12, "B");
+                builder.AddInput(3, "In");
+                builder.AddOutput(4, "Out");
+                nodes.push_back(builder.Build());
             }
-            
         }
         void Draw()
         {
