@@ -7,6 +7,7 @@
 
 namespace UI
 {
+    namespace ed = ax::NodeEditor;
     struct RenderNodeEditor
     {
 
@@ -17,11 +18,35 @@ namespace UI
     {
 
         
+        std::vector<Nodes::LinkInfo> links;
 
-        std::map<std::string, int> renderNodesEditorsNames;
-        std::vector<RenderNodeEditor*> renderNodeEditors;
+        void ChekLinks()
+        {
+            for (auto link : links)
+            {
+                ed::Link(link.id, link.inputId, link.outputId);
+            }
+            
+            if (ed::BeginCreate())
+            {
+                ed::PinId inId, outId;
+                if (ed::QueryNewLink(&inId, &outId))
+                {
+                    if (inId && outId)
+                    {
+                        links.push_back({ed::LinkId(nextLinkId++), inId, outId});
+                        ed::Link(links.back().id, links.back().inputId, links.back().outputId);
+                    }
+                }
+            }
+        }
+        int nextLinkId = 100;
+        int inIds = 100;
+        int outIds = 100;
+        // std::map<std::string, int> renderNodesEditorsNames;
+        // std::vector<RenderNodeEditor*> renderNodeEditors;
         
-        ENGINE::RenderGraph* renderGraph;
+        // ENGINE::RenderGraph* renderGraph;
         
     };
     

@@ -2,6 +2,7 @@
 // Created by carlo on 2025-01-02.
 //
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -97,6 +98,124 @@ namespace UI{
             properties.emplace(property);
         }
     };
+
+    namespace Nodes
+    {
+
+        namespace ed = ax::NodeEditor;
+
+        struct LinkInfo
+        {
+            ed::LinkId id;
+            ed::PinId inputId;
+            ed::PinId outputId;
+        };
+        std::vector<LinkInfo> links;
+
+        struct GraphNode
+        {
+
+            ed::NodeId nodeId;
+            std::vector<ed::PinId> inputNodes;
+            std::vector<ed::PinId> outputNodes;
+
+            void AddInput(int id)
+            {
+                inputNodes.push_back(id);
+            }
+            void AddOutput(int id)
+            {
+                outputNodes.push_back(id);
+            }
+            void Draw()
+            {
+                if (firstFrame)
+                {
+                    ed::SetNodePosition(nodeId, ImVec2(0, 10));
+                }
+                ed::BeginNode(nodeId);
+                ImGui::Text("Node A");
+                for (auto input : inputNodes)
+                {
+                    ed::BeginPin(input, ed::PinKind::Input);
+                    ImGui::Text("-> In");
+                    ed::EndPin();
+                }
+                for (auto output : outputNodes)
+                {
+                    ed::BeginPin(output, ed::PinKind::Input);
+                    ImGui::Text("-> In");
+                    ed::EndPin();
+                }
+                ed::EndNode();
+            }
+
+            bool firstFrame = true;
+        };
+
+        static void BaseNode(bool firstFrame)
+        {
+            
+                int uniqueId = 1;
+                // Submit Node B
+                ed::NodeId nodeA_Id = uniqueId++;
+                ed::PinId nodeA_InputPinId = uniqueId++;
+                ed::PinId nodeA_OutputPinId = uniqueId++;
+
+                ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+
+                // Start drawing nodes.
+            
+                if (firstFrame)
+                {
+                    ed::SetNodePosition(nodeA_Id, ImVec2(0, 10));
+                }
+                ed::BeginNode(nodeA_Id);
+                ImGui::Text("Node A");
+                ed::BeginPin(nodeA_InputPinId, ed::PinKind::Input);
+                ImGui::Text("-> In");
+                ed::EndPin();
+                ImGui::SameLine();
+                ed::BeginPin(nodeA_OutputPinId, ed::PinKind::Output);
+                ImGui::Text("Out ->");
+                ed::EndPin();
+                ed::EndNode();
+
+                ed::NodeId nodeB_Id = uniqueId++;
+                ed::PinId nodeB_InputPinId1 = uniqueId++;
+                ed::PinId nodeB_InputPinId2 = uniqueId++;
+                ed::PinId nodeB_OutputPinId = uniqueId++;
+
+                // Start drawing nodes.
+                if (firstFrame)
+                {
+                    ed::SetNodePosition(nodeB_Id, ImVec2(10, 10));
+                }
+                ed::BeginNode(nodeB_Id);
+                ImGui::Text("Node A");
+                ed::BeginPin(nodeB_InputPinId1, ed::PinKind::Input);
+                ImGui::Text("-> In_1");
+                ed::EndPin();
+                ed::BeginPin(nodeB_InputPinId2, ed::PinKind::Input);
+                ImGui::Text("-> In_2");
+                ed::EndPin();
+                ImGui::SameLine();
+                ed::BeginPin(nodeB_OutputPinId, ed::PinKind::Output);
+                ImGui::Text("Out ->");
+                ed::EndPin();
+                ed::EndNode();
+
+                for (auto link : links)
+                {
+                    
+                }
+
+            
+    		ed::End();
+            
+        }
+        
+    }
 
 }
 
