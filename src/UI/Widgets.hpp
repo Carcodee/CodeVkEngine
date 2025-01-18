@@ -110,7 +110,6 @@ namespace UI{
             ed::PinId inputId;
             ed::PinId outputId;
         };
-        std::vector<LinkInfo> links;
 
         struct GraphNode
         {
@@ -118,7 +117,17 @@ namespace UI{
             ed::NodeId nodeId;
             std::vector<ed::PinId> inputNodes;
             std::vector<ed::PinId> outputNodes;
-
+            std::string name;
+            bool firstFrame = true;
+            
+            void SetName(std::string name)
+            {
+                this->name = name;
+            }
+            void SetNodeId(int id)
+            {
+                nodeId = id;
+            }
             void AddInput(int id)
             {
                 inputNodes.push_back(id);
@@ -129,28 +138,35 @@ namespace UI{
             }
             void Draw()
             {
-                if (firstFrame)
-                {
-                    ed::SetNodePosition(nodeId, ImVec2(0, 10));
-                }
+                // if (firstFrame)
+                // {
+                //     ed::SetNodePosition(nodeId, ImVec2(0, 10));
+                // }
+                ImGui::PushID(nodeId.Get());
                 ed::BeginNode(nodeId);
-                ImGui::Text("Node A");
+                ImGui::Text(name.c_str());
                 for (auto input : inputNodes)
                 {
+                    ImGui::PushID(input.Get());
                     ed::BeginPin(input, ed::PinKind::Input);
                     ImGui::Text("-> In");
                     ed::EndPin();
+                    ImGui::PopID();
+                    
                 }
                 for (auto output : outputNodes)
                 {
-                    ed::BeginPin(output, ed::PinKind::Input);
-                    ImGui::Text("-> In");
+                    ImGui::PushID(output.Get());
+                    ed::BeginPin(output, ed::PinKind::Output);
+                    ImGui::Text("-> Out");
                     ed::EndPin();
+                    ImGui::PopID();
                 }
                 ed::EndNode();
+                ImGui::PopID();
+                firstFrame = false;
             }
 
-            bool firstFrame = true;
         };
 
         static void BaseNode(bool firstFrame)
@@ -204,12 +220,6 @@ namespace UI{
                 ImGui::Text("Out ->");
                 ed::EndPin();
                 ed::EndNode();
-
-                for (auto link : links)
-                {
-                    
-                }
-
             
     		ed::End();
             

@@ -3,6 +3,9 @@
 //
 
 
+
+
+
 #ifndef IMGUIRENDERER_HPP
 #define IMGUIRENDERER_HPP
 
@@ -125,7 +128,9 @@ namespace Rendering
     		ed::SetCurrentEditor(m_Context);
 
     		static bool firstFrame = true;
-    		UI::Nodes::BaseNode(firstFrame);
+    		nodeEditor.Init();
+    		nodeEditor.Draw();
+    		
     		firstFrame = false;
     		
     		ed::SetCurrentEditor(nullptr);	
@@ -632,6 +637,8 @@ namespace Rendering
         ClusterRenderer* clusterRenderer = nullptr;
         FlatRenderer* flatRenderer = nullptr;
         ImGuiUtils::ProfilersWindow profilersWindow{};
+	    UI::RG_NodeEditor nodeEditor;
+    	
     	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
     	std::vector<LayoutPatterns> layoutPatternsesToRecover;
     	std::vector<ImageView*> imageViewsToRecover;
