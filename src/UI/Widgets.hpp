@@ -111,12 +111,14 @@ namespace UI{
             ed::PinId outputId;
         };
 
-                struct GraphNode
+        template <typename T>
+        struct GraphNode
         {
             ed::NodeId nodeId;
             std::map<int, std::string> inputNodes;
             std::map<int, std::string> outputNodes;
             std::string name;
+            T* data;
             bool firstFrame = true;
 
             void Draw()
@@ -174,17 +176,15 @@ namespace UI{
                 return this;
             }
 
-            GraphNode Build()
+            GraphNode<std::any> Build(std::any* data)
             {
-                GraphNode graphNode = {nodeId, inputNodes, outputNodes, name, true};
+                GraphNode graphNode = {nodeId, inputNodes, outputNodes, name, data, true};
                 inputNodes.clear();
                 outputNodes.clear();
                 nodeId = -1;
                 name = "";
                 return graphNode;
             }
-            
-            
 
         };
 

@@ -7,6 +7,13 @@
 
 
 
+
+
+
+
+
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -25,27 +32,52 @@ namespace UI
     public:
         ImVector<Nodes::LinkInfo> links;
         Nodes::GraphNodeBuilder builder;
-        std::vector<Nodes::GraphNode> nodes;
-        void Init()
+        
+        std::vector<Nodes::GraphNode<std::any>> nodes;
+        //int_1 - in/out id || int_2 node idx in nodes vec  
+        std::map<int, int> nodesIds;
+
+        template <typename T>
+        void RegisterNode(Nodes::GraphNode<T>& node, int nodeIndex)
         {
-            if (firstFrame)
+            nodesIds.try_emplace(node.nodeId.Get(), nodeIndex);
+            for (auto& input : node.inputNodes)
             {
-                builder.SetNodeId(11, "A");
-                builder.AddInput(1, "In");
-                builder.AddOutput(2, "Out");
-                nodes.push_back(builder.Build());
-                
-                builder.SetNodeId(12, "B");
-                builder.AddInput(3, "In");
-                builder.AddOutput(4, "Out");
-                nodes.push_back(builder.Build());
+                nodesIds.try_emplace(input.first, nodeIndex);
             }
+            for (auto& output : node.outputNodes)
+            {
+                nodesIds.try_emplace(output.first, nodeIndex);
+            }
+        }
+        
+        void Init() 
+        {
+            if (!firstFrame){return;}
+
+            data = ENGINE::GetColorAttachmentInfo(glm::vec4(1.0f, 0.1f, 0.1f, 1.0f));
+            builder.SetNodeId(idGen++, "A");
+            builder.AddInput(idGen++, "In");
+            builder.AddOutput(idGen++, "Out");
+            nodes.push_back(builder.Build(&data));
+            RegisterNode(nodes.back(), nodes.size() - 1);
+
+
+            builder.SetNodeId(idGen++, "B");
+            builder.AddInput(idGen++, "In");
+            builder.AddOutput(idGen++, "Out");
+            nodes.push_back(builder.Build(&data));
+            RegisterNode(nodes.back(), nodes.size() - 1);
         }
         void Draw()
         {
             ed::Begin("My Editor", ImVec2(0.0, 0.0f));
             for (auto& node : nodes)
             {
+                //fix this:
+                ENGINE::AttachmentInfo* d = std::any_cast<ENGINE::AttachmentInfo>(node.data);
+                std::string info = "Data: " + std::to_string(d->attachmentInfo.clearValue.color.float32[0]);
+                SYSTEMS::Logger::GetInstance()->LogMessage(info);
                 node.Draw();
             }
             CheckLinks();
@@ -69,7 +101,7 @@ namespace UI
                     {
                         if(ed::AcceptNewItem())
                         {
-                            links.push_back({ed::LinkId(nextLinkId++), inId, outId});
+                            links.push_back({ed::LinkId(idGen++), inId, outId});
                             ed::Link(links.back().id, links.back().inputId, links.back().outputId);
                         }
                     }
@@ -94,10 +126,10 @@ namespace UI
             }
             ed::EndDelete();
         }
-        int nextLinkId = 100;
-        int inIds = 100;
-        int outIds = 100;
+        int idGen = 100;
         bool firstFrame = true;
+        std::any data;
+        std::any data2;
         // std::map<std::string, int> renderNodesEditorsNames;
         // std::vector<RenderNodeEditor*> renderNodeEditors;
         
