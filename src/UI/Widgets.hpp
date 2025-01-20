@@ -106,8 +106,8 @@ namespace UI{
 
         enum NodeType
         {
-            SHADER,
-            COL_ATTACHMENT,
+            N_SHADER,
+            N_COL_ATTACHMENT,
         };
         struct LinkInfo
         {
@@ -200,20 +200,25 @@ namespace UI{
         struct GraphNodeFactory
         {
 
-            GraphNode<std::any> GetNode(NodeType nodeType, std::string name)
+            GraphNode<std::any> GetNode(NodeType nodeType, std::any* data,std::string name)
             {
                 GraphNode<std::any> node;
                 switch (nodeType)
                 {
-                case SHADER:
+                case N_SHADER:
+                    builder.AddInput(idGen++, {"Shader In", N_SHADER});
+                    builder.AddOutput(idGen++, {"Shader Out", N_SHADER});
                     break;
-                case COL_ATTACHMENT:
+                case N_COL_ATTACHMENT:
+                    builder.AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT});
+                    builder.AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT});
                     break;
                 }
-                
+                node = builder.Build(data);
+                return node;
             }
 
-            
+            int idGen = 100;
             GraphNodeBuilder builder;
         };
 
