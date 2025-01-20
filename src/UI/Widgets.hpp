@@ -106,8 +106,13 @@ namespace UI{
 
         enum NodeType
         {
+            N_RENDER_NODE,
             N_SHADER,
-            N_COL_ATTACHMENT,
+            N_COL_ATTACHMENT_STRUCTURE,
+            N_RASTER_CONFIGS,
+            N_DEPTH_CONFIGS,
+            N_VERTEX_INPUT
+            
         };
         struct LinkInfo
         {
@@ -186,6 +191,13 @@ namespace UI{
                 return this;
             }
 
+            GraphNodeBuilder* AddSelectable(std::string name)
+            {
+                return this;
+            }
+
+            
+
             GraphNode<std::any> Build(std::any* data)
             {
                 GraphNode<std::any> graphNode = {nodeId, inputNodes, outputNodes, data , name, true};
@@ -200,18 +212,30 @@ namespace UI{
         struct GraphNodeFactory
         {
 
-            GraphNode<std::any> GetNode(NodeType nodeType, std::any* data,std::string name)
+            GraphNode<std::any> GetNode(NodeType nodeType, std::any* data, std::string name)
             {
                 GraphNode<std::any> node;
                 switch (nodeType)
                 {
+                case N_RENDER_NODE:
+                    builder.SetNodeId(idGen++, name);
+                    builder.AddInput(idGen++, {"Vertex Shader", N_SHADER});
+                    builder.AddInput(idGen++, {"Fragment Shader", N_SHADER});
+                    builder.AddInput(idGen++, {"Compute Shader", N_SHADER});
+                    builder.AddInput(idGen++, {"Raster Config", N_RASTER_CONFIGS});
+                    builder.AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE});
+                    builder.AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS});
+                    builder.AddOutput(idGen++, {"Result", N_RENDER_NODE});
+                    break;
                 case N_SHADER:
+                    builder.SetNodeId(idGen++, name);
                     builder.AddInput(idGen++, {"Shader In", N_SHADER});
                     builder.AddOutput(idGen++, {"Shader Out", N_SHADER});
                     break;
-                case N_COL_ATTACHMENT:
-                    builder.AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT});
-                    builder.AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT});
+                case N_COL_ATTACHMENT_STRUCTURE:
+                    builder.SetNodeId(idGen++, name);
+                    builder.AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE});
+                    builder.AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE});
                     break;
                 }
                 node = builder.Build(data);

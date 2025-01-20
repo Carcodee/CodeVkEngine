@@ -16,6 +16,7 @@
 
 
 
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -32,12 +33,7 @@ namespace UI
     {
 
     public:
-        ImVector<Nodes::LinkInfo> links;
-        Nodes::GraphNodeBuilder builder;
-        
-        std::vector<Nodes::GraphNode<std::any>> nodes;
-        //int_1 - in/out id || int_2 node idx in nodes vec  
-        std::map<int, int> nodesIds;
+       
 
         template <typename T>
         void RegisterNode(Nodes::GraphNode<T>& node, int nodeIndex)
@@ -57,18 +53,12 @@ namespace UI
         {
             if (!firstFrame){return;}
 
-            data = ENGINE::GetColorAttachmentInfo(glm::vec4(1.0f, 0.1f, 0.1f, 1.0f));
-            builder.SetNodeId(idGen++, "A");
-            builder.AddInput(idGen++, {"In", Nodes::NodeType::SHADER});
-            builder.AddOutput(idGen++,{"ColAttachment", Nodes::NodeType::COL_ATTACHMENT});
-            nodes.push_back(builder.Build(&data));
+
+            nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE, &data, "Render Node"));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
-
-            builder.SetNodeId(idGen++, "B");
-            builder.AddInput(idGen++, {"ColAttachment", Nodes::NodeType::COL_ATTACHMENT});
-            builder.AddOutput(idGen++, {"Out", Nodes::NodeType::SHADER});
-            nodes.push_back(builder.Build(&data));
+            
+            nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, &data, "Col Attachment"));
             RegisterNode(nodes.back(), nodes.size() - 1);
         }
         void Draw()
@@ -162,6 +152,12 @@ namespace UI
             }
             return &nodes.at(nodesIds.at(id));
         }
+
+        ImVector<Nodes::LinkInfo> links;
+        Nodes::GraphNodeFactory factory;
+        std::vector<Nodes::GraphNode<std::any>> nodes;
+        //int_1 - in/out id || int_2 node idx in nodes vec  
+        std::map<int, int> nodesIds;
         int idGen = 100;
         bool firstFrame = true;
         std::any data;
