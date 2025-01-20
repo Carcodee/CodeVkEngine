@@ -519,6 +519,7 @@ namespace Rendering
 	    	// ImGui::End();
 	    	//
 	    	ImGui::Begin("Radiance Cascades Configs");
+
 	    	ImGui::SeparatorText("Cascades Configs");
 	    	static int probeSizePx = flatRenderer->cascadesInfo.probeSizePx;
 	    	if (ImGui::SliderInt("Probe Size in Px", &probeSizePx, 2, 1024))

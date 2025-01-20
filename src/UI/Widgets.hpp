@@ -125,6 +125,14 @@ namespace UI{
             std::string name;
             NodeType nodeType;
         };
+        
+        struct SelectableInfo
+        {
+            std::string name;
+            std::vector<std::string>options;
+            int selectedIndex;
+        };
+       
 
         template <typename T>
         struct GraphNode
@@ -132,6 +140,7 @@ namespace UI{
             ed::NodeId nodeId;
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
+            std::map<int, SelectableInfo> selectables;
             T* data;
             std::string name;
             bool firstFrame = true;
@@ -145,7 +154,7 @@ namespace UI{
                 ImGui::PushID(nodeId.Get());
                 ed::BeginNode(nodeId);
                 ImGui::Text(name.c_str());
-                for (auto input : inputNodes)
+                for (auto& input : inputNodes)
                 {
                     ImGui::PushID(input.first);
                     ed::BeginPin(input.first, ed::PinKind::Input);
@@ -153,13 +162,41 @@ namespace UI{
                     ed::EndPin();
                     ImGui::PopID();
                 }
-                for (auto output : outputNodes)
+                for (auto& output : outputNodes)
                 {
                     ImGui::PushID(output.first);
                     ed::BeginPin(output.first, ed::PinKind::Output);
                     ImGui::Text(output.second.name.c_str());
                     ed::EndPin();
                     ImGui::PopID();
+                }
+                for (auto& selectable : selectables)
+                {
+                    
+                    ImGui::PushID(selectable.first);
+                    ImGui::Text(selectable.second.name.c_str());
+                    //
+                    // if(ImGui::Button(selectable.second.options[selectable.second.selectedIndex].c_str(), ImVec2{50, 50}))
+                    // {
+                    //     ImGui::OpenPopup("Select Type");
+                    //     
+                    // }
+                    // if (ImGui::BeginMenu("Select Type"))
+                    // {
+                    //     for (int i = 0; i < selectable.second.options.size(); i++)
+                    //     {
+                    //         if (ImGui::Selectable(selectable.second.options[i].c_str()))
+                    //         {
+                    //             selectable.second.selectedIndex = i;
+                    //         }    
+                    //     }
+                    // }
+                    // ImGui::PushItemWidth(100.0);
+                    // ImGui::PopItemWidth();
+                    // ImGui::Spacing();
+
+                    ImGui::PopID();
+
                 }
                 ed::EndNode();
                 ImGui::PopID();
@@ -172,40 +209,47 @@ namespace UI{
             ed::NodeId nodeId;
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
+            std::map<int, SelectableInfo> selectables;
             std::string name;
             
-            GraphNodeBuilder* SetNodeId(ed::NodeId id, std::string name)
+            GraphNodeBuilder& SetNodeId(ed::NodeId id, std::string name)
             {
                 nodeId = id;
                 this->name = name;
-                return this;
+                return *this;
             }
-            GraphNodeBuilder* AddInput(int id, PinInfo pinInfo)
+            GraphNodeBuilder& AddInput(int id, PinInfo pinInfo)
             {
                 inputNodes.try_emplace(id, pinInfo);
-                return this;
+                return *this;
             }
-            GraphNodeBuilder* AddOutput(int id, PinInfo pinInfo)
+            GraphNodeBuilder& AddOutput(int id, PinInfo pinInfo)
             {
                 outputNodes.try_emplace(id, pinInfo);
-                return this;
+                return *this;
             }
-
-            GraphNodeBuilder* AddSelectable(std::string name)
-            {
-                return this;
-            }
-
             
+            GraphNodeBuilder& AddSelectable(int id, std::string name,std::vector<std::string> options)
+            {
+                selectables.try_emplace(id, SelectableInfo{name ,options, 0});
+                return *this;
+            }
+
 
             GraphNode<std::any> Build(std::any* data)
             {
-                GraphNode<std::any> graphNode = {nodeId, inputNodes, outputNodes, data , name, true};
+                
+                GraphNode<std::any> graphNode = {nodeId, inputNodes, outputNodes, selectables , data , name, true};
+                Reset();
+                return graphNode;
+            }
+            void Reset()
+            {
                 inputNodes.clear();
                 outputNodes.clear();
+                selectables.clear();
                 nodeId = -1;
                 name = "";
-                return graphNode;
             }
 
         };
@@ -215,27 +259,29 @@ namespace UI{
             GraphNode<std::any> GetNode(NodeType nodeType, std::any* data, std::string name)
             {
                 GraphNode<std::any> node;
+
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
-                    builder.SetNodeId(idGen++, name);
-                    builder.AddInput(idGen++, {"Vertex Shader", N_SHADER});
-                    builder.AddInput(idGen++, {"Fragment Shader", N_SHADER});
-                    builder.AddInput(idGen++, {"Compute Shader", N_SHADER});
-                    builder.AddInput(idGen++, {"Raster Config", N_RASTER_CONFIGS});
-                    builder.AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE});
-                    builder.AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS});
-                    builder.AddOutput(idGen++, {"Result", N_RENDER_NODE});
+                    builder.SetNodeId(idGen++, name)
+                    .AddInput(idGen++, {"Vertex Shader", N_SHADER})
+                    .AddInput(idGen++, {"Fragment Shader", N_SHADER})
+                    .AddInput(idGen++, {"Compute Shader", N_SHADER})
+                    .AddInput(idGen++, {"Raster Config", N_RASTER_CONFIGS})
+                    .AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
+                    .AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS})
+                    .AddOutput(idGen++, {"Result", N_RENDER_NODE});
                     break;
                 case N_SHADER:
-                    builder.SetNodeId(idGen++, name);
-                    builder.AddInput(idGen++, {"Shader In", N_SHADER});
-                    builder.AddOutput(idGen++, {"Shader Out", N_SHADER});
+                    builder.SetNodeId(idGen++, name)
+                    .AddInput(idGen++, {"Shader In", N_SHADER})
+                    .AddOutput(idGen++, {"Shader Out", N_SHADER});
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
-                    builder.SetNodeId(idGen++, name);
-                    builder.AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE});
-                    builder.AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE});
+                    builder.SetNodeId(idGen++, name)
+                    .AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE})
+                    .AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
+                    .AddSelectable(idGen++, "Col Attachment Config",{"Opt 1", "Opt2", "Opt3"});
                     break;
                 }
                 node = builder.Build(data);

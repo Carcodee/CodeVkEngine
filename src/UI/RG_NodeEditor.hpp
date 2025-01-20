@@ -1,20 +1,7 @@
 //
+
 // Created by carlo on 2025-01-07.
 //
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #ifndef RG_NODEEDITOR_HPP
@@ -23,18 +10,15 @@
 namespace UI
 {
     namespace ed = ax::NodeEditor;
+
     struct RenderNodeEditor
     {
-
         ENGINE::RenderGraphNode* renderNode;
     };
-    
+
     class RG_NodeEditor
     {
-
     public:
-       
-
         template <typename T>
         void RegisterNode(Nodes::GraphNode<T>& node, int nodeIndex)
         {
@@ -48,22 +32,23 @@ namespace UI
                 nodesIds.try_emplace(output.first, nodeIndex);
             }
         }
-        
+
         void Init()
         {
-            if (!firstFrame){return;}
+            if (!firstFrame) { return; }
 
 
             nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE, &data, "Render Node"));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
-            
             nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, &data, "Col Attachment"));
             RegisterNode(nodes.back(), nodes.size() - 1);
         }
+
         void Draw()
         {
             ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+            CheckLinks();
             for (auto& node : nodes)
             {
                 //fix this:
@@ -72,39 +57,39 @@ namespace UI
                 // SYSTEMS::Logger::GetInstance()->LogMessage(info);
                 node.Draw();
             }
-            CheckLinks();
             firstFrame = false;
             ed::End();
         }
+
         void CheckLinks()
         {
-
             for (auto link : links)
             {
                 ed::Link(link.id, link.inputId, link.outputId);
             }
-            
+
             if (ed::BeginCreate())
             {
                 ed::PinId startId, endInd;
                 if (ed::QueryNewLink(&startId, &endInd))
                 {
-
                     Nodes::GraphNode<std::any>* startNode = GetNodeByAnyId(startId.Get());
                     Nodes::GraphNode<std::any>* endNode = GetNodeByAnyId(endInd.Get());
                     if (startNode && endNode)
                     {
-                        Nodes::PinInfo* startPin =  startNode->outputNodes.contains(startId.Get()) ? &startNode->outputNodes.at(startId.Get()) : nullptr;
+                        Nodes::PinInfo* startPin = startNode->outputNodes.contains(startId.Get())
+                                                       ? &startNode->outputNodes.at(startId.Get())
+                                                       : nullptr;
                         if (startPin == nullptr)
                         {
-                            startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()): nullptr; 
+                            startPin = startNode->inputNodes.contains(startId.Get()) ? &startNode->inputNodes.at(startId.Get()) : nullptr;
                         }
                         Nodes::PinInfo* endPin = endNode->inputNodes.contains(endInd.Get()) ? &endNode->inputNodes.at(endInd.Get()) : nullptr;
                         if (endPin == nullptr)
                         {
-                            endPin = endNode->outputNodes.contains(endInd.Get()) ? &endNode->outputNodes.at(endInd.Get()) : nullptr;
+                            endPin = endNode->outputNodes.contains(endInd.Get())? &endNode->outputNodes.at(endInd.Get()) : nullptr;
                         }
-                        
+
                         if (startPin && endPin)
                         {
                             if (startPin->nodeType == endPin->nodeType)
@@ -114,15 +99,13 @@ namespace UI
                                     links.push_back({ed::LinkId(idGen++), startId, endInd});
                                     ed::Link(links.back().id, links.back().inputId, links.back().outputId);
                                 }
-                            }    
+                            }
                         }
-                        
-                    }else
+                    }
+                    else
                     {
                         return;
                     }
-                    
-
                 }
             }
             ed::EndCreate();
@@ -138,12 +121,12 @@ namespace UI
                             links.erase(&link);
                             break;
                         }
-                        
                     }
                 }
             }
             ed::EndDelete();
         }
+
         Nodes::GraphNode<std::any>* GetNodeByAnyId(int id)
         {
             if (!nodesIds.contains(id))
@@ -164,11 +147,9 @@ namespace UI
         std::any data2;
         // std::map<std::string, int> renderNodesEditorsNames;
         // std::vector<RenderNodeEditor*> renderNodeEditors;
-        
+
         // ENGINE::RenderGraph* renderGraph;
-        
     };
-    
 }
 
 #endif //RG_NODEEDITOR_HPP
