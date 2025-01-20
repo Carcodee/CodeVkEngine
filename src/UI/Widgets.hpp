@@ -104,21 +104,31 @@ namespace UI{
 
         namespace ed = ax::NodeEditor;
 
+        enum NodeType
+        {
+            SHADER,
+            COL_ATTACHMENT,
+        };
         struct LinkInfo
         {
             ed::LinkId id;
             ed::PinId inputId;
             ed::PinId outputId;
         };
+        struct PinInfo
+        {
+            std::string name;
+            NodeType nodeType;
+        };
 
         template <typename T>
         struct GraphNode
         {
             ed::NodeId nodeId;
-            std::map<int, std::string> inputNodes;
-            std::map<int, std::string> outputNodes;
-            std::string name;
+            std::map<int, PinInfo> inputNodes;
+            std::map<int, PinInfo> outputNodes;
             T* data;
+            std::string name;
             bool firstFrame = true;
 
             void Draw()
@@ -134,7 +144,7 @@ namespace UI{
                 {
                     ImGui::PushID(input.first);
                     ed::BeginPin(input.first, ed::PinKind::Input);
-                    ImGui::Text(input.second.c_str());
+                    ImGui::Text(input.second.name.c_str());
                     ed::EndPin();
                     ImGui::PopID();
                 }
@@ -142,7 +152,7 @@ namespace UI{
                 {
                     ImGui::PushID(output.first);
                     ed::BeginPin(output.first, ed::PinKind::Output);
-                    ImGui::Text(output.second.c_str());
+                    ImGui::Text(output.second.name.c_str());
                     ed::EndPin();
                     ImGui::PopID();
                 }
@@ -155,8 +165,8 @@ namespace UI{
         {
 
             ed::NodeId nodeId;
-            std::map<int, std::string> inputNodes;
-            std::map<int, std::string> outputNodes;
+            std::map<int, PinInfo> inputNodes;
+            std::map<int, PinInfo> outputNodes;
             std::string name;
             
             GraphNodeBuilder* SetNodeId(ed::NodeId id, std::string name)
@@ -165,20 +175,20 @@ namespace UI{
                 this->name = name;
                 return this;
             }
-            GraphNodeBuilder* AddInput(int id, std::string name)
+            GraphNodeBuilder* AddInput(int id, PinInfo pinInfo)
             {
-                inputNodes.try_emplace(id, name);
+                inputNodes.try_emplace(id, pinInfo);
                 return this;
             }
-            GraphNodeBuilder* AddOutput(int id, std::string name)
+            GraphNodeBuilder* AddOutput(int id, PinInfo pinInfo)
             {
-                outputNodes.try_emplace(id, name);
+                outputNodes.try_emplace(id, pinInfo);
                 return this;
             }
 
             GraphNode<std::any> Build(std::any* data)
             {
-                GraphNode graphNode = {nodeId, inputNodes, outputNodes, name, data, true};
+                GraphNode<std::any> graphNode = {nodeId, inputNodes, outputNodes, data , name, true};
                 inputNodes.clear();
                 outputNodes.clear();
                 nodeId = -1;
@@ -186,6 +196,25 @@ namespace UI{
                 return graphNode;
             }
 
+        };
+        struct GraphNodeFactory
+        {
+
+            GraphNode<std::any> GetNode(NodeType nodeType, std::string name)
+            {
+                GraphNode<std::any> node;
+                switch (nodeType)
+                {
+                case SHADER:
+                    break;
+                case COL_ATTACHMENT:
+                    break;
+                }
+                
+            }
+
+            
+            GraphNodeBuilder builder;
         };
 
 

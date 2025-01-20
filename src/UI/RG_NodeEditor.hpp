@@ -14,6 +14,8 @@
 
 
 
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -51,21 +53,21 @@ namespace UI
             }
         }
         
-        void Init() 
+        void Init()
         {
             if (!firstFrame){return;}
 
             data = ENGINE::GetColorAttachmentInfo(glm::vec4(1.0f, 0.1f, 0.1f, 1.0f));
             builder.SetNodeId(idGen++, "A");
-            builder.AddInput(idGen++, "In");
-            builder.AddOutput(idGen++, "Out");
+            builder.AddInput(idGen++, {"In", Nodes::NodeType::SHADER});
+            builder.AddOutput(idGen++,{"ColAttachment", Nodes::NodeType::COL_ATTACHMENT});
             nodes.push_back(builder.Build(&data));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
 
             builder.SetNodeId(idGen++, "B");
-            builder.AddInput(idGen++, "In");
-            builder.AddOutput(idGen++, "Out");
+            builder.AddInput(idGen++, {"ColAttachment", Nodes::NodeType::COL_ATTACHMENT});
+            builder.AddOutput(idGen++, {"Out", Nodes::NodeType::SHADER});
             nodes.push_back(builder.Build(&data));
             RegisterNode(nodes.back(), nodes.size() - 1);
         }
@@ -76,8 +78,8 @@ namespace UI
             {
                 //fix this:
                 ENGINE::AttachmentInfo* d = std::any_cast<ENGINE::AttachmentInfo>(node.data);
-                std::string info = "Data: " + std::to_string(d->attachmentInfo.clearValue.color.float32[0]);
-                SYSTEMS::Logger::GetInstance()->LogMessage(info);
+                // std::string info = "Data: " + std::to_string(d->attachmentInfo.clearValue.color.float32[0]);
+                // SYSTEMS::Logger::GetInstance()->LogMessage(info);
                 node.Draw();
             }
             CheckLinks();
@@ -94,17 +96,43 @@ namespace UI
             
             if (ed::BeginCreate())
             {
-                ed::PinId inId, outId;
-                if (ed::QueryNewLink(&inId, &outId))
+                ed::PinId startId, endInd;
+                if (ed::QueryNewLink(&startId, &endInd))
                 {
-                    if (inId && outId)
+
+                    Nodes::GraphNode<std::any>* startNode = GetNodeByAnyId(startId.Get());
+                    Nodes::GraphNode<std::any>* endNode = GetNodeByAnyId(endInd.Get());
+                    if (startNode && endNode)
                     {
-                        if(ed::AcceptNewItem())
+                        Nodes::PinInfo* startPin =  startNode->outputNodes.contains(startId.Get()) ? &startNode->outputNodes.at(startId.Get()) : nullptr;
+                        if (startPin == nullptr)
                         {
-                            links.push_back({ed::LinkId(idGen++), inId, outId});
-                            ed::Link(links.back().id, links.back().inputId, links.back().outputId);
+                            startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()): nullptr; 
                         }
+                        Nodes::PinInfo* endPin = endNode->inputNodes.contains(endInd.Get()) ? &endNode->inputNodes.at(endInd.Get()) : nullptr;
+                        if (endPin == nullptr)
+                        {
+                            endPin = endNode->outputNodes.contains(endInd.Get()) ? &endNode->outputNodes.at(endInd.Get()) : nullptr;
+                        }
+                        
+                        if (startPin && endPin)
+                        {
+                            if (startPin->nodeType == endPin->nodeType)
+                            {
+                                if (ed::AcceptNewItem())
+                                {
+                                    links.push_back({ed::LinkId(idGen++), startId, endInd});
+                                    ed::Link(links.back().id, links.back().inputId, links.back().outputId);
+                                }
+                            }    
+                        }
+                        
+                    }else
+                    {
+                        return;
                     }
+                    
+
                 }
             }
             ed::EndCreate();
@@ -125,6 +153,14 @@ namespace UI
                 }
             }
             ed::EndDelete();
+        }
+        Nodes::GraphNode<std::any>* GetNodeByAnyId(int id)
+        {
+            if (!nodesIds.contains(id))
+            {
+                return nullptr;
+            }
+            return &nodes.at(nodesIds.at(id));
         }
         int idGen = 100;
         bool firstFrame = true;
