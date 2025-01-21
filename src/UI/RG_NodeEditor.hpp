@@ -4,6 +4,7 @@
 //
 
 
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -37,18 +38,16 @@ namespace UI
         {
             if (!firstFrame) { return; }
 
-
-            nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE, &data, "Render Node"));
+            nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE, &data));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
-            nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, &data, "Col Attachment"));
+            nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, &data));
             RegisterNode(nodes.back(), nodes.size() - 1);
         }
 
         void Draw()
         {
             ed::Begin("My Editor", ImVec2(0.0, 0.0f));
-            CheckLinks();
             for (auto& node : nodes)
             {
                 //fix this:
@@ -57,6 +56,7 @@ namespace UI
                 // SYSTEMS::Logger::GetInstance()->LogMessage(info);
                 node.Draw();
             }
+            CheckLinks();
             firstFrame = false;
             ed::End();
         }
@@ -77,12 +77,12 @@ namespace UI
                     Nodes::GraphNode<std::any>* endNode = GetNodeByAnyId(endInd.Get());
                     if (startNode && endNode)
                     {
-                        Nodes::PinInfo* startPin = startNode->outputNodes.contains(startId.Get())
-                                                       ? &startNode->outputNodes.at(startId.Get())
-                                                       : nullptr;
+                        Nodes::PinInfo* input;
+                        Nodes::PinInfo* output;
+                        Nodes::PinInfo* startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()) : nullptr;
                         if (startPin == nullptr)
                         {
-                            startPin = startNode->inputNodes.contains(startId.Get()) ? &startNode->inputNodes.at(startId.Get()) : nullptr;
+                            startPin = startNode->outputNodes.contains(startId.Get()) ? &startNode->outputNodes.at(startId.Get()) : nullptr;
                         }
                         Nodes::PinInfo* endPin = endNode->inputNodes.contains(endInd.Get()) ? &endNode->inputNodes.at(endInd.Get()) : nullptr;
                         if (endPin == nullptr)
@@ -94,6 +94,7 @@ namespace UI
                         {
                             if (startPin->nodeType == endPin->nodeType)
                             {
+                                
                                 if (ed::AcceptNewItem())
                                 {
                                     links.push_back({ed::LinkId(idGen++), startId, endInd});
@@ -141,7 +142,7 @@ namespace UI
         std::vector<Nodes::GraphNode<std::any>> nodes;
         //int_1 - in/out id || int_2 node idx in nodes vec  
         std::map<int, int> nodesIds;
-        int idGen = 100;
+        int idGen = 200;
         bool firstFrame = true;
         std::any data;
         std::any data2;

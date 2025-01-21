@@ -3,6 +3,7 @@
 //
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -109,7 +110,8 @@ namespace UI{
             N_RENDER_NODE,
             N_SHADER,
             N_COL_ATTACHMENT_STRUCTURE,
-            N_RASTER_CONFIGS,
+            N_IMAGE_SAMPLER,
+            N_IMAGE_STORAGE,
             N_DEPTH_CONFIGS,
             N_VERTEX_INPUT
             
@@ -143,13 +145,24 @@ namespace UI{
             std::map<int, SelectableInfo> selectables;
             T* data;
             std::string name;
+            glm::vec2 pos;
             bool firstFrame = true;
+            std::map<NodeType, std::any*> inputData;
+            std::function<void(GraphNode<std::any>)>* linkOp;
+
+            void DeleteLink(NodeType inputRemoved)
+            {
+                if (inputData.contains(inputRemoved))
+                {
+                    inputData.erase(inputRemoved);
+                }
+            }
 
             void Draw()
             {
                 if (firstFrame)
                 {
-                    ed::SetNodePosition(nodeId, ImVec2(0, 10));
+                    ed::SetNodePosition(nodeId, ImVec2(pos.x, pos.y));
                 }
                 ImGui::PushID(nodeId.Get());
                 ed::BeginNode(nodeId);
@@ -176,23 +189,28 @@ namespace UI{
                     ImGui::PushID(selectable.first);
                     ImGui::Text(selectable.second.name.c_str());
                     //
+                    ImGui::PushItemWidth(100.0);
+                    int index = selectable.second.selectedIndex;
+                    std::string label = selectable.second.options[index].c_str();
+                    //temp solution
+                    ImGui::SliderInt(label.c_str(), &selectable.second.selectedIndex, 0, selectable.second.options.size() -1);
+                        
                     // if(ImGui::Button(selectable.second.options[selectable.second.selectedIndex].c_str(), ImVec2{50, 50}))
                     // {
-                    //     ImGui::OpenPopup("Select Type");
-                    //     
+                    //     ImGui::OpenPopup("SelectType");
                     // }
-                    // if (ImGui::BeginMenu("Select Type"))
+                    // if (ImGui::BeginPopup("SelectType"))
                     // {
                     //     for (int i = 0; i < selectable.second.options.size(); i++)
                     //     {
-                    //         if (ImGui::Selectable(selectable.second.options[i].c_str()))
+                    //         if (ImGui::Button(selectable.second.options[i].c_str(), ImVec2{25, 25}))
                     //         {
                     //             selectable.second.selectedIndex = i;
-                    //         }    
+                    //         }
                     //     }
+                    //     ImGui::EndPopup();
                     // }
-                    // ImGui::PushItemWidth(100.0);
-                    // ImGui::PopItemWidth();
+                    ImGui::PopItemWidth();
                     // ImGui::Spacing();
 
                     ImGui::PopID();
@@ -206,16 +224,34 @@ namespace UI{
         struct GraphNodeBuilder
         {
 
-            ed::NodeId nodeId;
-            std::map<int, PinInfo> inputNodes;
-            std::map<int, PinInfo> outputNodes;
-            std::map<int, SelectableInfo> selectables;
-            std::string name;
+            ed::NodeId nodeId = -1;
+            std::map<int, PinInfo> inputNodes = {};
+            std::map<int, PinInfo> outputNodes = {};
+            std::map<int, SelectableInfo> selectables = {};
+            std::string name = "";
+            glm::vec2 pos = glm::vec2(0.0);
+            std::function<void(GraphNode<std::any>)>* linkOp;
             
             GraphNodeBuilder& SetNodeId(ed::NodeId id, std::string name)
             {
                 nodeId = id;
                 this->name = name;
+                return *this;
+            }
+
+            GraphNodeBuilder& SetNodeName(std::string name)
+            {
+                this->name = name;
+                return *this;
+            }
+            GraphNodeBuilder& SetLinkOp(std::function<void(GraphNode<std::any>)>* linkOp)
+            {
+                this->linkOp = linkOp;
+            }
+            
+            GraphNodeBuilder& SetPosition(glm::vec2 pos)
+            {
+                this->pos = pos;
                 return *this;
             }
             GraphNodeBuilder& AddInput(int id, PinInfo pinInfo)
@@ -234,12 +270,26 @@ namespace UI{
                 selectables.try_emplace(id, SelectableInfo{name ,options, 0});
                 return *this;
             }
-
-
+            
             GraphNode<std::any> Build(std::any* data)
             {
-                
-                GraphNode<std::any> graphNode = {nodeId, inputNodes, outputNodes, selectables , data , name, true};
+                // assert(nodeId.Get() > -1 && "Set the id before building");
+                assert(linkOp && "Define a link operation");
+                assert(!name.empty() && "Set a valid name");
+                assert(data && "Data must be valid");
+
+                GraphNode<std::any> graphNode = {
+                    nodeId,
+                    inputNodes,
+                    outputNodes,
+                    selectables,
+                    data,
+                    name,
+                    pos,
+                    true,
+                    {},
+                    linkOp
+                };
                 Reset();
                 return graphNode;
             }
@@ -248,6 +298,7 @@ namespace UI{
                 inputNodes.clear();
                 outputNodes.clear();
                 selectables.clear();
+                pos = glm::vec2(0.0);
                 nodeId = -1;
                 name = "";
             }
@@ -256,35 +307,72 @@ namespace UI{
         struct GraphNodeFactory
         {
 
-            GraphNode<std::any> GetNode(NodeType nodeType, std::any* data, std::string name)
+            GraphNode<std::any> GetNode(NodeType nodeType, std::any* data, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
             {
-                GraphNode<std::any> node;
 
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
-                    builder.SetNodeId(idGen++, name)
-                    .AddInput(idGen++, {"Vertex Shader", N_SHADER})
-                    .AddInput(idGen++, {"Fragment Shader", N_SHADER})
-                    .AddInput(idGen++, {"Compute Shader", N_SHADER})
-                    .AddInput(idGen++, {"Raster Config", N_RASTER_CONFIGS})
-                    .AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
-                    .AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS})
-                    .AddOutput(idGen++, {"Result", N_RENDER_NODE});
+                    auto linkOp = new std::function<void(GraphNode<std::any> selfNode)>(
+                        [data](GraphNode<std::any> selfNode)
+                        {
+                            ENGINE::RenderGraphNode* renderNodeRef = std::any_cast<ENGINE::RenderGraphNode>(selfNode.data);
+                            for (auto& links : selfNode.inputData)
+                            {
+                                switch (links.first)
+                                {
+                                case N_RENDER_NODE:
+                                    break;
+                                case N_SHADER:
+                                    ENGINE::Shader* shader = std::any_cast<ENGINE::Shader>(links.second);
+                                    break;
+                                case N_COL_ATTACHMENT_STRUCTURE:
+                                    break;
+                                case N_IMAGE_SAMPLER:
+                                    break;
+                                case N_IMAGE_STORAGE:
+                                    break;
+                                case N_DEPTH_CONFIGS:
+                                    break;
+                                case N_VERTEX_INPUT:
+                                    break;
+                                }
+                            }
+                            
+                        });
+                    builder
+                        .AddOutput(idGen++, {"Result", N_RENDER_NODE})
+                        .AddInput(idGen++, {"Vertex Shader", N_SHADER})
+                        .AddInput(idGen++, {"Fragment Shader", N_SHADER})
+                        .AddInput(idGen++, {"Compute Shader", N_SHADER})
+                        .AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS})
+                        .AddSelectable(idGen++, "Raster Configs", {"Fill", "Line", "Point"})
+                        .SetLinkOp(linkOp)
+                        .SetNodeId(idGen++, "Render Node");
                     break;
                 case N_SHADER:
-                    builder.SetNodeId(idGen++, name)
-                    .AddInput(idGen++, {"Shader In", N_SHADER})
-                    .AddOutput(idGen++, {"Shader Out", N_SHADER});
+                    builder
+                        .AddInput(idGen++, {"Shader In", N_SHADER})
+                        .AddOutput(idGen++, {"Shader Out", N_SHADER})
+                        .SetNodeId(idGen++, "Shader");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
-                    builder.SetNodeId(idGen++, name)
-                    .AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE})
-                    .AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
-                    .AddSelectable(idGen++, "Col Attachment Config",{"Opt 1", "Opt2", "Opt3"});
+                    builder
+                        .AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(idGen++, {"Col Attachment Info In", N_IMAGE_SAMPLER})
+                        .AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddSelectable(idGen++, "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
+                        .SetNodeId(idGen++, "Col Attachment Structure");
                     break;
                 }
-                node = builder.Build(data);
+
+                if (!name.empty())
+                {
+                    builder.SetNodeName(name);
+                }
+                builder.SetPosition(pos);
+                GraphNode<std::any> node = builder.Build(data);;
                 return node;
             }
 
@@ -292,63 +380,6 @@ namespace UI{
             GraphNodeBuilder builder;
         };
 
-
-        static void BaseNode(bool firstFrame)
-        {
-            
-                int uniqueId = 1;
-                // Submit Node B
-                ed::NodeId nodeA_Id = uniqueId++;
-                ed::PinId nodeA_InputPinId = uniqueId++;
-                ed::PinId nodeA_OutputPinId = uniqueId++;
-
-                ed::Begin("My Editor", ImVec2(0.0, 0.0f));
-
-                // Start drawing nodes.
-            
-                if (firstFrame)
-                {
-                    ed::SetNodePosition(nodeA_Id, ImVec2(0, 10));
-                }
-                ed::BeginNode(nodeA_Id);
-                ImGui::Text("Node A");
-                ed::BeginPin(nodeA_InputPinId, ed::PinKind::Input);
-                ImGui::Text("-> In");
-                ed::EndPin();
-                ImGui::SameLine();
-                ed::BeginPin(nodeA_OutputPinId, ed::PinKind::Output);
-                ImGui::Text("Out ->");
-                ed::EndPin();
-                ed::EndNode();
-
-                ed::NodeId nodeB_Id = uniqueId++;
-                ed::PinId nodeB_InputPinId1 = uniqueId++;
-                ed::PinId nodeB_InputPinId2 = uniqueId++;
-                ed::PinId nodeB_OutputPinId = uniqueId++;
-
-                // Start drawing nodes.
-                if (firstFrame)
-                {
-                    ed::SetNodePosition(nodeB_Id, ImVec2(10, 10));
-                }
-                ed::BeginNode(nodeB_Id);
-                ImGui::Text("Node A");
-                ed::BeginPin(nodeB_InputPinId1, ed::PinKind::Input);
-                ImGui::Text("-> In_1");
-                ed::EndPin();
-                ed::BeginPin(nodeB_InputPinId2, ed::PinKind::Input);
-                ImGui::Text("-> In_2");
-                ed::EndPin();
-                ImGui::SameLine();
-                ed::BeginPin(nodeB_OutputPinId, ed::PinKind::Output);
-                ImGui::Text("Out ->");
-                ed::EndPin();
-                ed::EndNode();
-            
-    		ed::End();
-            
-        }
-        
     }
 
 }

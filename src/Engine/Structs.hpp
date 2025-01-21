@@ -49,7 +49,8 @@ namespace ENGINE
 
         vk::UniqueCommandBuffer commandBuffer;
     };
-        struct AttachmentInfo
+
+    struct AttachmentInfo
     {
         vk::RenderingAttachmentInfo attachmentInfo;
         vk::Format format = vk::Format::eUndefined;
