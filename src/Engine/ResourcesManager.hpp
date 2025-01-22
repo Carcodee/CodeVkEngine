@@ -365,37 +365,6 @@ namespace ENGINE
             storageImagesToClear.clear();
         }
 
-        ResourcesManager(Core* coreRefs)
-        {
-            this->core = coreRefs;
-            stagedBuffers.reserve(BASE_SIZE);
-            buffers.reserve(BASE_SIZE);
-            storageImagesViews.reserve(BASE_SIZE);
-            imageViews.reserve(BASE_SIZE);
-            images.reserve(BASE_SIZE);
-            
-            descriptorAllocator = std::make_unique<DescriptorAllocator>();
-            descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
-            
-            samplerPool = std::make_unique<SamplerPool>();
-            
-            shipperSampler = samplerPool->AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
-                                                vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
-            
-            std::string defaultTexturePath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +
-                "\\Images\\default_texture.jpg";
-
-            ImageShipper* shipper = GetShipper("default_tex", defaultTexturePath, 1, 1, g_ShipperFormat,
-                                               LayoutPatterns::GRAPHICS_READ);
-
-            auto imageInfo = ENGINE::Image::CreateInfo2d(
-                glm::uvec2(core->swapchainRef->extent.width, core->swapchainRef->extent.height), 1, 1,
-                ENGINE::g_32bFormat,
-                vk::ImageUsageFlagBits::eStorage);
-
-            ImageView* defaultStorage = GetImage("default_storage", imageInfo, 0, 0);
-            
-        }
 
         void RequestStorageImageClear(std::string name)
         {
@@ -405,6 +374,16 @@ namespace ENGINE
                 return;
             }
             storageImagesToClear.push_back(name);
+        }
+                Shader* GetShader(std::string path, ShaderStage stage)
+        {
+            if (shadersNames.contains(path))
+            {
+                return shaders.at(shadersNames.at(path)).get();
+            }
+            shadersNames.try_emplace(path, shaders.size());
+            shaders.emplace_back(std::make_unique<Shader>(core->logicalDevice.get(), path, stage));
+            
         }
         DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
         {
@@ -434,6 +413,7 @@ namespace ENGINE
                 freeIdsBucket.emplace_back(id);
             }
         }
+
 
         
         ImageView* GetImageViewFromName(std::string name)
@@ -496,6 +476,37 @@ namespace ENGINE
             return instance;
         }
 
+        ResourcesManager(Core* coreRefs)
+        {
+            this->core = coreRefs;
+            stagedBuffers.reserve(BASE_SIZE);
+            buffers.reserve(BASE_SIZE);
+            storageImagesViews.reserve(BASE_SIZE);
+            imageViews.reserve(BASE_SIZE);
+            images.reserve(BASE_SIZE);
+            
+            descriptorAllocator = std::make_unique<DescriptorAllocator>();
+            descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
+            
+            samplerPool = std::make_unique<SamplerPool>();
+            
+            shipperSampler = samplerPool->AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
+                                                vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+            
+            std::string defaultTexturePath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +
+                "\\Images\\default_texture.jpg";
+
+            ImageShipper* shipper = GetShipper("default_tex", defaultTexturePath, 1, 1, g_ShipperFormat,
+                                               LayoutPatterns::GRAPHICS_READ);
+
+            auto imageInfo = ENGINE::Image::CreateInfo2d(
+                glm::uvec2(core->swapchainRef->extent.width, core->swapchainRef->extent.height), 1, 1,
+                ENGINE::g_32bFormat,
+                vk::ImageUsageFlagBits::eStorage);
+
+            ImageView* defaultStorage = GetImage("default_storage", imageInfo, 0, 0);
+            
+        }
         ~ResourcesManager() = default;
 
         void Attach(SYSTEMS::Watcher* watcher) override
@@ -524,6 +535,7 @@ namespace ENGINE
         std::unordered_map<std::string, int32_t> storageImagesNames;
         std::unordered_map<std::string, int32_t> imagesShippersNames;
         std::set<int32_t> dsetsIds;
+        std::unordered_map<std::string, int32_t> shadersNames;
 
         
         std::vector<std::unique_ptr<Buffer>> buffers;
@@ -540,6 +552,7 @@ namespace ENGINE
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
         std::vector<vk::UniqueDescriptorSet> dsets;
         std::deque<int32_t> freeIdsBucket;
+        std::vector<std::unique_ptr<Shader>> shaders;
 
         
         std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {

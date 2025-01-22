@@ -114,7 +114,6 @@ namespace UI{
             N_IMAGE_STORAGE,
             N_DEPTH_CONFIGS,
             N_VERTEX_INPUT
-            
         };
         struct LinkInfo
         {
@@ -136,26 +135,31 @@ namespace UI{
         };
        
 
-        template <typename T>
         struct GraphNode
         {
+            
             ed::NodeId nodeId;
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
             std::map<int, SelectableInfo> selectables;
-            T* data;
+            std::map<NodeType, std::any&> inputData;
             std::string name;
             glm::vec2 pos;
             bool firstFrame = true;
-            std::map<NodeType, std::any*> inputData;
-            std::function<void(GraphNode<std::any>)>* linkOp;
+            
+            std::function<std::any&(GraphNode&)>* outputFunction = nullptr;
 
-            void DeleteLink(NodeType inputRemoved)
+            std::any& BuildOutput()
             {
-                if (inputData.contains(inputRemoved))
-                {
-                    inputData.erase(inputRemoved);
-                }
+                std::any& result = (*outputFunction)(*this);
+                return result;
+            }
+
+            template <typename T>
+            T& GetNodeInputData(NodeType nodeType)
+            {
+                std::any& anyData = inputData.at(nodeType);
+                return std::any_cast<T>(anyData);
             }
 
             void Draw()
@@ -230,7 +234,7 @@ namespace UI{
             std::map<int, SelectableInfo> selectables = {};
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
-            std::function<void(GraphNode<std::any>)>* linkOp;
+            std::function<std::any&(GraphNode&)>* outputOp;
             
             GraphNodeBuilder& SetNodeId(ed::NodeId id, std::string name)
             {
@@ -244,9 +248,10 @@ namespace UI{
                 this->name = name;
                 return *this;
             }
-            GraphNodeBuilder& SetLinkOp(std::function<void(GraphNode<std::any>)>* linkOp)
+            GraphNodeBuilder& SetLinkOp(std::function<std::any&(GraphNode&)>* outputOp)
             {
-                this->linkOp = linkOp;
+                this->outputOp = outputOp;
+                return *this;
             }
             
             GraphNodeBuilder& SetPosition(glm::vec2 pos)
@@ -270,26 +275,23 @@ namespace UI{
                 selectables.try_emplace(id, SelectableInfo{name ,options, 0});
                 return *this;
             }
-            
-            GraphNode<std::any> Build(std::any* data)
+
+            GraphNode Build(std::any* data)
             {
                 // assert(nodeId.Get() > -1 && "Set the id before building");
-                assert(linkOp && "Define a link operation");
+                assert(outputOp && "Define a link operation");
                 assert(!name.empty() && "Set a valid name");
                 assert(data && "Data must be valid");
 
-                GraphNode<std::any> graphNode = {
-                    nodeId,
-                    inputNodes,
-                    outputNodes,
-                    selectables,
-                    data,
-                    name,
-                    pos,
-                    true,
-                    {},
-                    linkOp
-                };
+                GraphNode graphNode ={};
+                graphNode.name = name;
+                graphNode.nodeId = nodeId;
+                graphNode.inputNodes = inputNodes;
+                graphNode.outputNodes = outputNodes;
+                graphNode.selectables = selectables;
+                graphNode.outputFunction = outputOp;
+                graphNode.inputData = {};
+                graphNode.pos = pos;
                 Reset();
                 return graphNode;
             }
@@ -306,40 +308,28 @@ namespace UI{
         };
         struct GraphNodeFactory
         {
-
-            GraphNode<std::any> GetNode(NodeType nodeType, std::any* data, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
+            GraphNode GetNode(NodeType nodeType, std::any* data, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
             {
 
+                GraphNode node;
+                std::function<std::any&(GraphNode&)>* linkOp;
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
-                    auto linkOp = new std::function<void(GraphNode<std::any> selfNode)>(
-                        [data](GraphNode<std::any> selfNode)
-                        {
-                            ENGINE::RenderGraphNode* renderNodeRef = std::any_cast<ENGINE::RenderGraphNode>(selfNode.data);
-                            for (auto& links : selfNode.inputData)
+                    linkOp = new std::function<std::any&(GraphNode& selfNode)>(
+                        [](GraphNode& selfNode) -> std::any& {
+                            std::any result;
+
+                            for (auto& input : selfNode.inputNodes)
                             {
-                                switch (links.first)
-                                {
-                                case N_RENDER_NODE:
-                                    break;
-                                case N_SHADER:
-                                    ENGINE::Shader* shader = std::any_cast<ENGINE::Shader>(links.second);
-                                    break;
-                                case N_COL_ATTACHMENT_STRUCTURE:
-                                    break;
-                                case N_IMAGE_SAMPLER:
-                                    break;
-                                case N_IMAGE_STORAGE:
-                                    break;
-                                case N_DEPTH_CONFIGS:
-                                    break;
-                                case N_VERTEX_INPUT:
-                                    break;
-                                }
+                                
+                                
                             }
                             
+                            
+                            return result;
                         });
+
                     builder
                         .AddOutput(idGen++, {"Result", N_RENDER_NODE})
                         .AddInput(idGen++, {"Vertex Shader", N_SHADER})
@@ -348,13 +338,22 @@ namespace UI{
                         .AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
                         .AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS})
                         .AddSelectable(idGen++, "Raster Configs", {"Fill", "Line", "Point"})
-                        .SetLinkOp(linkOp)
                         .SetNodeId(idGen++, "Render Node");
                     break;
                 case N_SHADER:
+                    linkOp = new std::function<std::any&(GraphNode& selfNode)>(
+                        [](GraphNode& selfNode) -> std::any& {
+                            std::string shaderP = "";
+                            std::any shader = ENGINE::ResourcesManager::GetInstance()->GetShader(
+                                shaderP, ENGINE::S_COMP);
+                            return shader;
+                        });
+                    
                     builder
+                    
                         .AddInput(idGen++, {"Shader In", N_SHADER})
                         .AddOutput(idGen++, {"Shader Out", N_SHADER})
+                        .SetLinkOp(linkOp)
                         .SetNodeId(idGen++, "Shader");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
@@ -372,7 +371,7 @@ namespace UI{
                     builder.SetNodeName(name);
                 }
                 builder.SetPosition(pos);
-                GraphNode<std::any> node = builder.Build(data);;
+                node = builder.Build(data);
                 return node;
             }
 

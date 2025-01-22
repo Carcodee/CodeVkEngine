@@ -22,6 +22,7 @@ namespace SYSTEMS{
         virtual void Detach(Watcher* watcher) = 0;
         
     };
+    
 
 }
 #endif //OBSERVER_SYSTEM

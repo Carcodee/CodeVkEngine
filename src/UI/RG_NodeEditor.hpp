@@ -5,6 +5,9 @@
 
 
 
+
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -20,8 +23,7 @@ namespace UI
     class RG_NodeEditor
     {
     public:
-        template <typename T>
-        void RegisterNode(Nodes::GraphNode<T>& node, int nodeIndex)
+        void RegisterNode(Nodes::GraphNode& node, int nodeIndex)
         {
             nodesIds.try_emplace(node.nodeId.Get(), nodeIndex);
             for (auto& input : node.inputNodes)
@@ -51,7 +53,7 @@ namespace UI
             for (auto& node : nodes)
             {
                 //fix this:
-                ENGINE::AttachmentInfo* d = std::any_cast<ENGINE::AttachmentInfo>(node.data);
+                // ENGINE::AttachmentInfo* d = std::any_cast<ENGINE::AttachmentInfo>(node.data);
                 // std::string info = "Data: " + std::to_string(d->attachmentInfo.clearValue.color.float32[0]);
                 // SYSTEMS::Logger::GetInstance()->LogMessage(info);
                 node.Draw();
@@ -73,12 +75,10 @@ namespace UI
                 ed::PinId startId, endInd;
                 if (ed::QueryNewLink(&startId, &endInd))
                 {
-                    Nodes::GraphNode<std::any>* startNode = GetNodeByAnyId(startId.Get());
-                    Nodes::GraphNode<std::any>* endNode = GetNodeByAnyId(endInd.Get());
+                    Nodes::GraphNode* startNode = GetNodeByAnyId(startId.Get());
+                    Nodes::GraphNode* endNode = GetNodeByAnyId(endInd.Get());
                     if (startNode && endNode)
                     {
-                        Nodes::PinInfo* input;
-                        Nodes::PinInfo* output;
                         Nodes::PinInfo* startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()) : nullptr;
                         if (startPin == nullptr)
                         {
@@ -94,6 +94,7 @@ namespace UI
                         {
                             if (startPin->nodeType == endPin->nodeType)
                             {
+                                endNode->inputData.at(startPin->nodeType) = startNode->BuildOutput();
                                 
                                 if (ed::AcceptNewItem())
                                 {
@@ -128,7 +129,7 @@ namespace UI
             ed::EndDelete();
         }
 
-        Nodes::GraphNode<std::any>* GetNodeByAnyId(int id)
+        Nodes::GraphNode* GetNodeByAnyId(int id)
         {
             if (!nodesIds.contains(id))
             {
@@ -139,7 +140,7 @@ namespace UI
 
         ImVector<Nodes::LinkInfo> links;
         Nodes::GraphNodeFactory factory;
-        std::vector<Nodes::GraphNode<std::any>> nodes;
+        std::vector<Nodes::GraphNode> nodes;
         //int_1 - in/out id || int_2 node idx in nodes vec  
         std::map<int, int> nodesIds;
         int idGen = 200;
