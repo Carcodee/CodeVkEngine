@@ -53,8 +53,11 @@ namespace Rendering
     		std::vector<vk::UniqueDescriptorSet> dsets;
     		std::vector<vk::UniqueDescriptorSetLayout> descriptorSetLayouts;
     	};
-	    ImguiRenderer(ENGINE::Core* core, WindowProvider* windowProvider, std::map<std::string, std::unique_ptr<BaseRenderer>>& renderers)
+	    ImguiRenderer(RenderGraph* renderGraph, WindowProvider* windowProvider, std::map<std::string, std::unique_ptr<BaseRenderer>>& renderers)
         {
+	    	this->core = renderGraph->core;
+	    	this->renderGraph = renderGraph;
+	    	
 	    	if (renderers.contains("ClusterRenderer"))
 	    	{
 			    this->clusterRenderer = dynamic_cast<ClusterRenderer*>(renderers.at("ClusterRenderer").get());
@@ -128,7 +131,7 @@ namespace Rendering
     		ed::SetCurrentEditor(m_Context);
 
     		static bool firstFrame = true;
-    		nodeEditor.Init();
+    		nodeEditor.Init(renderGraph ,windowProvider);
     		nodeEditor.Draw();
     		
     		firstFrame = false;
@@ -635,6 +638,9 @@ namespace Rendering
         WindowProvider* windowProvider;
         DescriptorAllocator descriptorAllocator;
         Core* core;
+    	RenderGraph* renderGraph;
+    	
+    	
         ClusterRenderer* clusterRenderer = nullptr;
         FlatRenderer* flatRenderer = nullptr;
         ImGuiUtils::ProfilersWindow profilersWindow{};

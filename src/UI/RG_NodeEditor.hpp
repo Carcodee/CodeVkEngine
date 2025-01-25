@@ -1,5 +1,6 @@
 //
 
+
 // Created by carlo on 2025-01-07.
 //
 
@@ -15,14 +16,30 @@ namespace UI
 {
     namespace ed = ax::NodeEditor;
 
-    struct RenderNodeEditor
-    {
-        ENGINE::RenderGraphNode* renderNode;
-    };
-
     class RG_NodeEditor
     {
     public:
+        
+        void Init(ENGINE::RenderGraph* renderGraph, WindowProvider* windowProvider)
+        {
+            
+            if (!firstFrame) { return; }
+            
+            this->renderGraph = renderGraph;
+            this->windowProvider = windowProvider;
+            this->factory.renderGraph =renderGraph;       
+            this->factory.windowProvider =windowProvider;       
+            
+            nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE));
+            RegisterNode(nodes.back(), nodes.size() - 1);
+
+            nodes.push_back(factory.GetNode(Nodes::N_IMAGE_SAMPLER, glm::vec2(0.0), "Img1"));
+            RegisterNode(nodes.back(), nodes.size() - 1);
+
+
+            
+        }
+
         void RegisterNode(Nodes::GraphNode& node, int nodeIndex)
         {
             nodesIds.try_emplace(node.nodeId.Get(), nodeIndex);
@@ -34,17 +51,6 @@ namespace UI
             {
                 nodesIds.try_emplace(output.first, nodeIndex);
             }
-        }
-
-        void Init()
-        {
-            if (!firstFrame) { return; }
-
-            nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE, &data));
-            RegisterNode(nodes.back(), nodes.size() - 1);
-
-            nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, &data));
-            RegisterNode(nodes.back(), nodes.size() - 1);
         }
 
         void Draw()
@@ -77,24 +83,33 @@ namespace UI
                 {
                     Nodes::GraphNode* startNode = GetNodeByAnyId(startId.Get());
                     Nodes::GraphNode* endNode = GetNodeByAnyId(endInd.Get());
+                    ed::PinKind startPinType;
+                    ed::PinKind endPinType;
+                    std::map<ed::PinKind, Nodes::GraphNode*> pinNodes;
                     if (startNode && endNode)
                     {
                         Nodes::PinInfo* startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()) : nullptr;
+                        startPinType = ed::PinKind::Input;
                         if (startPin == nullptr)
                         {
                             startPin = startNode->outputNodes.contains(startId.Get()) ? &startNode->outputNodes.at(startId.Get()) : nullptr;
+                            startPinType = ed::PinKind::Output;
                         }
                         Nodes::PinInfo* endPin = endNode->inputNodes.contains(endInd.Get()) ? &endNode->inputNodes.at(endInd.Get()) : nullptr;
+                        endPinType = ed::PinKind::Input;
                         if (endPin == nullptr)
                         {
+                            endPinType = ed::PinKind::Output;
                             endPin = endNode->outputNodes.contains(endInd.Get())? &endNode->outputNodes.at(endInd.Get()) : nullptr;
                         }
+                        pinNodes.try_emplace(startPinType, startNode);
+                        pinNodes.try_emplace(endPinType, endNode);
 
-                        if (startPin && endPin)
+                        if ((startPin && endPin) && (pinNodes.size() == 2))
                         {
                             if (startPin->nodeType == endPin->nodeType)
                             {
-                                endNode->inputData.at(startPin->nodeType) = startNode->BuildOutput();
+                                pinNodes.at(ed::PinKind::Input)->inputData.at(startPin->nodeType) = pinNodes.at(ed::PinKind::Output)->BuildOutput();
                                 
                                 if (ed::AcceptNewItem())
                                 {
@@ -146,11 +161,10 @@ namespace UI
         int idGen = 200;
         bool firstFrame = true;
         std::any data;
-        std::any data2;
         // std::map<std::string, int> renderNodesEditorsNames;
         // std::vector<RenderNodeEditor*> renderNodeEditors;
-
-        // ENGINE::RenderGraph* renderGraph;
+        ENGINE::RenderGraph* renderGraph;
+        WindowProvider* windowProvider;
     };
 }
 

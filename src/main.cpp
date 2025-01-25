@@ -1,6 +1,7 @@
 ﻿//
 
 
+
 // Created by carlo on 2024-09-21.
 //
 
@@ -54,6 +55,8 @@ void run(WindowProvider* windowProvider)
     Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());
 
+    renderGraph->CreateResManager();
+    
     std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>> renderers;
 
     // renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
@@ -68,7 +71,7 @@ void run(WindowProvider* windowProvider)
     flatRenderer->SetRenderOperation(inFlightQueue.get());
 
     std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(
-        core.get(), windowProvider, renderers);
+        renderGraph.get(), windowProvider, renderers);
 
     std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
         core.get(), windowProvider, renderers);

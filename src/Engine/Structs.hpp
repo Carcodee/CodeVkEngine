@@ -1,8 +1,7 @@
 ﻿//
+
 // Created by carlo on 2024-09-22.
 //
-
-
 
 
 #ifndef STRUCTS_HPP
@@ -55,7 +54,6 @@ namespace ENGINE
         vk::RenderingAttachmentInfo attachmentInfo;
         vk::Format format = vk::Format::eUndefined;
     };
-
 
     struct ImageAccessPattern
     {

@@ -133,6 +133,12 @@ namespace UI{
             std::vector<std::string>options;
             int selectedIndex;
         };
+
+        struct TextInputInfo 
+        {
+            std::string name;
+            std::string content;
+        };
        
 
         struct GraphNode
@@ -142,24 +148,79 @@ namespace UI{
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
             std::map<int, SelectableInfo> selectables;
+            std::map<int, TextInputInfo> textInputs;
+            
             std::map<NodeType, std::any&> inputData;
+            std::map<NodeType, std::any&> outputData;
+            std::map<NodeType, GraphNode&> graphNodes;
+            
             std::string name;
             glm::vec2 pos;
             bool firstFrame = true;
+            
+            ENGINE::RenderGraph* renderGraph;
             
             std::function<std::any&(GraphNode&)>* outputFunction = nullptr;
 
             std::any& BuildOutput()
             {
+                if (!outputFunction)
+                {
+                    std::any nullResult = outputFunction; 
+                    return nullResult;
+                }
                 std::any& result = (*outputFunction)(*this);
                 return result;
             }
 
             template <typename T>
-            T& GetNodeInputData(NodeType nodeType)
+            T* GetNodeInputData(NodeType nodeType)
             {
-                std::any& anyData = inputData.at(nodeType);
-                return std::any_cast<T>(anyData);
+                if (inputData.contains(nodeType))
+                {
+                    std::any& anyData = inputData.at(nodeType);
+                    return std::any_cast<T*>(anyData);
+                }
+                return nullptr;
+            }
+
+            bool ContainsInput(NodeType nodeType)
+            {
+                if (!inputData.contains(nodeType))
+                {
+                    return false;
+                }
+                if (!inputData.at(nodeType).has_value())
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            int GetSelectableIndex(const std::string& name)
+            {
+                for (auto& selectable : selectables)
+                {
+                    if (selectable.second.name == name)
+                    {
+                        return selectable.second.selectedIndex;
+                    }
+                }
+                return -1;
+                
+            }
+            
+            std::string GetInputTextContent (const std::string& name)
+            {
+                for (auto& textInput : textInputs)
+                {
+                    if (textInput.second.name == name)
+                    {
+                        return textInput.second.content;
+                    }
+                }
+                return "";
+                
             }
 
             void Draw()
@@ -198,7 +259,6 @@ namespace UI{
                     std::string label = selectable.second.options[index].c_str();
                     //temp solution
                     ImGui::SliderInt(label.c_str(), &selectable.second.selectedIndex, 0, selectable.second.options.size() -1);
-                        
                     // if(ImGui::Button(selectable.second.options[selectable.second.selectedIndex].c_str(), ImVec2{50, 50}))
                     // {
                     //     ImGui::OpenPopup("SelectType");
@@ -220,6 +280,20 @@ namespace UI{
                     ImGui::PopID();
 
                 }
+                for (auto& tInput : textInputs)
+                {
+                    ImGui::PushItemWidth(100.0);
+                    ImGui::PushID(tInput.first);
+                    constexpr size_t size = 128;
+                    char inputT[size];
+                    std::strncpy(inputT, tInput.second.content.c_str(), size);
+                    if (ImGui::InputText(tInput.second.name.c_str(), inputT, size))
+                    {
+                        tInput.second.content = std::string(inputT);
+                    }
+                    ImGui::PopID();
+                    ImGui::PopItemWidth();
+                }
                 ed::EndNode();
                 ImGui::PopID();
                 firstFrame = false;
@@ -232,6 +306,7 @@ namespace UI{
             std::map<int, PinInfo> inputNodes = {};
             std::map<int, PinInfo> outputNodes = {};
             std::map<int, SelectableInfo> selectables = {};
+            std::map<int, TextInputInfo> textInputs;
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
             std::function<std::any&(GraphNode&)>* outputOp;
@@ -275,13 +350,17 @@ namespace UI{
                 selectables.try_emplace(id, SelectableInfo{name ,options, 0});
                 return *this;
             }
+            GraphNodeBuilder& AddTextInput(int id, TextInputInfo info)
+            {
+                textInputs.try_emplace(id, info);
+                return *this;
+            }
 
-            GraphNode Build(std::any* data)
+            GraphNode Build( ENGINE::RenderGraph* renderGraph)
             {
                 // assert(nodeId.Get() > -1 && "Set the id before building");
                 assert(outputOp && "Define a link operation");
                 assert(!name.empty() && "Set a valid name");
-                assert(data && "Data must be valid");
 
                 GraphNode graphNode ={};
                 graphNode.name = name;
@@ -289,9 +368,11 @@ namespace UI{
                 graphNode.inputNodes = inputNodes;
                 graphNode.outputNodes = outputNodes;
                 graphNode.selectables = selectables;
+                graphNode.textInputs = textInputs;
                 graphNode.outputFunction = outputOp;
                 graphNode.inputData = {};
                 graphNode.pos = pos;
+                graphNode.renderGraph = renderGraph;
                 Reset();
                 return graphNode;
             }
@@ -308,61 +389,93 @@ namespace UI{
         };
         struct GraphNodeFactory
         {
-            GraphNode GetNode(NodeType nodeType, std::any* data, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
+            int idGen = 100;
+            GraphNodeBuilder builder;
+            ENGINE::RenderGraph* renderGraph;
+            WindowProvider* windowProvider;
+            int NextID()
             {
-
+                return idGen++;
+            }
+            GraphNode GetNode(NodeType nodeType, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
+            {
+                assert(renderGraph && "Null rgraph");
+                assert(windowProvider && "Null window Provider");
                 GraphNode node;
                 std::function<std::any&(GraphNode&)>* linkOp;
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
                     linkOp = new std::function<std::any&(GraphNode& selfNode)>(
-                        [](GraphNode& selfNode) -> std::any& {
-                            std::any result;
+                        [this](GraphNode& selfNode) -> std::any& {
 
-                            for (auto& input : selfNode.inputNodes)
+                            auto node = renderGraph->AddPass(selfNode.name);
+                            for (auto& input : selfNode.inputData)
                             {
-                                
-                                
+                                switch (input.first)
+                                {
+                                case N_COL_ATTACHMENT_STRUCTURE:
+                                    GraphNode& inputNode = *selfNode.GetNodeInputData<GraphNode>(N_COL_ATTACHMENT_STRUCTURE);
+                                    if(inputNode.ContainsInput(input.first))
+                                    {
+                                        ENGINE::AttachmentInfo info = *inputNode.GetNodeInputData<ENGINE::AttachmentInfo>(input.first);
+                                        ENGINE::BlendConfigs blendConfigs = (ENGINE::BlendConfigs)inputNode.GetSelectableIndex("BlendConfig");
+                                        node->AddColorAttachmentOutput(inputNode.name, info, blendConfigs);
+                                    }
+                                    if (inputNode.ContainsInput(N_IMAGE_SAMPLER))
+                                    {
+                                        ENGINE::ImageView* img = *inputNode.GetNodeInputData<ENGINE::ImageView*>(input.first);
+                                        node->AddSamplerResource(inputNode.name, img);
+                                    }
+                                    break;
+                                }
                             }
-                            
-                            
+                            std::any result = node;
                             return result;
                         });
 
                     builder
-                        .AddOutput(idGen++, {"Result", N_RENDER_NODE})
-                        .AddInput(idGen++, {"Vertex Shader", N_SHADER})
-                        .AddInput(idGen++, {"Fragment Shader", N_SHADER})
-                        .AddInput(idGen++, {"Compute Shader", N_SHADER})
-                        .AddInput(idGen++, {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
-                        .AddInput(idGen++, {"Depth Attachment", N_DEPTH_CONFIGS})
-                        .AddSelectable(idGen++, "Raster Configs", {"Fill", "Line", "Point"})
-                        .SetNodeId(idGen++, "Render Node");
-                    break;
-                case N_SHADER:
-                    linkOp = new std::function<std::any&(GraphNode& selfNode)>(
-                        [](GraphNode& selfNode) -> std::any& {
-                            std::string shaderP = "";
-                            std::any shader = ENGINE::ResourcesManager::GetInstance()->GetShader(
-                                shaderP, ENGINE::S_COMP);
-                            return shader;
-                        });
-                    
-                    builder
-                    
-                        .AddInput(idGen++, {"Shader In", N_SHADER})
-                        .AddOutput(idGen++, {"Shader Out", N_SHADER})
-                        .SetLinkOp(linkOp)
-                        .SetNodeId(idGen++, "Shader");
+                        .AddOutput(NextID(), {"Result", N_RENDER_NODE})
+                        .AddInput(NextID(), {"Vertex Shader", N_SHADER})
+                        .AddInput(NextID(), {"Fragment Shader", N_SHADER})
+                        .AddInput(NextID(), {"Compute Shader", N_SHADER})
+                        .AddInput(NextID(), {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Depth Attachment", N_DEPTH_CONFIGS})
+                        .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
+                        .AddSelectable(NextID(), "Raster Configs", {"Fill", "Line", "Point"})
+                        .SetNodeId(NextID(), "Render Node");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
                     builder
-                        .AddInput(idGen++, {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE})
-                        .AddInput(idGen++, {"Col Attachment Info In", N_IMAGE_SAMPLER})
-                        .AddOutput(idGen++, {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
-                        .AddSelectable(idGen++, "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
-                        .SetNodeId(idGen++, "Col Attachment Structure");
+                        .AddInput(NextID(), {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
+                        .AddOutput(NextID(), {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
+                        .SetNodeId(NextID(), "Col Attachment Structure");
+                    break;
+                case N_IMAGE_SAMPLER:
+                    linkOp = new std::function<std::any&(GraphNode& selfNode)>(
+                        [this](GraphNode& selfNode) -> std::any& {
+
+                            std::string imgName = selfNode.GetInputTextContent("Img Name");
+                            assert(!imgName.empty() && "Img name is not valid");
+                            auto imageInfo = ENGINE::Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+                                                                 ENGINE::g_32bFormat,
+                                                                 vk::ImageUsageFlagBits::eColorAttachment |
+                                                                 vk::ImageUsageFlagBits::eSampled);
+                            ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, imageInfo, 1, 1);
+
+                            assert(imgView && "Image view must be valid");
+                            
+                            std::any result = imgView;
+                            return result;
+                        });
+
+                     builder
+                         .AddTextInput(NextID(), {"Img Name", "Image Name"})
+                         .AddOutput(NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
+                         .SetLinkOp(linkOp)
+                         .SetNodeId(NextID(), "Image Node");
                     break;
                 }
 
@@ -371,12 +484,10 @@ namespace UI{
                     builder.SetNodeName(name);
                 }
                 builder.SetPosition(pos);
-                node = builder.Build(data);
+                node = builder.Build(renderGraph);
                 return node;
             }
 
-            int idGen = 100;
-            GraphNodeBuilder builder;
         };
 
     }

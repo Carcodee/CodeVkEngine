@@ -685,6 +685,7 @@ namespace ENGINE
         std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 
         Core* core;
+        ResourcesManager* resourcesManager;
 
         RenderGraph(Core* core)
         {
@@ -693,7 +694,13 @@ namespace ENGINE
 
         ~RenderGraph()
         {
+            
         };
+
+        void CreateResManager()
+        {
+            resourcesManager = ResourcesManager::GetInstance();
+        }
 
 
         RenderGraphNode* GetNode(std::string name)
@@ -728,7 +735,7 @@ namespace ENGINE
             }
             else
             {
-                return nullptr;
+                return renderNodes.at(name).get();
             }
         }
 
