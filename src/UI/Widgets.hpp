@@ -4,6 +4,7 @@
 
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -141,6 +142,7 @@ namespace UI{
         };
        
 
+        //note that this only handle copyable data types
         struct GraphNode
         {
             
@@ -150,8 +152,8 @@ namespace UI{
             std::map<int, SelectableInfo> selectables;
             std::map<int, TextInputInfo> textInputs;
             
-            std::map<NodeType, std::any&> inputData;
-            std::map<NodeType, std::any&> outputData;
+            std::map<NodeType, std::any> inputData;
+            std::map<NodeType, std::any> outputData;
             std::map<NodeType, GraphNode&> graphNodes;
             
             std::string name;
@@ -160,16 +162,11 @@ namespace UI{
             
             ENGINE::RenderGraph* renderGraph;
             
-            std::function<std::any&(GraphNode&)>* outputFunction = nullptr;
+            std::function<std::any(GraphNode&)>* outputFunction = nullptr;
 
-            std::any& BuildOutput()
+            std::any BuildOutput()
             {
-                if (!outputFunction)
-                {
-                    std::any nullResult = outputFunction; 
-                    return nullResult;
-                }
-                std::any& result = (*outputFunction)(*this);
+                std::any result = (*outputFunction)(*this);
                 return result;
             }
 
@@ -307,9 +304,10 @@ namespace UI{
             std::map<int, PinInfo> outputNodes = {};
             std::map<int, SelectableInfo> selectables = {};
             std::map<int, TextInputInfo> textInputs;
+            
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
-            std::function<std::any&(GraphNode&)>* outputOp;
+            std::function<std::any(GraphNode&)>* outputOp;
             
             GraphNodeBuilder& SetNodeId(ed::NodeId id, std::string name)
             {
@@ -323,7 +321,7 @@ namespace UI{
                 this->name = name;
                 return *this;
             }
-            GraphNodeBuilder& SetLinkOp(std::function<std::any&(GraphNode&)>* outputOp)
+            GraphNodeBuilder& SetLinkOp(std::function<std::any(GraphNode&)>* outputOp)
             {
                 this->outputOp = outputOp;
                 return *this;
@@ -373,6 +371,14 @@ namespace UI{
                 graphNode.inputData = {};
                 graphNode.pos = pos;
                 graphNode.renderGraph = renderGraph;
+                for (auto& input : graphNode.inputNodes)
+                {
+                    graphNode.inputData.try_emplace(input.second.nodeType, std::string("Empty"));
+                }
+                for (auto& output : graphNode.outputNodes)
+                {
+                    graphNode.outputData.try_emplace(output.second.nodeType, std::string("Empty"));
+                }
                 Reset();
                 return graphNode;
             }
@@ -402,12 +408,12 @@ namespace UI{
                 assert(renderGraph && "Null rgraph");
                 assert(windowProvider && "Null window Provider");
                 GraphNode node;
-                std::function<std::any&(GraphNode&)>* linkOp;
+                std::function<std::any(GraphNode&)>* linkOp;
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
-                    linkOp = new std::function<std::any&(GraphNode& selfNode)>(
-                        [this](GraphNode& selfNode) -> std::any& {
+                    linkOp = new std::function<std::any(GraphNode& selfNode)>(
+                        [this](GraphNode& selfNode) -> std::any {
 
                             auto node = renderGraph->AddPass(selfNode.name);
                             for (auto& input : selfNode.inputData)
@@ -430,7 +436,7 @@ namespace UI{
                                     break;
                                 }
                             }
-                            std::any result = node;
+                            std::any result = selfNode.name;
                             return result;
                         });
 
@@ -454,8 +460,8 @@ namespace UI{
                         .SetNodeId(NextID(), "Col Attachment Structure");
                     break;
                 case N_IMAGE_SAMPLER:
-                    linkOp = new std::function<std::any&(GraphNode& selfNode)>(
-                        [this](GraphNode& selfNode) -> std::any& {
+                    linkOp = new std::function<std::any(GraphNode& selfNode)>(
+                        [this](GraphNode& selfNode) -> std::any {
 
                             std::string imgName = selfNode.GetInputTextContent("Img Name");
                             assert(!imgName.empty() && "Img name is not valid");
@@ -463,14 +469,11 @@ namespace UI{
                                                                  ENGINE::g_32bFormat,
                                                                  vk::ImageUsageFlagBits::eColorAttachment |
                                                                  vk::ImageUsageFlagBits::eSampled);
-                            ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, imageInfo, 1, 1);
+                            ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, imageInfo, 0, 0);
 
                             assert(imgView && "Image view must be valid");
-                            
-                            std::any result = imgView;
-                            return result;
+                            return imgName;
                         });
-
                      builder
                          .AddTextInput(NextID(), {"Img Name", "Image Name"})
                          .AddOutput(NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})

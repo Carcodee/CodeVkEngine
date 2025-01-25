@@ -109,7 +109,9 @@ namespace UI
                         {
                             if (startPin->nodeType == endPin->nodeType)
                             {
-                                pinNodes.at(ed::PinKind::Input)->inputData.at(startPin->nodeType) = pinNodes.at(ed::PinKind::Output)->BuildOutput();
+                                std::any result = pinNodes.at(ed::PinKind::Output)->BuildOutput();
+                                Nodes::GraphNode* graphNodeRef = pinNodes.at(ed::PinKind::Input);
+                                graphNodeRef->inputData.at(startPin->nodeType) = result;
                                 
                                 if (ed::AcceptNewItem())
                                 {
