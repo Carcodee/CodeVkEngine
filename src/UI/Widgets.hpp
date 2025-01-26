@@ -116,6 +116,7 @@ namespace UI{
             N_DEPTH_CONFIGS,
             N_VERTEX_INPUT
         };
+
         struct LinkInfo
         {
             ed::LinkId id;
@@ -140,6 +141,12 @@ namespace UI{
             std::string name;
             std::string content;
         };
+        
+        struct  PrimitiveInfo
+        {
+            std::string name;
+            std::any data;
+        };
        
 
         //note that this only handle copyable data types
@@ -151,9 +158,11 @@ namespace UI{
             std::map<int, PinInfo> outputNodes;
             std::map<int, SelectableInfo> selectables;
             std::map<int, TextInputInfo> textInputs;
+            std::map<int, PrimitiveInfo> nodeData;
             
             std::map<NodeType, std::any> inputData;
             std::map<NodeType, std::any> outputData;
+            
             std::map<NodeType, GraphNode&> graphNodes;
             
             std::string name;
@@ -452,8 +461,14 @@ namespace UI{
                         .SetNodeId(NextID(), "Render Node");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
+                    linkOp = new std::function<std::any(GraphNode& selfNode)>(
+                        [this](GraphNode& selfNode) -> std::any
+                        {
+                            return "";
+                        });
                     builder
-                        .AddInput(NextID(), {"Col Attachment Info In", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Clear Color", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Clear Color", N_COL_ATTACHMENT_STRUCTURE})
                         .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
                         .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
