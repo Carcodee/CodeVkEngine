@@ -6,6 +6,7 @@
 //
 
 
+
 double deltaTime;
 double previousTime;
 
@@ -77,18 +78,10 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation(inFlightQueue.get());
 
-    Systems::Arena* arena = new Systems::Arena(4);
+    Systems::Arena* arena = new Systems::Arena();
 
-    int* data = arena->Alloc<int>();
-    *data = 8;
-    int* data1 = arena->Alloc<int>();
-    *data1 = 18;
-    arena->Reset();
-    int* data2 = arena->Alloc<int>();
-    *data2 = 28;
-    SYSTEMS::Logger::GetInstance()->LogMessage("Data: " + std::to_string(*data));
-    SYSTEMS::Logger::GetInstance()->LogMessage("Data: " + std::to_string(*data1));
-    SYSTEMS::Logger::GetInstance()->LogMessage("Data: " + std::to_string(*data2));
+    int* re = arena->Alloc<int>();
+
     while (!windowProvider->WindowShouldClose())
     {
         //handle time and frames better
@@ -97,7 +90,7 @@ void run(WindowProvider* windowProvider)
         previousTime = time;
         auto profiler = ENGINE::Profiler::GetInstance();
         profiler->StartProfiler();
-
+        
         windowProvider->PollEvents();
         {
             glm::uvec2 windowSize = windowProvider->GetWindowSize();

@@ -22,7 +22,7 @@ namespace Systems
             ptr = nullptr;
         return ptr;
 #endif
-        return nullptr;
+        return malloc(size);
     }
     template <typename T>
     T* AllocAligned(size_t count)
@@ -45,7 +45,6 @@ namespace Systems
             {
                 if (currentBlock)
                 {
-                    SYSTEMS::Logger::GetInstance()->LogMessage("Max size reached");
                     usedBlocks.push_back(std::make_pair(currentAllocSize, currentBlock));
                     currentBlock = nullptr;
                 }
@@ -67,25 +66,26 @@ namespace Systems
                 currentBlockPos = 0;
             }
             size_t alignment = 16;
-            dataSize = (dataSize + alignment -1) & ~(alignment - 1);
+            dataSize = (dataSize + alignment -1) & ~ (alignment - 1);
             void* data = currentBlock + currentBlockPos;
             currentBlockPos += dataSize;
             return data;
         }
 
-        template <typename T>
-        T* Alloc(size_t n = 1 ,bool runConstructor = true)
+        template <typename T, typename... Args>
+        T* Alloc(size_t n = 1 ,bool runConstructor = true, Args&&... args)
         {
             T* data = (T*)Alloc(n * sizeof(T));
             if (runConstructor)
             {
                 for (int i = 0; i < n; ++i)
                 {
-                    new (&data[i])T();
+                    new (&data[i])T(std::forward<Args>(args)...);
                 }
             }
             return data;
         }
+
 
         void Reset()
         {
@@ -95,10 +95,14 @@ namespace Systems
         
         size_t TotalAllocated() const {
             size_t total = currentAllocSize;
-            for (const auto &alloc : usedBlocks)
+            for (const auto& alloc : usedBlocks)
+            {
                 total += alloc.first;
-            for (const auto &alloc : availableBlocks)
+            }
+            for (const auto& alloc : availableBlocks)
+            {
                 total += alloc.first;
+            }
             return total;
         }
         ~Arena()
