@@ -38,6 +38,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
+#include "Memory.hpp"
 #include "TaskThreat.hpp"
 #include "SingletonStorage.hpp"
 #include "Logger.hpp"
