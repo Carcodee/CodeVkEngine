@@ -38,10 +38,10 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
+#include "Logger.hpp"
 #include "Memory.hpp"
 #include "TaskThreat.hpp"
 #include "SingletonStorage.hpp"
-#include "Logger.hpp"
 #include "OS.hpp"
 #include "InputSystem.hpp"
 #include "ObserverSystem.hpp"
