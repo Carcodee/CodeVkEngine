@@ -9,6 +9,7 @@
 
 
 
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -33,7 +34,10 @@ namespace UI
             nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
-            nodes.push_back(factory.GetNode(Nodes::N_IMAGE_SAMPLER, glm::vec2(0.0), "Img1"));
+            nodes.push_back(factory.GetNode(Nodes::N_IMAGE_SAMPLER, glm::vec2(20.0), "Img1"));
+            RegisterNode(nodes.back(), nodes.size() - 1);
+            
+            nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, glm::vec2(10.0), "Color Attachment 1"));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
 
@@ -78,14 +82,15 @@ namespace UI
 
             if (ed::BeginCreate())
             {
-                ed::PinId startId, endInd;
-                if (ed::QueryNewLink(&startId, &endInd))
+                ed::PinId startId, endId;
+                if (ed::QueryNewLink(&startId, &endId))
                 {
                     Nodes::GraphNode* startNode = GetNodeByAnyId(startId.Get());
-                    Nodes::GraphNode* endNode = GetNodeByAnyId(endInd.Get());
+                    Nodes::GraphNode* endNode = GetNodeByAnyId(endId.Get());
                     ed::PinKind startPinType;
                     ed::PinKind endPinType;
                     std::map<ed::PinKind, Nodes::GraphNode*> pinNodes;
+                    std::map<ed::PinKind, int> pinIds;
                     if (startNode && endNode)
                     {
                         Nodes::PinInfo* startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()) : nullptr;
@@ -95,27 +100,31 @@ namespace UI
                             startPin = startNode->outputNodes.contains(startId.Get()) ? &startNode->outputNodes.at(startId.Get()) : nullptr;
                             startPinType = ed::PinKind::Output;
                         }
-                        Nodes::PinInfo* endPin = endNode->inputNodes.contains(endInd.Get()) ? &endNode->inputNodes.at(endInd.Get()) : nullptr;
+                        Nodes::PinInfo* endPin = endNode->inputNodes.contains(endId.Get()) ? &endNode->inputNodes.at(endId.Get()) : nullptr;
                         endPinType = ed::PinKind::Input;
                         if (endPin == nullptr)
                         {
                             endPinType = ed::PinKind::Output;
-                            endPin = endNode->outputNodes.contains(endInd.Get())? &endNode->outputNodes.at(endInd.Get()) : nullptr;
+                            endPin = endNode->outputNodes.contains(endId.Get())? &endNode->outputNodes.at(endId.Get()) : nullptr;
                         }
                         pinNodes.try_emplace(startPinType, startNode);
                         pinNodes.try_emplace(endPinType, endNode);
+                        
+                        pinIds.try_emplace(startPinType, startId.Get());
+                        pinIds.try_emplace(endPinType, endId.Get());
 
                         if ((startPin && endPin) && (pinNodes.size() == 2))
                         {
                             if (startPin->nodeType == endPin->nodeType)
                             {
-                                std::any result = pinNodes.at(ed::PinKind::Output)->BuildOutput();
-                                Nodes::GraphNode* graphNodeRef = pinNodes.at(ed::PinKind::Input);
-                                graphNodeRef->inputData.at(startPin->nodeType) = result;
+                                pinNodes.at(ed::PinKind::Output)->BuildOutput();
+                                Nodes::GraphNode* outputGraphNodeRef = pinNodes.at(ed::PinKind::Output);
+                                Nodes::GraphNode* inputGraphNodeRef = pinNodes.at(ed::PinKind::Input);
+                                *inputGraphNodeRef->GetInputDataById(pinIds.at(ed::PinKind::Input)) = outputGraphNodeRef->GetOutputDataById(pinIds.at(ed::PinKind::Output));
                                 
                                 if (ed::AcceptNewItem())
                                 {
-                                    links.push_back({ed::LinkId(idGen++), startId, endInd});
+                                    links.push_back({ed::LinkId(idGen++), startId, endId});
                                     ed::Link(links.back().id, links.back().inputId, links.back().outputId);
                                 }
                             }

@@ -116,6 +116,13 @@ namespace UI{
             N_DEPTH_CONFIGS,
             N_VERTEX_INPUT
         };
+        enum PrimitiveNodeType
+        {
+            INT,
+            UINT,
+            VEC3,
+            VEC2
+        };
 
         struct LinkInfo
         {
@@ -142,13 +149,13 @@ namespace UI{
             std::string content;
         };
         
-        struct  PrimitiveInfo
+         struct PrimivitiveInfo 
         {
             std::string name;
-            std::any data;
+            PrimitiveNodeType primitiveType;
+            std::any content;
         };
-       
-
+        
         //note that this only handle copyable data types
         struct GraphNode
         {
@@ -158,12 +165,10 @@ namespace UI{
             std::map<int, PinInfo> outputNodes;
             std::map<int, SelectableInfo> selectables;
             std::map<int, TextInputInfo> textInputs;
-            std::map<int, PrimitiveInfo> nodeData;
+            std::map<int, PrimivitiveInfo> primitives;
             
-            std::map<NodeType, std::any> inputData;
-            std::map<NodeType, std::any> outputData;
-            
-            std::map<NodeType, GraphNode&> graphNodes;
+            std::map<int, std::any> inputData;
+            std::map<int, std::any> outputData;
             
             std::string name;
             glm::vec2 pos;
@@ -171,23 +176,16 @@ namespace UI{
             
             ENGINE::RenderGraph* renderGraph;
             
-            std::function<std::any(GraphNode&)>* outputFunction = nullptr;
+            std::unique_ptr<std::function<void(GraphNode&)>> outputFunction = nullptr;
 
-            std::any BuildOutput()
+            int BuildOutput()
             {
-                std::any result = (*outputFunction)(*this);
-                return result;
-            }
-
-            template <typename T>
-            T* GetNodeInputData(NodeType nodeType)
-            {
-                if (inputData.contains(nodeType))
+                if (outputFunction == nullptr)
                 {
-                    std::any& anyData = inputData.at(nodeType);
-                    return std::any_cast<T*>(anyData);
+                    return -1;
                 }
-                return nullptr;
+                (*outputFunction)(*this);
+                return 0;
             }
 
             bool ContainsInput(NodeType nodeType)
@@ -202,6 +200,48 @@ namespace UI{
                 }
                 return true;
             }
+            std::any* GetInputDataById(int id)
+            {
+                if (!inputNodes.contains(id))
+                {
+                    return nullptr;
+                }
+                return &inputData.at(id);
+            }
+             std::any* GetInputDataByName(const std::string& name)
+            {
+                for (auto& node : inputNodes)
+                {
+                    if (node.second.name == name)
+                    {
+                        return &inputData.at(node.first);
+                    }
+                }
+                return nullptr;
+            }
+
+            std::any* GetOutputDataById(int id)
+            {
+                if (!outputNodes.contains(id))
+                {
+                    return nullptr;
+                }
+                return &outputData.at(id);
+            }
+
+            std::any* GetOutputDataByName(const std::string& name)
+            {
+                for (auto& node : outputNodes)
+                {
+                    if (node.second.name == name)
+                    {
+                        return &outputData.at(node.first);
+                    }
+                }
+                return nullptr;
+            }
+ 
+            
 
             int GetSelectableIndex(const std::string& name)
             {
@@ -235,6 +275,7 @@ namespace UI{
                 {
                     ed::SetNodePosition(nodeId, ImVec2(pos.x, pos.y));
                 }
+                assert(nodeId.Get() != -1);
                 ImGui::PushID(nodeId.Get());
                 ed::BeginNode(nodeId);
                 ImGui::Text(name.c_str());
@@ -259,29 +300,12 @@ namespace UI{
                     
                     ImGui::PushID(selectable.first);
                     ImGui::Text(selectable.second.name.c_str());
-                    //
                     ImGui::PushItemWidth(100.0);
                     int index = selectable.second.selectedIndex;
                     std::string label = selectable.second.options[index].c_str();
                     //temp solution
                     ImGui::SliderInt(label.c_str(), &selectable.second.selectedIndex, 0, selectable.second.options.size() -1);
-                    // if(ImGui::Button(selectable.second.options[selectable.second.selectedIndex].c_str(), ImVec2{50, 50}))
-                    // {
-                    //     ImGui::OpenPopup("SelectType");
-                    // }
-                    // if (ImGui::BeginPopup("SelectType"))
-                    // {
-                    //     for (int i = 0; i < selectable.second.options.size(); i++)
-                    //     {
-                    //         if (ImGui::Button(selectable.second.options[i].c_str(), ImVec2{25, 25}))
-                    //         {
-                    //             selectable.second.selectedIndex = i;
-                    //         }
-                    //     }
-                    //     ImGui::EndPopup();
-                    // }
                     ImGui::PopItemWidth();
-                    // ImGui::Spacing();
 
                     ImGui::PopID();
 
@@ -300,6 +324,44 @@ namespace UI{
                     ImGui::PopID();
                     ImGui::PopItemWidth();
                 }
+                for (auto& primitiveInfo : primitives)
+                {
+                    ImGui::PushID(primitiveInfo.first);
+                    ImGui::PushItemWidth(100.0);
+                    int intData;
+                    int uIntdata;
+                    glm::vec3 vec3Data;
+                    glm::vec2 vec2Data;
+                    std::any result;
+                    switch (primitiveInfo.second.primitiveType)
+                    {
+                    case INT:
+                        intData = std::any_cast<int>(primitiveInfo.second.content);
+                        ImGui::InputInt(primitiveInfo.second.name.c_str(), &intData, 1, 100);
+                        result = intData;
+                        break;
+                    case UINT:
+                        uIntdata = std::any_cast<int>(primitiveInfo.second.content);
+                        ImGui::InputInt(primitiveInfo.second.name.c_str(), &uIntdata, 1, 100);
+                        result = uIntdata;
+                        break;
+                    case VEC3:
+                        vec3Data = std::any_cast<glm::vec3>(primitiveInfo.second.content);
+                        ImGui::InputFloat3(primitiveInfo.second.name.c_str(), glm::value_ptr(vec3Data));
+                        result = vec3Data;
+                        break;
+                    case VEC2:
+                        vec2Data = std::any_cast<glm::vec2>(primitiveInfo.second.content);
+                        ImGui::InputFloat2(primitiveInfo.second.name.c_str(), glm::value_ptr(vec2Data));
+                        result = vec2Data;
+                        break;
+                    default:
+                        assert(false && "Invalid case");
+                        break;
+                    }
+                    primitiveInfo.second.content = result;
+                    ImGui::PopID();
+                }
                 ed::EndNode();
                 ImGui::PopID();
                 firstFrame = false;
@@ -313,10 +375,10 @@ namespace UI{
             std::map<int, PinInfo> outputNodes = {};
             std::map<int, SelectableInfo> selectables = {};
             std::map<int, TextInputInfo> textInputs;
+            std::map<int, PrimivitiveInfo> primitivesInfo;
             
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
-            std::function<std::any(GraphNode&)>* outputOp;
             
             GraphNodeBuilder& SetNodeId(ed::NodeId id, std::string name)
             {
@@ -330,12 +392,7 @@ namespace UI{
                 this->name = name;
                 return *this;
             }
-            GraphNodeBuilder& SetLinkOp(std::function<std::any(GraphNode&)>* outputOp)
-            {
-                this->outputOp = outputOp;
-                return *this;
-            }
-            
+
             GraphNodeBuilder& SetPosition(glm::vec2 pos)
             {
                 this->pos = pos;
@@ -362,11 +419,16 @@ namespace UI{
                 textInputs.try_emplace(id, info);
                 return *this;
             }
+             GraphNodeBuilder& AddPrimitiveData(int id, PrimivitiveInfo info)
+            {
+                primitivesInfo.try_emplace(id, info);
+                return *this;
+            }
 
-            GraphNode Build( ENGINE::RenderGraph* renderGraph)
+
+            GraphNode Build( ENGINE::RenderGraph* renderGraph, std::unique_ptr<std::function<void(GraphNode&)>> outputOp)
             {
                 // assert(nodeId.Get() > -1 && "Set the id before building");
-                assert(outputOp && "Define a link operation");
                 assert(!name.empty() && "Set a valid name");
 
                 GraphNode graphNode ={};
@@ -376,17 +438,18 @@ namespace UI{
                 graphNode.outputNodes = outputNodes;
                 graphNode.selectables = selectables;
                 graphNode.textInputs = textInputs;
-                graphNode.outputFunction = outputOp;
+                graphNode.primitives = primitivesInfo;
+                graphNode.outputFunction = std::move(outputOp);
                 graphNode.inputData = {};
                 graphNode.pos = pos;
                 graphNode.renderGraph = renderGraph;
                 for (auto& input : graphNode.inputNodes)
                 {
-                    graphNode.inputData.try_emplace(input.second.nodeType, std::string("Empty"));
+                    graphNode.inputData.try_emplace(input.first, std::string("Empty"));
                 }
                 for (auto& output : graphNode.outputNodes)
                 {
-                    graphNode.outputData.try_emplace(output.second.nodeType, std::string("Empty"));
+                    graphNode.outputData.try_emplace(output.first, std::string("Empty"));
                 }
                 Reset();
                 return graphNode;
@@ -417,37 +480,37 @@ namespace UI{
                 assert(renderGraph && "Null rgraph");
                 assert(windowProvider && "Null window Provider");
                 GraphNode node;
-                std::function<std::any(GraphNode&)>* linkOp;
+                std::unique_ptr<std::function<void(GraphNode&)>> linkOp;
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
-                    linkOp = new std::function<std::any(GraphNode& selfNode)>(
-                        [this](GraphNode& selfNode) -> std::any {
-
-                            auto node = renderGraph->AddPass(selfNode.name);
-                            for (auto& input : selfNode.inputData)
-                            {
-                                switch (input.first)
-                                {
-                                case N_COL_ATTACHMENT_STRUCTURE:
-                                    GraphNode& inputNode = *selfNode.GetNodeInputData<GraphNode>(N_COL_ATTACHMENT_STRUCTURE);
-                                    if(inputNode.ContainsInput(input.first))
-                                    {
-                                        ENGINE::AttachmentInfo info = *inputNode.GetNodeInputData<ENGINE::AttachmentInfo>(input.first);
-                                        ENGINE::BlendConfigs blendConfigs = (ENGINE::BlendConfigs)inputNode.GetSelectableIndex("BlendConfig");
-                                        node->AddColorAttachmentOutput(inputNode.name, info, blendConfigs);
-                                    }
-                                    if (inputNode.ContainsInput(N_IMAGE_SAMPLER))
-                                    {
-                                        ENGINE::ImageView* img = *inputNode.GetNodeInputData<ENGINE::ImageView*>(input.first);
-                                        node->AddSamplerResource(inputNode.name, img);
-                                    }
-                                    break;
-                                }
-                            }
-                            std::any result = selfNode.name;
-                            return result;
-                        });
+                    // linkOp =  std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        // [this](GraphNode& selfNode) -> std::any {
+                    
+                            // auto node = renderGraph->AddPass(selfNode.name);
+                            // for (auto& input : selfNode.inputData)
+                            // {
+                                // switch (input.first)
+                                // {
+                                // case N_COL_ATTACHMENT_STRUCTURE:
+                                    // GraphNode& inputNode = *selfNode.GetNodeInputData<GraphNode>(N_COL_ATTACHMENT_STRUCTURE);
+                                    // if(inputNode.ContainsInput(input.first))
+                                    // {
+                                        // ENGINE::AttachmentInfo info = *inputNode.GetNodeInputData<ENGINE::AttachmentInfo>(input.first);
+                                        // ENGINE::BlendConfigs blendConfigs = (ENGINE::BlendConfigs)inputNode.GetSelectableIndex("BlendConfig");
+                                        // node->AddColorAttachmentOutput(inputNode.name, info, blendConfigs);
+                                    // }
+                                    // if (inputNode.ContainsInput(N_IMAGE_SAMPLER))
+                                    // {
+                                        // ENGINE::ImageView* img = *inputNode.GetNodeInputData<ENGINE::ImageView*>(input.first);
+                                        // node->AddSamplerResource(inputNode.name, img);
+                                    // }
+                                    // break;
+                                // }
+                            // }
+                            // std::any result = selfNode.name;
+                            // return result;
+                        // });
 
                     builder
                         .AddOutput(NextID(), {"Result", N_RENDER_NODE})
@@ -461,22 +524,25 @@ namespace UI{
                         .SetNodeId(NextID(), "Render Node");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
-                    linkOp = new std::function<std::any(GraphNode& selfNode)>(
-                        [this](GraphNode& selfNode) -> std::any
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
                         {
-                            return "";
+                            
+                            
                         });
                     builder
-                        .AddInput(NextID(), {"Clear Color", N_COL_ATTACHMENT_STRUCTURE})
-                        .AddInput(NextID(), {"Clear Color", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddPrimitiveData(NextID(), {"Clear Color", VEC3, glm::vec3(0.0)})
+                        .AddSelectable(NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
+                        .AddSelectable(NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
+                        .AddSelectable(NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
                         .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
                         .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
                         .SetNodeId(NextID(), "Col Attachment Structure");
                     break;
                 case N_IMAGE_SAMPLER:
-                    linkOp = new std::function<std::any(GraphNode& selfNode)>(
-                        [this](GraphNode& selfNode) -> std::any {
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode){
 
                             std::string imgName = selfNode.GetInputTextContent("Img Name");
                             assert(!imgName.empty() && "Img name is not valid");
@@ -485,14 +551,13 @@ namespace UI{
                                                                  vk::ImageUsageFlagBits::eColorAttachment |
                                                                  vk::ImageUsageFlagBits::eSampled);
                             ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, imageInfo, 0, 0);
+                            *selfNode.GetOutputDataByName("Image Sampler Result") = imgName;
 
                             assert(imgView && "Image view must be valid");
-                            return imgName;
                         });
                      builder
                          .AddTextInput(NextID(), {"Img Name", "Image Name"})
                          .AddOutput(NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
-                         .SetLinkOp(linkOp)
                          .SetNodeId(NextID(), "Image Node");
                     break;
                 }
@@ -502,7 +567,7 @@ namespace UI{
                     builder.SetNodeName(name);
                 }
                 builder.SetPosition(pos);
-                node = builder.Build(renderGraph);
+                node = builder.Build(renderGraph, std::move(linkOp));
                 return node;
             }
 
