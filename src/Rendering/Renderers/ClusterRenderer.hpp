@@ -41,9 +41,9 @@ namespace Rendering
         {
         }
 
-        void SetRenderOperation(InFlightQueue* inflightQueue) override
+        void SetRenderOperation() override
         {
-            auto meshCullTask = new std::function<void()>([this, inflightQueue]()
+            auto meshCullTask = new std::function<void()>([this]()
             {
 
                 MoveCam();
@@ -67,8 +67,8 @@ namespace Rendering
 
             });
 
-            auto meshCullRenderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto meshCullRenderOp = new std::function<void()>(
+                [this]()
                 {
 
                     cullMeshesCache->SetBuffer("IndirectCmds",
@@ -78,19 +78,19 @@ namespace Rendering
                     cullMeshesCache->SetBuffer("CullInfo", camFrustum);
                     
                     auto& renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
-                    commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &cullMeshesCache->dstSet, 0, nullptr);
-                    commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-                    commandBuffer.dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
+                    renderGraphRef->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                    renderGraphRef->currentFrameResources->commandBuffer->dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
 
                 });
             
             renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation(meshCullRenderOp);
             renderGraphRef->GetNode(meshCullPassName)->AddTask(meshCullTask);
 
-            auto cullTask = new std::function<void()>([this, inflightQueue]()
+            auto cullTask = new std::function<void()>([this]()
             {
                 cullDataPc.sWidth = (int)windowProvider->GetWindowSize().x;
                 cullDataPc.sHeight = (int)windowProvider->GetWindowSize().y;
@@ -118,8 +118,8 @@ namespace Rendering
                 cPropsUbo.zFar = camera.cameraProperties.zFar;
             });
 
-            auto cullRenderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto cullRenderOp = new std::function<void()>(
+                [this]()
                 {
                     computeDescCache->SetBuffer("PointLights", pointLights);
                     computeDescCache->SetBuffer("LightMap", lightsMap);
@@ -127,15 +127,15 @@ namespace Rendering
                     computeDescCache->SetBuffer("CameraProperties", cPropsUbo);
                     
                     auto& renderNode = renderGraphRef->renderNodes.at(computePassName);
-                    commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &computeDescCache->dstSet, 0, nullptr);
-                    commandBuffer.pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
+                    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eCompute,
                                                 0, sizeof(ScreenDataPc), &cullDataPc);
-                    commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-                    commandBuffer.dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                    renderGraphRef->currentFrameResources->commandBuffer->dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
                                            zSlicesSize);
                 });
 
@@ -143,8 +143,8 @@ namespace Rendering
             renderGraphRef->GetNode(computePassName)->AddTask(cullTask);
             renderGraphRef->GetNode(computePassName)->SetRenderOperation(cullRenderOp);
 
-            auto renderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto renderOp = new std::function<void()>(
+                [this]()
                 {
                     vk::DeviceSize offset = 0;
                     std::vector<ImageView*> textures;
@@ -182,14 +182,14 @@ namespace Rendering
                     gBuffDescCache->SetBuffer("MeshMaterialsIds", meshMatIds);
                     gBuffDescCache->SetBuffer("MeshesModelMatrices", modelMats);
                     
-                    commandBuffer.bindDescriptorSets(renderGraphRef->GetNode(gBufferPassName)->pipelineType,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(gBufferPassName)->pipelineType,
                                                      renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(), 0,
                                                      1,
                                                      &gBuffDescCache->dstSet, 0, nullptr);
 
 
                     pc.projView = camera.matrices.perspective * camera.matrices.view;
-                    commandBuffer.pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
+                    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eVertex |
                                                 vk::ShaderStageFlagBits::eFragment,
                                                 0, sizeof(MvpPc), &pc);
@@ -200,13 +200,13 @@ namespace Rendering
                     {
                         
                         Model* modelRef = modelPair.second;
-                        commandBuffer.bindVertexBuffers(0, 1, &modelRef->vertBuffer->deviceBuffer->bufferHandle.get(),
+                        renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &modelRef->vertBuffer->deviceBuffer->bufferHandle.get(),
                                                         &offset);
-                        commandBuffer.bindIndexBuffer(modelRef->indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
+                        renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(modelRef->indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
 
                         vk::DeviceSize sizeOffset = (meshOffset) * sizeof(DrawIndirectIndexedCmd);
                         uint32_t stride = sizeof(DrawIndirectIndexedCmd);
-                        commandBuffer.drawIndexedIndirect(
+                        renderGraphRef->currentFrameResources->commandBuffer->drawIndexedIndirect(
                             RenderingResManager::GetInstance()->indirectDrawBuffer->bufferHandle.get(),
                             sizeOffset,
                             modelRef->meshCount,
@@ -218,7 +218,7 @@ namespace Rendering
             renderGraphRef->GetNode(gBufferPassName)->SetRenderOperation(renderOp);
 
 
-            auto lSetViewTask = new std::function<void()>([this, inflightQueue]()
+            auto lSetViewTask = new std::function<void()>([this]()
             {
                 lightPc.xTileCount = cullDataPc.xTileCount;
                 lightPc.yTileCount = cullDataPc.yTileCount;
@@ -226,12 +226,12 @@ namespace Rendering
                 lightPc.yTileSizePx = yTileSizePx;
                 lightPc.zSlices = zSlicesSize;
                 
-                auto* currImage = inflightQueue->currentSwapchainImageView;
+                auto* currImage = renderGraphRef->currentBackBuffer;
                 renderGraphRef->AddColorImageResource(lightPassName, "lColor", currImage);
                 renderGraphRef->GetNode(lightPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
             });
-            auto lRenderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto lRenderOp = new std::function<void()>(
+                [this]()
                 {
 
                     
@@ -243,17 +243,17 @@ namespace Rendering
                     lightDecCache->SetBuffer("LightMap", lightsMap);
                     lightDecCache->SetBuffer("LightIndices", lightsIndices);
                     vk::DeviceSize offset = 0;
-                    commandBuffer.bindDescriptorSets(renderGraphRef->GetNode(lightPassName)->pipelineType,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(lightPassName)->pipelineType,
                                                      renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
                                                      0, 1,
                                                      &lightDecCache->dstSet, 0, nullptr);
-                    commandBuffer.bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
-                    commandBuffer.bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                    renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
+                    renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                    commandBuffer.pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
+                    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eFragment,
                                                 0, sizeof(LightPc), &lightPc);
-                    commandBuffer.drawIndexed(quadIndices.size(), 1, 0,
+                    renderGraphRef->currentFrameResources->commandBuffer->drawIndexed(quadIndices.size(), 1, 0,
                                               0, 0);
                 });
 

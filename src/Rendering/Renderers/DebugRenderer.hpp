@@ -101,40 +101,40 @@ namespace Rendering{
         {
             
         }
-        void SetRenderOperation(ENGINE::InFlightQueue* inflightQueue) override
+        void SetRenderOperation() override
         {
             if (clusterRenderer)
             {
-                auto debugTask = new std::function<void()>([this, inflightQueue]()
+                auto debugTask = new std::function<void()>([this]()
                 {
                     SetViewCamera();
                     CreateFrustumVertices();
                     rawVerticesBuff = ResourcesManager::GetInstance()->SetBuffer(
                         "debugRawVertices", sizeof(D_Vertex3D) * raw3DVertices.size(), raw3DVertices.data());
-                    auto* currImage = inflightQueue->currentSwapchainImageView;
+                    auto* currImage = renderGraph->currentBackBuffer;
                     renderGraph->AddColorImageResource(mDebuggerPassName, "modelCol", currImage);
                     renderGraph->GetNode(mDebuggerPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
                 });
-                auto renderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                    [this](vk::CommandBuffer& commandBuffer)
+                auto renderOp = new std::function<void()>(
+                    [this]()
                     {
                         vk::DeviceSize offset = 0;
                         auto node = renderGraph->GetNode(mDebuggerPassName);
-                        commandBuffer.bindDescriptorSets(node->pipelineType,
+                        renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(node->pipelineType,
                                                          node->pipelineLayout.get(), 0,
                                                          1,
                                                          &mDebuggerCache->dstSet, 0, nullptr);
 
-                        commandBuffer.bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
+                        renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
 
                         pc.projView = currentViewCam->matrices.perspective * currentViewCam->matrices.view;
                         pc.model = glm::mat4(1.0);
 
-                        commandBuffer.pushConstants(node->pipelineLayout.get(),
+                        renderGraph->currentFrameResources->commandBuffer->pushConstants(node->pipelineLayout.get(),
                                                     vk::ShaderStageFlagBits::eVertex |
                                                     vk::ShaderStageFlagBits::eFragment,
                                                     0, sizeof(MvpPc), &pc);
-                        commandBuffer.draw(raw3DVertices.size(), 1, 0, 0);
+                        renderGraph->currentFrameResources->commandBuffer->draw(raw3DVertices.size(), 1, 0, 0);
                     });
 
                 renderGraph->GetNode(mDebuggerPassName)->AddTask(debugTask);

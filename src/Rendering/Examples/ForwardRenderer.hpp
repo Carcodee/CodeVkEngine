@@ -121,19 +121,19 @@ namespace Rendering
         {
         }
 
-        void SetRenderOperation(ENGINE::InFlightQueue* inflightQueue) override 
+        void SetRenderOperation() override 
         {
-            auto setViewTask = new std::function<void()>([this, inflightQueue]()
+            auto setViewTask = new std::function<void()>([this]()
             {
-                auto* currImage = inflightQueue->currentSwapchainImageView;
-                auto* currDepthImage = core->swapchainRef->depthImagesFull.at(inflightQueue->frameIndex).imageView.get();
+                auto* currImage = renderGraphRef->currentBackBuffer;
+                auto* currDepthImage = core->swapchainRef->depthImagesFull.at(renderGraphRef->frameIndex).imageView.get();
                 renderGraphRef->AddColorImageResource("ForwardPass", "color", currImage);
                 renderGraphRef->SetDepthImageResource("ForwardPass", "depth", currDepthImage);
                 renderGraphRef->GetNode("ForwardPass")->SetFramebufferSize(windowProvider->GetWindowSize());
             });
 
-            auto renderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto renderOp = new std::function<void()>(
+                [this]()
                 {
 
                     //ssbo sample
@@ -153,12 +153,12 @@ namespace Rendering
                     descriptorCache->SetStorageImage("storageImg", computeStorage);
                     
                     vk::DeviceSize offset = 0;
-                    commandBuffer.bindDescriptorSets(renderGraphRef->GetNode(forwardPassName)->pipelineType,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(forwardPassName)->pipelineType,
                                                      renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(), 0, 1,
                                                      &descriptorCache->dstSet, 0 , nullptr);
 
-                    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
-                    commandBuffer.bindIndexBuffer(indexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                    renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
+                    renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(indexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
                     for (int i = 0; i < model->meshCount; ++i)
                     {
                         camera.SetPerspective(
@@ -168,11 +168,11 @@ namespace Rendering
                         pc.model = model->modelsMat[i];
                         // pc.model = glm::scale(pc.model, glm::vec3(0.01f));
                     
-                        commandBuffer.pushConstants(renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(),
+                        renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(),
                                                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
                                                     0, sizeof(MvpPc), &pc);
                     
-                        commandBuffer.drawIndexed(model->indicesCount[i], 1, model->firstIndices[i],
+                        renderGraphRef->currentFrameResources->commandBuffer->drawIndexed(model->indicesCount[i], 1, model->firstIndices[i],
                                                   static_cast<int32_t>(model->firstVertices[i]), 0);
                     }
            

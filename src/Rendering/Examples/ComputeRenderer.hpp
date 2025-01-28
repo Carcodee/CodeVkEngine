@@ -73,19 +73,19 @@ namespace Rendering
         {
             
         }
-        void SetRenderOperation(ENGINE::InFlightQueue* inflightQueue) override
+        void SetRenderOperation() override
         {
-            auto renderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto renderOp = new std::function<void()>(
+                [this]()
                 {
 
                     auto& renderNode = renderGraphRef->renderNodes.at(computeNodeName);
-                    commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &dstSet.get(), 0, nullptr);
-                    commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-                    commandBuffer.dispatch(windowProvider->GetWindowSize().x, windowProvider->GetWindowSize().y, 1);
+                    renderGraphRef->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                    renderGraphRef->currentFrameResources->commandBuffer->dispatch(windowProvider->GetWindowSize().x, windowProvider->GetWindowSize().y, 1);
                 });
             
             renderGraphRef->GetNode(computeNodeName)->SetRenderOperation(renderOp);

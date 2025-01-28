@@ -333,7 +333,7 @@ namespace ENGINE
             dynamicRenderPass.SetRenderInfo(attachmentInfos, frameBufferSize, &depthAttachment.attachmentInfo);
             commandBuffer.bindPipeline(pipelineType, pipeline.get());
             commandBuffer.beginRendering(dynamicRenderPass.renderInfo);
-            (*renderOperations)(commandBuffer);
+            (*renderOperations)();
             commandBuffer.endRendering();
         }
 
@@ -342,7 +342,7 @@ namespace ENGINE
             TransitionImages(commandBuffer);
             SyncBuffers(commandBuffer);
             commandBuffer.bindPipeline(pipelineType, pipeline.get());
-            (*renderOperations)(commandBuffer);
+            (*renderOperations)();
         }
 
         void Execute(vk::CommandBuffer commandBuffer)
@@ -378,7 +378,7 @@ namespace ENGINE
             this->frameBufferSize = size;
         }
 
-        void SetRenderOperation(std::function<void(vk::CommandBuffer& commandBuffer)>* renderOperations)
+        void SetRenderOperation(std::function<void()>* renderOperations)
         {
             this->renderOperations = renderOperations;
         }
@@ -656,7 +656,7 @@ namespace ENGINE
         std::unordered_map<std::string, ImageView*> sampledImages;
         std::unordered_map<std::string, BufferKey> buffers;
 
-        std::function<void(vk::CommandBuffer& commandBuffer)>* renderOperations = nullptr;
+        std::function<void()>* renderOperations = nullptr;
         std::vector<std::function<void()>*> tasks;
 
         std::set<std::string> dependencies;
@@ -675,6 +675,15 @@ namespace ENGINE
     class RenderGraph
     {
     public:
+        
+        Core* core;
+        ResourcesManager* resourcesManager;
+
+        ImageView* currentBackBuffer;
+        FrameResources* currentFrameResources;
+        size_t frameIndex;
+        
+        
         std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
         std::vector<RenderGraphNode*> renderNodesSorted;
         std::unordered_map<std::string, ImageView*> imagesProxy;
@@ -683,9 +692,7 @@ namespace ENGINE
         std::unordered_map<std::string, AttachmentInfo> outDepthAttachmentProxy;
         std::unordered_map<std::string, std::unique_ptr<Shader>> shadersProxy;
         std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
-
-        Core* core;
-        ResourcesManager* resourcesManager;
+       
 
         RenderGraph(Core* core)
         {
@@ -733,10 +740,7 @@ namespace ENGINE
                 renderNodesSorted.push_back(renderNodes.at(name).get());
                 return renderNodes.at(name).get();
             }
-            else
-            {
-                return renderNodes.at(name).get();
-            }
+            return renderNodes.at(name).get();
         }
 
 
@@ -959,9 +963,9 @@ namespace ENGINE
             }
         }
 
-        void ExecuteAll(FrameResources* currentFrame)
+        void ExecuteAll()
         {
-            assert(currentFrame && "Current frame reference is null");
+            assert(currentFrameResources && "Current frame reference is null");
             std::vector<std::string> allPassesNames;
             int idx = 0;
             for (auto& renderNode : renderNodesSorted)
@@ -995,9 +999,9 @@ namespace ENGINE
                                                         : B_COMPUTE_WRITE;
                     BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
                     BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
-                    CreateMemBarrier(lastNodePattern, currNodePattern, currentFrame->commandBuffer.get());
+                    CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
                 }
-                node->Execute(currentFrame->commandBuffer.get());
+                node->Execute(currentFrameResources->commandBuffer.get());
                 Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
                 allPassesNames.push_back(node->passName);
                 idx++;

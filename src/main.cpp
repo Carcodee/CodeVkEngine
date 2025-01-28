@@ -64,19 +64,19 @@ void run(WindowProvider* windowProvider)
     // core.get(), windowProvider));
     
     // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
-    // clusterRenderer->SetRenderOperation(inFlightQueue.get());
+    // clusterRenderer->SetRenderOperation();
     
     renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core.get(), windowProvider));
 
     Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
-    flatRenderer->SetRenderOperation(inFlightQueue.get());
+    flatRenderer->SetRenderOperation();
 
     std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(
         renderGraph.get(), windowProvider, renderers);
 
     std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
         core.get(), windowProvider, renderers);
-    debugRenderer->SetRenderOperation(inFlightQueue.get());
+    debugRenderer->SetRenderOperation();
 
 
     while (!windowProvider->WindowShouldClose())
@@ -104,9 +104,9 @@ void run(WindowProvider* windowProvider)
                 renderGraph->RecreateFrameResources();
                 for (auto& renderer : renderers)
                 {
-                    renderer.second->SetRenderOperation(inFlightQueue.get());
+                    renderer.second->SetRenderOperation();
                 }
-                debugRenderer->SetRenderOperation(inFlightQueue.get());
+                debugRenderer->SetRenderOperation();
             }
             try
             {
@@ -131,7 +131,7 @@ void run(WindowProvider* windowProvider)
 
                 profiler->EndProfilerCpuSpot("Cpu");
 
-                core->renderGraphRef->ExecuteAll(&currFrame);
+                core->renderGraphRef->ExecuteAll();
 
 
                 profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");

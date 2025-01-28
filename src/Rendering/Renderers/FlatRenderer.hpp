@@ -7,6 +7,7 @@
 
 
 
+
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
 
@@ -313,10 +314,10 @@ namespace Rendering
         {
         }
 
-        void SetRenderOperation(ENGINE::InFlightQueue* inflightQueue) override
+        void SetRenderOperation() override
         {
-            auto paintingRenderOP = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto paintingRenderOP = new std::function<void()>(
+                [this]()
                 {
                     glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
                     paintingPc.xMousePos = mouseInput.x;
@@ -333,22 +334,22 @@ namespace Rendering
 
                     auto& renderNode = renderGraph->renderNodes.at(paintingPassName);
                     renderNode->descCache->SetStorageImageArray("PaintingLayers", paintingLayers);
-                    commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
+                    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eCompute,
                                                 0, sizeof(PaintingPc), &paintingPc);
-                    commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &renderNode->descCache->dstSet, 0, nullptr);
-                    commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-                    commandBuffer.dispatch(paintingPc.radius, paintingPc.radius, 1);
+                    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                    renderGraph->currentFrameResources->commandBuffer->dispatch(paintingPc.radius, paintingPc.radius, 1);
                 });
             renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
 
             for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
             {
-                auto probesGenOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                    [this, i](vk::CommandBuffer& commandBuffer)
+                auto probesGenOp = new std::function<void()>(
+                    [this, i]()
                     {
                         int idx = i;
                         int intervalSizePc = cascadesInfo.intervalCount;
@@ -362,26 +363,26 @@ namespace Rendering
                         probesGenPc.intervalSize = intervalSizePc;
                         probesGenPc.probeSizePx = gridSizePc;
                         auto& renderNode = renderGraph->renderNodes.at(probesGenPassNames[idx]);
-                        commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                        renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                          renderNode->pipelineLayout.get(), 0,
                                                          1,
                                                          &renderNode->descCache->dstSet, 0, nullptr);
 
-                        commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
+                        renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
                                                     vk::ShaderStageFlagBits::eVertex |
                                                     vk::ShaderStageFlagBits::eFragment,
                                                     0, sizeof(ProbesGenPc), &probesGenPc);
-                        commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                        renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
                         vk::DeviceSize offset = 0;
-                        commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
-                        commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
+                        renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
+                        renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
                                                       vk::IndexType::eUint32);
-                        commandBuffer.drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
+                        renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
                     });
                 renderGraph->GetNode(probesGenPassNames[i])->SetRenderOperation(probesGenOp);
             }
 
-            auto radianceOutputTask = new std::function<void()>([this, inflightQueue]()
+            auto radianceOutputTask = new std::function<void()>([this]()
             {
                 rcPc.cascadesCount = cascadesInfo.cascadeCount;
                 rcPc.probeSizePx = cascadesInfo.probeSizePx;
@@ -390,12 +391,12 @@ namespace Rendering
                 rcPc.fWidth = windowProvider->GetWindowSize().x;
                 rcPc.fHeight = windowProvider->GetWindowSize().y;
 
-                auto* currImage = inflightQueue->currentSwapchainImageView;
+                auto* currImage = renderGraph->currentBackBuffer;
                 renderGraph->AddColorImageResource(rCascadesPassName, "rColor", currImage);
                 renderGraph->GetNode(rCascadesPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
             });
-            auto radianceOutputOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto radianceOutputOp = new std::function<void()>(
+                [this]()
                 {
                     outputCache->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
                     outputCache->SetStorageImageArray("PaintingLayers", paintingLayers);
@@ -407,20 +408,20 @@ namespace Rendering
                                                  backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 
                     auto& renderNode = renderGraph->renderNodes.at(rCascadesPassName);
-                    commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &outputCache->dstSet, 0, nullptr);
                     vk::DeviceSize offset = 0;
-                    commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
-                    commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
+                    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                    commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
+                    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
                                                 0, sizeof(RcPc), &rcPc);
-                    commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 
-                    commandBuffer.drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
+                    renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
                                               0, 0);
                 });
             renderGraph->GetNode(rCascadesPassName)->SetRenderOperation(radianceOutputOp);
@@ -429,17 +430,17 @@ namespace Rendering
             for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
             {
                 std::string mergeNameCascades = rMergePassName + "_" + std::to_string(i);
-                auto mergeTask = new std::function<void()>([this, inflightQueue, i]()
+                auto mergeTask = new std::function<void()>([this, i]()
                 {
                     int idx = i;
                     std::string mergeName = rMergePassName + "_" + std::to_string(idx);
-                    auto* currImage = inflightQueue->currentSwapchainImageView;
+                    auto* currImage = renderGraph->currentBackBuffer;
                     renderGraph->GetNode(mergeName)->AddColorImageResource(
                         "mergeColor_" + std::to_string(idx), currImage);
                     renderGraph->GetNode(mergeName)->SetFramebufferSize(windowProvider->GetWindowSize());
                 });
-                auto mergeRenderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                    [this, i](vk::CommandBuffer& commandBuffer)
+                auto mergeRenderOp = new std::function<void()>(
+                    [this, i]()
                     {
                         int idx = i;
                         std::string mergeName = rMergePassName + "_" + std::to_string(idx);
@@ -449,36 +450,36 @@ namespace Rendering
                         rcPc.cascadeIndex = idx;
 
                         auto& renderNode = renderGraph->renderNodes.at(mergeName);
-                        commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                        renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                          renderNode->pipelineLayout.get(), 0,
                                                          1,
                                                          &mergeCascadesCache->dstSet, 0, nullptr);
                         vk::DeviceSize offset = 0;
-                        commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
-                        commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
+                        renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
+                        renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
                                                       vk::IndexType::eUint32);
 
-                        commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
+                        renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
                                                     vk::ShaderStageFlagBits::eVertex |
                                                     vk::ShaderStageFlagBits::eFragment,
                                                     0, sizeof(RcPc), &rcPc);
-                        commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                        renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 
-                        commandBuffer.drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
+                        renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
                                                   0, 0);
                     });
                 renderGraph->GetNode(mergeNameCascades)->SetRenderOperation(mergeRenderOp);
                 renderGraph->GetNode(mergeNameCascades)->AddTask(mergeTask);
             }
 
-            auto resultTask = new std::function<void()>([this, inflightQueue]()
+            auto resultTask = new std::function<void()>([this]()
             {
-                auto* currImage = inflightQueue->currentSwapchainImageView;
+                auto* currImage = renderGraph->currentBackBuffer;
                 renderGraph->GetNode(resultPassName)->AddColorImageResource("resultColor", currImage);
                 renderGraph->GetNode(resultPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
             });
-            auto resultRenderOp = new std::function<void(vk::CommandBuffer& command_buffer)>(
-                [this](vk::CommandBuffer& commandBuffer)
+            auto resultRenderOp = new std::function<void()>(
+                [this]()
                 {
                     cascadesResultCache->SetStorageImageArray("PaintingLayers", paintingLayers);
                     cascadesResultCache->SetStorageImageArray("Radiances", radiancesImages);
@@ -493,20 +494,20 @@ namespace Rendering
 
 
                     auto& renderNode = renderGraph->renderNodes.at(resultPassName);
-                    commandBuffer.bindDescriptorSets(renderNode->pipelineType,
+                    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &cascadesResultCache->dstSet, 0, nullptr);
                     vk::DeviceSize offset = 0;
-                    commandBuffer.bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
-                    commandBuffer.bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
+                    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                    commandBuffer.pushConstants(renderNode->pipelineLayout.get(),
+                    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
                                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
                                                 0, sizeof(RcPc), &rcPc);
-                    commandBuffer.bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+                    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 
-                    commandBuffer.drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
+                    renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
                                               0, 0);
                     testSpriteAnim->UseFrame();
                 });

@@ -1,8 +1,12 @@
 ﻿//
 
 
+
+
+
 // Created by carlo on 2024-09-24.
 //
+
 
 
 #ifndef PRESENTQUEUE_HPP
@@ -64,6 +68,7 @@ namespace ENGINE
         {
             this->core = core;
             presentQueue.reset(new PresentQueue(this->core, windowDesc, inflightCount, preferredMode, windowSize));
+            this->renderGraph = renderGraph;
 
             for (int frameIndex = 0; frameIndex < inflightCount; frameIndex++)
             {
@@ -88,11 +93,16 @@ namespace ENGINE
             
             {
                 currentSwapchainImageView = presentQueue->AcquireImage(currFrame.imageAcquiredSemaphore.get());
+                
             }
             auto bufferBeginInfo = vk::CommandBufferBeginInfo()
                 .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
             
             currFrame.commandBuffer->begin(bufferBeginInfo);
+
+            renderGraph->currentBackBuffer = currentSwapchainImageView;
+            renderGraph->currentFrameResources = &frameResources[frameIndex];
+            renderGraph->frameIndex = frameIndex;
             //add pass info from my data
         }
         void EndFrame()
@@ -132,6 +142,7 @@ namespace ENGINE
         size_t frameIndex;
         
         Core* core;
+        RenderGraph* renderGraph;
         std::unique_ptr<PresentQueue> presentQueue;
         ImageView* currentSwapchainImageView;
     };
