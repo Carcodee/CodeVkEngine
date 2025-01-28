@@ -24,6 +24,20 @@ namespace Systems
 #endif
         return malloc(size);
     }
+
+//     template<typename T>
+//     void* FreeAligned(T* data)
+//     {
+// #if defined(IS_WINDOWS)
+//         return _aligned_free(data);
+// #elif defined (IS_OPENBSD) || defined(IS_OSX)
+//         void *ptr;
+//         if (posix_memalign(&ptr, L1_CACHE_LINE_SIZE, size) != 0)
+//             ptr = nullptr;
+//         return ptr;
+// #endif
+//         return free(data);
+//     }
     template <typename T>
     T* AllocAligned(size_t count)
     {
@@ -105,6 +119,7 @@ namespace Systems
             }
             return total;
         }
+
         ~Arena()
         {
             for (auto& usedBlock : usedBlocks)

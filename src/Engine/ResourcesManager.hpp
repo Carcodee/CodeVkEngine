@@ -109,7 +109,6 @@ namespace ENGINE
         {
             if (imagesShippersNames.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->SetLogPreferences(SYSTEMS::LogLevel::L_INFO);
                 SYSTEMS::Logger::GetInstance()->Log("Using texture that already exist: " + name,
                                                     SYSTEMS::LogLevel::L_INFO);
                 ImageShipper* shipper = GetShipperFromName(name);
@@ -284,6 +283,7 @@ namespace ENGINE
             dsets.clear();
             dsetsIds.clear();
             freeIdsBucket.clear();
+            shaders.clear();
             descriptorAllocator.reset();
             
         }
@@ -375,7 +375,8 @@ namespace ENGINE
             }
             storageImagesToClear.push_back(name);
         }
-                Shader* GetShader(std::string path, ShaderStage stage)
+
+        Shader* GetShader(std::string path, ShaderStage stage)
         {
             if (shadersNames.contains(path))
             {
@@ -383,16 +384,17 @@ namespace ENGINE
             }
             shadersNames.try_emplace(path, shaders.size());
             shaders.emplace_back(std::make_unique<Shader>(core->logicalDevice.get(), path, stage));
-            
+            Shader* shader = shaders.back().get();
+            return shader;
         }
         DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
         {
             if (!freeIdsBucket.empty())
             {
-                // for (auto& id : freeIdsBucket)
-                // {
-                    // SYSTEMS::Logger::GetInstance()->LogMessage("Free Id: " + std::to_string(id));
-                // }
+                for (auto& id : freeIdsBucket)
+                {
+                    SYSTEMS::Logger::GetInstance()->Log("Free Id: " + std::to_string(id));
+                }
                 int32_t id = freeIdsBucket.front();
                 freeIdsBucket.erase(freeIdsBucket.begin());
                 dsets.at(id) = descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout);

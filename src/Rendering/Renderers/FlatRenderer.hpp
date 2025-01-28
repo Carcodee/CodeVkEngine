@@ -156,11 +156,11 @@ namespace Rendering
             auto logicalDevice = core->logicalDevice.get();
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
-            paintCompShader = std::make_unique<Shader>(logicalDevice,
+            paintCompShader = renderGraph->resourcesManager->GetShader(
                                                        shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
 
             auto* paintingNode = renderGraph->AddPass(paintingPassName);
-            paintingNode->SetCompShader(paintCompShader.get());
+            paintingNode->SetCompShader(paintCompShader);
             // paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
             paintingNode->SetPushConstantSize(sizeof(PaintingPc));
             paintingNode->SetConfigs({true});
@@ -174,9 +174,9 @@ namespace Rendering
                 glm::vec4(0.0f), vk::Format::eR32G32B32A32Sfloat);
 
 
-            probesVertShader = std::make_unique<Shader>(logicalDevice,
+            probesVertShader = renderGraph->resourcesManager->GetShader(
                                                         shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
-            probesFragShader = std::make_unique<Shader>(logicalDevice,
+            probesFragShader = renderGraph->resourcesManager->GetShader(
                                                         shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv",
                                                         S_FRAG);
 
@@ -187,8 +187,8 @@ namespace Rendering
                 auto renderNode = renderGraph->AddPass(name);
                 renderNode->SetConfigs({true});
                 renderNode->SetPushConstantSize(sizeof(PaintingPc));
-                renderNode->SetVertShader(probesVertShader.get());
-                renderNode->SetFragShader(probesFragShader.get());
+                renderNode->SetVertShader(probesVertShader);
+                renderNode->SetFragShader(probesFragShader);
                 renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
                 // renderNode->SetPipelineLayoutCI(genLayoutCreateInfo);
                 renderNode->SetVertexInput(vertexInput);
@@ -200,9 +200,9 @@ namespace Rendering
             }
 
 
-            vertShader = std::make_unique<Shader>(logicalDevice,
+            vertShader = renderGraph->resourcesManager->GetShader(
                                                   shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
-            fragShader = std::make_unique<Shader>(logicalDevice,
+            fragShader = renderGraph->resourcesManager->GetShader(
                                                   shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv",
                                                   S_FRAG);
             outputCache->AddShaderInfo(vertShader->sParser.get());
@@ -225,8 +225,8 @@ namespace Rendering
 
             auto renderNode = renderGraph->AddPass(rCascadesPassName);
 
-            renderNode->SetVertShader(vertShader.get());
-            renderNode->SetFragShader(fragShader.get());
+            renderNode->SetVertShader(vertShader);
+            renderNode->SetFragShader(fragShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetPipelineLayoutCI(layoutCreateInfo);
             renderNode->SetVertexInput(vertexInput);
@@ -243,11 +243,8 @@ namespace Rendering
                 glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad,
                 vk::AttachmentStoreOp::eStore);
 
-            mergeVertShader = std::make_unique<Shader>(logicalDevice,
-                                                       shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
-            mergeFragShader = std::make_unique<Shader>(logicalDevice,
-                                                       shaderPath +
-                                                       "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
+            mergeVertShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
+            mergeFragShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
             mergeCascadesCache->AddShaderInfo(mergeVertShader->sParser.get());
             mergeCascadesCache->AddShaderInfo(mergeFragShader->sParser.get());
             mergeCascadesCache->BuildDescriptorsCache(
@@ -262,8 +259,8 @@ namespace Rendering
             {
                 std::string name = rMergePassName + "_" + std::to_string(i);
                 auto mergeRenderNode = renderGraph->AddPass(name);
-                mergeRenderNode->SetVertShader(mergeVertShader.get());
-                mergeRenderNode->SetFragShader(mergeFragShader.get());
+                mergeRenderNode->SetVertShader(mergeVertShader);
+                mergeRenderNode->SetFragShader(mergeFragShader);
                 mergeRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
                 mergeRenderNode->SetPipelineLayoutCI(mergeLayoutCreateInfo);
                 mergeRenderNode->SetVertexInput(vertexInput);
@@ -284,9 +281,9 @@ namespace Rendering
             }
 
 
-            resultVertShader = std::make_unique<Shader>(logicalDevice,
+            resultVertShader = renderGraph->resourcesManager->GetShader(
                                                         shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
-            resultFragShader = std::make_unique<Shader>(logicalDevice,
+            resultFragShader = renderGraph->resourcesManager->GetShader(
                                                         shaderPath +
                                                         "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv", S_FRAG);
             cascadesResultCache->AddShaderInfo(resultVertShader->sParser.get());
@@ -301,8 +298,8 @@ namespace Rendering
 
             auto resultNode = renderGraph->AddPass(resultPassName);
 
-            resultNode->SetVertShader(resultVertShader.get());
-            resultNode->SetFragShader(resultFragShader.get());
+            resultNode->SetVertShader(resultVertShader);
+            resultNode->SetFragShader(resultFragShader);
             resultNode->SetFramebufferSize(windowProvider->GetWindowSize());
             resultNode->SetPipelineLayoutCI(resultLayoutCreateInfo);
             resultNode->SetVertexInput(vertexInput);
@@ -548,27 +545,27 @@ namespace Rendering
         std::string resultPassName = "resultPass";
 
         std::unique_ptr<DescriptorCache> cascadesResultCache;
-        std::unique_ptr<Shader> resultVertShader;
-        std::unique_ptr<Shader> resultFragShader;
+        Shader* resultVertShader;
+        Shader* resultFragShader;
 
         std::unique_ptr<DescriptorCache> mergeCascadesCache;
-        std::unique_ptr<Shader> mergeVertShader;
-        std::unique_ptr<Shader> mergeFragShader;
+        Shader* mergeVertShader;
+        Shader* mergeFragShader;
         std::vector<ImageView*> radiancesImages;
 
         std::unique_ptr<DescriptorCache> outputCache;
-        std::unique_ptr<Shader> vertShader;
-        std::unique_ptr<Shader> fragShader;
+        Shader* vertShader;
+        Shader* fragShader;
 
         std::vector<std::string> probesGenPassNames;
         // std::unique_ptr<DescriptorCache> probesGenCache;
-        std::unique_ptr<Shader> probesVertShader;
-        std::unique_ptr<Shader> probesFragShader;
+        Shader* probesVertShader;
+        Shader* probesFragShader;
         std::vector<ImageView*> cascadesAttachmentsImagesViews;
 
 
         std::unique_ptr<DescriptorCache> paintingCache;
-        std::unique_ptr<Shader> paintCompShader;
+        Shader* paintCompShader;
         std::vector<ImageView*> paintingLayers;
         std::vector<Material*> backgroundMaterials;
         int materialIndexSelected = 0;

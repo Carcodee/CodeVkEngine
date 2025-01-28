@@ -78,9 +78,6 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation(inFlightQueue.get());
 
-    Systems::Arena* arena = new Systems::Arena();
-
-    int* re = arena->Alloc<int>();
 
     while (!windowProvider->WindowShouldClose())
     {

@@ -40,8 +40,10 @@ namespace UI
             nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, glm::vec2(10.0), "Color Attachment 1"));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
-
             
+            nodes.push_back(factory.GetNode(Nodes::N_SHADER, glm::vec2(40.0), "Shader 1"));
+            RegisterNode(nodes.back(), nodes.size() - 1);
+
         }
 
         void RegisterNode(Nodes::GraphNode& node, int nodeIndex)

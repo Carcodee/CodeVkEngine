@@ -121,7 +121,8 @@ namespace UI{
             INT,
             UINT,
             VEC3,
-            VEC2
+            VEC2,
+            STRING
         };
 
         struct LinkInfo
@@ -135,12 +136,13 @@ namespace UI{
             std::string name;
             NodeType nodeType;
         };
-        
+
+        //enums
         struct SelectableInfo
         {
             std::string name;
             std::vector<std::string>options;
-            int selectedIndex;
+            int selectedIdx;
         };
 
         struct TextInputInfo 
@@ -155,6 +157,16 @@ namespace UI{
             PrimitiveNodeType primitiveType;
             std::any content;
         };
+        //any
+        //fix this
+        struct ScrollableInfo
+        {
+            std::string name;
+            PrimitiveNodeType primitiveType;
+            std::vector<std::any> content;
+            int selectedIdx = 0;
+            int itemHightlight = 0;
+        };
         
         //note that this only handle copyable data types
         struct GraphNode
@@ -166,6 +178,7 @@ namespace UI{
             std::map<int, SelectableInfo> selectables;
             std::map<int, TextInputInfo> textInputs;
             std::map<int, PrimivitiveInfo> primitives;
+            std::map<int, ScrollableInfo> scrollables;
             
             std::map<int, std::any> inputData;
             std::map<int, std::any> outputData;
@@ -240,6 +253,16 @@ namespace UI{
                 }
                 return nullptr;
             }
+            void SetOuputData(const std::string& name, std::any data)
+            {
+                *GetOutputDataByName(name) = data;
+                
+            }
+
+            void SetOuputData(int id, std::any data)
+            {
+                *GetOutputDataById(id) = data;
+            }
  
             
 
@@ -249,11 +272,23 @@ namespace UI{
                 {
                     if (selectable.second.name == name)
                     {
-                        return selectable.second.selectedIndex;
+                        return selectable.second.selectedIdx;
                     }
                 }
                 return -1;
-                
+            }
+
+            ScrollableInfo* GetScrollable(const std::string& name)
+            {
+                for (auto& scrollable : scrollables)
+                {
+                    if (scrollable.second.name == name)
+                    {
+                        return &scrollable.second;
+                    }
+                }
+                assert(false && "ivalid name");
+                return nullptr;
             }
             
             std::string GetInputTextContent (const std::string& name)
@@ -301,10 +336,10 @@ namespace UI{
                     ImGui::PushID(selectable.first);
                     ImGui::Text(selectable.second.name.c_str());
                     ImGui::PushItemWidth(100.0);
-                    int index = selectable.second.selectedIndex;
+                    int index = selectable.second.selectedIdx;
                     std::string label = selectable.second.options[index].c_str();
                     //temp solution
-                    ImGui::SliderInt(label.c_str(), &selectable.second.selectedIndex, 0, selectable.second.options.size() -1);
+                    ImGui::SliderInt(label.c_str(), &selectable.second.selectedIdx, 0, selectable.second.options.size() -1);
                     ImGui::PopItemWidth();
 
                     ImGui::PopID();
@@ -332,6 +367,7 @@ namespace UI{
                     int uIntdata;
                     glm::vec3 vec3Data;
                     glm::vec2 vec2Data;
+                    std::string stringData;
                     std::any result;
                     switch (primitiveInfo.second.primitiveType)
                     {
@@ -355,12 +391,60 @@ namespace UI{
                         ImGui::InputFloat2(primitiveInfo.second.name.c_str(), glm::value_ptr(vec2Data));
                         result = vec2Data;
                         break;
+                    case STRING:
+                        assert(false && "Invalid case");
+                        break;
                     default:
                         assert(false && "Invalid case");
                         break;
                     }
                     primitiveInfo.second.content = result;
                     ImGui::PopID();
+                }
+
+                for (auto& scrollable : scrollables)
+                {
+                    int intData = -1;
+                    std::vector<std::string> items;
+                    items.reserve(scrollable.second.content.size());
+                    std::string stringData = "";
+                    int idx = 0;
+                    for (auto& item : scrollable.second.content)
+                    {
+                        switch (scrollable.second.primitiveType)
+                        {
+                        case INT:
+                            intData = std::any_cast<int>(item);
+                            stringData = std::to_string(intData).c_str();
+                        case UINT:
+                            assert(false && "Invalid case");
+                            break;
+                        case VEC3:
+                            assert(false && "Invalid case");
+                            break;
+                        case VEC2:
+                            assert(false && "Invalid case");
+                            break;
+                        case STRING:
+                            stringData = std::any_cast<std::string>(item).c_str();
+                        default:
+                            break;
+                        }
+                        items.push_back(stringData.c_str());
+                        idx++;
+                    }
+                    ImGui::PushID(scrollable.first);
+                    ImGui::Text(scrollable.second.name.c_str());
+                    ImGui::PushItemWidth(100.0);
+                    int index = scrollable.second.selectedIdx;
+                    std::string filename = std::filesystem::path(items[index]).filename().string();
+                    const char* label = filename.c_str();
+                    //temp solution
+                    ImGui::SliderInt(label, &scrollable.second.selectedIdx, 0, scrollable.second.content.size() -1);
+                    ImGui::PopItemWidth();
+
+                    ImGui::PopID();
+
                 }
                 ed::EndNode();
                 ImGui::PopID();
@@ -375,7 +459,8 @@ namespace UI{
             std::map<int, PinInfo> outputNodes = {};
             std::map<int, SelectableInfo> selectables = {};
             std::map<int, TextInputInfo> textInputs;
-            std::map<int, PrimivitiveInfo> primitivesInfo;
+            std::map<int, PrimivitiveInfo> primitives;
+            std::map<int, ScrollableInfo> scrollables;
             
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
@@ -398,30 +483,40 @@ namespace UI{
                 this->pos = pos;
                 return *this;
             }
+
             GraphNodeBuilder& AddInput(int id, PinInfo pinInfo)
             {
                 inputNodes.try_emplace(id, pinInfo);
                 return *this;
             }
+
             GraphNodeBuilder& AddOutput(int id, PinInfo pinInfo)
             {
                 outputNodes.try_emplace(id, pinInfo);
                 return *this;
             }
-            
-            GraphNodeBuilder& AddSelectable(int id, std::string name,std::vector<std::string> options)
+
+            GraphNodeBuilder& AddSelectable(int id, std::string name, std::vector<std::string> options)
             {
-                selectables.try_emplace(id, SelectableInfo{name ,options, 0});
+                selectables.try_emplace(id, SelectableInfo{name, options, 0});
                 return *this;
             }
+
             GraphNodeBuilder& AddTextInput(int id, TextInputInfo info)
             {
                 textInputs.try_emplace(id, info);
                 return *this;
             }
-             GraphNodeBuilder& AddPrimitiveData(int id, PrimivitiveInfo info)
+
+            GraphNodeBuilder& AddScrollableOption(int id, ScrollableInfo info)
             {
-                primitivesInfo.try_emplace(id, info);
+                scrollables.try_emplace(id, info);
+                return *this;
+            }
+
+            GraphNodeBuilder& AddPrimitiveData(int id, PrimivitiveInfo info)
+            {
+                primitives.try_emplace(id, info);
                 return *this;
             }
 
@@ -438,7 +533,8 @@ namespace UI{
                 graphNode.outputNodes = outputNodes;
                 graphNode.selectables = selectables;
                 graphNode.textInputs = textInputs;
-                graphNode.primitives = primitivesInfo;
+                graphNode.primitives = primitives;
+                graphNode.scrollables = scrollables;
                 graphNode.outputFunction = std::move(outputOp);
                 graphNode.inputData = {};
                 graphNode.pos = pos;
@@ -527,8 +623,6 @@ namespace UI{
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
-                            
-                            
                         });
                     builder
                         .AddPrimitiveData(NextID(), {"Clear Color", VEC3, glm::vec3(0.0)})
@@ -551,7 +645,7 @@ namespace UI{
                                                                  vk::ImageUsageFlagBits::eColorAttachment |
                                                                  vk::ImageUsageFlagBits::eSampled);
                             ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, imageInfo, 0, 0);
-                            *selfNode.GetOutputDataByName("Image Sampler Result") = imgName;
+                            selfNode.SetOuputData("Image Sampler Result", imgName);
 
                             assert(imgView && "Image view must be valid");
                         });
@@ -559,6 +653,26 @@ namespace UI{
                          .AddTextInput(NextID(), {"Img Name", "Image Name"})
                          .AddOutput(NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
                          .SetNodeId(NextID(), "Image Node");
+                    break;
+                case N_SHADER:
+                    std::vector<std::any> shaderPaths;
+                    shaderPaths.reserve(renderGraph->resourcesManager->shadersNames.size());
+                    for (auto& shaderPath : renderGraph->resourcesManager->shadersNames)
+                    {
+                        shaderPaths.emplace_back(shaderPath.first);
+                        
+                    }
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                            ScrollableInfo* scrollableInfo = selfNode.GetScrollable("Posible Shaders");
+                            
+                        });
+                    builder
+                        .AddScrollableOption(NextID(), {"Posible Shaders", PrimitiveNodeType::STRING, shaderPaths})
+                        .AddTextInput(NextID(), {"Img Name", "Image Name"})
+                        .AddOutput(NextID(), {"Image Sampler Result", N_SHADER})
+                        .SetNodeId(NextID(), "Image Node");
                     break;
                 }
 
