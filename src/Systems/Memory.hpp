@@ -95,6 +95,7 @@ namespace Systems
                 for (int i = 0; i < n; ++i)
                 {
                     new (&data[i])T(std::forward<Args>(args)...);
+                    destructors.push_back([ptr = &data[i]] { ptr->~T(); });
                 }
             }
             return data;
@@ -103,6 +104,11 @@ namespace Systems
 
         void Reset()
         {
+            for (auto& destructor : destructors)
+            {
+                destructor();
+            }
+            destructors.clear();
             currentBlockPos = 0;
             availableBlocks.splice(availableBlocks.begin(), usedBlocks);
         }
@@ -122,22 +128,31 @@ namespace Systems
 
         ~Arena()
         {
+            for (auto& destructor : destructors)
+            {
+                destructor();
+            }
+            destructors.clear();
+            
+            _aligned_free(currentBlock);
+
             for (auto& usedBlock : usedBlocks)
             {
-                free(usedBlock.second);
+                _aligned_free(usedBlock.second);
             }
             for (auto& availableBlock : availableBlocks)
             {
-                free(availableBlock.second);
+                _aligned_free(availableBlock.second);
             }
         }
         
         size_t maxBlockSize = 0;
         size_t currentBlockPos = 0;
         size_t currentAllocSize = 0;
-        uint8_t* currentBlock;
+        uint8_t* currentBlock = nullptr;
         std::list<std::pair<size_t, uint8_t*>> usedBlocks;
         std::list<std::pair<size_t, uint8_t*>> availableBlocks;
+        std::vector<std::function<void()>> destructors;
     };
 }
 

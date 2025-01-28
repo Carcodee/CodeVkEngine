@@ -171,7 +171,6 @@ namespace UI{
         //note that this only handle copyable data types
         struct GraphNode
         {
-            
             ed::NodeId nodeId;
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
