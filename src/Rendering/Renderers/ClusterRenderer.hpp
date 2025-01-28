@@ -95,10 +95,8 @@ namespace Rendering
                 cullDataPc.sWidth = (int)windowProvider->GetWindowSize().x;
                 cullDataPc.sHeight = (int)windowProvider->GetWindowSize().y;
                 cullDataPc.pointLightsCount = pointLights.size();
-                cullDataPc.xTileCount = static_cast<uint32_t>((core->swapchainRef->extent.width - 1) / xTileSizePx +
-                    1);
-                cullDataPc.yTileCount = static_cast<uint32_t>((core->swapchainRef->extent.height - 1) / yTileSizePx +
-                    1);
+                cullDataPc.xTileCount = static_cast<uint32_t>((core->swapchainRef->extent.width - 1) / xTileSizePx + 1);
+                cullDataPc.yTileCount = static_cast<uint32_t>((core->swapchainRef->extent.height - 1) / yTileSizePx + 1);
 
                 lightsMap.clear();
                 for (int i = 0; i < cullDataPc.xTileCount * cullDataPc.yTileCount * zSlicesSize; ++i)
