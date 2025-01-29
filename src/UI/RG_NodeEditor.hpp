@@ -10,6 +10,8 @@
 
 
 
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -41,8 +43,8 @@ namespace UI
             RegisterNode(nodes.back(), nodes.size() - 1);
 
             
-            nodes.push_back(factory.GetNode(Nodes::N_SHADER, glm::vec2(40.0), "Shader 1"));
-            RegisterNode(nodes.back(), nodes.size() - 1);
+            // nodes.push_back(factory.GetNode(Nodes::N_COMP_SHADER, glm::vec2(40.0), "Shader 1"));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
 
         }
 
