@@ -42,9 +42,14 @@ namespace UI
             nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, glm::vec2(10.0), "Color Attachment 1"));
             RegisterNode(nodes.back(), nodes.size() - 1);
 
+            nodes.push_back(factory.GetNode(Nodes::N_COMP_SHADER, glm::vec2(40.0), "Shader 1"));
+            RegisterNode(nodes.back(), nodes.size() - 1);
             
-            // nodes.push_back(factory.GetNode(Nodes::N_COMP_SHADER, glm::vec2(40.0), "Shader 1"));
-            // RegisterNode(nodes.back(), nodes.size() - 1);
+            nodes.push_back(factory.GetNode(Nodes::N_FRAG_SHADER, glm::vec2(40.0), "Shader 2"));
+            RegisterNode(nodes.back(), nodes.size() - 1);
+            
+            nodes.push_back(factory.GetNode(Nodes::N_VERT_SHADER, glm::vec2(40.0), "Shader 3"));
+            RegisterNode(nodes.back(), nodes.size() - 1);
 
         }
 

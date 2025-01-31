@@ -45,7 +45,6 @@ namespace ENGINE
         vk::UniqueSemaphore imageAcquiredSemaphore;
         vk::UniqueSemaphore renderingFinishedSemaphore;
         vk::UniqueFence inflightFence;
-
         vk::UniqueCommandBuffer commandBuffer;
     };
 

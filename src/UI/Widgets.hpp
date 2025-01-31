@@ -792,6 +792,8 @@ namespace UI
                         .SetNodeId(NextID(), "Image Node");
                     break;
                 case N_VERT_SHADER:
+                case N_FRAG_SHADER:
+                case N_COMP_SHADER:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
@@ -799,10 +801,6 @@ namespace UI
                         });
                     std::vector<std::any> shaderPaths;
                     shaderPaths.reserve(renderGraph->resourcesManager->shadersNames.size());
-                    for (auto& shaderPath : renderGraph->resourcesManager->shadersNames)
-                    {
-                        shaderPaths.emplace_back(shaderPath.first);
-                    }
 
                     std::vector<std::string> options = {"Pick Shader", "Create Shader"};
 
@@ -810,17 +808,53 @@ namespace UI
                     textInputs.try_emplace(1, TextInputInfo{"Select Shader Name"});
 
                     std::map<int, ScrollableInfo> scrollables;
+
+                    if (nodeType == N_VERT_SHADER)
+                    {
+                        for (auto& shaderPath : renderGraph->resourcesManager->shadersNames)
+                        {
+                            if (renderGraph->resourcesManager->shaders.at(shaderPath.second)->stage == ENGINE::ShaderStage::S_VERT)
+                            {
+                                shaderPaths.emplace_back(shaderPath.first);
+                            }
+                        }
+                        builder
+                            .SetNodeId(NextID(), "Vert Shader")
+                            .AddOutput(NextID(), {"Shader result", N_VERT_SHADER});
+
+                    }
+                    if (nodeType == N_FRAG_SHADER)
+                    {
+                        for (auto& shaderPath : renderGraph->resourcesManager->shadersNames)
+                        {
+                            if (renderGraph->resourcesManager->shaders.at(shaderPath.second)->stage ==
+                                ENGINE::ShaderStage::S_FRAG)
+                            {
+                                shaderPaths.emplace_back(shaderPath.first);
+                            }
+                        }
+                        builder
+                            .SetNodeId(NextID(), "Frag Shader")
+                            .AddOutput(NextID(), {"Shader result", N_FRAG_SHADER});
+                    }
+                    if (nodeType == N_COMP_SHADER)
+                    {
+                        for (auto& shaderPath : renderGraph->resourcesManager->shadersNames)
+                        {
+                            if (renderGraph->resourcesManager->shaders.at(shaderPath.second)->stage ==
+                                ENGINE::ShaderStage::S_COMP)
+                            {
+                                shaderPaths.emplace_back(shaderPath.first);
+                            }
+                        }
+                        builder
+                            .SetNodeId(NextID(), "Compute Shader")
+                            .AddOutput(NextID(), {"Shader result", N_COMP_SHADER});
+                    }
                     scrollables.try_emplace(0, ScrollableInfo{"Posible Shaders", STRING, shaderPaths});
-
-
                     MultiOptionInfo multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
-                    builder
-                        .SetNodeId(NextID(), "Shader Node")
-                        .AddMultiOption(NextID(), multiOptionInfo)
-                        .AddOutput(NextID(), {"Shader result", N_VERT_SHADER});
-                // case N_FRAG_SHADER:
-                // case N_COMP_SHADER:
-
+                    builder.AddMultiOption(NextID(), multiOptionInfo);
+                   
                     break;
                 }
 

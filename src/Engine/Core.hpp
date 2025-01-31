@@ -26,6 +26,7 @@ namespace ENGINE
 
         std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffers(size_t count);
         vk::UniqueSemaphore CreateVulkanSemaphore();
+        vk::UniqueSemaphore CreateVulkanTimelineSemaphore(uint32_t initialValue);
         vk::UniqueFence CreateFence(bool state);
         void WaitForFence(vk::Fence fence);
         void ResetFence(vk::Fence fence);

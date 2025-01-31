@@ -6,6 +6,8 @@
 
 
 
+
+
 #ifndef COREIMPL_HPP
 #define COREIMPL_HPP
 
@@ -115,9 +117,18 @@ namespace ENGINE
     {
         auto semaphoreInfo = vk::SemaphoreCreateInfo();
         return logicalDevice->createSemaphoreUnique(semaphoreInfo);
-        
     }
-    
+
+    vk::UniqueSemaphore Core::CreateVulkanTimelineSemaphore(uint32_t initialValue)
+    {
+        auto semaphoreTypeInfo = vk::SemaphoreTypeCreateInfo ();
+        semaphoreTypeInfo.semaphoreType = vk::SemaphoreType::eTimeline;
+        semaphoreTypeInfo.initialValue = initialValue;
+        
+        auto semaphoreInfo = vk::SemaphoreCreateInfo();
+        semaphoreInfo.pNext = &semaphoreTypeInfo;
+        return logicalDevice->createSemaphoreUnique(semaphoreInfo);
+    }
     vk::UniqueFence Core::CreateFence(bool state)
     {
         auto fenceInfo = vk::FenceCreateInfo();
