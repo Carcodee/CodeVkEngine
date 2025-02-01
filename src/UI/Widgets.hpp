@@ -136,10 +136,15 @@ namespace UI
             N_FRAG_SHADER,
             N_COMP_SHADER,
             N_COL_ATTACHMENT_STRUCTURE,
+            N_DEPTH_STRUCTURE,
+            N_RASTER_STRUCTURE,
+            N_PUSH_CONSTANT,
             N_IMAGE_SAMPLER,
             N_IMAGE_STORAGE,
-            N_DEPTH_CONFIGS,
-            N_VERTEX_INPUT
+            N_DEPTH_IMAGE_SAMPLER,
+            N_VERTEX_INPUT,
+            N_BUFFER
+            
         };
 
         enum PrimitiveNodeType
@@ -148,6 +153,7 @@ namespace UI
             UINT,
             VEC3,
             VEC2,
+            SIZE_T,
             STRING
         };
 
@@ -228,6 +234,8 @@ namespace UI
                 glm::vec3 vec3Data;
                 glm::vec2 vec2Data;
                 std::string stringData;
+                size_t sizeData;
+                int sizeTemp;
                 std::any result;
                 switch (primitiveType)
                 {
@@ -250,6 +258,13 @@ namespace UI
                     vec2Data = std::any_cast<glm::vec2>(content);
                     ImGui::InputFloat2(name.c_str(), glm::value_ptr(vec2Data));
                     result = vec2Data;
+                    break;
+                case SIZE_T:
+                    sizeData = std::any_cast<size_t>(content);
+                    sizeTemp = static_cast<int>(sizeData);
+                    ImGui::InputInt(name.c_str(), &sizeTemp);
+                    sizeData = static_cast<size_t>(sizeTemp);
+                    result = sizeData;
                     break;
                 case STRING:
                     assert(false && "Invalid case");
@@ -750,7 +765,7 @@ namespace UI
                         .AddInput(NextID(), {"Fragment Shader", N_FRAG_SHADER})
                         .AddInput(NextID(), {"Compute Shader", N_COMP_SHADER})
                         .AddInput(NextID(), {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
-                        .AddInput(NextID(), {"Depth Attachment", N_DEPTH_CONFIGS})
+                        .AddInput(NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
                         .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
                         .AddSelectable(NextID(), "Raster Configs", {"Fill", "Line", "Point"})
                         .SetNodeId(NextID(), "Render Node");
@@ -769,6 +784,36 @@ namespace UI
                         .AddOutput(NextID(), {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
                         .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
                         .SetNodeId(NextID(), "Col Attachment Structure");
+                    break;
+                case N_DEPTH_STRUCTURE:
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                        });
+                    builder
+                        .AddSelectable(NextID(), "Depth Configs", {"None", "Enable", "Disable"})
+                        .AddOutput(NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
+                        .SetNodeId(NextID(), "Col Attachment Structure");
+                    break;
+                case N_RASTER_STRUCTURE:
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                        });
+                    builder
+                        .AddSelectable(NextID(), "Raster Configs", {"Fill", "Point", "Line"})
+                        .AddOutput(NextID(), {"Depth Attachment ", N_RASTER_STRUCTURE})
+                        .SetNodeId(NextID(), "Depth Structure");
+                    break;
+                case N_PUSH_CONSTANT:
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                        });
+                    builder
+                        .AddPrimitiveData(NextID(), {"Push Constant data", SIZE_T, size_t(0)})
+                        .AddOutput(NextID(), {"Push Constant Structure ", N_PUSH_CONSTANT})
+                        .SetNodeId(NextID(), "Push Constant");
                     break;
                 case N_IMAGE_SAMPLER:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
@@ -789,7 +834,50 @@ namespace UI
                     builder
                         .AddTextInput(NextID(), {"Img Name", "Image Name"})
                         .AddOutput(NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
-                        .SetNodeId(NextID(), "Image Node");
+                        .SetNodeId(NextID(), "Sampler Image Node");
+                    break;
+                case N_IMAGE_STORAGE:
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                            std::string imgName = selfNode.GetInputTextContent("Img Name");
+                            assert(!imgName.empty() && "Img name is not valid");
+
+                            auto storageImageInfo = ENGINE::Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+                                ENGINE::g_32bFormat,
+                                vk::ImageUsageFlagBits::eStorage |
+                                vk::ImageUsageFlagBits::eTransferDst);
+                            
+                            ENGINE::ImageView* storageImgView = renderGraph->resourcesManager->GetImage(
+                                imgName, storageImageInfo, 0, 0);
+                            selfNode.SetOuputData("Image Storage Result", imgName);
+
+                            assert(storageImgView && "Image view must be valid");
+                        });
+                    builder
+                        .AddTextInput(NextID(), {"Img Name", "Image Name"})
+                        .AddOutput(NextID(), {"Storage Result", N_IMAGE_STORAGE})
+                        .SetNodeId(NextID(), "Storage Image Node");
+                    break;
+                case N_DEPTH_IMAGE_SAMPLER:
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                            std::string imgName = selfNode.GetInputTextContent("Img Name");
+                            assert(!imgName.empty() && "Img name is not valid");
+                            auto depthImageInfo = ENGINE::Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+                                                                      selfNode.renderGraph->core->swapchainRef->depthFormat,
+                                                                      vk::ImageUsageFlagBits::eDepthStencilAttachment |
+                                                                      vk::ImageUsageFlagBits::eSampled);
+                            ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, depthImageInfo, 0, 0);
+                            selfNode.SetOuputData("Depth Image Sampler Result", imgName);
+                            
+                            assert(imgView && "Image view must be valid");
+                        });
+                    builder
+                        .AddTextInput(NextID(), {"Img Name", "Image Name"})
+                        .AddOutput(NextID(), {"Image Sampler Result", N_DEPTH_IMAGE_SAMPLER})
+                        .SetNodeId(NextID(), "Depth Image Node");
                     break;
                 case N_VERT_SHADER:
                 case N_FRAG_SHADER:

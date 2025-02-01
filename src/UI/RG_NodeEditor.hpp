@@ -31,25 +31,47 @@ namespace UI
             this->renderGraph = renderGraph;
             this->windowProvider = windowProvider;
             this->factory.renderGraph =renderGraph;       
-            this->factory.windowProvider =windowProvider;       
-            
-            nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE));
-            RegisterNode(nodes.back(), nodes.size() - 1);
+            this->factory.windowProvider =windowProvider;
 
-            nodes.push_back(factory.GetNode(Nodes::N_IMAGE_SAMPLER, glm::vec2(20.0), "Img1"));
-            RegisterNode(nodes.back(), nodes.size() - 1);
+            std::vector<Nodes::NodeType> nodesList = {
+               Nodes::N_RENDER_NODE,
+               Nodes::N_VERT_SHADER,
+               Nodes::N_FRAG_SHADER,
+               Nodes::N_COMP_SHADER,
+               Nodes::N_COL_ATTACHMENT_STRUCTURE,
+               Nodes::N_DEPTH_STRUCTURE,
+               Nodes::N_DEPTH_RASTER_STRUCTURE,
+               Nodes::N_PUSH_CONSTANT,
+               Nodes::N_IMAGE_SAMPLER,
+               Nodes::N_IMAGE_STORAGE,
+               Nodes::N_DEPTH_IMAGE_SAMPLER,
+               // Nodes::N_VERTEX_INPUT,
+                // N_BUFFER
+            };
+            //test
+            for (const auto& nodeType : nodesList)
+            {
+                nodes.push_back(factory.GetNode(nodeType));
+                RegisterNode(nodes.back(), nodes.size() - 1);    
+            }
             
-            nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, glm::vec2(10.0), "Color Attachment 1"));
-            RegisterNode(nodes.back(), nodes.size() - 1);
-
-            nodes.push_back(factory.GetNode(Nodes::N_COMP_SHADER, glm::vec2(40.0), "Shader 1"));
-            RegisterNode(nodes.back(), nodes.size() - 1);
-            
-            nodes.push_back(factory.GetNode(Nodes::N_FRAG_SHADER, glm::vec2(40.0), "Shader 2"));
-            RegisterNode(nodes.back(), nodes.size() - 1);
-            
-            nodes.push_back(factory.GetNode(Nodes::N_VERT_SHADER, glm::vec2(40.0), "Shader 3"));
-            RegisterNode(nodes.back(), nodes.size() - 1);
+            // nodes.push_back(factory.GetNode(Nodes::N_RENDER_NODE));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
+            //
+            // nodes.push_back(factory.GetNode(Nodes::N_IMAGE_SAMPLER, glm::vec2(20.0), "Img1"));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
+            //
+            // nodes.push_back(factory.GetNode(Nodes::N_COL_ATTACHMENT_STRUCTURE, glm::vec2(10.0), "Color Attachment 1"));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
+            //
+            // nodes.push_back(factory.GetNode(Nodes::N_COMP_SHADER, glm::vec2(40.0), "Shader 1"));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
+            //
+            // nodes.push_back(factory.GetNode(Nodes::N_FRAG_SHADER, glm::vec2(40.0), "Shader 2"));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
+            //
+            // nodes.push_back(factory.GetNode(Nodes::N_VERT_SHADER, glm::vec2(40.0), "Shader 3"));
+            // RegisterNode(nodes.back(), nodes.size() - 1);
 
         }
 
