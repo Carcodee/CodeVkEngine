@@ -3,6 +3,7 @@
 //
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -177,6 +178,8 @@ namespace UI
             std::vector<std::string> options;
             int selectedIdx;
 
+            ~SelectableInfo() = default;
+
             void Draw(const int& id = -1)
             {
                 ImGui::PushItemWidth(100.0);
@@ -218,11 +221,18 @@ namespace UI
             }
         };
 
-        struct PrimivitiveInfo
+        struct PrimitiveSelectable 
         {
             std::string name;
             PrimitiveNodeType primitiveType;
             std::any content;
+            
+            template<typename T>
+            T& GetValue()
+            {
+                T& data = std::any_cast<T>(content);
+                return data;
+            }
 
             void Draw(const int& id = -1)
             {
@@ -278,11 +288,12 @@ namespace UI
                     ImGui::PopID();
                 ImGui::PopItemWidth();
             }
+            
         };
 
         //any
         //fix this
-        struct ScrollableInfo
+        struct Scrollable
         {
             std::string name;
             PrimitiveNodeType primitiveType;
@@ -339,18 +350,18 @@ namespace UI
             }
         };
 
-        struct MultiOptionInfo
+        struct MultiOption
         {
             std::string name;
             std::map<int, std::string> options;;
             std::map<int, TextInputInfo> inputTexts;;
             std::map<int, SelectableInfo> selectables;
-            std::map<int, ScrollableInfo> scrollables;
+            std::map<int, Scrollable> scrollables;
 
             int selectedIdx = 0;
 
-            MultiOptionInfo(std::string name, std::vector<std::string> options, std::map<int, TextInputInfo> inputTexts,
-                            std::map<int, SelectableInfo> selectables, std::map<int, ScrollableInfo> scrollables)
+            MultiOption(std::string name, std::vector<std::string> options, std::map<int, TextInputInfo> inputTexts,
+                            std::map<int, SelectableInfo> selectables, std::map<int, Scrollable> scrollables)
             {
                 this->name = name;
                 for (int i = 0; i < options.size(); ++i)
@@ -386,7 +397,263 @@ namespace UI
                     ImGui::PopID();
             }
         };
+        enum WidgetType
+        {
+            W_MULTI_OPTION,
+            W_SELECTABLE,
+            W_TEXT_INPUT,
+            W_PRIMITIVE
+        };
 
+
+        struct DynamicStructure
+        {
+            struct NodeWidgetsInfos
+            {
+                union
+                {
+                    MultiOption multiOptionInfo;
+                    SelectableInfo selectableInfo;
+                    TextInputInfo textInputInfo;
+                    PrimitiveSelectable primitiveInfo;
+                };
+
+                WidgetType type;
+
+                NodeWidgetsInfos()
+                {
+                }
+
+                NodeWidgetsInfos(const NodeWidgetsInfos& other) : type(other.type)
+                {
+                    
+                    switch (type)
+                    {
+                    case W_MULTI_OPTION:
+                        new(&multiOptionInfo) MultiOption(other.multiOptionInfo);
+                        break;
+                    case W_SELECTABLE:
+                        new(&selectableInfo) SelectableInfo(other.selectableInfo);
+                        break;
+                    case W_TEXT_INPUT:
+                        new(&textInputInfo) TextInputInfo(other.textInputInfo);
+                        break;
+                    case W_PRIMITIVE:
+                        new(&primitiveInfo) PrimitiveSelectable(other.primitiveInfo);
+                        break;
+                    }
+                }
+
+                NodeWidgetsInfos(const NodeWidgetsInfos&& other) noexcept : type(other.type)
+                {
+                    switch (type)
+                    {
+                    case W_MULTI_OPTION:
+                        new(&multiOptionInfo) MultiOption(std::move(other.multiOptionInfo));
+                        break;
+                    case W_SELECTABLE:
+                        new(&selectableInfo) SelectableInfo(std::move(other.selectableInfo));
+                        break;
+                    case W_TEXT_INPUT:
+                        new(&textInputInfo) TextInputInfo(std::move(other.textInputInfo));
+                        break;
+                    case W_PRIMITIVE:
+                        new(&primitiveInfo) PrimitiveSelectable(std::move(other.primitiveInfo));
+                        break;
+                    }
+                }
+
+                ~NodeWidgetsInfos()
+                {
+                    Destroy();
+                }
+
+                void Destroy()
+                {
+                    switch (type)
+                    {
+                    case W_MULTI_OPTION:
+                        multiOptionInfo.~MultiOption();
+                        break;
+                    case W_SELECTABLE:
+                        selectableInfo.~SelectableInfo();
+                        break;
+                    case W_TEXT_INPUT:
+                        textInputInfo.~TextInputInfo();
+                        break;
+                    case W_PRIMITIVE:
+                        primitiveInfo.~PrimitiveSelectable();
+                        break;
+                    }
+                }
+
+                NodeWidgetsInfos& operator=(const NodeWidgetsInfos& other)
+                {
+                    if (this != &other)
+                    {
+                        Destroy();
+                        type = other.type;
+                        switch (type)
+                        {
+                        case W_MULTI_OPTION:
+                            new(&multiOptionInfo) MultiOption(other.multiOptionInfo);
+                            break;
+                        case W_SELECTABLE:
+                            new(&selectableInfo) SelectableInfo(other.selectableInfo);
+                            break;
+                        case W_TEXT_INPUT:
+                            new(&textInputInfo) TextInputInfo(other.textInputInfo);
+                            break;
+                        case W_PRIMITIVE:
+                            new(&primitiveInfo) PrimitiveSelectable(other.primitiveInfo);
+                            break;
+                        }
+                    }
+                    return *this;
+                }
+                NodeWidgetsInfos& operator=(const NodeWidgetsInfos&& other) noexcept
+                {
+                    if (this != &other)
+                    {
+                        Destroy();
+                        type = other.type;
+                        switch (type)
+                        {
+                        case W_MULTI_OPTION:
+                            new(&multiOptionInfo) MultiOption(std::move(other.multiOptionInfo));
+                            break;
+                        case W_SELECTABLE:
+                            new(&selectableInfo) SelectableInfo(std::move(other.selectableInfo));
+                            break;
+                        case W_TEXT_INPUT:
+                            new(&textInputInfo) TextInputInfo(std::move(other.textInputInfo));
+                            break;
+                        case W_PRIMITIVE:
+                            new(&primitiveInfo) PrimitiveSelectable(std::move(other.primitiveInfo));
+                            break;
+                        }
+                    }
+                    return *this;
+                }
+            };
+            
+            std::string name;
+            std::map<int, NodeWidgetsInfos> widgetsInfos;
+
+            DynamicStructure(const DynamicStructure& other)
+            {
+                this->name = other.name;
+                this->widgetsInfos = other.widgetsInfos;
+            }
+
+            DynamicStructure(const std::string& name, MultiOption& multiOption)
+            {
+                this->name = name;
+                NodeWidgetsInfos baseWidgetInfo = {};
+                baseWidgetInfo.type = W_SELECTABLE;
+                new(&baseWidgetInfo.multiOptionInfo) MultiOption(multiOption);
+                widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
+            }           
+            DynamicStructure(const std::string& name, SelectableInfo& selectable)
+            {
+                this->name = name;
+                NodeWidgetsInfos baseWidgetInfo = {};
+                baseWidgetInfo.type = W_SELECTABLE;
+                new(&baseWidgetInfo.selectableInfo) SelectableInfo(selectable);
+                widgetsInfos.try_emplace(widgetsInfos.size() , std::move(baseWidgetInfo));
+            }
+
+            DynamicStructure(const std::string& name, TextInputInfo& textInputInfo)
+            {
+                this->name = name;
+                NodeWidgetsInfos baseWidgetInfo = {};
+                baseWidgetInfo.type = W_TEXT_INPUT;
+                new(&baseWidgetInfo.textInputInfo) TextInputInfo(textInputInfo);
+                widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
+            }
+
+            DynamicStructure(const std::string& name, PrimitiveSelectable& primitiveInfo)
+            {
+                this->name = name;
+                NodeWidgetsInfos baseWidgetInfo = {};
+                baseWidgetInfo.type = W_PRIMITIVE;
+                new(&baseWidgetInfo.primitiveInfo) PrimitiveSelectable(primitiveInfo);
+                widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
+            }
+
+
+
+            ~DynamicStructure()
+            {
+                for (auto& widget : widgetsInfos)
+                {
+                    widget.second.Destroy();
+                }
+            }
+            
+            void AddOption()
+            {
+                widgetsInfos.try_emplace(widgetsInfos.size(), widgetsInfos.at(0));
+            }
+
+            void RemoveLast()
+            {
+                if (widgetsInfos.size()==1){return;}
+                
+                auto it = widgetsInfos.find(widgetsInfos.size()-1);
+                if (it != widgetsInfos.end())
+                {
+                    widgetsInfos.erase(it);
+                }else
+                {
+                    SYSTEMS::Logger::GetInstance()->Log("Invalid Key");
+                }
+            }
+            
+            void Draw(const int& id = -1)
+            {
+                if (id > -1)
+                    ImGui::PushID(id);
+
+                ImGui::Text(name.c_str());
+                ImGui::SameLine();
+                ImGui::PushItemWidth(20);
+                if (ImGui::Button("+"))
+                {
+                    AddOption();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("-"))
+                {
+                    RemoveLast();
+                }
+                ImGui::PopItemWidth();
+                int wId = 0;
+                for (auto& widgetInfo : widgetsInfos)
+                {
+                    switch (widgetInfo.second.type)
+                    {
+                    case W_MULTI_OPTION:
+                        widgetInfo.second.multiOptionInfo.Draw(wId++);
+                        break;
+                    case W_SELECTABLE:
+                        widgetInfo.second.selectableInfo.Draw(wId++);
+                        break;
+                    case W_TEXT_INPUT:
+                        widgetInfo.second.textInputInfo.Draw(wId++);
+                        break;
+                    case W_PRIMITIVE:
+                        widgetInfo.second.primitiveInfo.Draw(wId++);
+                        break;
+                    }
+                }
+                if (id > -1)
+                    ImGui::PopID();
+            }
+            
+        };
+
+        
         //note that this only handle copyable data types
         struct GraphNode
         {
@@ -395,9 +662,10 @@ namespace UI
             std::map<int, PinInfo> outputNodes;
             std::map<int, SelectableInfo> selectables;
             std::map<int, TextInputInfo> textInputs;
-            std::map<int, PrimivitiveInfo> primitives;
-            std::map<int, ScrollableInfo> scrollables;
-            std::map<int, MultiOptionInfo> multiOptions;
+            std::map<int, PrimitiveSelectable> primitives;
+            std::map<int, Scrollable> scrollables;
+            std::map<int, MultiOption> multiOptions;
+            std::map<int, DynamicStructure> dynamicStructures;
 
             std::map<int, std::any> inputData;
             std::map<int, std::any> outputData;
@@ -498,7 +766,7 @@ namespace UI
                 return -1;
             }
 
-            ScrollableInfo* GetScrollable(const std::string& name)
+            Scrollable* GetScrollable(const std::string& name)
             {
                 for (auto& scrollable : scrollables)
                 {
@@ -511,7 +779,7 @@ namespace UI
                 return nullptr;
             }
 
-            MultiOptionInfo* GetMultiOption(const std::string name)
+            MultiOption* GetMultiOption(const std::string name)
             {
                  for (auto& multiOption : multiOptions)
                 {
@@ -583,6 +851,11 @@ namespace UI
                 {
                     multiOption.second.Draw(multiOption.first);
                 }
+                for (auto& dynamicStructure : dynamicStructures)
+                {
+                    dynamicStructure.second.Draw(dynamicStructure.first);
+                    
+                }
                 ed::EndNode();
                 ImGui::PopID();
                 firstFrame = false;
@@ -596,9 +869,10 @@ namespace UI
             std::map<int, PinInfo> outputNodes = {};
             std::map<int, SelectableInfo> selectables = {};
             std::map<int, TextInputInfo> textInputs = {};
-            std::map<int, PrimivitiveInfo> primitives = {};
-            std::map<int, ScrollableInfo> scrollables = {};
-            std::map<int, MultiOptionInfo> multiOptions = {};
+            std::map<int, PrimitiveSelectable> primitives = {};
+            std::map<int, Scrollable> scrollables = {};
+            std::map<int, MultiOption> multiOptions = {};
+            std::map<int, DynamicStructure> dynamicStructures = {};
 
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
@@ -646,21 +920,27 @@ namespace UI
                 return *this;
             }
 
-            GraphNodeBuilder& AddScrollableOption(int id, ScrollableInfo info)
+            GraphNodeBuilder& AddScrollableOption(int id, Scrollable info)
             {
                 scrollables.try_emplace(id, info);
                 return *this;
             }
 
-            GraphNodeBuilder& AddPrimitiveData(int id, PrimivitiveInfo info)
+            GraphNodeBuilder& AddPrimitiveData(int id, PrimitiveSelectable info)
             {
                 primitives.try_emplace(id, info);
                 return *this;
             }
 
-            GraphNodeBuilder& AddMultiOption(int id, MultiOptionInfo info)
+            GraphNodeBuilder& AddMultiOption(int id, MultiOption info)
             {
                 multiOptions.try_emplace(id, info);
+                return *this;
+            }
+
+            GraphNodeBuilder& AddDynamicStructure(int id, DynamicStructure info)
+            {
+                dynamicStructures.try_emplace(id, info);
                 return *this;
             }
 
@@ -680,6 +960,7 @@ namespace UI
                 graphNode.primitives = primitives;
                 graphNode.scrollables = scrollables;
                 graphNode.multiOptions = multiOptions;
+                graphNode.dynamicStructures = dynamicStructures;
                 graphNode.outputFunction = std::move(outputOp);
                 graphNode.pos = pos;
                 graphNode.renderGraph = renderGraph;
@@ -792,6 +1073,7 @@ namespace UI
                         });
                     builder
                         .AddSelectable(NextID(), "Depth Configs", {"None", "Enable", "Disable"})
+                        .AddInput(NextID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
                         .SetNodeId(NextID(), "Col Attachment Structure");
                     break;
@@ -802,8 +1084,8 @@ namespace UI
                         });
                     builder
                         .AddSelectable(NextID(), "Raster Configs", {"Fill", "Point", "Line"})
-                        .AddOutput(NextID(), {"Depth Attachment ", N_RASTER_STRUCTURE})
-                        .SetNodeId(NextID(), "Depth Structure");
+                        .AddOutput(NextID(), {"Raster Config ", N_RASTER_STRUCTURE})
+                        .SetNodeId(NextID(), "Raster Structure");
                     break;
                 case N_PUSH_CONSTANT:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
@@ -879,13 +1161,26 @@ namespace UI
                         .AddOutput(NextID(), {"Image Sampler Result", N_DEPTH_IMAGE_SAMPLER})
                         .SetNodeId(NextID(), "Depth Image Node");
                     break;
+                case N_VERTEX_INPUT:
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
+                        });
+                    {
+                        SelectableInfo selectable("Vertex Attrib: ", {"int", "vec2", "vec3", "ve4"});
+                        DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
+                        builder.AddDynamicStructure(NextID(), dynamicStructureInfo);
+                        builder.SetNodeId(NextID(), "Vertex Input Builder");
+                    }
+                    
+                    break;
                 case N_VERT_SHADER:
                 case N_FRAG_SHADER:
                 case N_COMP_SHADER:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
-                            auto scrollableInfo = GetFromMap<MultiOptionInfo>(selfNode.multiOptions, "Shader Options");
+                            auto scrollableInfo = GetFromMap<MultiOption>(selfNode.multiOptions, "Shader Options");
                         });
                     std::vector<std::any> shaderPaths;
                     shaderPaths.reserve(renderGraph->resourcesManager->shadersNames.size());
@@ -895,7 +1190,7 @@ namespace UI
                     std::map<int, TextInputInfo> textInputs;
                     textInputs.try_emplace(1, TextInputInfo{"Select Shader Name"});
 
-                    std::map<int, ScrollableInfo> scrollables;
+                    std::map<int, Scrollable> scrollables;
 
                     if (nodeType == N_VERT_SHADER)
                     {
@@ -939,8 +1234,8 @@ namespace UI
                             .SetNodeId(NextID(), "Compute Shader")
                             .AddOutput(NextID(), {"Shader result", N_COMP_SHADER});
                     }
-                    scrollables.try_emplace(0, ScrollableInfo{"Posible Shaders", STRING, shaderPaths});
-                    MultiOptionInfo multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
+                    scrollables.try_emplace(0, Scrollable{"Posible Shaders", STRING, shaderPaths});
+                    MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
                     builder.AddMultiOption(NextID(), multiOptionInfo);
                    
                     break;

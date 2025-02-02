@@ -387,6 +387,17 @@ namespace ENGINE
             Shader* shader = shaders.back().get();
             return shader;
         }
+        VertexInput* GetVertexInput(std::string name)
+        {
+            if (verticesInputsNames.contains(name))
+            {
+                return verticesInputs.at(verticesInputsNames.at(name)).get();
+            }
+            verticesInputsNames.try_emplace(name, verticesInputs.size());
+            verticesInputs.emplace_back(std::make_unique<VertexInput>());
+            VertexInput* vertexInput = verticesInputs.back().get();
+            return vertexInput;
+        }
         DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
         {
             if (!freeIdsBucket.empty())
@@ -538,7 +549,10 @@ namespace ENGINE
         std::unordered_map<std::string, int32_t> imagesShippersNames;
         std::set<int32_t> dsetsIds;
         std::unordered_map<std::string, int32_t> shadersNames;
+        std::unordered_map<std::string, int32_t> verticesInputsNames;
 
+        
+        std::deque<int32_t> freeIdsBucket;
         
         std::vector<std::unique_ptr<Buffer>> buffers;
         std::vector<std::unique_ptr<StagedBuffer>> stagedBuffers;
@@ -553,8 +567,8 @@ namespace ENGINE
         std::unique_ptr<SamplerPool> samplerPool;
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
         std::vector<vk::UniqueDescriptorSet> dsets;
-        std::deque<int32_t> freeIdsBucket;
         std::vector<std::unique_ptr<Shader>> shaders;
+        std::vector<std::unique_ptr<VertexInput>> verticesInputs;
 
         
         std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {
