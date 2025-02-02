@@ -4,6 +4,8 @@
 
 
 
+
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -22,7 +24,7 @@ namespace UI
     };
     
     template <HasName T>
-    static const T* GetFromMap(const std::map<int, T>& mapToSearch, const std::string name)
+    static T* GetFromMap(std::map<int, T>& mapToSearch, const std::string name)
     {
         for (auto& item : mapToSearch)
         {
@@ -31,7 +33,7 @@ namespace UI
                 return &item.second;
             }
         }
-        assert(false && "ivalid name");
+        assert(false && "invalid name");
         return nullptr;
     }
     
@@ -301,6 +303,8 @@ namespace UI
             int selectedIdx = 0;
             int itemHightlight = 0;
 
+
+
             void Draw(const int& id = -1)
             {
                 int intData = -1;
@@ -348,6 +352,12 @@ namespace UI
                     ImGui::PopID();
                 ImGui::PopItemWidth();
             }
+
+            template<typename T>
+            T GetCurrent()
+            {
+                return std::any_cast<T>(content.at(selectedIdx));
+            }
         };
 
         struct MultiOption
@@ -392,7 +402,7 @@ namespace UI
 
                 if (scrollables.contains(selectedIdx))
                     scrollables.at(selectedIdx).Draw();
-
+                
                 if (id > -1)
                     ImGui::PopID();
             }
@@ -1177,16 +1187,45 @@ namespace UI
                 case N_VERT_SHADER:
                 case N_FRAG_SHADER:
                 case N_COMP_SHADER:
+                    
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
-                        [this](GraphNode& selfNode)
+                        [this, nodeType](GraphNode& selfNode)
                         {
-                            auto scrollableInfo = GetFromMap<MultiOption>(selfNode.multiOptions, "Shader Options");
+                            ENGINE::ShaderStage stage = ENGINE::ShaderStage::S_UNKNOWN;
+                            switch (nodeType)
+                            {
+                            case N_VERT_SHADER: stage = ENGINE::ShaderStage::S_VERT;
+                                break;
+                            case N_FRAG_SHADER: stage = ENGINE::ShaderStage::S_FRAG;
+                                break;
+                            case N_COMP_SHADER: stage = ENGINE::ShaderStage::S_COMP;
+                                break;
+                            }
+                            assert(stage != ENGINE::S_UNKNOWN && "Uknown shader type");
+                            
+                            auto multiOption = GetFromMap<MultiOption>(selfNode.multiOptions, "Shader Options");
+                            int optionSelected = multiOption->selectedIdx;
+                            std::string shaderSelected = "";
+                            switch (optionSelected)
+                            {
+                            case 0:
+                                shaderSelected = multiOption->scrollables.at(0).GetCurrent<std::string>();
+                                break;
+                            case 1:
+                                shaderSelected =SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\"+ multiOption->inputTexts.at(0).content;
+                                selfNode.renderGraph->resourcesManager->GetShader(shaderSelected, stage);
+                                break;
+                            }
+                            int shaderIdx = -1;
+                            if (selfNode.renderGraph->resourcesManager->shadersNames.contains(shaderSelected))
+                            {
+                                shaderIdx = selfNode.renderGraph->resourcesManager->shadersNames.at(shaderSelected);
+                            }
+                            selfNode.SetOuputData("Shader result", shaderIdx);
                         });
                     std::vector<std::any> shaderPaths;
                     shaderPaths.reserve(renderGraph->resourcesManager->shadersNames.size());
-
                     std::vector<std::string> options = {"Pick Shader", "Create Shader"};
-
                     std::map<int, TextInputInfo> textInputs;
                     textInputs.try_emplace(1, TextInputInfo{"Select Shader Name"});
 
