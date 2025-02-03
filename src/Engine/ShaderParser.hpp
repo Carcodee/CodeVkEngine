@@ -24,6 +24,103 @@ namespace ENGINE
         S_COMP,
         S_UNKNOWN
     };
+    
+    static std::string ConvertShaderPathToSpirv(const std::filesystem::path& filePath, ShaderStage stage)
+    {
+        assert((filePath.extension() == ".slang" || filePath.extension() == ".vert" || filePath.extension() == ".frag" || filePath.extension() == ".comp") && "Path is not a shader");
+        std::filesystem::path spirvPath;
+        for (auto& dirsParts : filePath)
+        {
+            if (dirsParts.string() == "slang")
+            {
+                spirvPath /= "spirvSlang";
+            }
+            else if (dirsParts.string() == "glsl")
+            {
+                spirvPath /= "spirvGlsl";
+            }
+            else if (dirsParts.extension() == ".slang")
+            {
+                int firstDotPos = dirsParts.string().find_first_of('.');
+                std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
+                std::string extension = ".slang";
+                switch (stage)
+                {
+                case S_VERT:
+                    extension += "_VS.spv";
+                    break;
+                case S_FRAG:
+                    extension += "_FS.spv";
+                    break;
+                case S_COMP:
+                    extension += "_CS.spv";
+                    break;
+                case S_UNKNOWN:
+                    assert(false && "invalid stage");
+                    break;
+                }
+                spirvPath /= fileNameNoExt + extension;
+            }
+            else
+            {
+                spirvPath /= dirsParts;
+            }
+        }
+        return spirvPath.string();
+    }
+        
+    static std::string ConvertSpirvToShaderPath(const std::filesystem::path& filePath, ShaderStage stage)
+    {
+        assert(filePath.extension() == ".spv" && "Path is not spirv");
+        bool glsl = false;
+        std::filesystem::path shaderPath;
+        for (auto& dirsParts : filePath)
+        {
+            if (dirsParts.string() == "spirvSlang")
+            {
+                shaderPath /= "slang";
+            }
+            else if (dirsParts.string() == "spirvGlsl")
+            {
+                glsl = true;
+                shaderPath /= "glsl";
+            }
+            else
+            {
+                if (dirsParts.extension() == ".spv")
+                {
+                    int firstDotPos = dirsParts.string().find_first_of('.');
+                    std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
+                    std::string extension = ".slang";
+                    if (glsl)
+                    {
+                        switch (stage)
+                        {
+                        case S_VERT:
+                            extension = ".vert";
+                            break;
+                        case S_FRAG:
+                            extension = ".frag";
+                            break;
+                        case S_COMP:
+                            extension = ".comp";
+                            break;
+                        case S_UNKNOWN:
+                            extension = ".invalid";
+                            break;
+                        }
+                    }
+                    std::string pathName = fileNameNoExt + extension;
+                    shaderPath /= pathName;
+                }
+                else
+                {
+                    shaderPath /= dirsParts;
+                }
+            }
+        }
+        return shaderPath.string();
+    }
 
     static std::vector<uint32_t> CompileSlangIntoSpirv(const std::string& outFile, const std::string& code,
                                                   const std::string& entryPoint, ShaderStage stage)
@@ -369,100 +466,21 @@ set "errorfound="
             bool glsl = false;
             if (filePath.extension() == ".spv")
             {
-                std::filesystem::path shaderPath;
-                for (auto& dirsParts : filePath)
-                {
-                    if (dirsParts.string() == "spirvSlang")
-                    {
-                        shaderPath /= "slang";
-                    }
-                    else if (dirsParts.string() == "spirvGlsl")
-                    {
-                        glsl = true;
-                        shaderPath /= "glsl";
-                    }
-                    else
-                    {
-                        if (dirsParts.extension() == ".spv")
-                        {
-                            int firstDotPos = dirsParts.string().find_first_of('.');
-                            std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
-                            std::string extension = ".slang";
-                            if (glsl)
-                            {
-                                switch (stage)
-                                {
-                                case S_VERT:
-                                    extension = ".vert";
-                                    break;
-                                case S_FRAG:
-                                    extension = ".frag";
-                                    break;
-                                case S_COMP:
-                                    extension = ".comp";
-                                    break;
-                                case S_UNKNOWN:
-                                    extension = ".invalid";
-                                    break;
-                                }
-                            }
-                            std::string pathName = fileNameNoExt + extension;
-                            shaderPath /= pathName;
-                        }
-                        else
-                        {
-                            shaderPath /= dirsParts;
-                        }
-                    }
-                }
+                std::string shaderPath= "";
+            
+                shaderPath = ConvertSpirvToShaderPath(filePath, stage);
                 assert((std::filesystem::exists(shaderPath) && shaderPath != filePath) && "invalid shader path");
-                this->path = shaderPath.string();
+                this->path = shaderPath;
                 this->spirvPath = path;
             }
             else if(filePath.extension() == ".slang" || filePath.extension() == ".frag" || filePath.extension() == ".vert" || filePath.extension() == ".comp")
             {
 
-                std::filesystem::path spirvPath;
-                for (auto& dirsParts : filePath)
-                {
-                    if (dirsParts.string() == "slang")
-                    {
-                        spirvPath /= "spirvSlang";
-                    }
-                    else if (dirsParts.string() == "glsl")
-                    {
-                        spirvPath /= "spirvGlsl";
-                    }
-                    else if(dirsParts.extension() == ".slang")
-                    {
-                        int firstDotPos = dirsParts.string().find_first_of('.');
-                        std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
-                        std::string extension = ".slang";
-                        switch (stage)
-                        {
-                        case S_VERT:
-                            extension += "_VS.spv";
-                            break;
-                        case S_FRAG:
-                            extension += "_FS.spv";
-                            break;
-                        case S_COMP:
-                            extension += "_CS.spv";
-                            break;
-                        case S_UNKNOWN:
-                            assert(false && "invalid stage");
-                            break;
-                        }
-                        spirvPath /= fileNameNoExt + extension;
-                    }
-                    else{
-                        
-                        spirvPath /= dirsParts;
-                    }
-                }
-
-                assert((std::filesystem::exists(spirvPath) && spirvPath != filePath) && "invalid shader path");
-                this->spirvPath = spirvPath.string();
+                std::string spirvPath ="";
+                spirvPath = ConvertShaderPathToSpirv(filePath, stage);
+                
+                assert((std::filesystem::exists(spirvPath) && (spirvPath != filePath) && "invalid shader path"));
+                this->spirvPath = spirvPath;
                 this->path = path;
             }
             

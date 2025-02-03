@@ -1212,7 +1212,7 @@ namespace UI
                                 shaderSelected = multiOption->scrollables.at(0).GetCurrent<std::string>();
                                 break;
                             case 1:
-                                shaderSelected =SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\"+ multiOption->inputTexts.at(0).content;
+                                shaderSelected =SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\"+ multiOption->inputTexts.at(1).content;
                                 selfNode.renderGraph->resourcesManager->GetShader(shaderSelected, stage);
                                 break;
                             }
