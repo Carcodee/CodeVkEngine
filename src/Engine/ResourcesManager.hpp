@@ -5,7 +5,6 @@
 //
 
 
-
 #ifndef RESOURCESMANAGER_HPP
 #define RESOURCESMANAGER_HPP
 
@@ -16,7 +15,7 @@ namespace ENGINE
     class ResourcesManager : SYSTEMS::Subject
     {
     public:
-        enum BufferState
+        enum ResState
         {
             VALID,
             INVALID
@@ -24,22 +23,40 @@ namespace ENGINE
 
         struct BufferUpdateInfo
         {
-            BufferState state;
+            ResState state;
             size_t size;
             void* data;
         };
 
-        struct ImagesUpdateInfo
+        struct ImageUpdateInfo
         {
+            ResState bufferState;
             std::string path;
             uint32_t arrayLayersCount;
             uint32_t mipsCount;
             vk::Format format;
             LayoutPatterns dstPattern;
-            BufferState bufferState;
             std::string name;
             int32_t id;
         };
+        
+        struct BufferBatchInfo
+        {
+            std::string name;
+            size_t size;
+            void* data;
+            vk::BufferUsageFlags bufferUsageFlags;
+            vk::MemoryPropertyFlags memPropertyFlags;
+        };
+
+        struct ShaderBatchInfo
+        {
+            std::string path;
+            ShaderStage stage;
+            int32_t id;
+            
+        };
+
         struct DsetsInfo
         {
             vk::DescriptorSet dset;
@@ -61,15 +78,16 @@ namespace ENGINE
             {
                 imagesShippersNames.try_emplace(name, id);
                 imageShippers.emplace_back(std::make_unique<ImageShipper>());
-                imagesUpdateInfos.emplace_back(ImagesUpdateInfo{
-                    path, arrayLayersCount, mipsCount, format, dstPattern, VALID, name, id
+                imagesUpdateInfos.emplace_back(ImageUpdateInfo{
+                     VALID, path, arrayLayersCount, mipsCount, format, dstPattern, name, id
                 });
                 imageShipper = GetShipperFromName(name);
             }
             if (imageShipper->image == nullptr)
             {
                 imageShipper->SetDataFromPath(path);
-                imageShipper->BuildImage(core, shipperSampler, arrayLayersCount, mipsCount, format, dstPattern, name, id);
+                imageShipper->BuildImage(core, shipperSampler, arrayLayersCount, mipsCount, format, dstPattern, name,
+                                         id);
             }
             return imageShipper;
         }
@@ -87,18 +105,18 @@ namespace ENGINE
             }
             else
             {
-                //TODO: why is this here?
                 imagesShippersNames.try_emplace(name, id);
                 imageShippers.emplace_back(std::make_unique<ImageShipper>());
-                imagesUpdateInfos.emplace_back(ImagesUpdateInfo{
-                    "", arrayLayersCount, mipsCount, format, dstPattern, VALID, name, id
+                imagesUpdateInfos.emplace_back(ImageUpdateInfo{
+                    VALID, "", arrayLayersCount, mipsCount, format, dstPattern,  name, id
                 });
                 imageShipper = GetShipperFromName(name);
             }
             if (imageShipper->image == nullptr)
             {
                 imageShipper->SetDataRaw(data, width, height, size);
-                imageShipper->BuildImage(core, shipperSampler, arrayLayersCount, mipsCount, format, dstPattern, name, id);
+                imageShipper->BuildImage(core, shipperSampler, arrayLayersCount, mipsCount, format, dstPattern, name,
+                                         id);
             }
             return imageShipper;
         }
@@ -117,13 +135,40 @@ namespace ENGINE
             int id = (int32_t)imageShippers.size();
             imagesShippersNames.try_emplace(name, id);
             imageShippers.emplace_back(std::make_unique<ImageShipper>());
-            imagesUpdateInfos.emplace_back(ImagesUpdateInfo{
-                path, arrayLayersCount, mipsCount, format, dstPattern, INVALID, name, id
+            imagesUpdateInfos.emplace_back(ImageUpdateInfo{
+                INVALID, path, arrayLayersCount, mipsCount, format, dstPattern,  name, id
             });
             updateImagesShippers = true;
             return GetShipperFromName(name);
         }
 
+        int BatchShader(std::string path, ShaderStage stage)
+        {
+            if (shadersNames.contains(path))
+            {
+                return shadersNames.at(path);
+            }
+            int32_t id = shaders.size();
+            shaderUpdateInfos.push_back({path, stage, id});
+            shadersNames.try_emplace(path, id);
+            return id;
+        }
+
+
+        int BatchBuffer(std::string name, vk::BufferUsageFlags bufferUsageFlags,
+                          vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize
+                          ,void* data = nullptr)
+        {
+            if (bufferNames.contains(name))
+            {
+                return bufferNames.at(name);
+            }
+            int32_t id = buffers.size();
+            bufferBatchInfos.push_back({name, deviceSize, data, bufferUsageFlags, memPropertyFlags});
+            bufferNames.try_emplace(name, id);
+            return id;
+        }
+        
 
         ImageView* GetImage(std::string name, vk::ImageCreateInfo imageInfo, int baseMipLevel, int baseArrayLayer)
         {
@@ -166,6 +211,7 @@ namespace ENGINE
                 return imageViews.back().get();
             }
         }
+        
 
         Buffer* GetBuffer(std::string name, vk::BufferUsageFlags bufferUsageFlags,
                           vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize
@@ -177,10 +223,8 @@ namespace ENGINE
                 return GetBuffFromName(name);
             }
 
-            auto buffer = std::make_unique<Buffer>(
-                core->physicalDevice, core->logicalDevice.get(), bufferUsageFlags, memPropertyFlags, deviceSize,
-                data);
-
+            auto buffer = std::make_unique<Buffer>(core->physicalDevice, core->logicalDevice.get(), bufferUsageFlags, memPropertyFlags, deviceSize,data);
+            
             bufferNames.try_emplace(name, (int32_t)buffers.size());
             buffers.emplace_back(std::move(buffer));
             buffersState.push_back({VALID, deviceSize, data});
@@ -270,7 +314,6 @@ namespace ENGINE
         }
 
 
-
         void DestroyResources()
         {
             buffers.clear();
@@ -285,6 +328,20 @@ namespace ENGINE
             freeIdsBucket.clear();
             shaders.clear();
             descriptorAllocator.reset();
+        }
+
+        void CreateBatchedResources()
+        {
+            for (auto& buffer : bufferBatchInfos)
+            {
+                GetBuffer(buffer.name, buffer.bufferUsageFlags, buffer.memPropertyFlags, buffer.size, buffer.data);
+            }
+            bufferBatchInfos.clear();
+            for (auto& shaderUpdate : shaderUpdateInfos)
+            {
+                GetShader(shaderUpdate.path, shaderUpdate.stage);
+            }
+            shaderUpdateInfos.clear();
             
         }
 
@@ -293,11 +350,12 @@ namespace ENGINE
             if (!updateImagesShippers) { return; }
             for (int i = 0; i < imageShippers.size(); i++)
             {
-                ImagesUpdateInfo& updateInfo = imagesUpdateInfos[i];
+                ImageUpdateInfo& updateInfo = imagesUpdateInfos[i];
                 if (updateInfo.bufferState == INVALID)
                 {
                     imageShippers[i]->SetDataFromPath(updateInfo.path);
-                    imageShippers[i]->BuildImage(core, shipperSampler, updateInfo.arrayLayersCount, updateInfo.mipsCount,
+                    imageShippers[i]->BuildImage(core, shipperSampler, updateInfo.arrayLayersCount,
+                                                 updateInfo.mipsCount,
                                                  updateInfo.format, updateInfo.dstPattern, updateInfo.name,
                                                  updateInfo.id);
                     updateInfo.bufferState = VALID;
@@ -387,6 +445,7 @@ namespace ENGINE
             Shader* shader = shaders.back().get();
             return shader;
         }
+
         VertexInput* GetVertexInput(std::string name)
         {
             if (verticesInputsNames.contains(name))
@@ -398,6 +457,7 @@ namespace ENGINE
             VertexInput* vertexInput = verticesInputs.back().get();
             return vertexInput;
         }
+
         DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
         {
             if (!freeIdsBucket.empty())
@@ -410,7 +470,8 @@ namespace ENGINE
                 freeIdsBucket.erase(freeIdsBucket.begin());
                 dsets.at(id) = descriptorAllocator->Allocate(core->logicalDevice.get(), dstSetLayout);
                 return DsetsInfo{dsets.at(id).get(), id};
-            }else
+            }
+            else
             {
                 int32_t id = dsets.size();
                 dsetsIds.insert(id);
@@ -418,6 +479,7 @@ namespace ENGINE
                 return DsetsInfo{dsets.back().get(), id};
             }
         }
+
         void DeallocateDset(int id)
         {
             if (dsetsIds.contains(id))
@@ -428,7 +490,6 @@ namespace ENGINE
         }
 
 
-        
         ImageView* GetImageViewFromName(std::string name)
         {
             if (!imagesNames.contains(name))
@@ -480,6 +541,7 @@ namespace ENGINE
         {
             return imagesShippersNames.at(name);
         }
+
         static ResourcesManager* GetInstance(Core* coreRef = nullptr)
         {
             if (instance == nullptr && coreRef != nullptr)
@@ -497,15 +559,15 @@ namespace ENGINE
             storageImagesViews.reserve(BASE_SIZE);
             imageViews.reserve(BASE_SIZE);
             images.reserve(BASE_SIZE);
-            
+
             descriptorAllocator = std::make_unique<DescriptorAllocator>();
             descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
-            
+
             samplerPool = std::make_unique<SamplerPool>();
-            
+
             shipperSampler = samplerPool->AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
-                                                vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
-            
+                                                     vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+
             std::string defaultTexturePath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +
                 "\\Images\\default_texture.jpg";
 
@@ -518,8 +580,8 @@ namespace ENGINE
                 vk::ImageUsageFlagBits::eStorage);
 
             ImageView* defaultStorage = GetImage("default_storage", imageInfo, 0, 0);
-            
         }
+
         ~ResourcesManager() = default;
 
         void Attach(SYSTEMS::Watcher* watcher) override
@@ -547,21 +609,17 @@ namespace ENGINE
         std::unordered_map<std::string, int32_t> imagesNames;
         std::unordered_map<std::string, int32_t> storageImagesNames;
         std::unordered_map<std::string, int32_t> imagesShippersNames;
-        std::set<int32_t> dsetsIds;
         std::unordered_map<std::string, int32_t> shadersNames;
         std::unordered_map<std::string, int32_t> verticesInputsNames;
 
-        
+        std::set<int32_t> dsetsIds;
         std::deque<int32_t> freeIdsBucket;
-        
+
         std::vector<std::unique_ptr<Buffer>> buffers;
         std::vector<std::unique_ptr<StagedBuffer>> stagedBuffers;
-        std::vector<BufferUpdateInfo> buffersState;
-        std::vector<BufferUpdateInfo> stagedBuffersState;
         std::vector<std::unique_ptr<ImageView>> imageViews;
         std::vector<std::unique_ptr<ImageView>> storageImagesViews;
         std::vector<std::unique_ptr<ImageShipper>> imageShippers;
-        std::vector<ImagesUpdateInfo> imagesUpdateInfos;
         std::vector<std::unique_ptr<Image>> images;
         std::vector<std::string> storageImagesToClear;
         std::unique_ptr<SamplerPool> samplerPool;
@@ -570,18 +628,26 @@ namespace ENGINE
         std::vector<std::unique_ptr<Shader>> shaders;
         std::vector<std::unique_ptr<VertexInput>> verticesInputs;
 
+
+        std::vector<ImageUpdateInfo> imagesUpdateInfos;
+        std::vector<BufferUpdateInfo> buffersState;
+        std::vector<BufferUpdateInfo> stagedBuffersState;
         
+        std::vector<ShaderBatchInfo> shaderUpdateInfos;
+        std::vector<BufferBatchInfo> bufferBatchInfos;
+
         std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {
             {vk::DescriptorType::eSampler, 1.5f},
             {vk::DescriptorType::eStorageBuffer, 1.5f},
             {vk::DescriptorType::eUniformBuffer, 1.5f},
             {vk::DescriptorType::eStorageImage, 1.5f},
         };
-        
+
         Sampler* shipperSampler;
 
         bool invalidateBuffers = false;
         bool updateImagesShippers = false;
+        bool updateImages = false;
 
         Core* core;
         static ResourcesManager* instance;

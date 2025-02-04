@@ -495,7 +495,6 @@ set "errorfound="
         std::string spirvPath;
         std::unique_ptr<SYSTEMS::FileInfo> shaderFileInfo;
         
-        
     };
 }
 

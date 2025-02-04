@@ -127,9 +127,9 @@ void main() {
     
     vec3 dirLightCol = abs(dot(normalMap.xyz, lightDir)) * ubo.col * ubo.intensity;
     outColor = finalCol + vec4(dirLightCol, 1.0);
-//    if(spriteCol.w > 0.8){
-//        outColor = spriteCol;
-//    }
+    if(spriteCol.w > 0.8){
+        outColor = spriteCol;
+    }
     if(paintingImage.w > 0.01){
         outColor = paintingImage * paintingImage.w;
     }

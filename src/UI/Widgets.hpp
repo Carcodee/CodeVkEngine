@@ -6,6 +6,7 @@
 
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -1175,12 +1176,38 @@ namespace UI
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
+                            
+                            auto inputText = GetFromMap(selfNode.textInputs, "Vertex Name");
+                            ENGINE::VertexInput* vertexInput = renderGraph->resourcesManager->GetVertexInput(
+                                inputText->content);
+                            
+                            vertexInput->bindingDescription.clear();
+                            vertexInput->inputDescription.clear();
+                            size_t offset = 0;
+                            int location = 0;
+                            int binding = 0;
+                            auto dynamicStructure = GetFromMap(selfNode.dynamicStructures, "Vertex Builder");
+                            for (auto widget : dynamicStructure->widgetsInfos)
+                            {
+                                int typeSelected = widget.second.selectableInfo.selectedIdx;
+                                ENGINE::VertexInput::Attribs attribs = (ENGINE::VertexInput::Attribs)typeSelected;
+                                vertexInput->AddVertexAttrib(attribs, binding, offset, location);
+                                offset += vertexInput->GetSizeFrom(attribs);
+                                location++;
+                            }
+                            for (auto widget : dynamicStructure->widgetsInfos)
+                            {
+                                vertexInput->AddVertexInputBinding(0, offset);
+                            }
+                            
+                                
                         });
                     {
-                        SelectableInfo selectable("Vertex Attrib: ", {"int", "vec2", "vec3", "ve4"});
+                        SelectableInfo selectable("Vertex Attrib: ", {"INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4", "COLOR_32"});
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
-                        builder.AddDynamicStructure(NextID(), dynamicStructureInfo);
-                        builder.SetNodeId(NextID(), "Vertex Input Builder");
+                        builder.AddTextInput(NextID(), {"Vertex Name", ""})
+                               .AddDynamicStructure(NextID(), dynamicStructureInfo)
+                               .SetNodeId(NextID(), "Vertex Input Builder");
                     }
                     
                     break;

@@ -21,6 +21,32 @@ namespace ENGINE
             U8VEC4,
             COLOR_32
         };
+        size_t GetSizeFrom(Attribs attribs)
+        {
+            switch (attribs)
+            {
+            case Attribs::INT: return sizeof(int);
+                break;
+            case Attribs::FLOAT: return sizeof(float);
+                break;
+            case Attribs::VEC2: return sizeof(glm::vec2);
+                break;
+            case Attribs::VEC3: return sizeof(glm::vec3);
+                break;
+            case Attribs::VEC4: return sizeof(glm::vec4);
+                break;
+            case Attribs::U8VEC3: return sizeof(glm::uvec3);
+                break;
+            case Attribs::U8VEC4: return sizeof(glm::uvec4);
+                break;
+            case Attribs::COLOR_32: return sizeof(int);
+                break;
+            default:
+                assert(false && "Invalid attrib type");
+                break;
+            }
+            return 0;
+        }
 
 
         vk::Format GetFormatFromAttrib(Attribs attribs)
