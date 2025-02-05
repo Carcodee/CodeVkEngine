@@ -34,7 +34,6 @@ namespace UI
                 return &item.second;
             }
         }
-        assert(false && "invalid name");
         return nullptr;
     }
     
@@ -141,7 +140,6 @@ namespace UI
             N_COMP_SHADER,
             N_COL_ATTACHMENT_STRUCTURE,
             N_DEPTH_STRUCTURE,
-            N_RASTER_STRUCTURE,
             N_PUSH_CONSTANT,
             N_IMAGE_SAMPLER,
             N_IMAGE_STORAGE,
@@ -668,6 +666,8 @@ namespace UI
         //note that this only handle copyable data types
         struct GraphNode
         {
+            ENGINE::RenderGraph* renderGraph;
+            
             ed::NodeId nodeId;
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
@@ -680,20 +680,25 @@ namespace UI
 
             std::map<int, std::any> inputData;
             std::map<int, std::any> outputData;
-
+            std::set<int> graphNodesLinks;
+            std::map<int, GraphNode>* graphNodesRef = nullptr;
             std::string name;
             glm::vec2 pos;
+            int globalId = -1;
             bool firstFrame = true;
 
-            ENGINE::RenderGraph* renderGraph;
 
             std::unique_ptr<std::function<void(GraphNode&)>> outputFunction = nullptr;
 
-            int BuildOutput()
+            int BuildOutput(int id)
             {
                 if (outputFunction == nullptr)
                 {
                     return -1;
+                }
+                if(graphNodesLinks.find(id) == graphNodesLinks.end())
+                {
+                    graphNodesLinks.insert(id);
                 }
                 (*outputFunction)(*this);
                 return 0;
@@ -1011,16 +1016,24 @@ namespace UI
         struct GraphNodeFactory
         {
             int idGen = 100;
+            int idNodeGen = 100;
             GraphNodeBuilder builder;
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
+            std::map<int, GraphNode> graphNodes = {};
+            
 
             int NextID()
             {
                 return idGen++;
             }
 
-            GraphNode GetNode(NodeType nodeType, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
+            int NextNodeID()
+            {
+                return idGen++;
+            }
+
+            GraphNode* GetNode(NodeType nodeType, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
             {
                 assert(renderGraph && "Null rgraph");
                 assert(windowProvider && "Null window Provider");
@@ -1029,34 +1042,33 @@ namespace UI
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
-                    // linkOp =  std::make_unique<std::function<void(GraphNode& selfNode)>>(
-                    // [this](GraphNode& selfNode) -> std::any {
+                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                        [this](GraphNode& selfNode)
+                        {
 
-                    // auto node = renderGraph->AddPass(selfNode.name);
-                    // for (auto& input : selfNode.inputData)
-                    // {
-                    // switch (input.first)
-                    // {
-                    // case N_COL_ATTACHMENT_STRUCTURE:
-                    // GraphNode& inputNode = *selfNode.GetNodeInputData<GraphNode>(N_COL_ATTACHMENT_STRUCTURE);
-                    // if(inputNode.ContainsInput(input.first))
-                    // {
-                    // ENGINE::AttachmentInfo info = *inputNode.GetNodeInputData<ENGINE::AttachmentInfo>(input.first);
-                    // ENGINE::BlendConfigs blendConfigs = (ENGINE::BlendConfigs)inputNode.GetSelectableIndex("BlendConfig");
-                    // node->AddColorAttachmentOutput(inputNode.name, info, blendConfigs);
-                    // }
-                    // if (inputNode.ContainsInput(N_IMAGE_SAMPLER))
-                    // {
-                    // ENGINE::ImageView* img = *inputNode.GetNodeInputData<ENGINE::ImageView*>(input.first);
-                    // node->AddSamplerResource(inputNode.name, img);
-                    // }
-                    // break;
-                    // }
-                    // }
-                    // std::any result = selfNode.name;
-                    // return result;
-                    // });
-
+                            std::map<NodeType, bool> configsAdded;
+                            
+                            PinInfo* vertShaderName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
+                            PinInfo* fragName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
+                            PinInfo* computeName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
+                            
+                            if (computeName)
+                            {
+                                configsAdded.try_emplace(N_COMP_SHADER, true);
+                            }else 
+                            {
+                                configsAdded.try_emplace(N_VERT_SHADER, false);
+                                configsAdded.try_emplace(N_FRAG_SHADER, false);
+                                if (vertShaderName)
+                                {
+                                    configsAdded.try_emplace(N_VERT_SHADER, true);
+                                }
+                                if (fragName)
+                                {
+                                    configsAdded.try_emplace(N_FRAG_SHADER, true);
+                                }
+                            }
+                        });
                     builder
                         .AddOutput(NextID(), {"Result", N_RENDER_NODE})
                         .AddInput(NextID(), {"Vertex Shader", N_VERT_SHADER})
@@ -1064,7 +1076,7 @@ namespace UI
                         .AddInput(NextID(), {"Compute Shader", N_COMP_SHADER})
                         .AddInput(NextID(), {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
                         .AddInput(NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
-                        .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
+                        .AddInput(NextID(), {"Vertex Input", N_VERTEX_INPUT})
                         .AddSelectable(NextID(), "Raster Configs", {"Fill", "Line", "Point"})
                         .SetNodeId(NextID(), "Render Node");
                     break;
@@ -1078,8 +1090,8 @@ namespace UI
                         .AddSelectable(NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
                         .AddSelectable(NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
                         .AddSelectable(NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
-                        .AddInput(NextID(), {"Col Attachment Info In", N_IMAGE_SAMPLER})
-                        .AddOutput(NextID(), {"Col Attachment Info Out", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
+                        .AddOutput(NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
                         .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
                         .SetNodeId(NextID(), "Col Attachment Structure");
                     break;
@@ -1094,20 +1106,11 @@ namespace UI
                         .AddOutput(NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
                         .SetNodeId(NextID(), "Col Attachment Structure");
                     break;
-                case N_RASTER_STRUCTURE:
-                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
-                        [this](GraphNode& selfNode)
-                        {
-                        });
-                    builder
-                        .AddSelectable(NextID(), "Raster Configs", {"Fill", "Point", "Line"})
-                        .AddOutput(NextID(), {"Raster Config ", N_RASTER_STRUCTURE})
-                        .SetNodeId(NextID(), "Raster Structure");
-                    break;
                 case N_PUSH_CONSTANT:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
+                            
                         });
                     builder
                         .AddPrimitiveData(NextID(), {"Push Constant data", SIZE_T, size_t(0)})
@@ -1320,8 +1323,11 @@ namespace UI
                     builder.SetNodeName(name);
                 }
                 builder.SetPosition(pos);
-                node = builder.Build(renderGraph, std::move(linkOp));
-                return node;
+                int id = NextNodeID();
+                graphNodes.try_emplace(id, builder.Build(renderGraph, std::move(linkOp)));
+                graphNodes.at(id).globalId = id;
+                graphNodes.at(id).graphNodesRef = &graphNodes;
+                return &graphNodes.at(id);
             }
         };
     }

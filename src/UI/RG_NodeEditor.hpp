@@ -13,6 +13,9 @@
 
 
 
+
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -55,7 +58,7 @@ namespace UI
             for (const auto& nodeType : nodesList)
             {
                 nodes.push_back(factory.GetNode(nodeType, glm::vec2(10.0, 0.0)));
-                RegisterNode(nodes.back(), nodes.size() - 1);    
+                RegisterNode(*nodes.back(), nodes.back()->globalId);    
             }
             
         }
@@ -78,7 +81,7 @@ namespace UI
             ed::Begin("My Editor", ImVec2(0.0, 0.0f));
             for (auto& node : nodes)
             {
-                node.Draw();
+                node->Draw();
             }
             CheckLinks();
             firstFrame = false;
@@ -129,7 +132,7 @@ namespace UI
                         {
                             if (startPin->nodeType == endPin->nodeType)
                             {
-                                pinNodes.at(ed::PinKind::Output)->BuildOutput();
+                                pinNodes.at(ed::PinKind::Output)->BuildOutput(pinNodes.at(ed::PinKind::Input)->globalId);
                                 Nodes::GraphNode* outputGraphNodeRef = pinNodes.at(ed::PinKind::Output);
                                 Nodes::GraphNode* inputGraphNodeRef = pinNodes.at(ed::PinKind::Input);
                                 *inputGraphNodeRef->GetInputDataById(pinIds.at(ed::PinKind::Input)) = outputGraphNodeRef->GetOutputDataById(pinIds.at(ed::PinKind::Output));
@@ -173,12 +176,12 @@ namespace UI
             {
                 return nullptr;
             }
-            return &nodes.at(nodesIds.at(id));
+            return nodes.at(nodesIds.at(id));
         }
 
         ImVector<Nodes::LinkInfo> links;
         Nodes::GraphNodeFactory factory;
-        std::vector<Nodes::GraphNode> nodes;
+        std::vector<Nodes::GraphNode*> nodes;
         //int_1 - in/out id || int_2 node idx in nodes vec  
         std::map<int, int> nodesIds;
         int idGen = 200;
