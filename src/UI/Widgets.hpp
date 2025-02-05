@@ -36,6 +36,19 @@ namespace UI
         }
         return nullptr;
     }
+
+    template <HasName T>
+    static int GetIdFromMap(std::map<int, T>& mapToSearch, const std::string name)
+    {
+        for (auto& item : mapToSearch)
+        {
+            if (item.second.name == name)
+            {
+                return &item.first;
+            }
+        }
+        return -1;
+    }
     
     template <typename T>
     static void UseDragProperty(std::string name, T& payload, size_t payloadSize)
@@ -680,7 +693,7 @@ namespace UI
 
             std::map<int, std::any> inputData;
             std::map<int, std::any> outputData;
-            std::set<int> graphNodesLinks;
+            std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
             std::string name;
             glm::vec2 pos;
@@ -690,32 +703,20 @@ namespace UI
 
             std::unique_ptr<std::function<void(GraphNode&)>> outputFunction = nullptr;
 
-            int BuildOutput(int id)
+            int BuildOutput(int id, NodeType nodeType)
             {
                 if (outputFunction == nullptr)
                 {
                     return -1;
                 }
-                if(graphNodesLinks.find(id) == graphNodesLinks.end())
+                if(graphNodesLinks.contains(id))
                 {
-                    graphNodesLinks.insert(id);
+                    graphNodesLinks.try_emplace(id, nodeType);
                 }
                 (*outputFunction)(*this);
                 return 0;
             }
 
-            bool ContainsInput(NodeType nodeType)
-            {
-                if (!inputData.contains(nodeType))
-                {
-                    return false;
-                }
-                if (!inputData.at(nodeType).has_value())
-                {
-                    return false;
-                }
-                return true;
-            }
 
             std::any* GetInputDataById(int id)
             {
@@ -1016,7 +1017,7 @@ namespace UI
         struct GraphNodeFactory
         {
             int idGen = 100;
-            int idNodeGen = 100;
+            int idNodeGen = 0;
             GraphNodeBuilder builder;
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
@@ -1030,7 +1031,7 @@ namespace UI
 
             int NextNodeID()
             {
-                return idGen++;
+                return idNodeGen++;
             }
 
             GraphNode* GetNode(NodeType nodeType, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
@@ -1051,12 +1052,15 @@ namespace UI
                             PinInfo* vertShaderName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
                             PinInfo* fragName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
                             PinInfo* computeName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
+
                             
                             if (computeName)
                             {
                                 configsAdded.try_emplace(N_COMP_SHADER, true);
                             }else 
                             {
+                                configsAdded.try_emplace(N_VERTEX_INPUT, false);
+                                configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, false);
                                 configsAdded.try_emplace(N_VERT_SHADER, false);
                                 configsAdded.try_emplace(N_FRAG_SHADER, false);
                                 if (vertShaderName)
@@ -1068,6 +1072,34 @@ namespace UI
                                     configsAdded.try_emplace(N_FRAG_SHADER, true);
                                 }
                             }
+
+                            for (auto id : selfNode.graphNodesLinks)
+                            {
+                                if (id.second == N_COL_ATTACHMENT_STRUCTURE)
+                                {
+
+                                    GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
+                                    PrimitiveSelectable* clearColor = GetFromMap(graphNodeRef.primitives, "Color Format");
+                                    SelectableInfo* loadOp = GetFromMap(graphNodeRef.selectables, "Load Operation");
+                                    SelectableInfo* storeOp = GetFromMap(graphNodeRef.selectables, "Store Operation");
+                                    SelectableInfo* blendConfigs = GetFromMap(graphNodeRef.selectables, "Blend Configs");
+
+                                    glm::vec4 clearColData = std::any_cast<glm::vec4>(clearColor->content);
+                                    vk::AttachmentLoadOp loadOpData = (vk::AttachmentLoadOp)loadOp->selectedIdx;
+                                    vk::AttachmentStoreOp storeOpData = (vk::AttachmentStoreOp)storeOp->selectedIdx;
+                                    
+                                    // int imagePinId = GetIdFromMap(graphNodeRef.inputNodes, "Col Attachment Sampler");
+                                    // std::any data = graphNodeRef.inputData.contains(imagePinId);
+                                    // if (data){
+                                    //     std::string imageName = graphNodeRef.inputData.at(imagePinId)
+                                    //
+                                    // }
+                                    ENGINE::AttachmentInfo info = ENGINE::GetColorAttachmentInfo();
+                                    
+                                }
+                                
+                            }
+
                         });
                     builder
                         .AddOutput(NextID(), {"Result", N_RENDER_NODE})
@@ -1090,9 +1122,9 @@ namespace UI
                         .AddSelectable(NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
                         .AddSelectable(NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
                         .AddSelectable(NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
+                        .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
                         .AddInput(NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
-                        .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
                         .SetNodeId(NextID(), "Col Attachment Structure");
                     break;
                 case N_DEPTH_STRUCTURE:
