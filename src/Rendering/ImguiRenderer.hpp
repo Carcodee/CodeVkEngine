@@ -148,7 +148,7 @@ namespace Rendering
     		StartNodeEditor();
 
         	
-            ImGui::ShowDemoWindow();
+            // ImGui::ShowDemoWindow();
 	    	if (clusterRenderer)
 	    	{
 			    ClusterRendererInfo();

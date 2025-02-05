@@ -825,6 +825,8 @@ namespace UI
                 ImGui::PushID(nodeId.Get());
                 ed::BeginNode(nodeId);
                 ImGui::Text(name.c_str());
+
+                // ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
                 for (auto& input : inputNodes)
                 {
                     ImGui::PushID(input.first);
@@ -833,14 +835,7 @@ namespace UI
                     ed::EndPin();
                     ImGui::PopID();
                 }
-                for (auto& output : outputNodes)
-                {
-                    ImGui::PushID(output.first);
-                    ed::BeginPin(output.first, ed::PinKind::Output);
-                    ImGui::Text(output.second.name.c_str());
-                    ed::EndPin();
-                    ImGui::PopID();
-                }
+
                 for (auto& selectable : selectables)
                 {
                     selectable.second.Draw(selectable.first);
@@ -866,6 +861,17 @@ namespace UI
                 {
                     dynamicStructure.second.Draw(dynamicStructure.first);
                     
+                }
+                
+                // ImGui::PopStyleVar();
+                for (auto& output : outputNodes)
+                {
+                    ImGui::PushID(output.first);
+                    ed::BeginPin(output.first, ed::PinKind::Output);
+                    std::string spacing = "                              "+ output.second.name + "->";
+                    ImGui::Text(spacing.c_str());
+                    ed::EndPin();
+                    ImGui::PopID();
                 }
                 ed::EndNode();
                 ImGui::PopID();
@@ -1200,6 +1206,7 @@ namespace UI
                                 vertexInput->AddVertexInputBinding(0, offset);
                             }
                             
+                            selfNode.SetOuputData("Vertex Result", inputText);
                                 
                         });
                     {
@@ -1207,6 +1214,7 @@ namespace UI
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
                         builder.AddTextInput(NextID(), {"Vertex Name", ""})
                                .AddDynamicStructure(NextID(), dynamicStructureInfo)
+                               .AddOutput(NextID(),{"Vertex Result", N_VERTEX_INPUT})
                                .SetNodeId(NextID(), "Vertex Input Builder");
                     }
                     

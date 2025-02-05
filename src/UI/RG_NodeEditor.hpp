@@ -23,22 +23,24 @@ namespace UI
     class RG_NodeEditor
     {
     public:
-        
+
+        void SetStyle()
+        {
+        }
         void Init(ENGINE::RenderGraph* renderGraph, WindowProvider* windowProvider)
         {
             
             if (!firstFrame) { return; }
-            
             this->renderGraph = renderGraph;
             this->windowProvider = windowProvider;
             this->factory.renderGraph =renderGraph;       
             this->factory.windowProvider =windowProvider;
 
             std::vector<Nodes::NodeType> nodesList = {
-               Nodes::N_RENDER_NODE,
-               Nodes::N_VERT_SHADER,
-               Nodes::N_FRAG_SHADER,
-               Nodes::N_COMP_SHADER,
+               // Nodes::N_RENDER_NODE,
+               // Nodes::N_VERT_SHADER,
+               // Nodes::N_FRAG_SHADER,
+               // Nodes::N_COMP_SHADER,
                // Nodes::N_COL_ATTACHMENT_STRUCTURE,
                // Nodes::N_DEPTH_STRUCTURE,
                // Nodes::N_RASTER_STRUCTURE,
@@ -52,7 +54,7 @@ namespace UI
             //test
             for (const auto& nodeType : nodesList)
             {
-                nodes.push_back(factory.GetNode(nodeType));
+                nodes.push_back(factory.GetNode(nodeType, glm::vec2(10.0, 0.0)));
                 RegisterNode(nodes.back(), nodes.size() - 1);    
             }
             
@@ -76,10 +78,6 @@ namespace UI
             ed::Begin("My Editor", ImVec2(0.0, 0.0f));
             for (auto& node : nodes)
             {
-                //fix this:
-                // ENGINE::AttachmentInfo* d = std::any_cast<ENGINE::AttachmentInfo>(node.data);
-                // std::string info = "Data: " + std::to_string(d->attachmentInfo.clearValue.color.float32[0]);
-                // SYSTEMS::Logger::GetInstance()->LogMessage(info);
                 node.Draw();
             }
             CheckLinks();
