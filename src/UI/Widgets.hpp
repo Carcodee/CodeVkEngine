@@ -91,6 +91,11 @@ namespace UI
         virtual ~IWidget() = default;
         virtual void DisplayProperties() = 0;
     };
+    struct INodeElement
+    {
+        virtual ~INodeElement() = default;
+        virtual void Draw(int id) = 0;
+    };
 
 
     struct TextureViewer : IWidget
