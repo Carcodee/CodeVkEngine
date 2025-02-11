@@ -43,7 +43,7 @@ namespace UI
                Nodes::N_RENDER_NODE,
                // Nodes::N_VERT_SHADER,
                // Nodes::N_FRAG_SHADER,
-               // Nodes::N_COMP_SHADER,
+               Nodes::N_COMP_SHADER,
                // Nodes::N_COL_ATTACHMENT_STRUCTURE,
                // Nodes::N_DEPTH_STRUCTURE,
                // Nodes::N_RASTER_STRUCTURE,

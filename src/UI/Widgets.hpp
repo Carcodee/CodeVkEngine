@@ -25,7 +25,7 @@ namespace UI
     };
     
     template <HasName T>
-    static T* GetFromMap(std::map<int, T>& mapToSearch, const std::string name)
+    static T* GetFromNameInMap(std::map<int, T>& mapToSearch, const std::string name)
     {
         for (auto& item : mapToSearch)
         {
@@ -214,6 +214,11 @@ namespace UI
                 if (id > -1)
                     ImGui::PopID();
                 ImGui::PopItemWidth();
+            }
+            template <typename T>
+            T GetEnumFromIndex(std::map<int, T>& map)
+            {
+                return map.at(selectedIdx);
             }
         };
 
@@ -1054,59 +1059,120 @@ namespace UI
 
                             std::map<NodeType, bool> configsAdded;
                             
-                            PinInfo* vertShaderName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
-                            PinInfo* fragName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
-                            PinInfo* computeName = GetFromMap(selfNode.inputNodes, "Vertex Shader");
+                            PinInfo* vertShader = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
+                            PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
+                            PinInfo* compute = GetFromNameInMap(selfNode.inputNodes, "Compute Shader");
+                            std::string vertName = "";
+                            std::string fragName = "";
+                            std::string compPassName = "";
 
                             
-                            if (computeName)
+                            if (compute)
                             {
                                 configsAdded.try_emplace(N_COMP_SHADER, true);
+                                compPassName = std::any_cast<std::string>(*selfNode.GetInputDataByName("Compute Shader"));
                             }else 
                             {
                                 configsAdded.try_emplace(N_VERTEX_INPUT, false);
                                 configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, false);
                                 configsAdded.try_emplace(N_VERT_SHADER, false);
                                 configsAdded.try_emplace(N_FRAG_SHADER, false);
-                                if (vertShaderName)
+                                if (vertShader)
                                 {
                                     configsAdded.try_emplace(N_VERT_SHADER, true);
+                                    vertName = std::any_cast<std::string>(*selfNode.GetInputDataByName("Vertex Shader"));
                                 }
-                                if (fragName)
+                                if (frag)
                                 {
                                     configsAdded.try_emplace(N_FRAG_SHADER, true);
+                                    fragName = std::any_cast<std::string>(*selfNode.GetInputDataByName("Fragment Shader"));
                                 }
                             }
+                            glm::vec4 clearColData;
+                            vk::AttachmentLoadOp loadOpData;
+                            vk::AttachmentStoreOp storeOpData;
+                            ENGINE::BlendConfigs blendData;
 
+                            vk::Format colFormatData;
+                            std::any* image;
+                            ENGINE::AttachmentInfo info;
+                            std::string attachmentName;
                             for (auto id : selfNode.graphNodesLinks)
                             {
                                 if (id.second == N_COL_ATTACHMENT_STRUCTURE)
                                 {
 
                                     GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
-                                    PrimitiveSelectable* clearColor = GetFromMap(graphNodeRef.primitives, "Color Format");
-                                    SelectableInfo* loadOp = GetFromMap(graphNodeRef.selectables, "Load Operation");
-                                    SelectableInfo* storeOp = GetFromMap(graphNodeRef.selectables, "Store Operation");
-                                    SelectableInfo* blendConfigs = GetFromMap(graphNodeRef.selectables, "Blend Configs");
+                                    attachmentName = graphNodeRef.name;
+                                    PrimitiveSelectable* clearColor = GetFromNameInMap(graphNodeRef.primitives, "Clear Color");
+                                    SelectableInfo* colFormat = GetFromNameInMap(graphNodeRef.selectables, "Load Operation");
+                                    SelectableInfo* loadOp = GetFromNameInMap(graphNodeRef.selectables, "Load Operation");
+                                    SelectableInfo* storeOp = GetFromNameInMap(graphNodeRef.selectables, "Store Operation");
+                                    SelectableInfo* blendConfigs = GetFromNameInMap(graphNodeRef.selectables, "Blend Configs");
 
-                                    glm::vec4 clearColData = std::any_cast<glm::vec4>(clearColor->content);
-                                    vk::AttachmentLoadOp loadOpData = (vk::AttachmentLoadOp)loadOp->selectedIdx;
-                                    vk::AttachmentStoreOp storeOpData = (vk::AttachmentStoreOp)storeOp->selectedIdx;
+                                    clearColData = std::any_cast<glm::vec4>(clearColor->content);
+                                    loadOpData = (vk::AttachmentLoadOp)loadOp->selectedIdx;
+                                    storeOpData = (vk::AttachmentStoreOp)storeOp->selectedIdx;
+                                    blendData = (ENGINE::BlendConfigs)blendConfigs->selectedIdx;
+
+                                    std::map<int, vk::Format> validFormats = {{0, ENGINE::g_32bFormat}, {1, ENGINE::g_16bFormat},{2, ENGINE::g_ShipperFormat}};
+                                    colFormatData = colFormat->GetEnumFromIndex<vk::Format>(validFormats);
                                     
-                                    // int imagePinId = GetIdFromMap(graphNodeRef.inputNodes, "Col Attachment Sampler");
-                                    // std::any data = graphNodeRef.inputData.contains(imagePinId);
-                                    // if (data){
-                                    //     std::string imageName = graphNodeRef.inputData.at(imagePinId)
-                                    //
-                                    // }
-                                    ENGINE::AttachmentInfo info = ENGINE::GetColorAttachmentInfo();
-                                    
+                                    image = graphNodeRef.GetInputDataByName("Col Attachment Sampler");
+                                    if (image != nullptr)
+                                    {
+                                        configsAdded.at(N_COL_ATTACHMENT_STRUCTURE) = true;
+                                        info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData, storeOpData);
+                                    }
                                 }
                                 
                             }
 
+                            
+                            int configsToMatch = configsAdded.size();
+                            int configsMatched = 0;
+                            for (auto added : configsAdded)
+                            {
+                                if (!added.first)
+                                {
+                                    break;
+                                }
+                                configsMatched++;
+                            }
+                            if (configsMatched == configsToMatch)
+                            {
+                                std::string name = "";
+                                TextInputInfo* nodeName = GetFromNameInMap(selfNode.textInputs, "RenderNode Name");
+                                if (nodeName)
+                                {
+                                    name = nodeName->content;
+                                }else
+                                {
+                                    name = "PassName_"+ std::to_string(renderGraph->renderNodes.size());
+                                }
+                                auto renderNode = renderGraph->AddPass(name);
+                                if (configsAdded.contains(N_COMP_SHADER))
+                                {
+                                    renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShader(compPassName, ENGINE::S_COMP));
+                                }else
+                                {
+                                    renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShader(compPassName, ENGINE::S_VERT));
+                                    renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShader(compPassName, ENGINE::S_FRAG));
+                                    renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
+
+                                    std::string imageName = std::any_cast<std::string>(*image);
+                                    renderNode->AddColorImageResource(
+                                        imageName,
+                                        selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
+                                }
+                                renderNode->SetConfigs({true});
+                                renderNode->BuildRenderGraphNode();
+                                renderNode->active = false;
+                            }
+
                         });
                     builder
+                        .AddTextInput(NextID(), {"RenderNode Name"})
                         .AddOutput(NextID(), {"Result", N_RENDER_NODE})
                         .AddInput(NextID(), {"Vertex Shader", N_VERT_SHADER})
                         .AddInput(NextID(), {"Fragment Shader", N_FRAG_SHADER})
@@ -1223,7 +1289,7 @@ namespace UI
                         [this](GraphNode& selfNode)
                         {
                             
-                            auto inputText = GetFromMap(selfNode.textInputs, "Vertex Name");
+                            auto inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
                             ENGINE::VertexInput* vertexInput = renderGraph->resourcesManager->GetVertexInput(
                                 inputText->content);
                             
@@ -1232,7 +1298,7 @@ namespace UI
                             size_t offset = 0;
                             int location = 0;
                             int binding = 0;
-                            auto dynamicStructure = GetFromMap(selfNode.dynamicStructures, "Vertex Builder");
+                            auto dynamicStructure = GetFromNameInMap(selfNode.dynamicStructures, "Vertex Builder");
                             for (auto widget : dynamicStructure->widgetsInfos)
                             {
                                 int typeSelected = widget.second.selectableInfo.selectedIdx;
@@ -1278,7 +1344,7 @@ namespace UI
                             }
                             assert(stage != ENGINE::S_UNKNOWN && "Uknown shader type");
                             
-                            auto multiOption = GetFromMap<MultiOption>(selfNode.multiOptions, "Shader Options");
+                            auto multiOption = GetFromNameInMap<MultiOption>(selfNode.multiOptions, "Shader Options");
                             int optionSelected = multiOption->selectedIdx;
                             std::string shaderSelected = "";
                             switch (optionSelected)
