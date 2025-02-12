@@ -445,6 +445,18 @@ namespace ENGINE
             Shader* shader = shaders.back().get();
             return shader;
         }
+        Shader* GetShaderFromId(int id)
+        {
+            for (auto shader : shadersNames)
+            {
+                if (shader.second == id)
+                {
+                    return shaders.at(id).get();
+                }
+            }
+            assert(false && "invalid shader id");
+            
+        }
 
         VertexInput* GetVertexInput(std::string name)
         {
@@ -457,6 +469,7 @@ namespace ENGINE
             VertexInput* vertexInput = verticesInputs.back().get();
             return vertexInput;
         }
+        
 
         DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
         {

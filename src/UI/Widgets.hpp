@@ -7,6 +7,7 @@
 
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -163,7 +164,8 @@ namespace UI
             N_IMAGE_STORAGE,
             N_DEPTH_IMAGE_SAMPLER,
             N_VERTEX_INPUT,
-            N_BUFFER
+            N_BUFFER,
+            N_NONE
             
         };
 
@@ -188,6 +190,7 @@ namespace UI
         {
             std::string name;
             NodeType nodeType;
+            std::any data = std::any();
         };
 
         //enums
@@ -701,25 +704,32 @@ namespace UI
             std::map<int, MultiOption> multiOptions;
             std::map<int, DynamicStructure> dynamicStructures;
 
-            std::map<int, std::any> inputData;
-            std::map<int, std::any> outputData;
             std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
             std::string name;
             glm::vec2 pos;
             int globalId = -1;
+            bool valid = false;
             bool firstFrame = true;
 
 
             std::unique_ptr<std::function<void(GraphNode&)>> outputFunction = nullptr;
 
-            int BuildOutput(int id, NodeType nodeType)
+            void RecompileNode()
             {
-                if (outputFunction == nullptr)
-                {
-                    return -1;
-                }
-                if(graphNodesLinks.contains(id))
+                valid = false;
+                BuildOutput(-1);
+            }
+            
+            int BuildOutput(int id, NodeType nodeType = N_NONE)
+            {
+                if (valid) { return 0; }
+
+                assert(outputFunction && "Action function was not set");
+                
+                if (outputFunction == nullptr) { return -1; }
+                
+                if(nodeType != N_NONE && graphNodesLinks.contains(id))
                 {
                     graphNodesLinks.try_emplace(id, nodeType);
                 }
@@ -728,43 +738,43 @@ namespace UI
             }
 
 
-            std::any* GetInputDataById(int id)
+            PinInfo* GetInputDataById(int id)
             {
                 if (!inputNodes.contains(id))
                 {
                     return nullptr;
                 }
-                return &inputData.at(id);
+                return &inputNodes.at(id);
             }
 
-            std::any* GetInputDataByName(const std::string& name)
+            PinInfo* GetInputDataByName(const std::string& name)
             {
                 for (auto& node : inputNodes)
                 {
                     if (node.second.name == name)
                     {
-                        return &inputData.at(node.first);
+                        return &node.second;
                     }
                 }
                 return nullptr;
             }
 
-            std::any* GetOutputDataById(int id)
+            PinInfo* GetOutputDataById(int id)
             {
                 if (!outputNodes.contains(id))
                 {
                     return nullptr;
                 }
-                return &outputData.at(id);
+                return &outputNodes.at(id);
             }
 
-            std::any* GetOutputDataByName(const std::string& name)
+            PinInfo* GetOutputDataByName(const std::string& name)
             {
                 for (auto& node : outputNodes)
                 {
                     if (node.second.name == name)
                     {
-                        return &outputData.at(node.first);
+                        return &node.second;
                     }
                 }
                 return nullptr;
@@ -772,12 +782,12 @@ namespace UI
 
             void SetOuputData(const std::string& name, std::any data)
             {
-                *GetOutputDataByName(name) = data;
+                GetOutputDataByName(name)->data = data;
             }
 
             void SetOuputData(int id, std::any data)
             {
-                *GetOutputDataById(id) = data;
+                GetOutputDataById(id)->data = data;
             }
 
 
@@ -997,14 +1007,6 @@ namespace UI
                 graphNode.outputFunction = std::move(outputOp);
                 graphNode.pos = pos;
                 graphNode.renderGraph = renderGraph;
-                for (auto& input : graphNode.inputNodes)
-                {
-                    graphNode.inputData.try_emplace(input.first, std::string("Empty"));
-                }
-                for (auto& output : graphNode.outputNodes)
-                {
-                    graphNode.outputData.try_emplace(output.first, std::string("Empty"));
-                }
                 Reset();
                 return graphNode;
             }
@@ -1062,15 +1064,22 @@ namespace UI
                             PinInfo* vertShader = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
                             PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
                             PinInfo* compute = GetFromNameInMap(selfNode.inputNodes, "Compute Shader");
-                            std::string vertName = "";
-                            std::string fragName = "";
-                            std::string compPassName = "";
+                            int vertId = -1;
+                            int fragId = -1;
+                            int compId = -1;
 
                             
                             if (compute)
                             {
                                 configsAdded.try_emplace(N_COMP_SHADER, true);
-                                compPassName = std::any_cast<std::string>(*selfNode.GetInputDataByName("Compute Shader"));
+                                PinInfo* pin = selfNode.GetInputDataByName("Compute Shader");
+                                try
+                                {
+                                    compId = std::any_cast<int>(pin->data);
+                                }catch (std::bad_cast c)
+                                {
+                                    assert(false);
+                                }
                             }else 
                             {
                                 configsAdded.try_emplace(N_VERTEX_INPUT, false);
@@ -1080,12 +1089,12 @@ namespace UI
                                 if (vertShader)
                                 {
                                     configsAdded.try_emplace(N_VERT_SHADER, true);
-                                    vertName = std::any_cast<std::string>(*selfNode.GetInputDataByName("Vertex Shader"));
+                                    vertId = std::any_cast<int>(*selfNode.GetInputDataByName("Vertex Shader"));
                                 }
                                 if (frag)
                                 {
                                     configsAdded.try_emplace(N_FRAG_SHADER, true);
-                                    fragName = std::any_cast<std::string>(*selfNode.GetInputDataByName("Fragment Shader"));
+                                    fragId = std::any_cast<int>(*selfNode.GetInputDataByName("Fragment Shader"));
                                 }
                             }
                             glm::vec4 clearColData;
@@ -1094,9 +1103,11 @@ namespace UI
                             ENGINE::BlendConfigs blendData;
 
                             vk::Format colFormatData;
-                            std::any* image;
+                            std::any image;
+                            std::any depthImage;
                             ENGINE::AttachmentInfo info;
                             std::string attachmentName;
+                            ENGINE::VertexInput* vertexInput = nullptr;
                             for (auto id : selfNode.graphNodesLinks)
                             {
                                 if (id.second == N_COL_ATTACHMENT_STRUCTURE)
@@ -1118,16 +1129,33 @@ namespace UI
                                     std::map<int, vk::Format> validFormats = {{0, ENGINE::g_32bFormat}, {1, ENGINE::g_16bFormat},{2, ENGINE::g_ShipperFormat}};
                                     colFormatData = colFormat->GetEnumFromIndex<vk::Format>(validFormats);
                                     
-                                    image = graphNodeRef.GetInputDataByName("Col Attachment Sampler");
-                                    if (image != nullptr)
+                                    image = graphNodeRef.GetInputDataByName("Col Attachment Sampler")->data;
+                                    if (image.has_value())
                                     {
                                         configsAdded.at(N_COL_ATTACHMENT_STRUCTURE) = true;
                                         info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData, storeOpData);
                                     }
                                 }
+                                if (id.second == N_DEPTH_STRUCTURE)
+                                {
+
+                                    GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
+                                    attachmentName = graphNodeRef.name;
+                                    
+                                    image = graphNodeRef.GetInputDataByName("Depth Attachment Sampler")->data;
+                                }
                                 
                             }
 
+                            PinInfo* vertexInputName = selfNode.GetInputDataByName("Vertex Input");
+
+                            if (vertexInputName->data.has_value())
+                            {
+                                std::string vertexName = std::any_cast<std::string>(*vertexInputName);
+                                vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(vertexName);
+                                configsAdded.at(N_VERTEX_INPUT) = true;
+                            }
+                            
                             
                             int configsToMatch = configsAdded.size();
                             int configsMatched = 0;
@@ -1153,14 +1181,14 @@ namespace UI
                                 auto renderNode = renderGraph->AddPass(name);
                                 if (configsAdded.contains(N_COMP_SHADER))
                                 {
-                                    renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShader(compPassName, ENGINE::S_COMP));
-                                }else
+                                    renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
+                                }else 
                                 {
-                                    renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShader(compPassName, ENGINE::S_VERT));
-                                    renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShader(compPassName, ENGINE::S_FRAG));
+                                    renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
+                                    renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
                                     renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
 
-                                    std::string imageName = std::any_cast<std::string>(*image);
+                                    std::string imageName = std::any_cast<std::string>(image);
                                     renderNode->AddColorImageResource(
                                         imageName,
                                         selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
@@ -1168,16 +1196,18 @@ namespace UI
                                 renderNode->SetConfigs({true});
                                 renderNode->BuildRenderGraphNode();
                                 renderNode->active = false;
+                                selfNode.valid = true;
                             }
 
                         });
                     builder
                         .AddTextInput(NextID(), {"RenderNode Name"})
-                        .AddOutput(NextID(), {"Result", N_RENDER_NODE})
+                        .AddOutput(NextID(), {"Result Node", N_RENDER_NODE})
+                        .AddInput(NextID(), {"Input Node", N_RENDER_NODE})
                         .AddInput(NextID(), {"Vertex Shader", N_VERT_SHADER})
                         .AddInput(NextID(), {"Fragment Shader", N_FRAG_SHADER})
                         .AddInput(NextID(), {"Compute Shader", N_COMP_SHADER})
-                        .AddInput(NextID(), {"Col Attachment Structure", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE})
                         .AddInput(NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
                         .AddInput(NextID(), {"Vertex Input", N_VERTEX_INPUT})
                         .AddSelectable(NextID(), "Raster Configs", {"Fill", "Line", "Point"})
@@ -1196,7 +1226,7 @@ namespace UI
                         .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
                         .AddInput(NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
-                        .SetNodeId(NextID(), "Col Attachment Structure");
+                        .SetNodeId(NextID(), "Col Attachment Node");
                     break;
                 case N_DEPTH_STRUCTURE:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
@@ -1207,7 +1237,7 @@ namespace UI
                         .AddSelectable(NextID(), "Depth Configs", {"None", "Enable", "Disable"})
                         .AddInput(NextID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
-                        .SetNodeId(NextID(), "Col Attachment Structure");
+                        .SetNodeId(NextID(), "Depth Attachment Node");
                     break;
                 case N_PUSH_CONSTANT:
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
