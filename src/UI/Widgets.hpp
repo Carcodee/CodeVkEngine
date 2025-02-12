@@ -1,6 +1,9 @@
 //
+
 // Created by carlo on 2025-01-02.
 //
+
+
 
 
 
@@ -173,8 +176,9 @@ namespace UI
         {
             INT,
             UINT,
-            VEC3,
             VEC2,
+            VEC3,
+            VEC4,
             SIZE_T,
             STRING
         };
@@ -191,6 +195,16 @@ namespace UI
             std::string name;
             NodeType nodeType;
             std::any data = std::any();
+            bool HasData()
+            {
+                return data.has_value();
+            }
+            template <typename T>
+            T GetData()
+            {
+                assert(HasData() && "Pin does not have data");
+                return std::any_cast<T>(data);
+            }
         };
 
         //enums
@@ -253,11 +267,16 @@ namespace UI
             std::string name;
             PrimitiveNodeType primitiveType;
             std::any content;
-            
-            template<typename T>
-            T& GetValue()
+
+            bool HasData()
             {
-                T& data = std::any_cast<T>(content);
+                return content.has_value();
+            }
+            template<typename T>
+            T GetData()
+            {
+                assert(HasData() && "Primitive has no data");
+                T data = std::any_cast<T>(content);
                 return data;
             }
 
@@ -268,8 +287,9 @@ namespace UI
                     ImGui::PushID(id);
                 int intData;
                 int uIntdata;
-                glm::vec3 vec3Data;
                 glm::vec2 vec2Data;
+                glm::vec3 vec3Data;
+                glm::vec4 vec4Data;
                 std::string stringData;
                 size_t sizeData;
                 int sizeTemp;
@@ -277,27 +297,32 @@ namespace UI
                 switch (primitiveType)
                 {
                 case INT:
-                    intData = std::any_cast<int>(content);
+                    intData = GetData<int>();
                     ImGui::InputInt(name.c_str(), &intData, 1, 100);
                     result = intData;
                     break;
                 case UINT:
-                    uIntdata = std::any_cast<int>(content);
+                    uIntdata = GetData<int>();
                     ImGui::InputInt(name.c_str(), &uIntdata, 1, 100);
                     result = uIntdata;
                     break;
-                case VEC3:
-                    vec3Data = std::any_cast<glm::vec3>(content);
-                    ImGui::InputFloat3(name.c_str(), glm::value_ptr(vec3Data));
-                    result = vec3Data;
-                    break;
                 case VEC2:
-                    vec2Data = std::any_cast<glm::vec2>(content);
+                    vec2Data = GetData<glm::vec2>();
                     ImGui::InputFloat2(name.c_str(), glm::value_ptr(vec2Data));
                     result = vec2Data;
                     break;
+                case VEC3:
+                    vec3Data = GetData<glm::vec3>();
+                    ImGui::InputFloat3(name.c_str(), glm::value_ptr(vec3Data));
+                    result = vec3Data;
+                    break;
+                case VEC4:
+                    vec4Data = GetData<glm::vec4>();
+                    ImGui::InputFloat4(name.c_str(), glm::value_ptr(vec4Data));
+                    result = vec4Data;
+                    break;
                 case SIZE_T:
-                    sizeData = std::any_cast<size_t>(content);
+                    sizeData = GetData<size_t>();
                     sizeTemp = static_cast<int>(sizeData);
                     ImGui::InputInt(name.c_str(), &sizeTemp);
                     sizeData = static_cast<size_t>(sizeTemp);
@@ -718,22 +743,26 @@ namespace UI
             void RecompileNode()
             {
                 valid = false;
-                BuildOutput(-1);
+                BuildOutput();
             }
             
-            int BuildOutput(int id, NodeType nodeType = N_NONE)
+            int BuildOutput()
             {
                 if (valid) { return 0; }
 
                 assert(outputFunction && "Action function was not set");
                 
                 if (outputFunction == nullptr) { return -1; }
-                
-                if(nodeType != N_NONE && graphNodesLinks.contains(id))
+
+                (*outputFunction)(*this);
+                return 0;
+            }
+            int AddLink(int id, NodeType nodeType = N_NONE)
+            {
+                if(nodeType != N_NONE && !graphNodesLinks.contains(id))
                 {
                     graphNodesLinks.try_emplace(id, nodeType);
                 }
-                (*outputFunction)(*this);
                 return 0;
             }
 
@@ -1069,13 +1098,12 @@ namespace UI
                             int compId = -1;
 
                             
-                            if (compute)
+                            if (compute->HasData())
                             {
                                 configsAdded.try_emplace(N_COMP_SHADER, true);
-                                PinInfo* pin = selfNode.GetInputDataByName("Compute Shader");
                                 try
                                 {
-                                    compId = std::any_cast<int>(pin->data);
+                                    compId = compute->GetData<int>();
                                 }catch (std::bad_cast c)
                                 {
                                     assert(false);
@@ -1086,25 +1114,25 @@ namespace UI
                                 configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, false);
                                 configsAdded.try_emplace(N_VERT_SHADER, false);
                                 configsAdded.try_emplace(N_FRAG_SHADER, false);
-                                if (vertShader)
+                                if (vertShader->HasData())
                                 {
-                                    configsAdded.try_emplace(N_VERT_SHADER, true);
-                                    vertId = std::any_cast<int>(*selfNode.GetInputDataByName("Vertex Shader"));
+                                    configsAdded.at(N_VERT_SHADER) = true;
+                                    vertId = vertShader->GetData<int>();
                                 }
-                                if (frag)
+                                if (frag->HasData())
                                 {
-                                    configsAdded.try_emplace(N_FRAG_SHADER, true);
-                                    fragId = std::any_cast<int>(*selfNode.GetInputDataByName("Fragment Shader"));
+                                    PinInfo* fragPin = selfNode.GetInputDataByName("Fragment Shader");
+                                    configsAdded.at(N_FRAG_SHADER) = true;
+                                    fragId = fragPin->GetData<int>();
                                 }
                             }
                             glm::vec4 clearColData;
                             vk::AttachmentLoadOp loadOpData;
                             vk::AttachmentStoreOp storeOpData;
                             ENGINE::BlendConfigs blendData;
-
                             vk::Format colFormatData;
-                            std::any image;
-                            std::any depthImage;
+                            PinInfo* image;
+                            PinInfo* depthImage;
                             ENGINE::AttachmentInfo info;
                             std::string attachmentName;
                             ENGINE::VertexInput* vertexInput = nullptr;
@@ -1121,7 +1149,7 @@ namespace UI
                                     SelectableInfo* storeOp = GetFromNameInMap(graphNodeRef.selectables, "Store Operation");
                                     SelectableInfo* blendConfigs = GetFromNameInMap(graphNodeRef.selectables, "Blend Configs");
 
-                                    clearColData = std::any_cast<glm::vec4>(clearColor->content);
+                                    clearColData = clearColor->GetData<glm::vec4>();
                                     loadOpData = (vk::AttachmentLoadOp)loadOp->selectedIdx;
                                     storeOpData = (vk::AttachmentStoreOp)storeOp->selectedIdx;
                                     blendData = (ENGINE::BlendConfigs)blendConfigs->selectedIdx;
@@ -1129,8 +1157,8 @@ namespace UI
                                     std::map<int, vk::Format> validFormats = {{0, ENGINE::g_32bFormat}, {1, ENGINE::g_16bFormat},{2, ENGINE::g_ShipperFormat}};
                                     colFormatData = colFormat->GetEnumFromIndex<vk::Format>(validFormats);
                                     
-                                    image = graphNodeRef.GetInputDataByName("Col Attachment Sampler")->data;
-                                    if (image.has_value())
+                                    image = graphNodeRef.GetInputDataByName("Col Attachment Sampler");
+                                    if (image->HasData())
                                     {
                                         configsAdded.at(N_COL_ATTACHMENT_STRUCTURE) = true;
                                         info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData, storeOpData);
@@ -1142,16 +1170,20 @@ namespace UI
                                     GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
                                     attachmentName = graphNodeRef.name;
                                     
-                                    image = graphNodeRef.GetInputDataByName("Depth Attachment Sampler")->data;
+                                    depthImage = graphNodeRef.GetInputDataByName("Depth Attachment Sampler");
+                                    if (depthImage->HasData()){
+                                        
+                                        configsAdded.try_emplace(N_DEPTH_STRUCTURE, true);
+                                    }
                                 }
                                 
                             }
 
-                            PinInfo* vertexInputName = selfNode.GetInputDataByName("Vertex Input");
+                            PinInfo* vertexPin = selfNode.GetInputDataByName("Vertex Input");
 
-                            if (vertexInputName->data.has_value())
+                            if (vertexPin->HasData())
                             {
-                                std::string vertexName = std::any_cast<std::string>(*vertexInputName);
+                                std::string vertexName = vertexPin->GetData<std::string>();
                                 vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(vertexName);
                                 configsAdded.at(N_VERTEX_INPUT) = true;
                             }
@@ -1161,7 +1193,7 @@ namespace UI
                             int configsMatched = 0;
                             for (auto added : configsAdded)
                             {
-                                if (!added.first)
+                                if (!added.second)
                                 {
                                     break;
                                 }
@@ -1186,12 +1218,24 @@ namespace UI
                                 {
                                     renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
                                     renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
+                                    renderNode->SetVertexInput(*vertexInput);
                                     renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
+                                    if (image->HasData())
+                                    {
+                                        std::string imageName = image->GetData<std::string>();
+                                        renderNode->AddColorImageResource(
+                                            imageName,
+                                            selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
+                                    }
+                                    if (configsAdded.contains(N_DEPTH_STRUCTURE))
+                                    {
+                                        if (depthImage->HasData())
+                                        {
+                                            std::string imageName = depthImage->GetData<std::string>();
+                                            renderNode->SetDepthImageResource(imageName,selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
+                                        }                                       
+                                    }
 
-                                    std::string imageName = std::any_cast<std::string>(image);
-                                    renderNode->AddColorImageResource(
-                                        imageName,
-                                        selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
                                 }
                                 renderNode->SetConfigs({true});
                                 renderNode->BuildRenderGraphNode();
@@ -1219,7 +1263,7 @@ namespace UI
                         {
                         });
                     builder
-                        .AddPrimitiveData(NextID(), {"Clear Color", VEC3, glm::vec3(0.0)})
+                        .AddPrimitiveData(NextID(), {"Clear Color", VEC4, glm::vec4(0.0)})
                         .AddSelectable(NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
                         .AddSelectable(NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
                         .AddSelectable(NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
@@ -1232,6 +1276,7 @@ namespace UI
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
+                            
                         });
                     builder
                         .AddSelectable(NextID(), "Depth Configs", {"None", "Enable", "Disable"})
@@ -1305,47 +1350,45 @@ namespace UI
                                                                       vk::ImageUsageFlagBits::eDepthStencilAttachment |
                                                                       vk::ImageUsageFlagBits::eSampled);
                             ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, depthImageInfo, 0, 0);
-                            selfNode.SetOuputData("Depth Image Sampler Result", imgName);
+                            selfNode.SetOuputData("Depth Sampler Result", imgName);
                             
                             assert(imgView && "Image view must be valid");
                         });
                     builder
                         .AddTextInput(NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(NextID(), {"Image Sampler Result", N_DEPTH_IMAGE_SAMPLER})
+                        .AddOutput(NextID(), {"Depth Sampler Result", N_DEPTH_IMAGE_SAMPLER})
                         .SetNodeId(NextID(), "Depth Image Node");
                     break;
                 case N_VERTEX_INPUT:
-                    linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
-                        [this](GraphNode& selfNode)
-                        {
-                            
-                            auto inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
-                            ENGINE::VertexInput* vertexInput = renderGraph->resourcesManager->GetVertexInput(
-                                inputText->content);
-                            
-                            vertexInput->bindingDescription.clear();
-                            vertexInput->inputDescription.clear();
-                            size_t offset = 0;
-                            int location = 0;
-                            int binding = 0;
-                            auto dynamicStructure = GetFromNameInMap(selfNode.dynamicStructures, "Vertex Builder");
-                            for (auto widget : dynamicStructure->widgetsInfos)
-                            {
-                                int typeSelected = widget.second.selectableInfo.selectedIdx;
-                                ENGINE::VertexInput::Attribs attribs = (ENGINE::VertexInput::Attribs)typeSelected;
-                                vertexInput->AddVertexAttrib(attribs, binding, offset, location);
-                                offset += vertexInput->GetSizeFrom(attribs);
-                                location++;
-                            }
-                            for (auto widget : dynamicStructure->widgetsInfos)
-                            {
-                                vertexInput->AddVertexInputBinding(0, offset);
-                            }
-                            
-                            selfNode.SetOuputData("Vertex Result", inputText);
-                                
-                        });
                     {
+                        linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
+                            [this](GraphNode& selfNode)
+                            {
+                                TextInputInfo* inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
+                                std::string vertexName = inputText->content; 
+                                ENGINE::VertexInput* vertexInput = renderGraph->resourcesManager->GetVertexInput(inputText->content);
+
+                                vertexInput->bindingDescription.clear();
+                                vertexInput->inputDescription.clear();
+                                size_t offset = 0;
+                                int location = 0;
+                                int binding = 0;
+                                auto dynamicStructure = GetFromNameInMap(selfNode.dynamicStructures, "Vertex Builder");
+                                for (auto widget : dynamicStructure->widgetsInfos)
+                                {
+                                    int typeSelected = widget.second.selectableInfo.selectedIdx;
+                                    ENGINE::VertexInput::Attribs attribs = (ENGINE::VertexInput::Attribs)typeSelected;
+                                    vertexInput->AddVertexAttrib(attribs, binding, offset, location);
+                                    offset += vertexInput->GetSizeFrom(attribs);
+                                    location++;
+                                }
+                                for (auto widget : dynamicStructure->widgetsInfos)
+                                {
+                                    vertexInput->AddVertexInputBinding(0, offset);
+                                }
+
+                                selfNode.SetOuputData("Vertex Result", vertexName);
+                            });
                         SelectableInfo selectable("Vertex Attrib: ", {"INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4", "COLOR_32"});
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
                         builder.AddTextInput(NextID(), {"Vertex Name", ""})
