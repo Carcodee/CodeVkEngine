@@ -136,7 +136,7 @@ namespace UI
                             {
                                 Nodes::GraphNode* outputGraphNodeRef = pinNodes.at(ed::PinKind::Output);
                                 Nodes::GraphNode* inputGraphNodeRef = pinNodes.at(ed::PinKind::Input);
-                                outputGraphNodeRef->BuildOutput();
+                                outputGraphNodeRef->RunCallback("link_c");
                                 inputGraphNodeRef->AddLink(outputGraphNodeRef->globalId, outputGraphNodeRef->outputNodes.at(pinIds.at(ed::PinKind::Output)).nodeType);
                                 outputGraphNodeRef->AddLink(inputGraphNodeRef->globalId, inputGraphNodeRef->inputNodes.at(pinIds.at(ed::PinKind::Input)).nodeType);
                                 inputGraphNodeRef->GetInputDataById(pinIds.at(ed::PinKind::Input))->data = outputGraphNodeRef->GetOutputDataById(pinIds.at(ed::PinKind::Output))->data;
