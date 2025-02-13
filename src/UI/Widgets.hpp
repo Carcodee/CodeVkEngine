@@ -781,11 +781,8 @@ namespace UI
 
             void ToggleDraw(int id,bool drawCondition)
             {
-                if (drawableWidgets.contains(id))
-                {
-                   drawableWidgets.at(id) = drawCondition; 
-                }
-                assert(false && "Invalid Id");
+                assert(drawableWidgets.contains(id) && "Invalid Id");
+                drawableWidgets.at(id) = drawCondition;
             }
             void RecompileNode()
             {
@@ -932,7 +929,8 @@ namespace UI
                 // ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
                 for (auto& input : inputNodes)
                 {
-                    input.second.Draw();
+                    if (drawableWidgets.at(input.first))
+                        input.second.Draw();
                 }
 
                 for (auto& selectable : selectables)
@@ -970,7 +968,8 @@ namespace UI
                 // ImGui::PopStyleVar();
                 for (auto& output : outputNodes)
                 {
-                    output.second.Draw();
+                    if (drawableWidgets.at(output.first))
+                        output.second.Draw();
                 }
                 ed::EndNode();
                 ImGui::PopID();
@@ -1151,13 +1150,13 @@ namespace UI
         {
             struct CallbackInfo
             {
-                std::map<std::string, int> callbacksMap = {};
-                std::map<int, std::unique_ptr<std::function<void(GraphNode&)>>> callbacks = {};
+                std::unordered_map<std::string, int> callbacksMap = {};
+                std::vector<std::unique_ptr<std::function<void(GraphNode&)>>> callbacks = {};
                 void AddCallback(std::string name, std::function<void(GraphNode&)>&& callback)
                 {
                     int id = callbacks.size();
                     callbacksMap.try_emplace(name, id);
-                    callbacks.try_emplace(id, std::make_unique<std::function<void(GraphNode&)>>(callback));
+                    callbacks.emplace_back(std::make_unique<std::function<void(GraphNode&)>>(callback));
                 }
                 std::function<void(GraphNode&)>* GetCallbackByName(std::string name)
                 {
@@ -1366,9 +1365,6 @@ namespace UI
                         selfNode.valid = true;
                     }    
                 });
-                callbacksRegistry.at(N_VERT_SHADER).AddCallback("output_c", [](GraphNode& selfNode){});
-                callbacksRegistry.at(N_FRAG_SHADER).AddCallback("output_c", [](GraphNode& selfNode){});
-                callbacksRegistry.at(N_COMP_SHADER).AddCallback("output_c", [](GraphNode& selfNode){});
                 callbacksRegistry.at(N_COL_ATTACHMENT_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode){});
                 callbacksRegistry.at(N_DEPTH_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode){});
                 callbacksRegistry.at(N_PUSH_CONSTANT).AddCallback("output_c", [](GraphNode& selfNode){});
