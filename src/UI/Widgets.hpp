@@ -749,18 +749,6 @@ namespace UI
             }
         };
 
-        template <typename T>
-        struct Actioner
-        {
-            T* context;
-            std::function<void(T*)> action;
-
-            void Action()
-            {
-                action(context);
-            }
-        };
-
         //note that this only handle copyable data types
         struct GraphNode
         {
@@ -776,10 +764,11 @@ namespace UI
             std::map<int, MultiOption> multiOptions;
             std::map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
-            std::map<int, bool> drawableWidget;
+            std::map<int, bool> drawableWidgets;
 
             std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
+            
             std::string name;
             glm::vec2 pos;
             ed::NodeId nodeId;
@@ -790,6 +779,14 @@ namespace UI
 
             std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
 
+            void ToggleDraw(int id,bool drawCondition)
+            {
+                if (drawableWidgets.contains(id))
+                {
+                   drawableWidgets.at(id) = drawCondition; 
+                }
+                assert(false && "Invalid Id");
+            }
             void RecompileNode()
             {
                 valid = false;
@@ -800,6 +797,7 @@ namespace UI
             {
                 if (!callbacks.contains(callback) || callbacks.at(callback) == nullptr)
                 {
+                    SYSTEMS::Logger::GetInstance()->LogMessage(callback + " Does not exist");
                     return 1;
                 }
                 (*callbacks.at(callback))(*this);
@@ -939,33 +937,33 @@ namespace UI
 
                 for (auto& selectable : selectables)
                 {
-                    if (drawableWidget.at(selectable.first))
+                    if (drawableWidgets.at(selectable.first))
                         selectable.second.Draw(selectable.first);
                 }
                 for (auto& tInput : textInputs)
                 {
-                    if (drawableWidget.at(tInput.first))
+                    if (drawableWidgets.at(tInput.first))
                         tInput.second.Draw(tInput.first);
                 }
                 for (auto& primitiveInfo : primitives)
                 {
-                    if (drawableWidget.at(primitiveInfo.first))
+                    if (drawableWidgets.at(primitiveInfo.first))
                         primitiveInfo.second.Draw(primitiveInfo.first);
                 }
 
                 for (auto& scrollable : scrollables)
                 {
-                    if (drawableWidget.at(scrollable.first))
+                    if (drawableWidgets.at(scrollable.first))
                         scrollable.second.Draw(scrollable.first);
                 }
                 for (auto& multiOption : multiOptions)
                 {
-                    if (drawableWidget.at(multiOption.first))
+                    if (drawableWidgets.at(multiOption.first))
                         multiOption.second.Draw(multiOption.first);
                 }
                 for (auto& dynamicStructure : dynamicStructures)
                 {
-                    if (drawableWidget.at(dynamicStructure.first))
+                    if (drawableWidgets.at(dynamicStructure.first))
                         dynamicStructure.second.Draw(dynamicStructure.first);
                 }
 
@@ -997,6 +995,7 @@ namespace UI
 
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
+
 
             GraphNodeBuilder& SetNodeId(ed::NodeId id, std::string name)
             {
@@ -1113,7 +1112,7 @@ namespace UI
                 graphNode.scrollables = scrollables;
                 graphNode.multiOptions = multiOptions;
                 graphNode.dynamicStructures = dynamicStructures;
-                graphNode.drawableWidget = drawableWidgets;
+                graphNode.drawableWidgets = drawableWidgets;
                 graphNode.pos = pos;
                 for (auto i = callbacks.begin(); i != callbacks.end();)
                 {
@@ -1162,9 +1161,12 @@ namespace UI
                 }
                 std::function<void(GraphNode&)>* GetCallbackByName(std::string name)
                 {
-                    assert(callbacksMap.contains(name));
-                    auto callback = callbacks.at(callbacksMap.at(name)).get();
-                    return callback;
+                    if (callbacksMap.contains(name))
+                    {
+                        auto callback = callbacks.at(callbacksMap.at(name)).get();
+                        return callback;
+                    }
+                    return nullptr;
                 }
             };
             
@@ -1213,13 +1215,9 @@ namespace UI
                         {
                             assert(false);
                         }
-
-                        selfNode.drawableWidget.at(vert->id) = false;
-                        selfNode.drawableWidget.at(frag->id) = false;
                     }
                     else
                     {
-                        selfNode.drawableWidget.at(compute->id) = false;
                         configsAdded.try_emplace(N_VERTEX_INPUT, false);
                         configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, false);
                         configsAdded.try_emplace(N_VERT_SHADER, false);
@@ -1523,7 +1521,21 @@ namespace UI
                     selfNode.SetOuputData("Shader result", shaderIdx);
                 });
                 
-                
+                callbacksRegistry.at(N_RENDER_NODE).AddCallback("link_c", [](GraphNode& selfNode)
+                {
+                    
+                    PinInfo* vert = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
+                    PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
+                    PinInfo* compute = GetFromNameInMap(selfNode.inputNodes, "Compute Shader");
+                    if (compute->HasData())
+                    {
+                        selfNode.ToggleDraw(vert->id, false);
+                        selfNode.ToggleDraw(frag->id, false);
+                    }else if (vert->HasData() || frag->HasData())
+                    {
+                        selfNode.ToggleDraw(compute->id, false);
+                    }
+                });
             }
         };
 
@@ -1552,8 +1564,6 @@ namespace UI
                 assert(renderGraph && "Null rgraph");
                 assert(windowProvider && "Null window Provider");
                 GraphNode node;
-                std::function<void(GraphNode&)>* outputOp;
-                outputOp = nodeRegistry.GetCallback(nodeType, "output_c");
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
@@ -1631,7 +1641,6 @@ namespace UI
                     std::vector<std::string> options = {"Pick Shader", "Create Shader"};
                     std::map<int, TextInput> textInputs;
                     textInputs.try_emplace(1, TextInput{"Select Shader Name"});
-
                     std::map<int, Scrollable> scrollables;
 
                     if (nodeType == N_VERT_SHADER)
@@ -1682,12 +1691,15 @@ namespace UI
                     break;
                 }
 
+                std::function<void(GraphNode&)>* outputOp = nodeRegistry.GetCallback(nodeType, "output_c");
+                std::function<void(GraphNode&)>* linkOp = nodeRegistry.GetCallback(nodeType, "link_c");
                 if (!name.empty())
                 {
                     builder.SetNodeName(name);
                 }
                 builder.SetPosition(pos);
                 builder.AddCallback("output_c", outputOp);
+                builder.AddCallback("link_c", linkOp);
                 int id = NextNodeID();
                 graphNodes.try_emplace(id, builder.Build(renderGraph, windowProvider));
                 graphNodes.at(id).globalId = id;
