@@ -1444,8 +1444,8 @@ namespace UI
                 });
                 callbacksRegistry.at(N_COMP_SHADER).AddCallback("output_c", [](GraphNode& selfNode){
                     ENGINE::ShaderStage stage = ENGINE::ShaderStage::S_COMP;
-                    assert(stage != ENGINE::S_UNKNOWN && "Uknown shader type");
                     auto multiOption = GetFromNameInMap<MultiOption>(selfNode.multiOptions, "Shader Options");
+                    assert(multiOption);
                     int optionSelected = multiOption->selectedIdx;
                     std::string shaderSelected = "";
                     switch (optionSelected)
@@ -1469,8 +1469,8 @@ namespace UI
                 callbacksRegistry.at(N_VERT_SHADER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
                     ENGINE::ShaderStage stage = ENGINE::ShaderStage::S_VERT;
-                    assert(stage != ENGINE::S_UNKNOWN && "Uknown shader type");
                     auto multiOption = GetFromNameInMap<MultiOption>(selfNode.multiOptions, "Shader Options");
+                    assert(multiOption);
                     int optionSelected = multiOption->selectedIdx;
                     std::string shaderSelected = "";
                     switch (optionSelected)
@@ -1494,8 +1494,8 @@ namespace UI
                 callbacksRegistry.at(N_FRAG_SHADER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
                     ENGINE::ShaderStage stage = ENGINE::ShaderStage::S_FRAG;
-                    assert(stage != ENGINE::S_UNKNOWN && "Uknown shader type");
                     auto multiOption = GetFromNameInMap<MultiOption>(selfNode.multiOptions, "Shader Options");
+                    assert(multiOption);
                     int optionSelected = multiOption->selectedIdx;
                     std::string shaderSelected = "";
                     switch (optionSelected)
@@ -1516,6 +1516,7 @@ namespace UI
                     }
                     selfNode.SetOuputData("Shader result", shaderIdx);
                 });
+
                 
                 callbacksRegistry.at(N_RENDER_NODE).AddCallback("link_c", [](GraphNode& selfNode)
                 {
@@ -1523,11 +1524,35 @@ namespace UI
                     PinInfo* vert = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
                     PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
                     PinInfo* compute = GetFromNameInMap(selfNode.inputNodes, "Compute Shader");
+                    selfNode.ToggleDraw(vert->id, true);
+                    selfNode.ToggleDraw(frag->id, true);
+                    selfNode.ToggleDraw(compute->id, true);
                     if (compute->HasData())
                     {
                         selfNode.ToggleDraw(vert->id, false);
                         selfNode.ToggleDraw(frag->id, false);
                     }else if (vert->HasData() || frag->HasData())
+                    {
+                        selfNode.ToggleDraw(compute->id, false);
+                    }
+                });
+
+                
+                callbacksRegistry.at(N_RENDER_NODE).AddCallback("unlink_c", [](GraphNode& selfNode)
+                {
+                    PinInfo* vert = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
+                    PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
+                    PinInfo* compute = GetFromNameInMap(selfNode.inputNodes, "Compute Shader");
+
+                    selfNode.ToggleDraw(vert->id, true);
+                    selfNode.ToggleDraw(frag->id, true);
+                    selfNode.ToggleDraw(compute->id, true);
+                    if (compute->HasData())
+                    {
+                        selfNode.ToggleDraw(vert->id, false);
+                        selfNode.ToggleDraw(frag->id, false);
+                    }
+                    else if (vert->HasData() || frag->HasData())
                     {
                         selfNode.ToggleDraw(compute->id, false);
                     }
