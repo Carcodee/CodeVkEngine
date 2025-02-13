@@ -455,6 +455,7 @@ namespace ENGINE
                 }
             }
             assert(false && "invalid shader id");
+            return nullptr;
             
         }
 

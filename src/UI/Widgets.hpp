@@ -1,14 +1,8 @@
 //
 
+
 // Created by carlo on 2025-01-02.
 //
-
-
-
-
-
-
-
 
 
 #ifndef WIDGETS_HPP
@@ -22,12 +16,12 @@ namespace UI
         DROP
     };
 
-    template<typename T>
-    concept  HasName = requires(T t)
+    template <typename T>
+    concept HasName = requires(T t)
     {
-        {t.name} -> std::convertible_to<std::string>;
+        { t.name } -> std::convertible_to<std::string>;
     };
-    
+
     template <HasName T>
     static T* GetFromNameInMap(std::map<int, T>& mapToSearch, const std::string name)
     {
@@ -53,7 +47,7 @@ namespace UI
         }
         return -1;
     }
-    
+
     template <typename T>
     static void UseDragProperty(std::string name, T& payload, size_t payloadSize)
     {
@@ -84,10 +78,7 @@ namespace UI
             ImGui::EndDragDropTarget();
             return data;
         }
-        else
-        {
-            return nullptr;
-        }
+        return nullptr;
     }
 
     struct IWidget
@@ -95,9 +86,11 @@ namespace UI
         virtual ~IWidget() = default;
         virtual void DisplayProperties() = 0;
     };
-    struct INodeElement
+
+    struct INodeWidget
     {
-        virtual ~INodeElement() = default;
+        std::string name;
+        virtual ~INodeWidget() = default;
         virtual void Draw(int id) = 0;
     };
 
@@ -169,7 +162,6 @@ namespace UI
             N_VERTEX_INPUT,
             N_BUFFER,
             N_NONE
-            
         };
 
         enum PrimitiveNodeType
@@ -192,29 +184,53 @@ namespace UI
 
         struct PinInfo
         {
-            std::string name;
-            NodeType nodeType;
+            std::string name{};
+            NodeType nodeType = N_NONE;
             std::any data = std::any();
+            ed::PinKind pinKind{};
+            int id = -1;
+
             bool HasData()
             {
                 return data.has_value();
             }
+
             template <typename T>
             T GetData()
             {
                 assert(HasData() && "Pin does not have data");
                 return std::any_cast<T>(data);
             }
+
+            void Draw()
+            {
+                assert(nodeType != N_NONE);
+                if (id > -1)
+                    ImGui::PushID(id);
+
+                ed::BeginPin(id, pinKind);
+                if (pinKind == ed::PinKind::Input)
+                {
+                    ImGui::Text(name.c_str());
+                }
+                else
+                {
+                    std::string nameText = name + "        ->";
+                    ImGui::Text(nameText.c_str());
+                }
+                ed::EndPin();
+
+                if (id > -1)
+                    ImGui::PopID();
+            }
         };
 
         //enums
-        struct SelectableInfo
+        struct EnumSelectable
         {
             std::string name;
             std::vector<std::string> options;
             int selectedIdx;
-
-            ~SelectableInfo() = default;
 
             void Draw(const int& id = -1)
             {
@@ -232,6 +248,7 @@ namespace UI
                     ImGui::PopID();
                 ImGui::PopItemWidth();
             }
+
             template <typename T>
             T GetEnumFromIndex(std::map<int, T>& map)
             {
@@ -239,7 +256,7 @@ namespace UI
             }
         };
 
-        struct TextInputInfo
+        struct TextInput
         {
             std::string name;
             std::string content;
@@ -262,7 +279,7 @@ namespace UI
             }
         };
 
-        struct PrimitiveSelectable 
+        struct PrimitiveInput
         {
             std::string name;
             PrimitiveNodeType primitiveType;
@@ -272,7 +289,8 @@ namespace UI
             {
                 return content.has_value();
             }
-            template<typename T>
+
+            template <typename T>
             T GetData()
             {
                 assert(HasData() && "Primitive has no data");
@@ -340,7 +358,6 @@ namespace UI
                     ImGui::PopID();
                 ImGui::PopItemWidth();
             }
-            
         };
 
         //any
@@ -352,7 +369,6 @@ namespace UI
             std::vector<std::any> content;
             int selectedIdx = 0;
             int itemHightlight = 0;
-
 
 
             void Draw(const int& id = -1)
@@ -403,7 +419,7 @@ namespace UI
                 ImGui::PopItemWidth();
             }
 
-            template<typename T>
+            template <typename T>
             T GetCurrent()
             {
                 return std::any_cast<T>(content.at(selectedIdx));
@@ -413,15 +429,14 @@ namespace UI
         struct MultiOption
         {
             std::string name;
-            std::map<int, std::string> options;;
-            std::map<int, TextInputInfo> inputTexts;;
-            std::map<int, SelectableInfo> selectables;
+            std::map<int, std::string> options;
+            std::map<int, TextInput> inputTexts;
+            std::map<int, EnumSelectable> selectables;
             std::map<int, Scrollable> scrollables;
-
             int selectedIdx = 0;
 
-            MultiOption(std::string name, std::vector<std::string> options, std::map<int, TextInputInfo> inputTexts,
-                            std::map<int, SelectableInfo> selectables, std::map<int, Scrollable> scrollables)
+            MultiOption(const std::string& name, std::vector<std::string> options, std::map<int, TextInput> inputTexts,
+                        std::map<int, EnumSelectable> selectables, std::map<int, Scrollable> scrollables)
             {
                 this->name = name;
                 for (int i = 0; i < options.size(); ++i)
@@ -452,11 +467,12 @@ namespace UI
 
                 if (scrollables.contains(selectedIdx))
                     scrollables.at(selectedIdx).Draw();
-                
+
                 if (id > -1)
                     ImGui::PopID();
             }
         };
+
         enum WidgetType
         {
             W_MULTI_OPTION,
@@ -473,9 +489,9 @@ namespace UI
                 union
                 {
                     MultiOption multiOptionInfo;
-                    SelectableInfo selectableInfo;
-                    TextInputInfo textInputInfo;
-                    PrimitiveSelectable primitiveInfo;
+                    EnumSelectable selectableInfo;
+                    TextInput textInputInfo;
+                    PrimitiveInput primitiveInfo;
                 };
 
                 WidgetType type;
@@ -486,20 +502,19 @@ namespace UI
 
                 NodeWidgetsInfos(const NodeWidgetsInfos& other) : type(other.type)
                 {
-                    
                     switch (type)
                     {
                     case W_MULTI_OPTION:
                         new(&multiOptionInfo) MultiOption(other.multiOptionInfo);
                         break;
                     case W_SELECTABLE:
-                        new(&selectableInfo) SelectableInfo(other.selectableInfo);
+                        new(&selectableInfo) EnumSelectable(other.selectableInfo);
                         break;
                     case W_TEXT_INPUT:
-                        new(&textInputInfo) TextInputInfo(other.textInputInfo);
+                        new(&textInputInfo) TextInput(other.textInputInfo);
                         break;
                     case W_PRIMITIVE:
-                        new(&primitiveInfo) PrimitiveSelectable(other.primitiveInfo);
+                        new(&primitiveInfo) PrimitiveInput(other.primitiveInfo);
                         break;
                     }
                 }
@@ -512,13 +527,13 @@ namespace UI
                         new(&multiOptionInfo) MultiOption(std::move(other.multiOptionInfo));
                         break;
                     case W_SELECTABLE:
-                        new(&selectableInfo) SelectableInfo(std::move(other.selectableInfo));
+                        new(&selectableInfo) EnumSelectable(std::move(other.selectableInfo));
                         break;
                     case W_TEXT_INPUT:
-                        new(&textInputInfo) TextInputInfo(std::move(other.textInputInfo));
+                        new(&textInputInfo) TextInput(std::move(other.textInputInfo));
                         break;
                     case W_PRIMITIVE:
-                        new(&primitiveInfo) PrimitiveSelectable(std::move(other.primitiveInfo));
+                        new(&primitiveInfo) PrimitiveInput(std::move(other.primitiveInfo));
                         break;
                     }
                 }
@@ -536,13 +551,13 @@ namespace UI
                         multiOptionInfo.~MultiOption();
                         break;
                     case W_SELECTABLE:
-                        selectableInfo.~SelectableInfo();
+                        selectableInfo.~EnumSelectable();
                         break;
                     case W_TEXT_INPUT:
-                        textInputInfo.~TextInputInfo();
+                        textInputInfo.~TextInput();
                         break;
                     case W_PRIMITIVE:
-                        primitiveInfo.~PrimitiveSelectable();
+                        primitiveInfo.~PrimitiveInput();
                         break;
                     }
                 }
@@ -559,18 +574,19 @@ namespace UI
                             new(&multiOptionInfo) MultiOption(other.multiOptionInfo);
                             break;
                         case W_SELECTABLE:
-                            new(&selectableInfo) SelectableInfo(other.selectableInfo);
+                            new(&selectableInfo) EnumSelectable(other.selectableInfo);
                             break;
                         case W_TEXT_INPUT:
-                            new(&textInputInfo) TextInputInfo(other.textInputInfo);
+                            new(&textInputInfo) TextInput(other.textInputInfo);
                             break;
                         case W_PRIMITIVE:
-                            new(&primitiveInfo) PrimitiveSelectable(other.primitiveInfo);
+                            new(&primitiveInfo) PrimitiveInput(other.primitiveInfo);
                             break;
                         }
                     }
                     return *this;
                 }
+
                 NodeWidgetsInfos& operator=(const NodeWidgetsInfos&& other) noexcept
                 {
                     if (this != &other)
@@ -583,20 +599,20 @@ namespace UI
                             new(&multiOptionInfo) MultiOption(std::move(other.multiOptionInfo));
                             break;
                         case W_SELECTABLE:
-                            new(&selectableInfo) SelectableInfo(std::move(other.selectableInfo));
+                            new(&selectableInfo) EnumSelectable(std::move(other.selectableInfo));
                             break;
                         case W_TEXT_INPUT:
-                            new(&textInputInfo) TextInputInfo(std::move(other.textInputInfo));
+                            new(&textInputInfo) TextInput(std::move(other.textInputInfo));
                             break;
                         case W_PRIMITIVE:
-                            new(&primitiveInfo) PrimitiveSelectable(std::move(other.primitiveInfo));
+                            new(&primitiveInfo) PrimitiveInput(std::move(other.primitiveInfo));
                             break;
                         }
                     }
                     return *this;
                 }
             };
-            
+
             std::string name;
             std::map<int, NodeWidgetsInfos> widgetsInfos;
 
@@ -613,34 +629,34 @@ namespace UI
                 baseWidgetInfo.type = W_SELECTABLE;
                 new(&baseWidgetInfo.multiOptionInfo) MultiOption(multiOption);
                 widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
-            }           
-            DynamicStructure(const std::string& name, SelectableInfo& selectable)
+            }
+
+            DynamicStructure(const std::string& name, EnumSelectable& selectable)
             {
                 this->name = name;
                 NodeWidgetsInfos baseWidgetInfo = {};
                 baseWidgetInfo.type = W_SELECTABLE;
-                new(&baseWidgetInfo.selectableInfo) SelectableInfo(selectable);
-                widgetsInfos.try_emplace(widgetsInfos.size() , std::move(baseWidgetInfo));
+                new(&baseWidgetInfo.selectableInfo) EnumSelectable(selectable);
+                widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
             }
 
-            DynamicStructure(const std::string& name, TextInputInfo& textInputInfo)
+            DynamicStructure(const std::string& name, TextInput& textInputInfo)
             {
                 this->name = name;
                 NodeWidgetsInfos baseWidgetInfo = {};
                 baseWidgetInfo.type = W_TEXT_INPUT;
-                new(&baseWidgetInfo.textInputInfo) TextInputInfo(textInputInfo);
+                new(&baseWidgetInfo.textInputInfo) TextInput(textInputInfo);
                 widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
             }
 
-            DynamicStructure(const std::string& name, PrimitiveSelectable& primitiveInfo)
+            DynamicStructure(const std::string& name, PrimitiveInput& primitiveInfo)
             {
                 this->name = name;
                 NodeWidgetsInfos baseWidgetInfo = {};
                 baseWidgetInfo.type = W_PRIMITIVE;
-                new(&baseWidgetInfo.primitiveInfo) PrimitiveSelectable(primitiveInfo);
+                new(&baseWidgetInfo.primitiveInfo) PrimitiveInput(primitiveInfo);
                 widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
             }
-
 
 
             ~DynamicStructure()
@@ -650,7 +666,7 @@ namespace UI
                     widget.second.Destroy();
                 }
             }
-            
+
             void AddOption()
             {
                 widgetsInfos.try_emplace(widgetsInfos.size(), widgetsInfos.at(0));
@@ -658,18 +674,19 @@ namespace UI
 
             void RemoveLast()
             {
-                if (widgetsInfos.size()==1){return;}
-                
-                auto it = widgetsInfos.find(widgetsInfos.size()-1);
+                if (widgetsInfos.size() == 1) { return; }
+
+                auto it = widgetsInfos.find(widgetsInfos.size() - 1);
                 if (it != widgetsInfos.end())
                 {
                     widgetsInfos.erase(it);
-                }else
+                }
+                else
                 {
                     SYSTEMS::Logger::GetInstance()->Log("Invalid Key");
                 }
             }
-            
+
             void Draw(const int& id = -1)
             {
                 if (id > -1)
@@ -710,29 +727,61 @@ namespace UI
                 if (id > -1)
                     ImGui::PopID();
             }
-            
         };
 
-        
+        struct Button
+        {
+            std::string name;
+
+            std::function<void()> action;
+
+            void Draw(const int& id = -1)
+            {
+                if (id > -1)
+                    ImGui::PushID(id);
+
+                if (ImGui::Button(name.c_str(), ImVec2{50, 50}))
+                {
+                    action();
+                }
+                if (id > -1)
+                    ImGui::PopID();
+            }
+        };
+
+        template <typename T>
+        struct Actioner
+        {
+            T* context;
+            std::function<void(T*)> action;
+
+            void Action()
+            {
+                action(context);
+            }
+        };
+
         //note that this only handle copyable data types
         struct GraphNode
         {
             ENGINE::RenderGraph* renderGraph;
-            
-            ed::NodeId nodeId;
+
             std::map<int, PinInfo> inputNodes;
             std::map<int, PinInfo> outputNodes;
-            std::map<int, SelectableInfo> selectables;
-            std::map<int, TextInputInfo> textInputs;
-            std::map<int, PrimitiveSelectable> primitives;
+            std::map<int, EnumSelectable> selectables;
+            std::map<int, TextInput> textInputs;
+            std::map<int, PrimitiveInput> primitives;
             std::map<int, Scrollable> scrollables;
             std::map<int, MultiOption> multiOptions;
             std::map<int, DynamicStructure> dynamicStructures;
+            //since all ids are not repeated this will represent properly all the widgets
+            std::map<int, bool> drawableWidget;
 
             std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
             std::string name;
             glm::vec2 pos;
+            ed::NodeId nodeId;
             int globalId = -1;
             bool valid = false;
             bool firstFrame = true;
@@ -745,27 +794,27 @@ namespace UI
                 valid = false;
                 BuildOutput();
             }
-            
+
             int BuildOutput()
             {
                 if (valid) { return 0; }
 
                 assert(outputFunction && "Action function was not set");
-                
+
                 if (outputFunction == nullptr) { return -1; }
 
                 (*outputFunction)(*this);
                 return 0;
             }
+
             int AddLink(int id, NodeType nodeType = N_NONE)
             {
-                if(nodeType != N_NONE && !graphNodesLinks.contains(id))
+                if (nodeType != N_NONE && !graphNodesLinks.contains(id))
                 {
                     graphNodesLinks.try_emplace(id, nodeType);
                 }
                 return 0;
             }
-
 
             PinInfo* GetInputDataById(int id)
             {
@@ -847,7 +896,7 @@ namespace UI
 
             MultiOption* GetMultiOption(const std::string name)
             {
-                 for (auto& multiOption : multiOptions)
+                for (auto& multiOption : multiOptions)
                 {
                     if (multiOption.second.name == name)
                     {
@@ -855,7 +904,7 @@ namespace UI
                     }
                 }
                 assert(false && "ivalid name");
-                return nullptr;               
+                return nullptr;
             }
 
             std::string GetInputTextContent(const std::string& name)
@@ -884,49 +933,45 @@ namespace UI
                 // ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
                 for (auto& input : inputNodes)
                 {
-                    ImGui::PushID(input.first);
-                    ed::BeginPin(input.first, ed::PinKind::Input);
-                    ImGui::Text(input.second.name.c_str());
-                    ed::EndPin();
-                    ImGui::PopID();
+                    input.second.Draw();
                 }
 
                 for (auto& selectable : selectables)
                 {
-                    selectable.second.Draw(selectable.first);
+                    if (drawableWidget.at(selectable.first))
+                        selectable.second.Draw(selectable.first);
                 }
                 for (auto& tInput : textInputs)
                 {
-                    tInput.second.Draw(tInput.first);
+                    if (drawableWidget.at(tInput.first))
+                        tInput.second.Draw(tInput.first);
                 }
                 for (auto& primitiveInfo : primitives)
                 {
-                    primitiveInfo.second.Draw(primitiveInfo.first);
+                    if (drawableWidget.at(primitiveInfo.first))
+                        primitiveInfo.second.Draw(primitiveInfo.first);
                 }
 
                 for (auto& scrollable : scrollables)
                 {
-                    scrollable.second.Draw(scrollable.first);
+                    if (drawableWidget.at(scrollable.first))
+                        scrollable.second.Draw(scrollable.first);
                 }
                 for (auto& multiOption : multiOptions)
                 {
-                    multiOption.second.Draw(multiOption.first);
+                    if (drawableWidget.at(multiOption.first))
+                        multiOption.second.Draw(multiOption.first);
                 }
                 for (auto& dynamicStructure : dynamicStructures)
                 {
-                    dynamicStructure.second.Draw(dynamicStructure.first);
-                    
+                    if (drawableWidget.at(dynamicStructure.first))
+                        dynamicStructure.second.Draw(dynamicStructure.first);
                 }
-                
+
                 // ImGui::PopStyleVar();
                 for (auto& output : outputNodes)
                 {
-                    ImGui::PushID(output.first);
-                    ed::BeginPin(output.first, ed::PinKind::Output);
-                    std::string spacing = "                              "+ output.second.name + "->";
-                    ImGui::Text(spacing.c_str());
-                    ed::EndPin();
-                    ImGui::PopID();
+                    output.second.Draw();
                 }
                 ed::EndNode();
                 ImGui::PopID();
@@ -939,12 +984,13 @@ namespace UI
             ed::NodeId nodeId = -1;
             std::map<int, PinInfo> inputNodes = {};
             std::map<int, PinInfo> outputNodes = {};
-            std::map<int, SelectableInfo> selectables = {};
-            std::map<int, TextInputInfo> textInputs = {};
-            std::map<int, PrimitiveSelectable> primitives = {};
+            std::map<int, EnumSelectable> selectables = {};
+            std::map<int, TextInput> textInputs = {};
+            std::map<int, PrimitiveInput> primitives = {};
             std::map<int, Scrollable> scrollables = {};
             std::map<int, MultiOption> multiOptions = {};
             std::map<int, DynamicStructure> dynamicStructures = {};
+            std::map<int, bool> drawableWidgets = {};
 
             std::string name = "";
             glm::vec2 pos = glm::vec2(0.0);
@@ -970,49 +1016,67 @@ namespace UI
 
             GraphNodeBuilder& AddInput(int id, PinInfo pinInfo)
             {
+                pinInfo.pinKind = ed::PinKind::Input;
+                pinInfo.id = id;
                 inputNodes.try_emplace(id, pinInfo);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
             GraphNodeBuilder& AddOutput(int id, PinInfo pinInfo)
             {
+                pinInfo.pinKind = ed::PinKind::Output;
+                pinInfo.id = id;
                 outputNodes.try_emplace(id, pinInfo);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
+
+            // GraphNodeBuilder& AddButton(int id, Button button)
+            // {
+            // buttons.try_emplace(id, button);
+            // return *this;
+            // }
 
             GraphNodeBuilder& AddSelectable(int id, std::string name, std::vector<std::string> options)
             {
-                selectables.try_emplace(id, SelectableInfo{name, options, 0});
+                selectables.try_emplace(id, EnumSelectable{name, options, 0});
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
-            GraphNodeBuilder& AddTextInput(int id, TextInputInfo info)
+            GraphNodeBuilder& AddTextInput(int id, TextInput info)
             {
                 textInputs.try_emplace(id, info);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
-            GraphNodeBuilder& AddScrollableOption(int id, Scrollable info)
+            GraphNodeBuilder& AddScrollable(int id, Scrollable info)
             {
                 scrollables.try_emplace(id, info);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
-            GraphNodeBuilder& AddPrimitiveData(int id, PrimitiveSelectable info)
+            GraphNodeBuilder& AddPrimitiveData(int id, PrimitiveInput info)
             {
                 primitives.try_emplace(id, info);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
             GraphNodeBuilder& AddMultiOption(int id, MultiOption info)
             {
                 multiOptions.try_emplace(id, info);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
             GraphNodeBuilder& AddDynamicStructure(int id, DynamicStructure info)
             {
                 dynamicStructures.try_emplace(id, info);
+                drawableWidgets.try_emplace(id, true);
                 return *this;
             }
 
@@ -1021,6 +1085,7 @@ namespace UI
             {
                 // assert(nodeId.Get() > -1 && "Set the id before building");
                 assert(!name.empty() && "Set a valid name");
+
 
                 GraphNode graphNode = {};
                 graphNode.name = name;
@@ -1033,8 +1098,11 @@ namespace UI
                 graphNode.scrollables = scrollables;
                 graphNode.multiOptions = multiOptions;
                 graphNode.dynamicStructures = dynamicStructures;
-                graphNode.outputFunction = std::move(outputOp);
+                graphNode.drawableWidget = drawableWidgets;
                 graphNode.pos = pos;
+
+                graphNode.outputFunction = std::move(outputOp);
+
                 graphNode.renderGraph = renderGraph;
                 Reset();
                 return graphNode;
@@ -1049,6 +1117,7 @@ namespace UI
                 primitives.clear();
                 scrollables.clear();
                 multiOptions.clear();
+                drawableWidgets.clear();
                 pos = glm::vec2(0.0);
                 nodeId = -1;
                 name = "";
@@ -1063,7 +1132,7 @@ namespace UI
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
             std::map<int, GraphNode> graphNodes = {};
-            
+
 
             int NextID()
             {
@@ -1087,37 +1156,45 @@ namespace UI
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
-
                             std::map<NodeType, bool> configsAdded;
-                            
-                            PinInfo* vertShader = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
+
+                            PinInfo* vert = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
                             PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
                             PinInfo* compute = GetFromNameInMap(selfNode.inputNodes, "Compute Shader");
                             int vertId = -1;
                             int fragId = -1;
                             int compId = -1;
 
-                            
+
+                            selfNode.drawableWidget.at(vert->id) =true;
+                            selfNode.drawableWidget.at(frag->id) =true;
+                            selfNode.drawableWidget.at(compute->id) =true;
                             if (compute->HasData())
                             {
                                 configsAdded.try_emplace(N_COMP_SHADER, true);
                                 try
                                 {
                                     compId = compute->GetData<int>();
-                                }catch (std::bad_cast c)
+                                }
+                                catch (std::bad_cast c)
                                 {
                                     assert(false);
                                 }
-                            }else 
+
+                                selfNode.drawableWidget.at(vert->id) = false;
+                                selfNode.drawableWidget.at(frag->id) = false;
+                            }
+                            else
                             {
+                                selfNode.drawableWidget.at(compute->id) = false;
                                 configsAdded.try_emplace(N_VERTEX_INPUT, false);
                                 configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, false);
                                 configsAdded.try_emplace(N_VERT_SHADER, false);
                                 configsAdded.try_emplace(N_FRAG_SHADER, false);
-                                if (vertShader->HasData())
+                                if (vert->HasData())
                                 {
                                     configsAdded.at(N_VERT_SHADER) = true;
-                                    vertId = vertShader->GetData<int>();
+                                    vertId = vert->GetData<int>();
                                 }
                                 if (frag->HasData())
                                 {
@@ -1140,43 +1217,48 @@ namespace UI
                             {
                                 if (id.second == N_COL_ATTACHMENT_STRUCTURE)
                                 {
-
                                     GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
                                     attachmentName = graphNodeRef.name;
-                                    PrimitiveSelectable* clearColor = GetFromNameInMap(graphNodeRef.primitives, "Clear Color");
-                                    SelectableInfo* colFormat = GetFromNameInMap(graphNodeRef.selectables, "Load Operation");
-                                    SelectableInfo* loadOp = GetFromNameInMap(graphNodeRef.selectables, "Load Operation");
-                                    SelectableInfo* storeOp = GetFromNameInMap(graphNodeRef.selectables, "Store Operation");
-                                    SelectableInfo* blendConfigs = GetFromNameInMap(graphNodeRef.selectables, "Blend Configs");
+                                    PrimitiveInput* clearColor = GetFromNameInMap(
+                                        graphNodeRef.primitives, "Clear Color");
+                                    EnumSelectable* colFormat = GetFromNameInMap(
+                                        graphNodeRef.selectables, "Load Operation");
+                                    EnumSelectable* loadOp = GetFromNameInMap(
+                                        graphNodeRef.selectables, "Load Operation");
+                                    EnumSelectable* storeOp = GetFromNameInMap(
+                                        graphNodeRef.selectables, "Store Operation");
+                                    EnumSelectable* blendConfigs = GetFromNameInMap(
+                                        graphNodeRef.selectables, "Blend Configs");
 
                                     clearColData = clearColor->GetData<glm::vec4>();
                                     loadOpData = (vk::AttachmentLoadOp)loadOp->selectedIdx;
                                     storeOpData = (vk::AttachmentStoreOp)storeOp->selectedIdx;
                                     blendData = (ENGINE::BlendConfigs)blendConfigs->selectedIdx;
 
-                                    std::map<int, vk::Format> validFormats = {{0, ENGINE::g_32bFormat}, {1, ENGINE::g_16bFormat},{2, ENGINE::g_ShipperFormat}};
+                                    std::map<int, vk::Format> validFormats = {
+                                        {0, ENGINE::g_32bFormat}, {1, ENGINE::g_16bFormat}, {2, ENGINE::g_ShipperFormat}
+                                    };
                                     colFormatData = colFormat->GetEnumFromIndex<vk::Format>(validFormats);
-                                    
+
                                     image = graphNodeRef.GetInputDataByName("Col Attachment Sampler");
                                     if (image->HasData())
                                     {
                                         configsAdded.at(N_COL_ATTACHMENT_STRUCTURE) = true;
-                                        info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData, storeOpData);
+                                        info = ENGINE::GetColorAttachmentInfo(
+                                            clearColData, colFormatData, loadOpData, storeOpData);
                                     }
                                 }
                                 if (id.second == N_DEPTH_STRUCTURE)
                                 {
-
                                     GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
                                     attachmentName = graphNodeRef.name;
-                                    
+
                                     depthImage = graphNodeRef.GetInputDataByName("Depth Attachment Sampler");
-                                    if (depthImage->HasData()){
-                                        
+                                    if (depthImage->HasData())
+                                    {
                                         configsAdded.try_emplace(N_DEPTH_STRUCTURE, true);
                                     }
                                 }
-                                
                             }
 
                             PinInfo* vertexPin = selfNode.GetInputDataByName("Vertex Input");
@@ -1187,8 +1269,8 @@ namespace UI
                                 vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(vertexName);
                                 configsAdded.at(N_VERTEX_INPUT) = true;
                             }
-                            
-                            
+
+
                             int configsToMatch = configsAdded.size();
                             int configsMatched = 0;
                             for (auto added : configsAdded)
@@ -1202,22 +1284,30 @@ namespace UI
                             if (configsMatched == configsToMatch)
                             {
                                 std::string name = "";
-                                TextInputInfo* nodeName = GetFromNameInMap(selfNode.textInputs, "RenderNode Name");
+                                TextInput* nodeName = GetFromNameInMap(selfNode.textInputs, "RenderNode Name");
                                 if (nodeName)
                                 {
                                     name = nodeName->content;
-                                }else
+                                }
+                                else
                                 {
-                                    name = "PassName_"+ std::to_string(renderGraph->renderNodes.size());
+                                    name = "PassName_" + std::to_string(renderGraph->renderNodes.size());
                                 }
                                 auto renderNode = renderGraph->AddPass(name);
                                 if (configsAdded.contains(N_COMP_SHADER))
                                 {
-                                    renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
-                                }else 
+                                    renderNode->SetCompShader(
+                                        selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
+                                }
+                                else
                                 {
-                                    renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
-                                    renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
+                                    assert(vertId > -1 && "Vert id invalid");
+                                    assert(fragId > -1 && "Frag Id invalid");
+                                    assert(vertexInput && "invalid vertex input");
+                                    renderNode->SetVertShader(
+                                        selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
+                                    renderNode->SetFragShader(
+                                        selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
                                     renderNode->SetVertexInput(*vertexInput);
                                     renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
                                     if (image->HasData())
@@ -1232,17 +1322,18 @@ namespace UI
                                         if (depthImage->HasData())
                                         {
                                             std::string imageName = depthImage->GetData<std::string>();
-                                            renderNode->SetDepthImageResource(imageName,selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
-                                        }                                       
+                                            renderNode->SetDepthImageResource(
+                                                imageName,
+                                                selfNode.renderGraph->resourcesManager->GetImageViewFromName(
+                                                    imageName));
+                                        }
                                     }
-
                                 }
                                 renderNode->SetConfigs({true});
                                 renderNode->BuildRenderGraphNode();
                                 renderNode->active = false;
                                 selfNode.valid = true;
                             }
-
                         });
                     builder
                         .AddTextInput(NextID(), {"RenderNode Name"})
@@ -1276,7 +1367,6 @@ namespace UI
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
-                            
                         });
                     builder
                         .AddSelectable(NextID(), "Depth Configs", {"None", "Enable", "Disable"})
@@ -1288,7 +1378,6 @@ namespace UI
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this](GraphNode& selfNode)
                         {
-                            
                         });
                     builder
                         .AddPrimitiveData(NextID(), {"Push Constant data", SIZE_T, size_t(0)})
@@ -1327,7 +1416,7 @@ namespace UI
                                 ENGINE::g_32bFormat,
                                 vk::ImageUsageFlagBits::eStorage |
                                 vk::ImageUsageFlagBits::eTransferDst);
-                            
+
                             ENGINE::ImageView* storageImgView = renderGraph->resourcesManager->GetImage(
                                 imgName, storageImageInfo, 0, 0);
                             selfNode.SetOuputData("Image Storage Result", imgName);
@@ -1346,12 +1435,15 @@ namespace UI
                             std::string imgName = selfNode.GetInputTextContent("Img Name");
                             assert(!imgName.empty() && "Img name is not valid");
                             auto depthImageInfo = ENGINE::Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
-                                                                      selfNode.renderGraph->core->swapchainRef->depthFormat,
-                                                                      vk::ImageUsageFlagBits::eDepthStencilAttachment |
-                                                                      vk::ImageUsageFlagBits::eSampled);
-                            ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(imgName, depthImageInfo, 0, 0);
+                                                                              selfNode.renderGraph->core->swapchainRef->
+                                                                              depthFormat,
+                                                                              vk::ImageUsageFlagBits::eDepthStencilAttachment
+                                                                              |
+                                                                              vk::ImageUsageFlagBits::eSampled);
+                            ENGINE::ImageView* imgView = renderGraph->resourcesManager->GetImage(
+                                imgName, depthImageInfo, 0, 0);
                             selfNode.SetOuputData("Depth Sampler Result", imgName);
-                            
+
                             assert(imgView && "Image view must be valid");
                         });
                     builder
@@ -1364,9 +1456,10 @@ namespace UI
                         linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                             [this](GraphNode& selfNode)
                             {
-                                TextInputInfo* inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
-                                std::string vertexName = inputText->content; 
-                                ENGINE::VertexInput* vertexInput = renderGraph->resourcesManager->GetVertexInput(inputText->content);
+                                TextInput* inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
+                                std::string vertexName = inputText->content;
+                                ENGINE::VertexInput* vertexInput = renderGraph->resourcesManager->GetVertexInput(
+                                    inputText->content);
 
                                 vertexInput->bindingDescription.clear();
                                 vertexInput->inputDescription.clear();
@@ -1389,19 +1482,22 @@ namespace UI
 
                                 selfNode.SetOuputData("Vertex Result", vertexName);
                             });
-                        SelectableInfo selectable("Vertex Attrib: ", {"INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4", "COLOR_32"});
+                        EnumSelectable selectable("Vertex Attrib: ", {
+                                                      "INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4",
+                                                      "COLOR_32"
+                                                  });
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
                         builder.AddTextInput(NextID(), {"Vertex Name", ""})
                                .AddDynamicStructure(NextID(), dynamicStructureInfo)
-                               .AddOutput(NextID(),{"Vertex Result", N_VERTEX_INPUT})
+                               .AddOutput(NextID(), {"Vertex Result", N_VERTEX_INPUT})
                                .SetNodeId(NextID(), "Vertex Input Builder");
                     }
-                    
+
                     break;
                 case N_VERT_SHADER:
                 case N_FRAG_SHADER:
                 case N_COMP_SHADER:
-                    
+
                     linkOp = std::make_unique<std::function<void(GraphNode& selfNode)>>(
                         [this, nodeType](GraphNode& selfNode)
                         {
@@ -1416,7 +1512,7 @@ namespace UI
                                 break;
                             }
                             assert(stage != ENGINE::S_UNKNOWN && "Uknown shader type");
-                            
+
                             auto multiOption = GetFromNameInMap<MultiOption>(selfNode.multiOptions, "Shader Options");
                             int optionSelected = multiOption->selectedIdx;
                             std::string shaderSelected = "";
@@ -1426,7 +1522,8 @@ namespace UI
                                 shaderSelected = multiOption->scrollables.at(0).GetCurrent<std::string>();
                                 break;
                             case 1:
-                                shaderSelected =SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\"+ multiOption->inputTexts.at(1).content;
+                                shaderSelected = SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\" + multiOption->
+                                    inputTexts.at(1).content;
                                 selfNode.renderGraph->resourcesManager->GetShader(shaderSelected, stage);
                                 break;
                             }
@@ -1440,8 +1537,8 @@ namespace UI
                     std::vector<std::any> shaderPaths;
                     shaderPaths.reserve(renderGraph->resourcesManager->shadersNames.size());
                     std::vector<std::string> options = {"Pick Shader", "Create Shader"};
-                    std::map<int, TextInputInfo> textInputs;
-                    textInputs.try_emplace(1, TextInputInfo{"Select Shader Name"});
+                    std::map<int, TextInput> textInputs;
+                    textInputs.try_emplace(1, TextInput{"Select Shader Name"});
 
                     std::map<int, Scrollable> scrollables;
 
@@ -1449,7 +1546,8 @@ namespace UI
                     {
                         for (auto& shaderPath : renderGraph->resourcesManager->shadersNames)
                         {
-                            if (renderGraph->resourcesManager->shaders.at(shaderPath.second)->stage == ENGINE::ShaderStage::S_VERT)
+                            if (renderGraph->resourcesManager->shaders.at(shaderPath.second)->stage ==
+                                ENGINE::ShaderStage::S_VERT)
                             {
                                 shaderPaths.emplace_back(shaderPath.first);
                             }
@@ -1457,7 +1555,6 @@ namespace UI
                         builder
                             .SetNodeId(NextID(), "Vert Shader")
                             .AddOutput(NextID(), {"Shader result", N_VERT_SHADER});
-
                     }
                     if (nodeType == N_FRAG_SHADER)
                     {
@@ -1490,7 +1587,7 @@ namespace UI
                     scrollables.try_emplace(0, Scrollable{"Posible Shaders", STRING, shaderPaths});
                     MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
                     builder.AddMultiOption(NextID(), multiOptionInfo);
-                   
+
                     break;
                 }
 
