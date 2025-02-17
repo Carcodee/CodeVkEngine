@@ -764,8 +764,9 @@ namespace UI
             std::map<int, MultiOption> multiOptions;
             std::map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
+            
             std::map<int, bool> drawableWidgets;
-            std::deque<int> addeables;
+            std::map<int, bool> addMoreWidgets;
 
             std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
@@ -773,6 +774,7 @@ namespace UI
             std::string name;
             glm::vec2 pos;
             ed::NodeId nodeId;
+            int* widgetsIdGen = nullptr;
             int globalId = -1;
             bool valid = false;
             bool firstFrame = true;
@@ -811,6 +813,11 @@ namespace UI
                     graphNodesLinks.try_emplace(id, nodeType);
                 }
                 return 0;
+            }
+            int NextId()
+            {
+                assert(widgetsIdGen);
+                return *widgetsIdGen++;
             }
 
             PinInfo* GetInputDataById(int id)
@@ -916,6 +923,17 @@ namespace UI
                 return nullptr; 
             }
 
+            DynamicStructure* GetDynamicStructure(const std::string& name)
+            {
+                for (auto& dynamicStructure : dynamicStructures)
+                {
+                    if (dynamicStructure.second.name == name)
+                    {
+                        return &dynamicStructure.second;
+                    }
+                }
+                return nullptr; 
+            }
             void Draw()
             {
                 if (firstFrame)
@@ -928,42 +946,95 @@ namespace UI
                 ImGui::Text(name.c_str());
 
                 // ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
+                std::deque<int> addedWidgets;
                 for (auto& input : inputNodes)
                 {
                     if (drawableWidgets.at(input.first))
                         input.second.Draw();
+                    if (addMoreWidgets.contains(input.first))
+                    {
+                        if(ImGui::Button("+"))
+                        {
+                            addedWidgets.push_front(input.first);
+                        }
+                    }
+                }
+                while (!addedWidgets.empty())
+                {
+                    int id = NextId();
+                    PinInfo& copiedPin= inputNodes.at(addedWidgets.front());
+                    PinInfo pinInfo {
+                        .name = copiedPin.name, 
+                        .nodeType = copiedPin.nodeType,
+                        .data = std::any(),
+                        .pinKind = copiedPin.pinKind,
+                        .id = id
+                    };
+                    inputNodes.try_emplace(id, pinInfo);
+                    drawableWidgets.try_emplace(id, true);
+                    addedWidgets.pop_front();
                 }
 
                 for (auto& selectable : selectables)
                 {
                     if (drawableWidgets.at(selectable.first))
                         selectable.second.Draw(selectable.first);
+                    
+                    if (addMoreWidgets.contains(selectable.first))
+                    {
+                        
+                    }
                 }
                 for (auto& tInput : textInputs)
                 {
                     if (drawableWidgets.at(tInput.first))
                         tInput.second.Draw(tInput.first);
+                    
+                    if (addMoreWidgets.contains(tInput.first))
+                    {
+                        
+                    }
                 }
                 for (auto& primitiveInfo : primitives)
                 {
                     if (drawableWidgets.at(primitiveInfo.first))
                         primitiveInfo.second.Draw(primitiveInfo.first);
+                    
+                    if (addMoreWidgets.contains(primitiveInfo.first))
+                    {
+                        
+                    }
                 }
 
                 for (auto& scrollable : scrollables)
                 {
                     if (drawableWidgets.at(scrollable.first))
                         scrollable.second.Draw(scrollable.first);
+                    
+                    if (addMoreWidgets.contains(scrollable.first))
+                    {
+                        
+                    }
                 }
                 for (auto& multiOption : multiOptions)
                 {
                     if (drawableWidgets.at(multiOption.first))
                         multiOption.second.Draw(multiOption.first);
+                    
+                    if (addMoreWidgets.contains(multiOption.first))
+                    {
+                        
+                    }
                 }
                 for (auto& dynamicStructure : dynamicStructures)
                 {
                     if (drawableWidgets.at(dynamicStructure.first))
                         dynamicStructure.second.Draw(dynamicStructure.first);
+                    
+                    if (addMoreWidgets.contains(dynamicStructure.first))
+                    {
+                        
+                    }
                 }
 
                 // ImGui::PopStyleVar();
@@ -990,6 +1061,7 @@ namespace UI
             std::map<int, MultiOption> multiOptions = {};
             std::map<int, DynamicStructure> dynamicStructures = {};
             std::map<int, bool> drawableWidgets = {};
+            std::map<int, bool> addMoreWidgets = {};
             std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
             
 
@@ -1016,12 +1088,16 @@ namespace UI
                 return *this;
             }
 
-            GraphNodeBuilder& AddInput(int id, PinInfo pinInfo)
+            GraphNodeBuilder& AddInput(int id, PinInfo pinInfo, bool addMore = false)
             {
                 pinInfo.pinKind = ed::PinKind::Input;
                 pinInfo.id = id;
                 inputNodes.try_emplace(id, pinInfo);
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }
                 return *this;
             }
 
@@ -1040,45 +1116,69 @@ namespace UI
             // return *this;
             // }
 
-            GraphNodeBuilder& AddSelectable(int id, std::string name, std::vector<std::string> options, int selectedIdx = 0)
+            GraphNodeBuilder& AddSelectable(int id, std::string name, std::vector<std::string> options, int selectedIdx = 0, bool addMore = false)
             {
                 selectables.try_emplace(id, EnumSelectable{name, options, selectedIdx});
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }
                 return *this;
             }
 
-            GraphNodeBuilder& AddTextInput(int id, TextInput info)
+            GraphNodeBuilder& AddTextInput(int id, TextInput info, bool addMore = false)
             {
                 textInputs.try_emplace(id, info);
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }
                 return *this;
             }
 
-            GraphNodeBuilder& AddScrollable(int id, Scrollable info)
+            GraphNodeBuilder& AddScrollable(int id, Scrollable info, bool addMore = false)
             {
                 scrollables.try_emplace(id, info);
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }
                 return *this;
             }
 
-            GraphNodeBuilder& AddPrimitiveData(int id, PrimitiveInput info)
+            GraphNodeBuilder& AddPrimitiveData(int id, PrimitiveInput info, bool addMore = false)
             {
                 primitives.try_emplace(id, info);
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }
                 return *this;
             }
 
-            GraphNodeBuilder& AddMultiOption(int id, MultiOption info)
+            GraphNodeBuilder& AddMultiOption(int id, MultiOption info, bool addMore = false)
             {
                 multiOptions.try_emplace(id, info);
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }               
                 return *this;
             }
 
-            GraphNodeBuilder& AddDynamicStructure(int id, DynamicStructure info)
+            GraphNodeBuilder& AddDynamicStructure(int id, DynamicStructure info, bool addMore = false)
             {
                 dynamicStructures.try_emplace(id, info);
                 drawableWidgets.try_emplace(id, true);
+                if (addMore)
+                {
+                    addMoreWidgets.try_emplace(id, true);
+                }
                 return *this;
             }
             GraphNodeBuilder& AddCallback(std::string name, std::function<void(GraphNode&)>* callback)
@@ -1096,11 +1196,7 @@ namespace UI
             {
                 // assert(nodeId.Get() > -1 && "Set the id before building");
                 assert(!name.empty() && "Set a valid name");
-                if (callbacks.empty())
-                {
-                    SetBaseCallbacks();
-                }
-
+                
                 GraphNode graphNode = {};
                 graphNode.name = name;
                 graphNode.nodeId = nodeId;
@@ -1113,20 +1209,18 @@ namespace UI
                 graphNode.multiOptions = multiOptions;
                 graphNode.dynamicStructures = dynamicStructures;
                 graphNode.drawableWidgets = drawableWidgets;
+                graphNode.addMoreWidgets = addMoreWidgets;
                 graphNode.pos = pos;
                 for (auto i = callbacks.begin(); i != callbacks.end();)
                 {
                     graphNode.callbacks.try_emplace(i->first,i->second);
                     i++;
                 }
+                
                 graphNode.renderGraph = renderGraph;
                 graphNode.windowProvider = windowProvider;
                 Reset();
                 return graphNode;
-            }
-            void SetBaseCallbacks()
-            {
-                callbacks.clear();
             }
 
             void Reset()
@@ -1139,7 +1233,8 @@ namespace UI
                 scrollables.clear();
                 multiOptions.clear();
                 drawableWidgets.clear();
-                SetBaseCallbacks();
+                addMoreWidgets.clear();
+                callbacks.clear();
                 pos = glm::vec2(0.0);
                 nodeId = -1;
                 name = "";
@@ -1561,7 +1656,7 @@ namespace UI
 
         struct GraphNodeFactory
         {
-            int idGen = 100;
+            int widgetsIdGen = 100;
             int idNodeGen = 0;
             GraphNodeBuilder builder = {};
             GraphNodeRegistry nodeRegistry = {};
@@ -1571,7 +1666,7 @@ namespace UI
 
             int NextID()
             {
-                return idGen++;
+                return widgetsIdGen++;
             }
 
             int NextNodeID()
@@ -1594,7 +1689,7 @@ namespace UI
                         .AddInput(NextID(), {"Vertex Shader", N_VERT_SHADER})
                         .AddInput(NextID(), {"Fragment Shader", N_FRAG_SHADER})
                         .AddInput(NextID(), {"Compute Shader", N_COMP_SHADER})
-                        .AddInput(NextID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddInput(NextID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE}, true)
                         .AddInput(NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
                         .AddInput(NextID(), {"Vertex Input", N_VERTEX_INPUT})
                         .AddSelectable(NextID(), "Raster Configs", {"Fill", "Line", "Point"})
@@ -1722,6 +1817,7 @@ namespace UI
                 builder.AddCallback("link_c", linkOp);
                 int id = NextNodeID();
                 graphNodes.try_emplace(id, builder.Build(renderGraph, windowProvider));
+                graphNodes.at(id).widgetsIdGen = &widgetsIdGen;
                 graphNodes.at(id).globalId = id;
                 graphNodes.at(id).graphNodesRef = &graphNodes;
                 return &graphNodes.at(id);
