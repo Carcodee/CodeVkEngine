@@ -765,7 +765,7 @@ namespace UI
             std::map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
             std::map<int, bool> drawableWidgets;
-            std::deque<int> copyables;
+            std::deque<int> addeables;
 
             std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
@@ -904,16 +904,16 @@ namespace UI
                 return nullptr;
             }
 
-            std::string GetInputTextContent(const std::string& name)
+            TextInput* GetTextInput(const std::string& name)
             {
                 for (auto& textInput : textInputs)
                 {
                     if (textInput.second.name == name)
                     {
-                        return textInput.second.content;
+                        return &textInput.second;
                     }
                 }
-                return "";
+                return nullptr; 
             }
 
             void Draw()
@@ -1369,7 +1369,7 @@ namespace UI
                 callbacksRegistry.at(N_PUSH_CONSTANT).AddCallback("output_c", [](GraphNode& selfNode){});
                 callbacksRegistry.at(N_IMAGE_SAMPLER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
-                    std::string imgName = selfNode.GetInputTextContent("Img Name");
+                    std::string imgName = selfNode.GetTextInput("Img Name")->content;
                     assert(!imgName.empty() && "Img name is not valid");
                     auto imageInfo = ENGINE::Image::CreateInfo2d(selfNode.windowProvider->GetWindowSize(), 1, 1,
                                                                  ENGINE::g_32bFormat,
@@ -1383,7 +1383,7 @@ namespace UI
                 });
                 callbacksRegistry.at(N_IMAGE_STORAGE).AddCallback("output_c", [](GraphNode& selfNode)
                 {
-                           std::string imgName = selfNode.GetInputTextContent("Img Name");
+                           std::string imgName = selfNode.GetTextInput("Img Name")->content;
                             assert(!imgName.empty() && "Img name is not valid");
 
                             auto storageImageInfo = ENGINE::Image::CreateInfo2d(selfNode.windowProvider->GetWindowSize(), 1, 1,
@@ -1398,7 +1398,7 @@ namespace UI
                             assert(storageImgView && "Image view must be valid");
                 });
                 callbacksRegistry.at(N_DEPTH_IMAGE_SAMPLER).AddCallback("output_c", [](GraphNode& selfNode){
-                    std::string imgName = selfNode.GetInputTextContent("Img Name");
+                    std::string imgName = selfNode.GetTextInput("Img Name")->content;
                     assert(!imgName.empty() && "Img name is not valid");
                     auto depthImageInfo = ENGINE::Image::CreateInfo2d(selfNode.windowProvider->GetWindowSize(), 1, 1,
                                                                       selfNode.renderGraph->core->swapchainRef->
