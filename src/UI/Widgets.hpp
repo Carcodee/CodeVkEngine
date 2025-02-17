@@ -765,6 +765,7 @@ namespace UI
             std::map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
             std::map<int, bool> drawableWidgets;
+            std::deque<int> copyables;
 
             std::map<int, NodeType> graphNodesLinks;
             std::map<int, GraphNode>* graphNodesRef = nullptr;
@@ -1039,9 +1040,9 @@ namespace UI
             // return *this;
             // }
 
-            GraphNodeBuilder& AddSelectable(int id, std::string name, std::vector<std::string> options)
+            GraphNodeBuilder& AddSelectable(int id, std::string name, std::vector<std::string> options, int selectedIdx = 0)
             {
-                selectables.try_emplace(id, EnumSelectable{name, options, 0});
+                selectables.try_emplace(id, EnumSelectable{name, options, selectedIdx});
                 drawableWidgets.try_emplace(id, true);
                 return *this;
             }
@@ -1334,10 +1335,8 @@ namespace UI
                             assert(vertId > -1 && "Vert id invalid");
                             assert(fragId > -1 && "Frag Id invalid");
                             assert(vertexInput && "invalid vertex input");
-                            renderNode->SetVertShader(
-                                selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
-                            renderNode->SetFragShader(
-                                selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
+                            renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
+                            renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
                             renderNode->SetVertexInput(*vertexInput);
                             renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
                             if (image->HasData())
@@ -1607,7 +1606,7 @@ namespace UI
                         .AddSelectable(NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
                         .AddSelectable(NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
                         .AddSelectable(NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
-                        .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"})
+                        .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"}, 1)
                         .AddInput(NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
                         .AddOutput(NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
                         .SetNodeId(NextID(), "Col Attachment Node");
@@ -1706,7 +1705,7 @@ namespace UI
                             .SetNodeId(NextID(), "Compute Shader")
                             .AddOutput(NextID(), {"Shader result", N_COMP_SHADER});
                     }
-                    scrollables.try_emplace(0, Scrollable{"Posible Shaders", STRING, shaderPaths});
+                    scrollables.try_emplace(0, Scrollable{"Possible Shaders", STRING, shaderPaths});
                     MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
                     builder.AddMultiOption(NextID(), multiOptionInfo);
                     break;
