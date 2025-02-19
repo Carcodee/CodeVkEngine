@@ -65,18 +65,6 @@ namespace UI
             
         }
 
-        void RegisterNode(Nodes::GraphNode& node, int nodeIndex)
-        {
-            nodesIds.try_emplace(node.nodeId.Get(), nodeIndex);
-            for (auto& input : node.inputNodes)
-            {
-                nodesIds.try_emplace(input.first, nodeIndex);
-            }
-            for (auto& output : node.outputNodes)
-            {
-                nodesIds.try_emplace(output.first, nodeIndex);
-            }
-        }
 
         void Draw()
         {
@@ -183,8 +171,6 @@ namespace UI
         }
 
         
-
-
 
         ImVector<Nodes::LinkInfo> links;
         Nodes::GraphNodeFactory factory;

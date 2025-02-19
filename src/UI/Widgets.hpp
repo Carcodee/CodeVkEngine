@@ -1038,6 +1038,11 @@ namespace UI
             }
         };
 
+        struct GraphNodeResManager
+        {
+            
+            
+        };
         struct GraphNodeBuilder
         {
             ed::NodeId nodeId;
@@ -1844,6 +1849,7 @@ namespace UI
             }
         };
     }
+    
 }
 
 #endif //WIDGETS_HPP
