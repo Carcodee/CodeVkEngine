@@ -782,17 +782,6 @@ namespace UI
 
             std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
 
-            void ToggleDraw(int id,bool drawCondition)
-            {
-                assert(drawableWidgets.contains(id) && "Invalid Id");
-                drawableWidgets.at(id) = drawCondition;
-            }
-            void RecompileNode()
-            {
-                valid = false;
-                RunCallback("output_c");
-            }
-
             int RunCallback(std::string callback)
             {
                 if (!callbacks.contains(callback) || callbacks.at(callback) == nullptr)
@@ -805,135 +794,6 @@ namespace UI
                 
             }
 
-
-            int AddLink(int id, NodeType nodeType = N_NONE)
-            {
-                if (nodeType != N_NONE && !graphNodesLinks.contains(id))
-                {
-                    graphNodesLinks.try_emplace(id, nodeType);
-                }
-                return 0;
-            }
-            int NextId()
-            {
-                assert(widgetsIdGen);
-                return *widgetsIdGen++;
-            }
-
-            PinInfo* GetInputDataById(int id)
-            {
-                if (!inputNodes.contains(id))
-                {
-                    return nullptr;
-                }
-                return &inputNodes.at(id);
-            }
-
-            PinInfo* GetInputDataByName(const std::string& name)
-            {
-                for (auto& node : inputNodes)
-                {
-                    if (node.second.name == name)
-                    {
-                        return &node.second;
-                    }
-                }
-                return nullptr;
-            }
-
-            PinInfo* GetOutputDataById(int id)
-            {
-                if (!outputNodes.contains(id))
-                {
-                    return nullptr;
-                }
-                return &outputNodes.at(id);
-            }
-
-            PinInfo* GetOutputDataByName(const std::string& name)
-            {
-                for (auto& node : outputNodes)
-                {
-                    if (node.second.name == name)
-                    {
-                        return &node.second;
-                    }
-                }
-                return nullptr;
-            }
-
-            void SetOuputData(const std::string& name, std::any data)
-            {
-                GetOutputDataByName(name)->data = data;
-            }
-
-            void SetOuputData(int id, std::any data)
-            {
-                GetOutputDataById(id)->data = data;
-            }
-
-
-            int GetSelectableIndex(const std::string& name)
-            {
-                for (auto& selectable : selectables)
-                {
-                    if (selectable.second.name == name)
-                    {
-                        return selectable.second.selectedIdx;
-                    }
-                }
-                return -1;
-            }
-
-            Scrollable* GetScrollable(const std::string& name)
-            {
-                for (auto& scrollable : scrollables)
-                {
-                    if (scrollable.second.name == name)
-                    {
-                        return &scrollable.second;
-                    }
-                }
-                assert(false && "ivalid name");
-                return nullptr;
-            }
-
-            MultiOption* GetMultiOption(const std::string name)
-            {
-                for (auto& multiOption : multiOptions)
-                {
-                    if (multiOption.second.name == name)
-                    {
-                        return &multiOption.second;
-                    }
-                }
-                assert(false && "ivalid name");
-                return nullptr;
-            }
-
-            TextInput* GetTextInput(const std::string& name)
-            {
-                for (auto& textInput : textInputs)
-                {
-                    if (textInput.second.name == name)
-                    {
-                        return &textInput.second;
-                    }
-                }
-                return nullptr; 
-            }
-
-            DynamicStructure* GetDynamicStructure(const std::string& name)
-            {
-                for (auto& dynamicStructure : dynamicStructures)
-                {
-                    if (dynamicStructure.second.name == name)
-                    {
-                        return &dynamicStructure.second;
-                    }
-                }
-                return nullptr; 
-            }
             void Draw()
             {
                 if (firstFrame)
@@ -964,7 +824,7 @@ namespace UI
                     int id = NextId();
                     PinInfo& copiedPin= inputNodes.at(addedWidgets.front());
                     PinInfo pinInfo {
-                        .name = copiedPin.name, 
+                        .name = copiedPin.name + "1", 
                         .nodeType = copiedPin.nodeType,
                         .data = std::any(),
                         .pinKind = copiedPin.pinKind,
@@ -1046,6 +906,135 @@ namespace UI
                 ed::EndNode();
                 ImGui::PopID();
                 firstFrame = false;
+            }
+            
+            void ToggleDraw(int id,bool drawCondition)
+            {
+                assert(drawableWidgets.contains(id) && "Invalid Id");
+                drawableWidgets.at(id) = drawCondition;
+            }
+            void RecompileNode()
+            {
+                valid = false;
+                RunCallback("output_c");
+            }
+
+
+            int AddLink(int id, NodeType nodeType = N_NONE)
+            {
+                if (nodeType != N_NONE && !graphNodesLinks.contains(id))
+                {
+                    graphNodesLinks.try_emplace(id, nodeType);
+                }
+                return 0;
+            }
+            int NextId()
+            {
+                assert(widgetsIdGen);
+                return *widgetsIdGen++;
+            }
+
+            PinInfo* GetInputDataById(int id)
+            {
+                if (!inputNodes.contains(id))
+                {
+                    return nullptr;
+                }
+                return &inputNodes.at(id);
+            }
+
+            PinInfo* GetInputDataByName(const std::string& name)
+            {
+                for (auto& node : inputNodes)
+                {
+                    if (node.second.name == name)
+                    {
+                        return &node.second;
+                    }
+                }
+                return nullptr;
+            }
+
+            PinInfo* GetOutputDataById(int id)
+            {
+                if (!outputNodes.contains(id))
+                {
+                    return nullptr;
+                }
+                return &outputNodes.at(id);
+            }
+
+            PinInfo* GetOutputDataByName(const std::string& name)
+            {
+                for (auto& node : outputNodes)
+                {
+                    if (node.second.name == name)
+                    {
+                        return &node.second;
+                    }
+                }
+                return nullptr;
+            }
+
+            void SetOuputData(const std::string& name, std::any data)
+            {
+                GetOutputDataByName(name)->data = data;
+            }
+
+            void SetOuputData(int id, std::any data)
+            {
+                GetOutputDataById(id)->data = data;
+            }
+
+
+            Scrollable* GetScrollable(const std::string& name)
+            {
+                for (auto& scrollable : scrollables)
+                {
+                    if (scrollable.second.name == name)
+                    {
+                        return &scrollable.second;
+                    }
+                }
+                assert(false && "ivalid name");
+                return nullptr;
+            }
+
+            MultiOption* GetMultiOption(const std::string name)
+            {
+                for (auto& multiOption : multiOptions)
+                {
+                    if (multiOption.second.name == name)
+                    {
+                        return &multiOption.second;
+                    }
+                }
+                assert(false && "ivalid name");
+                return nullptr;
+            }
+
+            TextInput* GetTextInput(const std::string& name)
+            {
+                for (auto& textInput : textInputs)
+                {
+                    if (textInput.second.name == name)
+                    {
+                        return &textInput.second;
+                    }
+                }
+                return nullptr; 
+            }
+
+            DynamicStructure* GetDynamicStructure(const std::string& name)
+            {
+                for (auto& dynamicStructure : dynamicStructures)
+                {
+                    if (dynamicStructure.second.name == name)
+                    {
+                        return &dynamicStructure.second;
+                    }
+                }
+                return nullptr; 
             }
         };
 
@@ -1663,6 +1652,8 @@ namespace UI
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
             std::map<int, GraphNode> graphNodes = {};
+            std::map<int, int> nodesIds;
+            
 
             int NextID()
             {
@@ -1672,6 +1663,34 @@ namespace UI
             int NextNodeID()
             {
                 return idNodeGen++;
+            }
+
+            void AddNodeIds(GraphNode& node)
+            {
+                for (auto& input : node.inputNodes)
+                {
+                    nodesIds.try_emplace(input.first, node.globalId);
+                }
+                for (auto& output : node.outputNodes)
+                {
+                    nodesIds.try_emplace(output.first, node.globalId);
+                }
+            }
+            void CheckForNewInputsOutputs()
+            {
+                int size  = nodesIds.size();
+                
+                for (auto node : graphNodes)
+                {
+                    
+                    
+                }
+            }
+            
+            GraphNode* GetNodeByInputOutputId(int id){
+                assert(nodesIds.contains(id));
+
+                return &graphNodes.at(nodesIds.at(id));
             }
 
             GraphNode* GetNode(NodeType nodeType, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
@@ -1820,6 +1839,7 @@ namespace UI
                 graphNodes.at(id).widgetsIdGen = &widgetsIdGen;
                 graphNodes.at(id).globalId = id;
                 graphNodes.at(id).graphNodesRef = &graphNodes;
+                AddNodeIds(graphNodes.at(id));
                 return &graphNodes.at(id);
             }
         };
