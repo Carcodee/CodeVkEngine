@@ -1040,6 +1040,30 @@ namespace UI
 
         struct GraphNodeResManager
         {
+            std::unique_ptr<Systems::Arena> graphNodesArena;
+            
+            std::map<int, int> graphNodesIds;
+            std::map<int, int> graphNodesInputIds;
+            
+            std::vector<GraphNode*> graphNodes;
+            
+            GraphNodeResManager()
+            {
+                graphNodesArena = std::make_unique<Systems::Arena>();
+            }
+            GraphNode* GetNode(int id)
+            {
+                if (graphNodesIds.contains(id))
+                {
+                    return graphNodes.at(graphNodesIds.at(id));
+                }
+                GraphNode* graphNode = graphNodesArena->Alloc<GraphNode>();
+                int size = graphNodes.size();
+                graphNodesIds.try_emplace(id ,size);
+                graphNodes.emplace_back(graphNode);
+                return graphNode;
+            }
+            
             
             
         };
