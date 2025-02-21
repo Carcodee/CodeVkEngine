@@ -766,7 +766,6 @@ namespace UI
             std::map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
 
-            std::vector<PinInfo*> inputNodesIdxSorted;
             
             std::map<int, bool> drawableWidgets;
             std::map<int, bool> addMoreWidgets;
@@ -779,24 +778,33 @@ namespace UI
             ed::NodeId nodeId;
             int* widgetsIdGen = nullptr;
             int globalId = -1;
+            bool updateData = false;
             bool valid = false;
             bool firstFrame = true;
 
             
             std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
 
+            void UpdateInfo()
+            {
+
+                if (!updateData){return;}
+                //unoptimall
+                Sort();
+                
+            }
             void Sort()
             {
-                inputNodesIdxSorted.clear();
-                for (auto& input : inputNodes)
-                {
-                    inputNodesIdxSorted.emplace_back(&input.second);
-                }
-                std::sort(inputNodesIdxSorted.begin(), inputNodesIdxSorted.end(), [](const PinInfo* a, const PinInfo* b)
-                {
-                    return a->nodeType < b->nodeType;
-                });
-                
+                std::sort(inputNodes.begin(), inputNodes.end(),
+                          [](const std::pair<int, PinInfo*>& a, const std::pair<int, PinInfo*>& b)
+                          {
+                              return a.second->nodeType < a.second->nodeType;
+                          });
+                std::sort(outputNodes.begin(), outputNodes.end(),
+                          [](const std::pair<int, PinInfo*>& a, const std::pair<int, PinInfo*>& b)
+                          {
+                              return a.second->nodeType < a.second->nodeType;
+                          });
             }
             int RunCallback(std::string callback)
             {
@@ -823,41 +831,26 @@ namespace UI
 
                 // ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
                 std::deque<int> addedWidgets;
-                if (inputNodesIdxSorted.size() != inputNodes.size())
-                {
-                    Sort();
-                }
                 
-                for (int i = 0; i < inputNodesIdxSorted.size(); ++i)
+                for (auto& input : inputNodes)
                 {
-                    if (drawableWidgets.at(inputNodesIdxSorted[i]->id))
-                        inputNodesIdxSorted[i]->Draw();
-                    if (addMoreWidgets.contains(inputNodesIdxSorted[i]->id))
+                    if (drawableWidgets.at(input.second.id))
+                        input.second.Draw();
+                    if (addMoreWidgets.contains(input.second.id))
                     {
                         if (ImGui::Button("+"))
                         {
-                            addedWidgets.push_front(inputNodesIdxSorted[i]->id);
+                            addedWidgets.push_front(input.second.id);
+                            updateData = true;
                         }
                     }                   
                 }
-                // for (auto& input : inputNodesIdxSorted)
-                // {
-                    // if (drawableWidgets.at(input.first))
-                        // input.second.Draw();
-                    // if (addMoreWidgets.contains(input.first))
-                    // {
-                        // if(ImGui::Button("+"))
-                        // {
-                            // addedWidgets.push_front(input.first);
-                        // }
-                    // }
-                // }
                 while (!addedWidgets.empty())
                 {
                     int id = NextId();
                     PinInfo& copiedPin= inputNodes.at(addedWidgets.front());
                     PinInfo pinInfo {
-                        .name = copiedPin.name + "1", 
+                        .name = copiedPin.name, 
                         .nodeType = copiedPin.nodeType,
                         .data = std::any(),
                         .pinKind = copiedPin.pinKind,
@@ -936,6 +929,22 @@ namespace UI
                     if (drawableWidgets.at(output.first))
                         output.second.Draw();
                 }
+                while (!addedWidgets.empty())
+                {
+                    int id = NextId();
+                    PinInfo& copiedPin = outputNodes.at(addedWidgets.front());
+                    PinInfo pinInfo{
+                        .name = copiedPin.name,
+                        .nodeType = copiedPin.nodeType,
+                        .data = std::any(),
+                        .pinKind = copiedPin.pinKind,
+                        .id = id
+                    };
+                    outputNodes.try_emplace(id, pinInfo);
+                    drawableWidgets.try_emplace(id, true);
+                    addedWidgets.pop_front();
+                }
+                
                 ed::EndNode();
                 ImGui::PopID();
                 firstFrame = false;
@@ -1268,6 +1277,7 @@ namespace UI
                 
                 graphNode.renderGraph = renderGraph;
                 graphNode.windowProvider = windowProvider;
+                graphNode.Sort();
                 Reset();
                 return graphNode;
             }
