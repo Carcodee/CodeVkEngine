@@ -793,18 +793,29 @@ namespace UI
                 Sort();
                 
             }
+
+            template <typename F,typename S> 
+            std::vector<std::pair<F, S>> GetVectorFromMap(std::map<F, S>& map)
+            {
+                std::vector<std::pair<F, S>> copiedMap = {};
+                for (auto it = map.begin() ;it != map.end();)
+                {
+                    copiedMap.push_back(it);
+                    it++;
+                }
+                return copiedMap;
+                
+            }
             void Sort()
             {
-                std::sort(inputNodes.begin(), inputNodes.end(),
-                          [](const std::pair<int, PinInfo*>& a, const std::pair<int, PinInfo*>& b)
+                
+                std::vector<std::pair<int, PinInfo>> inputsMap = GetVectorFromMap(inputNodes); 
+                std::sort(inputsMap.begin(), inputsMap.end(),
+                          [](std::pair<int, PinInfo>& a, std::pair<int, PinInfo>& b)
                           {
-                              return a.second->nodeType < a.second->nodeType;
+                              return a.second.nodeType < b.second.nodeType;
                           });
-                std::sort(outputNodes.begin(), outputNodes.end(),
-                          [](const std::pair<int, PinInfo*>& a, const std::pair<int, PinInfo*>& b)
-                          {
-                              return a.second->nodeType < a.second->nodeType;
-                          });
+
             }
             int RunCallback(std::string callback)
             {
@@ -923,11 +934,18 @@ namespace UI
                     }
                 }
 
-                // ImGui::PopStyleVar();
                 for (auto& output : outputNodes)
                 {
                     if (drawableWidgets.at(output.first))
                         output.second.Draw();
+                    if (addMoreWidgets.contains(output.second.id))
+                    {
+                        if (ImGui::Button("+"))
+                        {
+                            addedWidgets.push_front(output.second.id);
+                            updateData = true;
+                        }
+                    }
                 }
                 while (!addedWidgets.empty())
                 {
