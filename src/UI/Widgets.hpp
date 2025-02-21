@@ -5,6 +5,7 @@
 //
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -764,6 +765,8 @@ namespace UI
             std::map<int, MultiOption> multiOptions;
             std::map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
+
+            std::vector<PinInfo*> inputNodesIdxSorted;
             
             std::map<int, bool> drawableWidgets;
             std::map<int, bool> addMoreWidgets;
@@ -779,9 +782,22 @@ namespace UI
             bool valid = false;
             bool firstFrame = true;
 
-
+            
             std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
 
+            void Sort()
+            {
+                inputNodesIdxSorted.clear();
+                for (auto& input : inputNodes)
+                {
+                    inputNodesIdxSorted.emplace_back(&input.second);
+                }
+                std::sort(inputNodesIdxSorted.begin(), inputNodesIdxSorted.end(), [](const PinInfo* a, const PinInfo* b)
+                {
+                    return a->nodeType < b->nodeType;
+                });
+                
+            }
             int RunCallback(std::string callback)
             {
                 if (!callbacks.contains(callback) || callbacks.at(callback) == nullptr)
@@ -807,18 +823,35 @@ namespace UI
 
                 // ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
                 std::deque<int> addedWidgets;
-                for (auto& input : inputNodes)
+                if (inputNodesIdxSorted.size() != inputNodes.size())
                 {
-                    if (drawableWidgets.at(input.first))
-                        input.second.Draw();
-                    if (addMoreWidgets.contains(input.first))
-                    {
-                        if(ImGui::Button("+"))
-                        {
-                            addedWidgets.push_front(input.first);
-                        }
-                    }
+                    Sort();
                 }
+                
+                for (int i = 0; i < inputNodesIdxSorted.size(); ++i)
+                {
+                    if (drawableWidgets.at(inputNodesIdxSorted[i]->id))
+                        inputNodesIdxSorted[i]->Draw();
+                    if (addMoreWidgets.contains(inputNodesIdxSorted[i]->id))
+                    {
+                        if (ImGui::Button("+"))
+                        {
+                            addedWidgets.push_front(inputNodesIdxSorted[i]->id);
+                        }
+                    }                   
+                }
+                // for (auto& input : inputNodesIdxSorted)
+                // {
+                    // if (drawableWidgets.at(input.first))
+                        // input.second.Draw();
+                    // if (addMoreWidgets.contains(input.first))
+                    // {
+                        // if(ImGui::Button("+"))
+                        // {
+                            // addedWidgets.push_front(input.first);
+                        // }
+                    // }
+                // }
                 while (!addedWidgets.empty())
                 {
                     int id = NextId();
@@ -1063,8 +1096,6 @@ namespace UI
                 graphNodes.emplace_back(graphNode);
                 return graphNode;
             }
-            
-            
             
         };
         struct GraphNodeBuilder
