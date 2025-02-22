@@ -37,6 +37,18 @@ namespace UI
     }
 
     template <HasName T>
+    static T* GetFromNameInMap(std::unordered_map<int, T>& mapToSearch, const std::string name)
+    {
+        for (auto& item : mapToSearch)
+        {
+            if (item.second.name == name)
+            {
+                return &item.second;
+            }
+        }
+        return nullptr;
+    }
+    template <HasName T>
     static int GetIdFromMap(std::map<int, T>& mapToSearch, const std::string name)
     {
         for (auto& item : mapToSearch)
@@ -756,22 +768,21 @@ namespace UI
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
 
-            std::map<int, PinInfo> inputNodes;
-            std::map<int, PinInfo> outputNodes;
-            std::map<int, EnumSelectable> selectables;
-            std::map<int, TextInput> textInputs;
-            std::map<int, PrimitiveInput> primitives;
-            std::map<int, Scrollable> scrollables;
-            std::map<int, MultiOption> multiOptions;
-            std::map<int, DynamicStructure> dynamicStructures;
+            std::unordered_map<int, PinInfo> inputNodes;
+            std::unordered_map<int, PinInfo> outputNodes;
+            std::unordered_map<int, EnumSelectable> selectables;
+            std::unordered_map<int, TextInput> textInputs;
+            std::unordered_map<int, PrimitiveInput> primitives;
+            std::unordered_map<int, Scrollable> scrollables;
+            std::unordered_map<int, MultiOption> multiOptions;
+            std::unordered_map<int, DynamicStructure> dynamicStructures;
             //since all ids are not repeated this will represent properly all the widgets
 
-            
-            std::map<int, bool> drawableWidgets;
-            std::map<int, bool> addMoreWidgets;
+            std::unordered_map<int, bool> drawableWidgets;
+            std::unordered_map<int, bool> addMoreWidgets;
 
-            std::map<int, NodeType> graphNodesLinks;
-            std::map<int, GraphNode>* graphNodesRef = nullptr;
+            std::unordered_map<int, NodeType> graphNodesLinks;
+            std::unordered_map<int, GraphNode>* graphNodesRef = nullptr;
             
             std::string name;
             glm::vec2 pos;
@@ -783,7 +794,7 @@ namespace UI
             bool firstFrame = true;
 
             
-            std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
+            std::unordered_map<std::string, std::function<void(GraphNode&)>*> callbacks;
 
             void UpdateInfo()
             {
@@ -795,13 +806,12 @@ namespace UI
             }
 
             template <typename F,typename S> 
-            std::vector<std::pair<F, S>> GetVectorFromMap(std::map<F, S>& map)
+            std::vector<std::pair<F, S>> GetVectorFromMap(std::unordered_map<F, S>& map)
             {
                 std::vector<std::pair<F, S>> copiedMap = {};
-                for (auto it = map.begin() ;it != map.end();)
+                for (auto it = map.begin() ;it != map.end(); ++it)
                 {
-                    copiedMap.push_back(it);
-                    it++;
+                    copiedMap.push_back(*it);
                 }
                 return copiedMap;
                 
@@ -809,12 +819,19 @@ namespace UI
             void Sort()
             {
                 
-                std::vector<std::pair<int, PinInfo>> inputsMap = GetVectorFromMap(inputNodes); 
-                std::sort(inputsMap.begin(), inputsMap.end(),
-                          [](std::pair<int, PinInfo>& a, std::pair<int, PinInfo>& b)
-                          {
-                              return a.second.nodeType < b.second.nodeType;
-                          });
+                // std::vector<std::pair<int, PinInfo>> inputsMap = GetVectorFromMap(inputNodes); 
+                // std::sort(inputsMap.begin(), inputsMap.end(),
+                //           [](std::pair<int, PinInfo>& a, std::pair<int, PinInfo>& b)
+                //           {
+                //               return a.second.nodeType < b.second.nodeType;
+                //           });
+                // inputNodes.clear();
+                // for (auto pair : inputsMap)
+                // {
+                //     inputNodes.insert(pair);
+                // }
+                //
+                //
 
             }
             int RunCallback(std::string callback)
@@ -826,7 +843,6 @@ namespace UI
                 }
                 (*callbacks.at(callback))(*this);
                 return 0;
-                
             }
 
             void Draw()
@@ -1128,17 +1144,17 @@ namespace UI
         struct GraphNodeBuilder
         {
             ed::NodeId nodeId;
-            std::map<int, PinInfo> inputNodes = {};
-            std::map<int, PinInfo> outputNodes = {};
-            std::map<int, EnumSelectable> selectables = {};
-            std::map<int, TextInput> textInputs = {};
-            std::map<int, PrimitiveInput> primitives = {};
-            std::map<int, Scrollable> scrollables = {};
-            std::map<int, MultiOption> multiOptions = {};
-            std::map<int, DynamicStructure> dynamicStructures = {};
-            std::map<int, bool> drawableWidgets = {};
-            std::map<int, bool> addMoreWidgets = {};
-            std::map<std::string, std::function<void(GraphNode&)>*> callbacks;
+            std::unordered_map<int, PinInfo> inputNodes = {};
+            std::unordered_map<int, PinInfo> outputNodes = {};
+            std::unordered_map<int, EnumSelectable> selectables = {};
+            std::unordered_map<int, TextInput> textInputs = {};
+            std::unordered_map<int, PrimitiveInput> primitives = {};
+            std::unordered_map<int, Scrollable> scrollables = {};
+            std::unordered_map<int, MultiOption> multiOptions = {};
+            std::unordered_map<int, DynamicStructure> dynamicStructures = {};
+            std::unordered_map<int, bool> drawableWidgets = {};
+            std::unordered_map<int, bool> addMoreWidgets = {};
+            std::unordered_map<std::string, std::function<void(GraphNode&)>*> callbacks;
             
 
             std::string name = "";
@@ -1739,8 +1755,8 @@ namespace UI
             GraphNodeRegistry nodeRegistry = {};
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
-            std::map<int, GraphNode> graphNodes = {};
-            std::map<int, int> nodesIds;
+            std::unordered_map<int, GraphNode> graphNodes = {};
+            std::unordered_map<int, int> nodesIds;
             
 
             int NextID()
@@ -1752,26 +1768,19 @@ namespace UI
             {
                 return idNodeGen++;
             }
-
+            void AddNodeId(int inputOutputId, int graphNodeId)
+            {
+                nodesIds.try_emplace(inputOutputId, graphNodeId);
+            }
             void AddNodeIds(GraphNode& node)
             {
                 for (auto& input : node.inputNodes)
                 {
-                    nodesIds.try_emplace(input.first, node.globalId);
+                    AddNodeId(input.first, node.globalId);
                 }
                 for (auto& output : node.outputNodes)
                 {
-                    nodesIds.try_emplace(output.first, node.globalId);
-                }
-            }
-            void CheckForNewInputsOutputs()
-            {
-                int size  = nodesIds.size();
-                
-                for (auto node : graphNodes)
-                {
-                    
-                    
+                    AddNodeId(output.first, node.globalId);
                 }
             }
             
