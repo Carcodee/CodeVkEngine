@@ -13,5 +13,11 @@
 #include "ImGuiProfilerRenderer.h"
 #include "imgui_node_editor.h"
 
+
+#include "GraphNode.hpp"
+#include "GraphNodeResManager.hpp"
 #include "Widgets.hpp"
 #include "RG_NodeEditor.hpp"
+
+#include "GraphNodeImpl.hpp"
+#include "GraphNodeResManagerImpl.hpp"
