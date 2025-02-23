@@ -8,6 +8,8 @@
 
 
 
+
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -405,7 +407,13 @@ namespace UI
 
                 callbacksRegistry.at(N_RENDER_NODE).AddCallback("output_c", [](GraphNode& selfNode)
                 {
-                    std::map<NodeType, bool> configsAdded;
+                    struct ExpectedConfigs
+                    {
+                        int added = 0;
+                        int expected = 1;
+                    };
+                    std::map<NodeType, ExpectedConfigs> configsAdded;
+                    std::map<NodeType, ExpectedConfigs> configsExpected;
 
                     PinInfo* vert = GetFromNameInMap(selfNode.inputNodes, "Vertex Shader");
                     PinInfo* frag = GetFromNameInMap(selfNode.inputNodes, "Fragment Shader");
@@ -416,7 +424,7 @@ namespace UI
 
                     if (compute->HasData())
                     {
-                        configsAdded.try_emplace(N_COMP_SHADER, true);
+                        configsAdded.try_emplace(N_COMP_SHADER, ExpectedConfigs{0, 1});
                         try
                         {
                             compId = compute->GetData<int>();
@@ -428,19 +436,19 @@ namespace UI
                     }
                     else
                     {
-                        configsAdded.try_emplace(N_VERTEX_INPUT, false);
-                        configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, false);
-                        configsAdded.try_emplace(N_VERT_SHADER, false);
-                        configsAdded.try_emplace(N_FRAG_SHADER, false);
+                        configsAdded.try_emplace(N_VERTEX_INPUT, ExpectedConfigs{0, 1});
+                        configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, ExpectedConfigs{0, 1});
+                        configsAdded.try_emplace(N_VERT_SHADER, ExpectedConfigs{0, 1});
+                        configsAdded.try_emplace(N_FRAG_SHADER, ExpectedConfigs{0, 1});
                         if (vert->HasData())
                         {
-                            configsAdded.at(N_VERT_SHADER) = true;
+                            configsAdded.at(N_VERT_SHADER).added++;
                             vertId = vert->GetData<int>();
                         }
                         if (frag->HasData())
                         {
                             PinInfo* fragPin = selfNode.GetInputDataByName("Fragment Shader");
-                            configsAdded.at(N_FRAG_SHADER) = true;
+                            configsAdded.at(N_FRAG_SHADER).added++;
                             fragId = fragPin->GetData<int>();
                         }
                     }
@@ -455,10 +463,12 @@ namespace UI
                     std::string attachmentName;
                     std::string depthAttachmentName;
                     ENGINE::VertexInput* vertexInput = nullptr;
+                    int expectedColAttachments = 0;
                     for (auto id : selfNode.graphNodesLinks)
                     {
                         if (id.second == N_COL_ATTACHMENT_STRUCTURE)
                         {
+                            expectedColAttachments++;
                             GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.first);
                             attachmentName = graphNodeRef->name;
                             PrimitiveInput* clearColor = GetFromNameInMap(
@@ -485,7 +495,7 @@ namespace UI
                             image = graphNodeRef->GetInputDataByName("Col Attachment Sampler");
                             if (image->HasData())
                             {
-                                configsAdded.at(N_COL_ATTACHMENT_STRUCTURE) = true;
+                                configsAdded.at(N_COL_ATTACHMENT_STRUCTURE).added++;
                                 info = ENGINE::GetColorAttachmentInfo(
                                     clearColData, colFormatData, loadOpData, storeOpData);
                             }
@@ -498,10 +508,11 @@ namespace UI
                             depthImage = graphNodeRef->GetInputDataByName("Depth Attachment Sampler");
                             if (depthImage->HasData())
                             {
-                                configsAdded.try_emplace(N_DEPTH_STRUCTURE, true);
+                                configsAdded.try_emplace(N_DEPTH_STRUCTURE, ExpectedConfigs{1, 1});
                             }
                         }
                     }
+                    configsAdded.at(N_COL_ATTACHMENT_STRUCTURE).expected =(expectedColAttachments != 0) ? expectedColAttachments : 1;
 
                     PinInfo* vertexPin = selfNode.GetInputDataByName("Vertex Input");
 
@@ -509,16 +520,15 @@ namespace UI
                     {
                         std::string vertexName = vertexPin->GetData<std::string>();
                         vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(vertexName);
-                        configsAdded.at(N_VERTEX_INPUT) = true;
+                        configsAdded.at(N_VERTEX_INPUT).added = true;
                     }
-
 
                     int configsToMatch = configsAdded.size();
                     int configsMatched = 0;
-                    std::map<NodeType, bool> confingsMissing;
+                    std::map<NodeType, ExpectedConfigs> confingsMissing;
                     for (auto added : configsAdded)
                     {
-                        if (!added.second)
+                        if (added.second.added != added.second.expected)
                         {
                             confingsMissing.insert(added);
                             continue;
@@ -527,7 +537,6 @@ namespace UI
                     }
                     if (configsMatched != configsToMatch)
                     {
-
                         std::string missingInfo = "";
                         for (auto added : configsAdded)
                         {
@@ -538,19 +547,12 @@ namespace UI
                     }
                     std::string name = "";
                     TextInput* nodeName = GetFromNameInMap(selfNode.textInputs, "RenderNode Name");
-                    if (nodeName)
-                    {
-                        name = nodeName->content;
-                    }
-                    else
-                    {
-                        name = "PassName_" + std::to_string(selfNode.renderGraph->renderNodes.size());
-                    }
+                    name = (nodeName)? nodeName->content : "PassName_" + std::to_string(selfNode.renderGraph->renderNodes.size());
+                    
                     auto renderNode = selfNode.renderGraph->AddPass(name);
                     if (configsAdded.contains(N_COMP_SHADER))
                     {
-                        renderNode->SetCompShader(
-                            selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
+                        renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
                     }
                     else
                     {
