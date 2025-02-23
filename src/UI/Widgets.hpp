@@ -787,69 +787,69 @@ namespace UI
                 {
                 case N_RENDER_NODE:
                     builder
-                        .AddTextInput(resManager->NextID(), {"RenderNode Name"})
-                        .AddOutput(resManager->NextID(), {"Result Node", N_RENDER_NODE})
-                        .AddInput(resManager->NextID(), {"Input Node", N_RENDER_NODE})
-                        .AddInput(resManager->NextID(), {"Vertex Shader", N_VERT_SHADER})
-                        .AddInput(resManager->NextID(), {"Fragment Shader", N_FRAG_SHADER})
-                        .AddInput(resManager->NextID(), {"Compute Shader", N_COMP_SHADER})
-                        .AddInput(resManager->NextID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE}, true)
-                        .AddInput(resManager->NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
-                        .AddInput(resManager->NextID(), {"Vertex Input", N_VERTEX_INPUT})
-                        .AddSelectable(resManager->NextID(), "Raster Configs", {"Fill", "Line", "Point"})
-                        .SetNodeId(resManager->NextID(), "Render Node");
+                        .AddTextInput(resManager->NextWidgetID(), {"RenderNode Name"})
+                        .AddOutput(resManager->NextWidgetID(), {"Result Node", N_RENDER_NODE})
+                        .AddInput(resManager->NextWidgetID(), {"Input Node", N_RENDER_NODE})
+                        .AddInput(resManager->NextWidgetID(), {"Vertex Shader", N_VERT_SHADER})
+                        .AddInput(resManager->NextWidgetID(), {"Fragment Shader", N_FRAG_SHADER})
+                        .AddInput(resManager->NextWidgetID(), {"Compute Shader", N_COMP_SHADER})
+                        .AddInput(resManager->NextWidgetID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE}, true)
+                        .AddInput(resManager->NextWidgetID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
+                        .AddInput(resManager->NextWidgetID(), {"Vertex Input", N_VERTEX_INPUT})
+                        .AddSelectable(resManager->NextWidgetID(), "Raster Configs", {"Fill", "Line", "Point"})
+                        .SetNodeId(resManager->NextWidgetID(), "Render Node");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
                     builder
-                        .AddPrimitiveData(resManager->NextID(), {"Clear Color", VEC4, glm::vec4(0.0)})
-                        .AddSelectable(resManager->NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
-                        .AddSelectable(resManager->NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
-                        .AddSelectable(resManager->NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
-                        .AddSelectable(resManager->NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"}, 1)
-                        .AddInput(resManager->NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
-                        .AddOutput(resManager->NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
-                        .SetNodeId(resManager->NextID(), "Col Attachment Node");
+                        .AddPrimitiveData(resManager->NextWidgetID(), {"Clear Color", VEC4, glm::vec4(0.0)})
+                        .AddSelectable(resManager->NextWidgetID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
+                        .AddSelectable(resManager->NextWidgetID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
+                        .AddSelectable(resManager->NextWidgetID(), "Store Operation", {"Load", "eDontCare", "eNone"})
+                        .AddSelectable(resManager->NextWidgetID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"}, 1)
+                        .AddInput(resManager->NextWidgetID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
+                        .AddOutput(resManager->NextWidgetID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
+                        .SetNodeId(resManager->NextWidgetID(), "Col Attachment Node");
                     break;
                 case N_DEPTH_STRUCTURE:
                     builder
-                        .AddSelectable(resManager->NextID(), "Depth Configs", {"None", "Enable", "Disable"})
-                        .AddInput(resManager->NextID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
-                        .AddOutput(resManager->NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
-                        .SetNodeId(resManager->NextID(), "Depth Attachment Node");
+                        .AddSelectable(resManager->NextWidgetID(), "Depth Configs", {"None", "Enable", "Disable"})
+                        .AddInput(resManager->NextWidgetID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
+                        .AddOutput(resManager->NextWidgetID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
+                        .SetNodeId(resManager->NextWidgetID(), "Depth Attachment Node");
                     break;
                 case N_PUSH_CONSTANT:
                     builder
-                        .AddPrimitiveData(resManager->NextID(), {"Push Constant data", SIZE_T, size_t(0)})
-                        .AddOutput(resManager->NextID(), {"Push Constant Structure ", N_PUSH_CONSTANT})
-                        .SetNodeId(resManager->NextID(), "Push Constant");
+                        .AddPrimitiveData(resManager->NextWidgetID(), {"Push Constant data", SIZE_T, size_t(0)})
+                        .AddOutput(resManager->NextWidgetID(), {"Push Constant Structure ", N_PUSH_CONSTANT})
+                        .SetNodeId(resManager->NextWidgetID(), "Push Constant");
                     break;
                 case N_IMAGE_SAMPLER:
                     builder
-                        .AddTextInput(resManager->NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(resManager->NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
-                        .SetNodeId(resManager->NextID(), "Sampler Image Node");
+                        .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
+                        .AddOutput(resManager->NextWidgetID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
+                        .SetNodeId(resManager->NextWidgetID(), "Sampler Image Node");
                     break;
                 case N_IMAGE_STORAGE:
                     builder
-                        .AddTextInput(resManager->NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(resManager->NextID(), {"Storage Result", N_IMAGE_STORAGE})
-                        .SetNodeId(resManager->NextID(), "Storage Image Node");
+                        .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
+                        .AddOutput(resManager->NextWidgetID(), {"Storage Result", N_IMAGE_STORAGE})
+                        .SetNodeId(resManager->NextWidgetID(), "Storage Image Node");
                     break;
                 case N_DEPTH_IMAGE_SAMPLER:
                     builder
-                        .AddTextInput(resManager->NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(resManager->NextID(), {"Depth Sampler Result", N_DEPTH_IMAGE_SAMPLER})
-                        .SetNodeId(resManager->NextID(), "Depth Image Node");
+                        .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
+                        .AddOutput(resManager->NextWidgetID(), {"Depth Sampler Result", N_DEPTH_IMAGE_SAMPLER})
+                        .SetNodeId(resManager->NextWidgetID(), "Depth Image Node");
                     break;
                 case N_VERTEX_INPUT:
                     {
                         EnumSelectable selectable("Vertex Attrib: ", {
                               "INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4","COLOR_32"});
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
-                        builder.AddTextInput(resManager->NextID(), {"Vertex Name", ""})
-                               .AddDynamicStructure(resManager->NextID(), dynamicStructureInfo)
-                               .AddOutput(resManager->NextID(), {"Vertex Result", N_VERTEX_INPUT})
-                               .SetNodeId(resManager->NextID(), "Vertex Input Builder");
+                        builder.AddTextInput(resManager->NextWidgetID(), {"Vertex Name", ""})
+                               .AddDynamicStructure(resManager->NextWidgetID(), dynamicStructureInfo)
+                               .AddOutput(resManager->NextWidgetID(), {"Vertex Result", N_VERTEX_INPUT})
+                               .SetNodeId(resManager->NextWidgetID(), "Vertex Input Builder");
                     }
                     break;
                 case N_VERT_SHADER:
@@ -873,8 +873,8 @@ namespace UI
                             }
                         }
                         builder
-                            .SetNodeId(resManager->NextID(), "Vert Shader")
-                            .AddOutput(resManager->NextID(), {"Shader result", N_VERT_SHADER});
+                            .SetNodeId(resManager->NextWidgetID(), "Vert Shader")
+                            .AddOutput(resManager->NextWidgetID(), {"Shader result", N_VERT_SHADER});
                     }
                     if (nodeType == N_FRAG_SHADER)
                     {
@@ -887,8 +887,8 @@ namespace UI
                             }
                         }
                         builder
-                            .SetNodeId(resManager->NextID(), "Frag Shader")
-                            .AddOutput(resManager->NextID(), {"Shader result", N_FRAG_SHADER});
+                            .SetNodeId(resManager->NextWidgetID(), "Frag Shader")
+                            .AddOutput(resManager->NextWidgetID(), {"Shader result", N_FRAG_SHADER});
                     }
                     if (nodeType == N_COMP_SHADER)
                     {
@@ -901,12 +901,12 @@ namespace UI
                             }
                         }
                         builder
-                            .SetNodeId(resManager->NextID(), "Compute Shader")
-                            .AddOutput(resManager->NextID(), {"Shader result", N_COMP_SHADER});
+                            .SetNodeId(resManager->NextWidgetID(), "Compute Shader")
+                            .AddOutput(resManager->NextWidgetID(), {"Shader result", N_COMP_SHADER});
                     }
                     scrollables.try_emplace(0, Scrollable{"Possible Shaders", STRING, shaderPaths});
                     MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
-                    builder.AddMultiOption(resManager->NextID(), multiOptionInfo);
+                    builder.AddMultiOption(resManager->NextWidgetID(), multiOptionInfo);
                     break;
                 }
 

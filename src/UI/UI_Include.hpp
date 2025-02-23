@@ -14,8 +14,8 @@
 #include "imgui_node_editor.h"
 
 
-#include "GraphNode.hpp"
 #include "GraphNodeResManager.hpp"
+#include "GraphNode.hpp"
 #include "Widgets.hpp"
 #include "RG_NodeEditor.hpp"
 
