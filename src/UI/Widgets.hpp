@@ -6,6 +6,8 @@
 
 
 
+
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -451,6 +453,7 @@ namespace UI
                     PinInfo* depthImage;
                     ENGINE::AttachmentInfo info;
                     std::string attachmentName;
+                    std::string depthAttachmentName;
                     ENGINE::VertexInput* vertexInput = nullptr;
                     for (auto id : selfNode.graphNodesLinks)
                     {
@@ -490,7 +493,7 @@ namespace UI
                         if (id.second == N_DEPTH_STRUCTURE)
                         {
                             GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.first);
-                            attachmentName = graphNodeRef->name;
+                            depthAttachmentName = graphNodeRef->name;
 
                             depthImage = graphNodeRef->GetInputDataByName("Depth Attachment Sampler");
                             if (depthImage->HasData())
@@ -512,58 +515,68 @@ namespace UI
 
                     int configsToMatch = configsAdded.size();
                     int configsMatched = 0;
+                    std::map<NodeType, bool> confingsMissing;
                     for (auto added : configsAdded)
                     {
                         if (!added.second)
                         {
-                            break;
+                            confingsMissing.insert(added);
+                            continue;
                         }
                         configsMatched++;
                     }
-                    if (configsMatched == configsToMatch)
+                    if (configsMatched != configsToMatch)
                     {
-                        std::string name = "";
-                        TextInput* nodeName = GetFromNameInMap(selfNode.textInputs, "RenderNode Name");
-                        if (nodeName)
+
+                        std::string missingInfo = "";
+                        for (auto added : configsAdded)
                         {
-                            name = nodeName->content;
+                            missingInfo+= nodeTypeStrings.at(added.first) + "\n";
                         }
-                        else
+                        SYSTEMS::Logger::GetInstance()->LogMessage("Confgis missng: \n" + missingInfo);
+                        return;
+                    }
+                    std::string name = "";
+                    TextInput* nodeName = GetFromNameInMap(selfNode.textInputs, "RenderNode Name");
+                    if (nodeName)
+                    {
+                        name = nodeName->content;
+                    }
+                    else
+                    {
+                        name = "PassName_" + std::to_string(selfNode.renderGraph->renderNodes.size());
+                    }
+                    auto renderNode = selfNode.renderGraph->AddPass(name);
+                    if (configsAdded.contains(N_COMP_SHADER))
+                    {
+                        renderNode->SetCompShader(
+                            selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
+                    }
+                    else
+                    {
+                        assert(vertId > -1 && "Vert id invalid");
+                        assert(fragId > -1 && "Frag Id invalid");
+                        assert(vertexInput && "invalid vertex input");
+                        renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
+                        renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
+                        renderNode->SetVertexInput(*vertexInput);
+                        renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
+                        if (image->HasData())
                         {
-                            name = "PassName_" + std::to_string(selfNode.renderGraph->renderNodes.size());
+                            std::string imageName = image->GetData<std::string>();
+                            renderNode->AddColorImageResource(
+                                imageName,
+                                selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
                         }
-                        auto renderNode = selfNode.renderGraph->AddPass(name);
-                        if (configsAdded.contains(N_COMP_SHADER))
+                        if (configsAdded.contains(N_DEPTH_STRUCTURE))
                         {
-                            renderNode->SetCompShader(
-                                selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
-                        }
-                        else
-                        {
-                            assert(vertId > -1 && "Vert id invalid");
-                            assert(fragId > -1 && "Frag Id invalid");
-                            assert(vertexInput && "invalid vertex input");
-                            renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
-                            renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
-                            renderNode->SetVertexInput(*vertexInput);
-                            renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
-                            if (image->HasData())
+                            if (depthImage->HasData())
                             {
-                                std::string imageName = image->GetData<std::string>();
-                                renderNode->AddColorImageResource(
+                                std::string imageName = depthImage->GetData<std::string>();
+                                renderNode->SetDepthImageResource(
                                     imageName,
-                                    selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
-                            }
-                            if (configsAdded.contains(N_DEPTH_STRUCTURE))
-                            {
-                                if (depthImage->HasData())
-                                {
-                                    std::string imageName = depthImage->GetData<std::string>();
-                                    renderNode->SetDepthImageResource(
-                                        imageName,
-                                        selfNode.renderGraph->resourcesManager->GetImageViewFromName(
-                                            imageName));
-                                }
+                                    selfNode.renderGraph->resourcesManager->GetImageViewFromName(
+                                        imageName));
                             }
                         }
                         renderNode->SetConfigs({true});
