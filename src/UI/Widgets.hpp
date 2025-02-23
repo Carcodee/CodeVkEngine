@@ -767,6 +767,7 @@ namespace UI
         {
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
+            
 
             std::unordered_map<int, PinInfo> inputNodes;
             std::unordered_map<int, PinInfo> outputNodes;
@@ -782,7 +783,7 @@ namespace UI
             std::unordered_map<int, bool> addMoreWidgets;
 
             std::unordered_map<int, NodeType> graphNodesLinks;
-            std::unordered_map<int, GraphNode>* graphNodesRef = nullptr;
+            std::unordered_map<int, GraphNode*>* graphNodesRef = nullptr;
             
             std::string name;
             glm::vec2 pos;
@@ -1118,10 +1119,12 @@ namespace UI
         {
             std::unique_ptr<Systems::Arena> graphNodesArena;
             
-            std::map<int, int> graphNodesIds;
-            std::map<int, int> graphNodesInputIds;
+            std::unordered_map<int, int> inputOutputsIds;
             
-            std::vector<GraphNode*> graphNodes;
+           std::unordered_map<int ,GraphNode*> graphNodes;
+
+            int widgetsIdGen = 0;
+            int idNodeGen = 100;
             
             GraphNodeResManager()
             {
@@ -1129,15 +1132,48 @@ namespace UI
             }
             GraphNode* GetNode(int id)
             {
-                if (graphNodesIds.contains(id))
+                if (graphNodes.contains(id))
                 {
-                    return graphNodes.at(graphNodesIds.at(id));
+                    assert(false);
+                    return graphNodes.at(id);
                 }
                 GraphNode* graphNode = graphNodesArena->Alloc<GraphNode>();
-                int size = graphNodes.size();
-                graphNodesIds.try_emplace(id ,size);
-                graphNodes.emplace_back(graphNode);
+                graphNodes.try_emplace(id ,graphNode);
+                graphNode->graphNodesRef = &graphNodes;
+                graphNode->widgetsIdGen = &widgetsIdGen;
+                graphNode->globalId = id;
+                graphNode->graphNodesRef = &graphNodes;
                 return graphNode;
+            }
+
+            int NextID()
+            {
+                return widgetsIdGen++;
+            }
+
+            int NextNodeID()
+            {
+                return idNodeGen++;
+            }
+            void AddNodeId(int inputOutputId, int graphNodeId)
+            {
+                inputOutputsIds.try_emplace(inputOutputId, graphNodeId);
+            }
+            void AddNodeIds(GraphNode* node)
+            {
+                for (auto& input : node->inputNodes)
+                {
+                    AddNodeId(input.first, node->globalId);
+                }
+                for (auto& output : node->outputNodes)
+                {
+                    AddNodeId(output.first, node->globalId);
+                }
+            }
+            GraphNode* GetNodeByInputOutputId(int id){
+                assert(inputOutputsIds.contains(id));
+
+                return graphNodes.at(inputOutputsIds.at(id));
             }
             
         };
@@ -1284,34 +1320,33 @@ namespace UI
             }
 
 
-            GraphNode Build(ENGINE::RenderGraph* renderGraph, WindowProvider* windowProvider)
+            GraphNode* Build(GraphNode* graphNode, ENGINE::RenderGraph* renderGraph, WindowProvider* windowProvider)
             {
                 // assert(nodeId.Get() > -1 && "Set the id before building");
                 assert(!name.empty() && "Set a valid name");
                 
-                GraphNode graphNode = {};
-                graphNode.name = name;
-                graphNode.nodeId = nodeId;
-                graphNode.inputNodes = inputNodes;
-                graphNode.outputNodes = outputNodes;
-                graphNode.selectables = selectables;
-                graphNode.textInputs = textInputs;
-                graphNode.primitives = primitives;
-                graphNode.scrollables = scrollables;
-                graphNode.multiOptions = multiOptions;
-                graphNode.dynamicStructures = dynamicStructures;
-                graphNode.drawableWidgets = drawableWidgets;
-                graphNode.addMoreWidgets = addMoreWidgets;
-                graphNode.pos = pos;
+                graphNode->name = name;
+                graphNode->nodeId = nodeId;
+                graphNode->inputNodes = inputNodes;
+                graphNode->outputNodes = outputNodes;
+                graphNode->selectables = selectables;
+                graphNode->textInputs = textInputs;
+                graphNode->primitives = primitives;
+                graphNode->scrollables = scrollables;
+                graphNode->multiOptions = multiOptions;
+                graphNode->dynamicStructures = dynamicStructures;
+                graphNode->drawableWidgets = drawableWidgets;
+                graphNode->addMoreWidgets = addMoreWidgets;
+                graphNode->pos = pos;
                 for (auto i = callbacks.begin(); i != callbacks.end();)
                 {
-                    graphNode.callbacks.try_emplace(i->first,i->second);
+                    graphNode->callbacks.try_emplace(i->first,i->second);
                     i++;
                 }
                 
-                graphNode.renderGraph = renderGraph;
-                graphNode.windowProvider = windowProvider;
-                graphNode.Sort();
+                graphNode->renderGraph = renderGraph;
+                graphNode->windowProvider = windowProvider;
+                graphNode->Sort();
                 Reset();
                 return graphNode;
             }
@@ -1436,18 +1471,18 @@ namespace UI
                     {
                         if (id.second == N_COL_ATTACHMENT_STRUCTURE)
                         {
-                            GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
-                            attachmentName = graphNodeRef.name;
+                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.first);
+                            attachmentName = graphNodeRef->name;
                             PrimitiveInput* clearColor = GetFromNameInMap(
-                                graphNodeRef.primitives, "Clear Color");
+                                graphNodeRef->primitives, "Clear Color");
                             EnumSelectable* colFormat = GetFromNameInMap(
-                                graphNodeRef.selectables, "Load Operation");
+                                graphNodeRef->selectables, "Load Operation");
                             EnumSelectable* loadOp = GetFromNameInMap(
-                                graphNodeRef.selectables, "Load Operation");
+                                graphNodeRef->selectables, "Load Operation");
                             EnumSelectable* storeOp = GetFromNameInMap(
-                                graphNodeRef.selectables, "Store Operation");
+                                graphNodeRef->selectables, "Store Operation");
                             EnumSelectable* blendConfigs = GetFromNameInMap(
-                                graphNodeRef.selectables, "Blend Configs");
+                                graphNodeRef->selectables, "Blend Configs");
 
                             clearColData = clearColor->GetData<glm::vec4>();
                             loadOpData = (vk::AttachmentLoadOp)loadOp->selectedIdx;
@@ -1459,7 +1494,7 @@ namespace UI
                             };
                             colFormatData = colFormat->GetEnumFromIndex<vk::Format>(validFormats);
 
-                            image = graphNodeRef.GetInputDataByName("Col Attachment Sampler");
+                            image = graphNodeRef->GetInputDataByName("Col Attachment Sampler");
                             if (image->HasData())
                             {
                                 configsAdded.at(N_COL_ATTACHMENT_STRUCTURE) = true;
@@ -1469,10 +1504,10 @@ namespace UI
                         }
                         if (id.second == N_DEPTH_STRUCTURE)
                         {
-                            GraphNode& graphNodeRef = selfNode.graphNodesRef->at(id.first);
-                            attachmentName = graphNodeRef.name;
+                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.first);
+                            attachmentName = graphNodeRef->name;
 
-                            depthImage = graphNodeRef.GetInputDataByName("Depth Attachment Sampler");
+                            depthImage = graphNodeRef->GetInputDataByName("Depth Attachment Sampler");
                             if (depthImage->HasData())
                             {
                                 configsAdded.try_emplace(N_DEPTH_STRUCTURE, true);
@@ -1755,113 +1790,81 @@ namespace UI
             GraphNodeRegistry nodeRegistry = {};
             ENGINE::RenderGraph* renderGraph;
             WindowProvider* windowProvider;
-            std::unordered_map<int, GraphNode> graphNodes = {};
-            std::unordered_map<int, int> nodesIds;
-            
-
-            int NextID()
-            {
-                return widgetsIdGen++;
-            }
-
-            int NextNodeID()
-            {
-                return idNodeGen++;
-            }
-            void AddNodeId(int inputOutputId, int graphNodeId)
-            {
-                nodesIds.try_emplace(inputOutputId, graphNodeId);
-            }
-            void AddNodeIds(GraphNode& node)
-            {
-                for (auto& input : node.inputNodes)
-                {
-                    AddNodeId(input.first, node.globalId);
-                }
-                for (auto& output : node.outputNodes)
-                {
-                    AddNodeId(output.first, node.globalId);
-                }
-            }
-            
-            GraphNode* GetNodeByInputOutputId(int id){
-                assert(nodesIds.contains(id));
-
-                return &graphNodes.at(nodesIds.at(id));
-            }
+            GraphNodeResManager* resManager;
 
             GraphNode* GetNode(NodeType nodeType, glm::vec2 pos = glm::vec2(0.0), std::string name = "")
             {
                 assert(renderGraph && "Null rgraph");
                 assert(windowProvider && "Null window Provider");
+                assert(resManager && "Null resManager");
                 GraphNode node;
                 switch (nodeType)
                 {
                 case N_RENDER_NODE:
                     builder
-                        .AddTextInput(NextID(), {"RenderNode Name"})
-                        .AddOutput(NextID(), {"Result Node", N_RENDER_NODE})
-                        .AddInput(NextID(), {"Input Node", N_RENDER_NODE})
-                        .AddInput(NextID(), {"Vertex Shader", N_VERT_SHADER})
-                        .AddInput(NextID(), {"Fragment Shader", N_FRAG_SHADER})
-                        .AddInput(NextID(), {"Compute Shader", N_COMP_SHADER})
-                        .AddInput(NextID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE}, true)
-                        .AddInput(NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
-                        .AddInput(NextID(), {"Vertex Input", N_VERTEX_INPUT})
-                        .AddSelectable(NextID(), "Raster Configs", {"Fill", "Line", "Point"})
-                        .SetNodeId(NextID(), "Render Node");
+                        .AddTextInput(resManager->NextID(), {"RenderNode Name"})
+                        .AddOutput(resManager->NextID(), {"Result Node", N_RENDER_NODE})
+                        .AddInput(resManager->NextID(), {"Input Node", N_RENDER_NODE})
+                        .AddInput(resManager->NextID(), {"Vertex Shader", N_VERT_SHADER})
+                        .AddInput(resManager->NextID(), {"Fragment Shader", N_FRAG_SHADER})
+                        .AddInput(resManager->NextID(), {"Compute Shader", N_COMP_SHADER})
+                        .AddInput(resManager->NextID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE}, true)
+                        .AddInput(resManager->NextID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
+                        .AddInput(resManager->NextID(), {"Vertex Input", N_VERTEX_INPUT})
+                        .AddSelectable(resManager->NextID(), "Raster Configs", {"Fill", "Line", "Point"})
+                        .SetNodeId(resManager->NextID(), "Render Node");
                     break;
                 case N_COL_ATTACHMENT_STRUCTURE:
                     builder
-                        .AddPrimitiveData(NextID(), {"Clear Color", VEC4, glm::vec4(0.0)})
-                        .AddSelectable(NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
-                        .AddSelectable(NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
-                        .AddSelectable(NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
-                        .AddSelectable(NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"}, 1)
-                        .AddInput(NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
-                        .AddOutput(NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
-                        .SetNodeId(NextID(), "Col Attachment Node");
+                        .AddPrimitiveData(resManager->NextID(), {"Clear Color", VEC4, glm::vec4(0.0)})
+                        .AddSelectable(resManager->NextID(), "Color Format", {"g_32bFormat", "g_16bFormat"})
+                        .AddSelectable(resManager->NextID(), "Load Operation", {"Load", "Clear", "Dont Care", "None"})
+                        .AddSelectable(resManager->NextID(), "Store Operation", {"Load", "eDontCare", "eNone"})
+                        .AddSelectable(resManager->NextID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"}, 1)
+                        .AddInput(resManager->NextID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
+                        .AddOutput(resManager->NextID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
+                        .SetNodeId(resManager->NextID(), "Col Attachment Node");
                     break;
                 case N_DEPTH_STRUCTURE:
                     builder
-                        .AddSelectable(NextID(), "Depth Configs", {"None", "Enable", "Disable"})
-                        .AddInput(NextID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
-                        .AddOutput(NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
-                        .SetNodeId(NextID(), "Depth Attachment Node");
+                        .AddSelectable(resManager->NextID(), "Depth Configs", {"None", "Enable", "Disable"})
+                        .AddInput(resManager->NextID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
+                        .AddOutput(resManager->NextID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
+                        .SetNodeId(resManager->NextID(), "Depth Attachment Node");
                     break;
                 case N_PUSH_CONSTANT:
                     builder
-                        .AddPrimitiveData(NextID(), {"Push Constant data", SIZE_T, size_t(0)})
-                        .AddOutput(NextID(), {"Push Constant Structure ", N_PUSH_CONSTANT})
-                        .SetNodeId(NextID(), "Push Constant");
+                        .AddPrimitiveData(resManager->NextID(), {"Push Constant data", SIZE_T, size_t(0)})
+                        .AddOutput(resManager->NextID(), {"Push Constant Structure ", N_PUSH_CONSTANT})
+                        .SetNodeId(resManager->NextID(), "Push Constant");
                     break;
                 case N_IMAGE_SAMPLER:
                     builder
-                        .AddTextInput(NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
-                        .SetNodeId(NextID(), "Sampler Image Node");
+                        .AddTextInput(resManager->NextID(), {"Img Name", "Image Name"})
+                        .AddOutput(resManager->NextID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
+                        .SetNodeId(resManager->NextID(), "Sampler Image Node");
                     break;
                 case N_IMAGE_STORAGE:
                     builder
-                        .AddTextInput(NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(NextID(), {"Storage Result", N_IMAGE_STORAGE})
-                        .SetNodeId(NextID(), "Storage Image Node");
+                        .AddTextInput(resManager->NextID(), {"Img Name", "Image Name"})
+                        .AddOutput(resManager->NextID(), {"Storage Result", N_IMAGE_STORAGE})
+                        .SetNodeId(resManager->NextID(), "Storage Image Node");
                     break;
                 case N_DEPTH_IMAGE_SAMPLER:
                     builder
-                        .AddTextInput(NextID(), {"Img Name", "Image Name"})
-                        .AddOutput(NextID(), {"Depth Sampler Result", N_DEPTH_IMAGE_SAMPLER})
-                        .SetNodeId(NextID(), "Depth Image Node");
+                        .AddTextInput(resManager->NextID(), {"Img Name", "Image Name"})
+                        .AddOutput(resManager->NextID(), {"Depth Sampler Result", N_DEPTH_IMAGE_SAMPLER})
+                        .SetNodeId(resManager->NextID(), "Depth Image Node");
                     break;
                 case N_VERTEX_INPUT:
                     {
                         EnumSelectable selectable("Vertex Attrib: ", {
                               "INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4","COLOR_32"});
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
-                        builder.AddTextInput(NextID(), {"Vertex Name", ""})
-                               .AddDynamicStructure(NextID(), dynamicStructureInfo)
-                               .AddOutput(NextID(), {"Vertex Result", N_VERTEX_INPUT})
-                               .SetNodeId(NextID(), "Vertex Input Builder");
+                        builder.AddTextInput(resManager->NextID(), {"Vertex Name", ""})
+                               .AddDynamicStructure(resManager->NextID(), dynamicStructureInfo)
+                               .AddOutput(resManager->NextID(), {"Vertex Result", N_VERTEX_INPUT})
+                               .SetNodeId(resManager->NextID(), "Vertex Input Builder");
                     }
                     break;
                 case N_VERT_SHADER:
@@ -1885,8 +1888,8 @@ namespace UI
                             }
                         }
                         builder
-                            .SetNodeId(NextID(), "Vert Shader")
-                            .AddOutput(NextID(), {"Shader result", N_VERT_SHADER});
+                            .SetNodeId(resManager->NextID(), "Vert Shader")
+                            .AddOutput(resManager->NextID(), {"Shader result", N_VERT_SHADER});
                     }
                     if (nodeType == N_FRAG_SHADER)
                     {
@@ -1899,8 +1902,8 @@ namespace UI
                             }
                         }
                         builder
-                            .SetNodeId(NextID(), "Frag Shader")
-                            .AddOutput(NextID(), {"Shader result", N_FRAG_SHADER});
+                            .SetNodeId(resManager->NextID(), "Frag Shader")
+                            .AddOutput(resManager->NextID(), {"Shader result", N_FRAG_SHADER});
                     }
                     if (nodeType == N_COMP_SHADER)
                     {
@@ -1913,12 +1916,12 @@ namespace UI
                             }
                         }
                         builder
-                            .SetNodeId(NextID(), "Compute Shader")
-                            .AddOutput(NextID(), {"Shader result", N_COMP_SHADER});
+                            .SetNodeId(resManager->NextID(), "Compute Shader")
+                            .AddOutput(resManager->NextID(), {"Shader result", N_COMP_SHADER});
                     }
                     scrollables.try_emplace(0, Scrollable{"Possible Shaders", STRING, shaderPaths});
                     MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
-                    builder.AddMultiOption(NextID(), multiOptionInfo);
+                    builder.AddMultiOption(resManager->NextID(), multiOptionInfo);
                     break;
                 }
 
@@ -1931,13 +1934,13 @@ namespace UI
                 builder.SetPosition(pos);
                 builder.AddCallback("output_c", outputOp);
                 builder.AddCallback("link_c", linkOp);
-                int id = NextNodeID();
-                graphNodes.try_emplace(id, builder.Build(renderGraph, windowProvider));
-                graphNodes.at(id).widgetsIdGen = &widgetsIdGen;
-                graphNodes.at(id).globalId = id;
-                graphNodes.at(id).graphNodesRef = &graphNodes;
-                AddNodeIds(graphNodes.at(id));
-                return &graphNodes.at(id);
+                
+                int id = resManager->NextNodeID();
+                GraphNode* graphNode = resManager->GetNode(id);
+                builder.Build(graphNode, renderGraph, windowProvider);
+                resManager->AddNodeIds(graphNode);
+
+                return graphNode;
             }
         };
     }

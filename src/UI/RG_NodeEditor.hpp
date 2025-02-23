@@ -41,6 +41,7 @@ namespace UI
             this->windowProvider = windowProvider;
             this->factory.renderGraph =renderGraph;       
             this->factory.windowProvider =windowProvider;
+            this->factory.resManager = &resManager;
 
             std::vector<Nodes::NodeType> nodesList = {
                Nodes::N_RENDER_NODE,
@@ -69,9 +70,9 @@ namespace UI
         void Draw()
         {
             ed::Begin("My Editor", ImVec2(0.0, 0.0f));
-            for (auto& node : factory.graphNodes)
+            for (auto& node : resManager.graphNodes)
             {
-                node.second.Draw();
+                node.second->Draw();
             }
             CheckLinks();
             firstFrame = false;
@@ -90,8 +91,8 @@ namespace UI
                 ed::PinId startId, endId;
                 if (ed::QueryNewLink(&startId, &endId))
                 {
-                    Nodes::GraphNode* startNode = factory.GetNodeByInputOutputId(startId.Get());
-                    Nodes::GraphNode* endNode = factory.GetNodeByInputOutputId(endId.Get());
+                    Nodes::GraphNode* startNode = resManager.GetNodeByInputOutputId(startId.Get());
+                    Nodes::GraphNode* endNode = resManager.GetNodeByInputOutputId(endId.Get());
 
                     if (startNode && endNode)
                     {
@@ -174,6 +175,7 @@ namespace UI
 
         ImVector<Nodes::LinkInfo> links;
         Nodes::GraphNodeFactory factory;
+        Nodes::GraphNodeResManager resManager;
         //int_1 - in/out id || int_2 node idx in nodes vec  
         std::map<int, int> nodesIds;
         int linkIdGen = 200;
