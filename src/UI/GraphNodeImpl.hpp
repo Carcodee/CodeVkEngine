@@ -244,6 +244,7 @@ namespace UI::Nodes{
                 return &node.second;
             }
         }
+        assert(false);
         return nullptr;
     }
 
@@ -280,7 +281,7 @@ namespace UI::Nodes{
                 return &multiOption.second;
             }
         }
-        assert(false && "ivalid name");
+        assert(false && "invalid name");
         return nullptr;
     }
 

@@ -391,8 +391,7 @@ namespace UI
                 }
                 return nullptr;
             }
-            GraphNodeRegistry()
-            {
+            GraphNodeRegistry() {
                 callbacksRegistry.try_emplace(N_RENDER_NODE, CallbackInfo{});
                 callbacksRegistry.try_emplace(N_VERT_SHADER, CallbackInfo{});
                 callbacksRegistry.try_emplace(N_FRAG_SHADER, CallbackInfo{});
@@ -452,24 +451,31 @@ namespace UI
                             fragId = fragPin->GetData<int>();
                         }
                     }
-                    glm::vec4 clearColData;
+                    
+                    PinInfo* image;
+                    PinInfo* depthImage;
+                    int expectedColAttachments = 0;
+                    
+                    ENGINE::VertexInput* vertexInput = nullptr;
+                    ENGINE::AttachmentInfo info;
                     vk::AttachmentLoadOp loadOpData;
                     vk::AttachmentStoreOp storeOpData;
                     ENGINE::BlendConfigs blendData;
                     vk::Format colFormatData;
-                    PinInfo* image;
-                    PinInfo* depthImage;
-                    ENGINE::AttachmentInfo info;
+                    glm::vec4 clearColData;
                     std::string attachmentName;
                     std::string depthAttachmentName;
-                    ENGINE::VertexInput* vertexInput = nullptr;
-                    int expectedColAttachments = 0;
-                    for (auto id : selfNode.graphNodesLinks)
+                    
+                    for (auto id : selfNode.inputNodes)
                     {
-                        if (id.second == N_COL_ATTACHMENT_STRUCTURE)
+                        if (id.second.nodeType == N_COL_ATTACHMENT_STRUCTURE)
                         {
                             expectedColAttachments++;
-                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.first);
+                            if (!id.second.HasData())
+                            {
+                                continue;
+                            }
+                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.second.GetData<int>());
                             attachmentName = graphNodeRef->name;
                             PrimitiveInput* clearColor = GetFromNameInMap(
                                 graphNodeRef->primitives, "Clear Color");
@@ -500,15 +506,20 @@ namespace UI
                                     clearColData, colFormatData, loadOpData, storeOpData);
                             }
                         }
-                        if (id.second == N_DEPTH_STRUCTURE)
+                        if (id.second.nodeType == N_DEPTH_STRUCTURE)
                         {
-                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.first);
+                            configsAdded.try_emplace(N_DEPTH_STRUCTURE, ExpectedConfigs{0, 1});
+                            if (!id.second.HasData())
+                            {
+                                continue;
+                            }
+                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.second.GetData<int>());
                             depthAttachmentName = graphNodeRef->name;
 
                             depthImage = graphNodeRef->GetInputDataByName("Depth Attachment Sampler");
                             if (depthImage->HasData())
                             {
-                                configsAdded.try_emplace(N_DEPTH_STRUCTURE, ExpectedConfigs{1, 1});
+                                configsAdded.at(N_DEPTH_STRUCTURE).added++;
                             }
                         }
                     }
@@ -587,9 +598,16 @@ namespace UI
                         selfNode.valid = true;
                     }    
                 });
-                callbacksRegistry.at(N_COL_ATTACHMENT_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode){});
-                callbacksRegistry.at(N_DEPTH_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode){});
+                callbacksRegistry.at(N_COL_ATTACHMENT_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode)
+                {
+                    selfNode.SetOuputData("out_col_structure", selfNode.globalId);
+                });
+                callbacksRegistry.at(N_DEPTH_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode)
+                {
+                    selfNode.SetOuputData("out_depth_structure", selfNode.globalId);
+                });
                 callbacksRegistry.at(N_PUSH_CONSTANT).AddCallback("output_c", [](GraphNode& selfNode){});
+                
                 callbacksRegistry.at(N_IMAGE_SAMPLER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
                     std::string imgName = selfNode.GetTextInput("Img Name")->content;
@@ -600,7 +618,7 @@ namespace UI
                                                                  vk::ImageUsageFlagBits::eSampled);
                     ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetImage(
                         imgName, imageInfo, 0, 0);
-                    selfNode.SetOuputData("Image Sampler Result", imgName);
+                    selfNode.SetOuputData("out_img_sampler", imgName);
 
                     assert(imgView && "Image view must be valid");
                 });
@@ -616,7 +634,7 @@ namespace UI
 
                             ENGINE::ImageView* storageImgView = selfNode.renderGraph->resourcesManager->GetImage(
                                 imgName, storageImageInfo, 0, 0);
-                            selfNode.SetOuputData("Image Storage Result", imgName);
+                            selfNode.SetOuputData("out_img_storage", imgName);
 
                             assert(storageImgView && "Image view must be valid");
                 });
@@ -631,7 +649,7 @@ namespace UI
                                                                       vk::ImageUsageFlagBits::eSampled);
                     ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetImage(
                         imgName, depthImageInfo, 0, 0);
-                    selfNode.SetOuputData("Depth Sampler Result", imgName);
+                    selfNode.SetOuputData("out_depth_sampler", imgName);
 
                     assert(imgView && "Image view must be valid");
                 });
@@ -662,7 +680,7 @@ namespace UI
                         vertexInput->AddVertexInputBinding(0, offset);
                     }
 
-                    selfNode.SetOuputData("Vertex Result", vertexName);
+                    selfNode.SetOuputData("out_vertex_result", vertexName);
                 });
                 callbacksRegistry.at(N_COMP_SHADER).AddCallback("output_c", [](GraphNode& selfNode){
                     ENGINE::ShaderStage stage = ENGINE::ShaderStage::S_COMP;
@@ -686,7 +704,7 @@ namespace UI
                     {
                         shaderIdx = selfNode.renderGraph->resourcesManager->shadersNames.at(shaderSelected);
                     }
-                    selfNode.SetOuputData("Shader result", shaderIdx);
+                    selfNode.SetOuputData("out_shader", shaderIdx);
                 });
                 callbacksRegistry.at(N_VERT_SHADER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
@@ -711,7 +729,7 @@ namespace UI
                     {
                         shaderIdx = selfNode.renderGraph->resourcesManager->shadersNames.at(shaderSelected);
                     }
-                    selfNode.SetOuputData("Shader result", shaderIdx);
+                    selfNode.SetOuputData("out_shader", shaderIdx);
                 });
                 callbacksRegistry.at(N_FRAG_SHADER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
@@ -736,7 +754,7 @@ namespace UI
                     {
                         shaderIdx = selfNode.renderGraph->resourcesManager->shadersNames.at(shaderSelected);
                     }
-                    selfNode.SetOuputData("Shader result", shaderIdx);
+                    selfNode.SetOuputData("out_shader", shaderIdx);
                 });
 
                 
@@ -803,7 +821,7 @@ namespace UI
                 case N_RENDER_NODE:
                     builder
                         .AddTextInput(resManager->NextWidgetID(), {"RenderNode Name"})
-                        .AddOutput(resManager->NextWidgetID(), {"Result Node", N_RENDER_NODE})
+                        .AddOutput(resManager->NextWidgetID(), {"out_render_node", N_RENDER_NODE})
                         .AddInput(resManager->NextWidgetID(), {"Input Node", N_RENDER_NODE})
                         .AddInput(resManager->NextWidgetID(), {"Vertex Shader", N_VERT_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Fragment Shader", N_FRAG_SHADER})
@@ -822,14 +840,14 @@ namespace UI
                         .AddSelectable(resManager->NextWidgetID(), "Store Operation", {"Load", "eDontCare", "eNone"})
                         .AddSelectable(resManager->NextWidgetID(), "Blend Configs", {"None", "Opaque", "Add", "Mix", "Alpha Blend"}, 1)
                         .AddInput(resManager->NextWidgetID(), {"Col Attachment Sampler", N_IMAGE_SAMPLER})
-                        .AddOutput(resManager->NextWidgetID(), {"Col Attachment Result", N_COL_ATTACHMENT_STRUCTURE})
+                        .AddOutput(resManager->NextWidgetID(), {"out_col_structure", N_COL_ATTACHMENT_STRUCTURE})
                         .SetNodeId(resManager->NextWidgetID(), "Col Attachment Node");
                     break;
                 case N_DEPTH_STRUCTURE:
                     builder
                         .AddSelectable(resManager->NextWidgetID(), "Depth Configs", {"None", "Enable", "Disable"})
                         .AddInput(resManager->NextWidgetID(), {"Depth Image In", N_DEPTH_IMAGE_SAMPLER})
-                        .AddOutput(resManager->NextWidgetID(), {"Depth Attachment ", N_DEPTH_STRUCTURE})
+                        .AddOutput(resManager->NextWidgetID(), {"out_depth_structure ", N_DEPTH_STRUCTURE})
                         .SetNodeId(resManager->NextWidgetID(), "Depth Attachment Node");
                     break;
                 case N_PUSH_CONSTANT:
@@ -841,19 +859,19 @@ namespace UI
                 case N_IMAGE_SAMPLER:
                     builder
                         .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
-                        .AddOutput(resManager->NextWidgetID(), {"Image Sampler Result", N_IMAGE_SAMPLER})
+                        .AddOutput(resManager->NextWidgetID(), {"out_img_sampler", N_IMAGE_SAMPLER})
                         .SetNodeId(resManager->NextWidgetID(), "Sampler Image Node");
                     break;
                 case N_IMAGE_STORAGE:
                     builder
                         .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
-                        .AddOutput(resManager->NextWidgetID(), {"Storage Result", N_IMAGE_STORAGE})
+                        .AddOutput(resManager->NextWidgetID(), {"out_img_storage", N_IMAGE_STORAGE})
                         .SetNodeId(resManager->NextWidgetID(), "Storage Image Node");
                     break;
                 case N_DEPTH_IMAGE_SAMPLER:
                     builder
                         .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
-                        .AddOutput(resManager->NextWidgetID(), {"Depth Sampler Result", N_DEPTH_IMAGE_SAMPLER})
+                        .AddOutput(resManager->NextWidgetID(), {"out_depth_sampler", N_DEPTH_IMAGE_SAMPLER})
                         .SetNodeId(resManager->NextWidgetID(), "Depth Image Node");
                     break;
                 case N_VERTEX_INPUT:
@@ -863,7 +881,7 @@ namespace UI
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
                         builder.AddTextInput(resManager->NextWidgetID(), {"Vertex Name", ""})
                                .AddDynamicStructure(resManager->NextWidgetID(), dynamicStructureInfo)
-                               .AddOutput(resManager->NextWidgetID(), {"Vertex Result", N_VERTEX_INPUT})
+                               .AddOutput(resManager->NextWidgetID(), {"out_vertex_result", N_VERTEX_INPUT})
                                .SetNodeId(resManager->NextWidgetID(), "Vertex Input Builder");
                     }
                     break;
@@ -889,7 +907,7 @@ namespace UI
                         }
                         builder
                             .SetNodeId(resManager->NextWidgetID(), "Vert Shader")
-                            .AddOutput(resManager->NextWidgetID(), {"Shader result", N_VERT_SHADER});
+                            .AddOutput(resManager->NextWidgetID(), {"out_shader", N_VERT_SHADER});
                     }
                     if (nodeType == N_FRAG_SHADER)
                     {
@@ -903,7 +921,7 @@ namespace UI
                         }
                         builder
                             .SetNodeId(resManager->NextWidgetID(), "Frag Shader")
-                            .AddOutput(resManager->NextWidgetID(), {"Shader result", N_FRAG_SHADER});
+                            .AddOutput(resManager->NextWidgetID(), {"out_shader", N_FRAG_SHADER});
                     }
                     if (nodeType == N_COMP_SHADER)
                     {
@@ -917,7 +935,7 @@ namespace UI
                         }
                         builder
                             .SetNodeId(resManager->NextWidgetID(), "Compute Shader")
-                            .AddOutput(resManager->NextWidgetID(), {"Shader result", N_COMP_SHADER});
+                            .AddOutput(resManager->NextWidgetID(), {"out_shader", N_COMP_SHADER});
                     }
                     scrollables.try_emplace(0, Scrollable{"Possible Shaders", STRING, shaderPaths});
                     MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
