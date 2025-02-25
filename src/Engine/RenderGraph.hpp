@@ -182,6 +182,7 @@ namespace ENGINE
                 );
                 pipeline = std::move(graphicsPipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eGraphics;
+                active = true;
                 std::cout << "Graphics pipeline created\n";
             }
             else if (compShader)
@@ -213,6 +214,7 @@ namespace ENGINE
                     pipelineCache.get());
                 pipeline = std::move(computePipeline->pipelineHandle);
                 pipelineType = vk::PipelineBindPoint::eCompute;
+                active = true;
                 std::cout << "Compute pipeline created\n";
             }
             else
@@ -633,7 +635,7 @@ namespace ENGINE
         DynamicRenderPass dynamicRenderPass;
         std::unique_ptr<DescriptorCache> descCache;
         std::string passName;
-        bool active = true;
+        bool active = false;
 
     private:
         friend class RenderGraph;

@@ -508,11 +508,11 @@ namespace UI
                         }
                         if (id.second.nodeType == N_DEPTH_STRUCTURE)
                         {
-                            configsAdded.try_emplace(N_DEPTH_STRUCTURE, ExpectedConfigs{0, 1});
                             if (!id.second.HasData())
                             {
                                 continue;
                             }
+                            configsAdded.try_emplace(N_DEPTH_STRUCTURE, ExpectedConfigs{0, 1});
                             GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.second.GetData<int>());
                             depthAttachmentName = graphNodeRef->name;
 
@@ -549,7 +549,7 @@ namespace UI
                     if (configsMatched != configsToMatch)
                     {
                         std::string missingInfo = "";
-                        for (auto added : configsAdded)
+                        for (auto added : confingsMissing)
                         {
                             missingInfo+= nodeTypeStrings.at(added.first) + "\n";
                         }
@@ -830,6 +830,7 @@ namespace UI
                         .AddInput(resManager->NextWidgetID(), {"Fragment Shader", N_FRAG_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Compute Shader", N_COMP_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Col Attachment Node", N_COL_ATTACHMENT_STRUCTURE}, true)
+                        .AddInput(resManager->NextWidgetID(), {"Storage Image Node", N_IMAGE_STORAGE}, true)
                         .AddInput(resManager->NextWidgetID(), {"Depth Attachment", N_DEPTH_STRUCTURE})
                         .AddInput(resManager->NextWidgetID(), {"Vertex Input", N_VERTEX_INPUT})
                         .AddSelectable(resManager->NextWidgetID(), "Raster Configs", {"Fill", "Line", "Point"})
