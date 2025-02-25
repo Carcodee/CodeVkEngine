@@ -27,6 +27,7 @@
 #include <iostream>
 #include <filesystem>
 #include <assert.h>
+#include <json.hpp>
 
 
 #define GLM_FORCE_RADIANS
@@ -46,5 +47,6 @@
 #include "InputSystem.hpp"
 #include "ObserverSystem.hpp"
 #include "FileWatcher.hpp"
+#include "SerializeSystem.hpp"
 
 #endif //SYSTEMSINCLUDE_HPP

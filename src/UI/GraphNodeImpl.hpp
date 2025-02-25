@@ -56,6 +56,11 @@ namespace UI::Nodes{
         if (firstFrame)
         {
             ed::SetNodePosition(nodeId, ImVec2(pos.x, pos.y));
+            for (auto& input : inputNodes)
+            {
+                input.second.Serialize("C:\\Users\\carlo\\OneDrive\\Documents\\json.txt");
+                
+            }
         }
         assert(nodeId.Get() != -1);
         ImGui::PushID(nodeId.Get());
@@ -82,13 +87,11 @@ namespace UI::Nodes{
         {
             int id = graphNodeResManager->NextWidgetID();
             PinInfo& copiedPin = inputNodes.at(addedWidgets.front());
-            PinInfo pinInfo{
-                .name = copiedPin.name + "_" + std::to_string(id),
-                .nodeType = copiedPin.nodeType,
-                .data = std::any(),
-                .pinKind = copiedPin.pinKind,
-                .id = id
-            };
+            PinInfo pinInfo(copiedPin.name + "_" + std::to_string(id),copiedPin.nodeType);
+            pinInfo.data = std::any();
+            pinInfo.pinKind = copiedPin.pinKind;
+            pinInfo.id = id;
+            
             inputNodes.try_emplace(id, pinInfo);
             drawableWidgets.try_emplace(id, true);
             addedWidgets.pop_front();
@@ -167,13 +170,11 @@ namespace UI::Nodes{
         {
             int id = graphNodeResManager->NextWidgetID();
             PinInfo& copiedPin = outputNodes.at(addedWidgets.front());
-            PinInfo pinInfo{
-                .name = copiedPin.name,
-                .nodeType = copiedPin.nodeType,
-                .data = std::any(),
-                .pinKind = copiedPin.pinKind,
-                .id = id
-            };
+            PinInfo pinInfo(copiedPin.name + "_" + std::to_string(id), copiedPin.nodeType);
+            pinInfo.data = std::any();
+            pinInfo.pinKind = copiedPin.pinKind;
+            pinInfo.id = id;
+            
             outputNodes.try_emplace(id, pinInfo);
             drawableWidgets.try_emplace(id, true);
             addedWidgets.pop_front();

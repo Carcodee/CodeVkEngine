@@ -3,6 +3,10 @@
 // Created by carlo on 2025-02-22.
 //
 
+
+
+
+
 #ifndef GRAPHNODE_HPP
 #define GRAPHNODE_HPP
 
@@ -59,14 +63,42 @@ namespace UI::Nodes{
             ed::PinId outputId;
         };
 
-        struct PinInfo
+        struct PinInfo : SYSTEMS::ISerializable<PinInfo>
         {
             std::string name{};
             NodeType nodeType = N_NONE;
             std::any data = std::any();
             ed::PinKind pinKind{};
             int id = -1;
+            PinInfo(std::string name, NodeType nodeType)
+            {
+                this->name = name;
+                this->nodeType = nodeType;
+            }
 
+            std::string Serialize(std::string filename) override{
+                nlohmann::json json;
+                json["name"] = name;
+                json["nodeType"] = nodeType;
+                //todo data needs to be known;
+                // json["data"] = ;
+                json["pinKind"] = pinKind;
+                json["id"] = id;
+
+                std::string text = json.dump(4);
+                if (!filename.empty())
+                {
+                    SYSTEMS::OS::GetInstance()->WriteFile(filename, text.c_str(), text.size());
+                    
+                }
+                return text; 
+            }
+            PinInfo Deserialize(std::string filename) override{
+                
+
+                return *this;
+            }
+            
             bool HasData()
             {
                 return data.has_value();
