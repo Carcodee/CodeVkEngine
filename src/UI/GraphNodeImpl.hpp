@@ -5,6 +5,7 @@
 // Created by carlo on 2025-02-22.
 //
 
+
 #ifndef GRAPHNODEIMPL_HPP
 #define GRAPHNODEIMPL_HPP
 

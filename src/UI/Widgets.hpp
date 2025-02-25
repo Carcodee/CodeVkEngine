@@ -656,11 +656,14 @@ namespace UI
                 callbacksRegistry.at(N_VERTEX_INPUT).AddCallback("output_c", [](GraphNode& selfNode)
                 {
                     TextInput* inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
-                    std::string vertexName = inputText->content;
+                    std::string vertexName = (inputText->content.empty())
+                                                 ? "default_vertex_input_" + std::to_string(
+                                                     selfNode.renderGraph->resourcesManager->verticesInputs.size())
+                                                 : inputText->content;
                     ENGINE::VertexInput* vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(inputText->content);
-
                     vertexInput->bindingDescription.clear();
                     vertexInput->inputDescription.clear();
+                    
                     size_t offset = 0;
                     int location = 0;
                     int binding = 0;
@@ -679,8 +682,8 @@ namespace UI
                     {
                         vertexInput->AddVertexInputBinding(0, offset);
                     }
-
                     selfNode.SetOuputData("out_vertex_result", vertexName);
+                    
                 });
                 callbacksRegistry.at(N_COMP_SHADER).AddCallback("output_c", [](GraphNode& selfNode){
                     ENGINE::ShaderStage stage = ENGINE::ShaderStage::S_COMP;
@@ -879,7 +882,8 @@ namespace UI
                         EnumSelectable selectable("Vertex Attrib: ", {
                               "INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4","COLOR_32"});
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
-                        builder.AddTextInput(resManager->NextWidgetID(), {"Vertex Name", ""})
+                        
+                        builder.AddTextInput(resManager->NextWidgetID(), {"Vertex Name", "Enter Vertex Name"})
                                .AddDynamicStructure(resManager->NextWidgetID(), dynamicStructureInfo)
                                .AddOutput(resManager->NextWidgetID(), {"out_vertex_result", N_VERTEX_INPUT})
                                .SetNodeId(resManager->NextWidgetID(), "Vertex Input Builder");
@@ -938,7 +942,7 @@ namespace UI
                             .AddOutput(resManager->NextWidgetID(), {"out_shader", N_COMP_SHADER});
                     }
                     scrollables.try_emplace(0, Scrollable{"Possible Shaders", STRING, shaderPaths});
-                    MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables);
+                    MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables, {});
                     builder.AddMultiOption(resManager->NextWidgetID(), multiOptionInfo);
                     break;
                 }

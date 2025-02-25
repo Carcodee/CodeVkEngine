@@ -302,70 +302,18 @@ namespace UI::Nodes{
                 return std::any_cast<T>(content.at(selectedIdx));
             }
         };
-
-        struct MultiOption
-        {
-            std::string name;
-            std::map<int, std::string> options;
-            std::map<int, TextInput> inputTexts;
-            std::map<int, EnumSelectable> selectables;
-            std::map<int, Scrollable> scrollables;
-            int selectedIdx = 0;
-
-            MultiOption(const std::string& name, std::vector<std::string> options, std::map<int, TextInput> inputTexts,
-                        std::map<int, EnumSelectable> selectables, std::map<int, Scrollable> scrollables)
-            {
-                this->name = name;
-                for (int i = 0; i < options.size(); ++i)
-                {
-                    this->options.try_emplace(i, options[i]);
-                }
-                this->inputTexts = inputTexts;
-                this->selectables = selectables;
-                this->scrollables = scrollables;
-            }
-
-            void Draw(const int& id = -1)
-            {
-                if (id > -1)
-                    ImGui::PushID(id);
-                for (auto& option : options)
-                {
-                    if (ImGui::RadioButton(option.second.c_str(), selectedIdx == option.first))
-                    {
-                        selectedIdx = option.first;
-                    }
-                }
-                if (inputTexts.contains(selectedIdx))
-                    inputTexts.at(selectedIdx).Draw();
-
-                if (selectables.contains(selectedIdx))
-                    selectables.at(selectedIdx).Draw();
-
-                if (scrollables.contains(selectedIdx))
-                    scrollables.at(selectedIdx).Draw();
-
-                if (id > -1)
-                    ImGui::PopID();
-            }
-        };
-
         enum WidgetType
         {
-            W_MULTI_OPTION,
             W_SELECTABLE,
             W_TEXT_INPUT,
             W_PRIMITIVE
         };
-
-
         struct DynamicStructure
         {
             struct NodeWidgetsInfos
             {
                 union
                 {
-                    MultiOption multiOptionInfo;
                     EnumSelectable selectableInfo;
                     TextInput textInputInfo;
                     PrimitiveInput primitiveInfo;
@@ -381,9 +329,6 @@ namespace UI::Nodes{
                 {
                     switch (type)
                     {
-                    case W_MULTI_OPTION:
-                        new(&multiOptionInfo) MultiOption(other.multiOptionInfo);
-                        break;
                     case W_SELECTABLE:
                         new(&selectableInfo) EnumSelectable(other.selectableInfo);
                         break;
@@ -400,9 +345,6 @@ namespace UI::Nodes{
                 {
                     switch (type)
                     {
-                    case W_MULTI_OPTION:
-                        new(&multiOptionInfo) MultiOption(std::move(other.multiOptionInfo));
-                        break;
                     case W_SELECTABLE:
                         new(&selectableInfo) EnumSelectable(std::move(other.selectableInfo));
                         break;
@@ -424,9 +366,6 @@ namespace UI::Nodes{
                 {
                     switch (type)
                     {
-                    case W_MULTI_OPTION:
-                        multiOptionInfo.~MultiOption();
-                        break;
                     case W_SELECTABLE:
                         selectableInfo.~EnumSelectable();
                         break;
@@ -447,9 +386,6 @@ namespace UI::Nodes{
                         type = other.type;
                         switch (type)
                         {
-                        case W_MULTI_OPTION:
-                            new(&multiOptionInfo) MultiOption(other.multiOptionInfo);
-                            break;
                         case W_SELECTABLE:
                             new(&selectableInfo) EnumSelectable(other.selectableInfo);
                             break;
@@ -472,9 +408,6 @@ namespace UI::Nodes{
                         type = other.type;
                         switch (type)
                         {
-                        case W_MULTI_OPTION:
-                            new(&multiOptionInfo) MultiOption(std::move(other.multiOptionInfo));
-                            break;
                         case W_SELECTABLE:
                             new(&selectableInfo) EnumSelectable(std::move(other.selectableInfo));
                             break;
@@ -489,7 +422,6 @@ namespace UI::Nodes{
                     return *this;
                 }
             };
-
             std::string name;
             std::map<int, NodeWidgetsInfos> widgetsInfos;
 
@@ -499,14 +431,6 @@ namespace UI::Nodes{
                 this->widgetsInfos = other.widgetsInfos;
             }
 
-            DynamicStructure(const std::string& name, MultiOption& multiOption)
-            {
-                this->name = name;
-                NodeWidgetsInfos baseWidgetInfo = {};
-                baseWidgetInfo.type = W_SELECTABLE;
-                new(&baseWidgetInfo.multiOptionInfo) MultiOption(multiOption);
-                widgetsInfos.try_emplace(widgetsInfos.size(), std::move(baseWidgetInfo));
-            }
 
             DynamicStructure(const std::string& name, EnumSelectable& selectable)
             {
@@ -587,9 +511,6 @@ namespace UI::Nodes{
                 {
                     switch (widgetInfo.second.type)
                     {
-                    case W_MULTI_OPTION:
-                        widgetInfo.second.multiOptionInfo.Draw(wId++);
-                        break;
                     case W_SELECTABLE:
                         widgetInfo.second.selectableInfo.Draw(wId++);
                         break;
@@ -606,6 +527,57 @@ namespace UI::Nodes{
             }
         };
 
+            struct MultiOption
+        {
+            std::string name;
+            std::map<int, std::string> options;
+            std::map<int, TextInput> inputTexts;
+            std::map<int, EnumSelectable> selectables;
+            std::map<int, Scrollable> scrollables;
+            std::map<int, DynamicStructure> dynamicStructures;
+            int selectedIdx = 0;
+
+            MultiOption(const std::string& name, std::vector<std::string> options, std::map<int, TextInput> inputTexts,
+                        std::map<int, EnumSelectable> selectables, std::map<int, Scrollable> scrollables, std::map<int, DynamicStructure> dynamicStructures)
+            {
+                this->name = name;
+                for (int i = 0; i < options.size(); ++i)
+                {
+                    this->options.try_emplace(i, options[i]);
+                }
+                this->inputTexts = inputTexts;
+                this->selectables = selectables;
+                this->scrollables = scrollables;
+                this->dynamicStructures = dynamicStructures;
+            }
+
+            void Draw(const int& id = -1)
+            {
+                if (id > -1)
+                    ImGui::PushID(id);
+                for (auto& option : options)
+                {
+                    if (ImGui::RadioButton(option.second.c_str(), selectedIdx == option.first))
+                    {
+                        selectedIdx = option.first;
+                    }
+                }
+                if (inputTexts.contains(selectedIdx))
+                    inputTexts.at(selectedIdx).Draw();
+
+                if (selectables.contains(selectedIdx))
+                    selectables.at(selectedIdx).Draw();
+
+                if (scrollables.contains(selectedIdx))
+                    scrollables.at(selectedIdx).Draw();
+                    
+                if (dynamicStructures.contains(selectedIdx))
+                    dynamicStructures.at(selectedIdx).Draw();
+
+                if (id > -1)
+                    ImGui::PopID();
+            }
+        };
         struct Button
         {
             std::string name;
