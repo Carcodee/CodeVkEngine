@@ -17,6 +17,8 @@ namespace SYSTEMS
 			workingDir = std::filesystem::current_path();
 			projectPath = GetProjectPath(workingDir);
 			shadersPath = projectPath / "src" / "Shaders";
+			glslShadersTemplatePath = shadersPath / "glsl"/"templates"/
+			slangShadersTemplatePath = shadersPath / "slang"/"templates"/
 			assetsPath = projectPath / "Resources"/"Assets";
 			engineResourcesPath = projectPath / "Resources"/"Engine";
 			
@@ -147,6 +149,8 @@ namespace SYSTEMS
         std::filesystem::path engineResourcesPath;
         std::filesystem::path assetsPath;
 		std::filesystem::path shadersPath;
+		std::filesystem::path glslShadersTemplatePath;
+		std::filesystem::path slangShadersTemplatePath;
         static OS* instance;
 	};
 	

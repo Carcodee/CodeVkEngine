@@ -1,6 +1,7 @@
 //
 
 
+
 // Created by carlo on 2024-11-22.
 //
 
@@ -457,6 +458,24 @@ namespace ENGINE
             }
             assert(false && "invalid shader id");
             return nullptr;
+        }
+        Shader* CreateDefaultShader(std::string name, ShaderStage stage)
+        {
+            if (std::filesystem::exists(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name)
+            || std::filesystem::exists(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name))
+            {
+            }
+            switch (stage)
+            {
+            case S_VERT:
+                break;
+            case S_FRAG:
+                break;
+            case S_COMP:
+                break;
+            case S_UNKNOWN:
+                break;
+            }
             
         }
 
