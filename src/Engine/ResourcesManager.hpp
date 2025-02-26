@@ -187,9 +187,9 @@ namespace ENGINE
 
             auto image = std::make_unique<
                 Image>(core->physicalDevice, core->logicalDevice.get(), imageInfo);
-            int32_t id = (int32_t)storageImagesViews.size();
             if (imageInfo.usage & vk::ImageUsageFlagBits::eStorage)
             {
+                int32_t id = (int32_t)storageImagesViews.size();
                 assert(!storageImagesNames.contains(name) && "Image name already exist");
                 storageImagesNames.try_emplace(name, (int32_t)id);
 
@@ -203,6 +203,7 @@ namespace ENGINE
             else
             {
                 assert(!imagesNames.contains(name) && "Image name already exist");
+                int32_t id = (int32_t)imageViews.size();
                 imagesNames.try_emplace(name, (int32_t)imageViews.size());
                 imageViews.emplace_back(std::make_unique<ImageView>(core->logicalDevice.get(), image->imageData.get(),
                                                                     baseMipLevel, imageInfo.mipLevels, baseArrayLayer,

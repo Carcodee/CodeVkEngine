@@ -582,7 +582,8 @@ namespace UI
                             {
                                 int imageId = image.second->GetData<int>();
                                 std::string imageName = "nodeImage_"+ std::to_string(image.first);
-                                renderNode->AddColorImageResource(imageName, selfNode.renderGraph->resourcesManager->GetImageViewFromId(imageId));
+                                ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetImageViewFromId(imageId);
+                                renderNode->AddColorImageResource(imageName, imgView);
                             }
                             
                         }
@@ -661,12 +662,8 @@ namespace UI
                 });
                 callbacksRegistry.at(N_VERTEX_INPUT).AddCallback("output_c", [](GraphNode& selfNode)
                 {
-                    TextInput* inputText = GetFromNameInMap(selfNode.textInputs, "Vertex Name");
-                    std::string vertexName = (inputText->content.empty())
-                                                 ? "default_vertex_input_" + std::to_string(
-                                                     selfNode.renderGraph->resourcesManager->verticesInputs.size())
-                                                 : inputText->content;
-                    ENGINE::VertexInput* vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(inputText->content);
+                    std::string vertexName = "vertex_input_" + std::to_string(selfNode.globalId);
+                    ENGINE::VertexInput* vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(vertexName);
                     vertexInput->bindingDescription.clear();
                     vertexInput->inputDescription.clear();
                     
@@ -889,8 +886,7 @@ namespace UI
                               "INT", "FLOAT", "VEC2", "VEC3", "VE4", "U8VEC3", "U8VEC4","COLOR_32"});
                         DynamicStructure dynamicStructureInfo("Vertex Builder", selectable);
                         
-                        builder.AddTextInput(resManager->NextWidgetID(), {"Vertex Name", "Enter Vertex Name"})
-                               .AddDynamicStructure(resManager->NextWidgetID(), dynamicStructureInfo)
+                        builder.AddDynamicStructure(resManager->NextWidgetID(), dynamicStructureInfo)
                                .AddOutput(resManager->NextWidgetID(), {"out_vertex_result", N_VERTEX_INPUT})
                                .SetNodeId(resManager->NextWidgetID(), "Vertex Input Builder");
                     }
