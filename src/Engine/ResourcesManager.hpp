@@ -461,13 +461,22 @@ namespace ENGINE
         }
         Shader* CreateDefaultShader(std::string name, ShaderStage stage)
         {
-            if (std::filesystem::exists(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name)
-            || std::filesystem::exists(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name))
+            if (std::filesystem::exists(
+                SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name))
             {
+                assert(shadersNames.contains(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name));
+                return shaders.at(shadersNames.at(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name)).get();
+            }
+            if (std::filesystem::exists(
+                SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name))
+            {
+                assert(shadersNames.contains(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name));
+                return shaders.at(shadersNames.at(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name)).get();
             }
             switch (stage)
             {
             case S_VERT:
+                
                 break;
             case S_FRAG:
                 break;
