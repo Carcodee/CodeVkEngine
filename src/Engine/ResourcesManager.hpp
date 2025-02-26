@@ -470,6 +470,18 @@ namespace ENGINE
             VertexInput* vertexInput = verticesInputs.back().get();
             return vertexInput;
         }
+        VertexInput* GetVertexInputFromId(int id)
+        {
+            for (auto& name : verticesInputsNames)
+            {
+                if (name.second == id)
+                {
+                    return verticesInputs.at(name.second).get();
+                }
+            }
+            assert(false && "invalid vertex id");
+        }
+        
         
 
         DsetsInfo AllocateDset(vk::DescriptorSetLayout dstSetLayout)
@@ -533,6 +545,45 @@ namespace ENGINE
             return storageImagesViews.at(storageImagesNames.at(name)).get();
         }
 
+        ImageView* GetImageViewFromId(int id)
+        {
+            for (auto& imageName : imagesNames)
+            {
+                if (imageName.second == id)
+                {
+                    return imageViews.at(id).get();
+                }
+            }
+            SYSTEMS::Logger::GetInstance()->Log("Image View With id: " + std::to_string(id) + "Does not exist");
+            return nullptr;
+        }
+
+        ImageShipper* GetShipperFromId(int id)
+        {
+            for (auto& imageName : imagesShippersNames)
+            {
+                if (imageName.second == id)
+                {
+                    return imageShippers.at(id).get();
+                }
+            }
+            SYSTEMS::Logger::GetInstance()->Log("Image View With id: " + std::to_string(id) + "Does not exist");
+            return nullptr;
+        }
+
+        ImageView* GetStorageFromId(int id)
+        {
+            for (auto& imageName : storageImagesNames)
+            {
+                if (imageName.second == id)
+                {
+                    return storageImagesViews.at(id).get();
+                }
+            }
+            SYSTEMS::Logger::GetInstance()->Log("Image View With id: " + std::to_string(id) + "Does not exist");
+            return nullptr;
+        }
+        
         Buffer* GetBuffFromName(std::string name)
         {
             if (!bufferNames.contains(name))

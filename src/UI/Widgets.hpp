@@ -11,6 +11,7 @@
 
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -453,7 +454,7 @@ namespace UI
                         }
                     }
                     
-                    PinInfo* image;
+                    std::map<int, PinInfo*> images;
                     PinInfo* depthImage;
                     int expectedColAttachments = 0;
                     
@@ -499,12 +500,12 @@ namespace UI
                             };
                             colFormatData = colFormat->GetEnumFromIndex<vk::Format>(validFormats);
 
-                            image = graphNodeRef->GetInputDataByName("Col Attachment Sampler");
+                            PinInfo* image = graphNodeRef->GetInputDataByName("Col Attachment Sampler");
                             if (image->HasData())
                             {
                                 configsAdded.at(N_COL_ATTACHMENT_STRUCTURE).added++;
-                                info = ENGINE::GetColorAttachmentInfo(
-                                    clearColData, colFormatData, loadOpData, storeOpData);
+                                info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData, storeOpData);
+                                images.try_emplace(graphNodeRef->globalId, image);
                             }
                         }
                         if (id.second.nodeType == N_DEPTH_STRUCTURE)
@@ -575,13 +576,17 @@ namespace UI
                         renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
                         renderNode->SetVertexInput(*vertexInput);
                         renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
-                        if (image->HasData())
+                        for (auto& image : images)
                         {
-                            std::string imageName = image->GetData<std::string>();
-                            renderNode->AddColorImageResource(
-                                imageName,
-                                selfNode.renderGraph->resourcesManager->GetImageViewFromName(imageName));
+                            if (image.second->HasData())
+                            {
+                                int imageId = image.second->GetData<int>();
+                                std::string imageName = "nodeImage_"+ std::to_string(image.first);
+                                renderNode->AddColorImageResource(imageName, selfNode.renderGraph->resourcesManager->GetImageViewFromId(imageId));
+                            }
+                            
                         }
+
                         if (configsAdded.contains(N_DEPTH_STRUCTURE))
                         {
                             if (depthImage->HasData())
@@ -603,15 +608,15 @@ namespace UI
                 {
                     selfNode.SetOuputData("out_col_structure", selfNode.globalId);
                 });
-                callbacksRegistry.at(N_DEPTH_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode)
-                {
+                callbacksRegistry.at(N_DEPTH_STRUCTURE).AddCallback("output_c", [](GraphNode& selfNode) {
                     selfNode.SetOuputData("out_depth_structure", selfNode.globalId);
                 });
                 callbacksRegistry.at(N_PUSH_CONSTANT).AddCallback("output_c", [](GraphNode& selfNode){});
                 
                 callbacksRegistry.at(N_IMAGE_SAMPLER).AddCallback("output_c", [](GraphNode& selfNode)
                 {
-                    std::string imgName = selfNode.GetTextInput("Img Name")->content;
+                    std::string imgName = "nodeImage_" + std::to_string(selfNode.globalId);
+                    
                     assert(!imgName.empty() && "Img name is not valid");
                     auto imageInfo = ENGINE::Image::CreateInfo2d(selfNode.windowProvider->GetWindowSize(), 1, 1,
                                                                  ENGINE::g_32bFormat,
@@ -619,7 +624,7 @@ namespace UI
                                                                  vk::ImageUsageFlagBits::eSampled);
                     ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetImage(
                         imgName, imageInfo, 0, 0);
-                    selfNode.SetOuputData("out_img_sampler", imgName);
+                    selfNode.SetOuputData("out_img_sampler", imgView->id);
 
                     assert(imgView && "Image view must be valid");
                 });
@@ -863,7 +868,6 @@ namespace UI
                     break;
                 case N_IMAGE_SAMPLER:
                     builder
-                        .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
                         .AddOutput(resManager->NextWidgetID(), {"out_img_sampler", N_IMAGE_SAMPLER})
                         .SetNodeId(resManager->NextWidgetID(), "Sampler Image Node");
                     break;
