@@ -441,6 +441,7 @@ namespace UI
                         configsAdded.try_emplace(N_COL_ATTACHMENT_STRUCTURE, ExpectedConfigs{0, 1});
                         configsAdded.try_emplace(N_VERT_SHADER, ExpectedConfigs{0, 1});
                         configsAdded.try_emplace(N_FRAG_SHADER, ExpectedConfigs{0, 1});
+                        configsAdded.try_emplace(N_IMAGE_STORAGE, ExpectedConfigs{0, 0});
                         if (vert->HasData())
                         {
                             configsAdded.at(N_VERT_SHADER).added++;
@@ -455,6 +456,7 @@ namespace UI
                     }
                     
                     std::map<int, PinInfo*> images;
+                    std::map<int, PinInfo*> storageImages;
                     PinInfo* depthImage;
                     int expectedColAttachments = 0;
                     
@@ -470,6 +472,25 @@ namespace UI
                     
                     for (auto id : selfNode.inputNodes)
                     {
+                        if (id.second.nodeType == N_IMAGE_STORAGE)
+                        {
+                            configsAdded.at(N_IMAGE_STORAGE).expected++;
+                            if (!id.second.HasData())
+                            {
+                                continue;
+                            }
+                            GraphNode* graphNodeRef = selfNode.graphNodesRef->at(id.second.GetData<int>());
+                            PinInfo* image = graphNodeRef->GetOutputDataByName("out_img_storage");
+                            
+                            if (image->HasData())
+                            {
+                                configsAdded.at(N_IMAGE_STORAGE).added++;
+                                info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData,
+                                                                      storeOpData);
+                                storageImages.try_emplace(graphNodeRef->globalId, image);
+                            }
+                            
+                        }
                         if (id.second.nodeType == N_COL_ATTACHMENT_STRUCTURE)
                         {
                             expectedColAttachments++;
@@ -563,6 +584,16 @@ namespace UI
                     name = (nodeName)? nodeName->content : "PassName_" + std::to_string(selfNode.renderGraph->renderNodes.size());
                     
                     auto renderNode = selfNode.renderGraph->AddPass(name);
+
+                    for (auto& image : storageImages)
+                    {
+                        if (!image.second->HasData()) { continue; }
+                        int imageId = image.second->GetData<int>();
+                        std::string imageName = "nodeImage_" + std::to_string(image.first);
+                        ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetStorageFromId(
+                            imageId);
+                        renderNode->AddStorageResource(imageName, imgView);
+                    }
                     if (configsAdded.contains(N_COMP_SHADER))
                     {
                         renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
@@ -578,14 +609,12 @@ namespace UI
                         renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
                         for (auto& image : images)
                         {
-                            if (image.second->HasData())
-                            {
-                                int imageId = image.second->GetData<int>();
-                                std::string imageName = "nodeImage_"+ std::to_string(image.first);
-                                ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetImageViewFromId(imageId);
-                                renderNode->AddColorImageResource(imageName, imgView);
-                            }
-                            
+                            if (!image.second->HasData()) { continue; }
+                            int imageId = image.second->GetData<int>();
+                            std::string imageName = "nodeImage_" + std::to_string(image.first);
+                            ENGINE::ImageView* imgView = selfNode.renderGraph->resourcesManager->GetImageViewFromId(
+                                imageId);
+                            renderNode->AddColorImageResource(imageName, imgView);
                         }
 
                         if (configsAdded.contains(N_DEPTH_STRUCTURE))
@@ -599,6 +628,7 @@ namespace UI
                                         imageName));
                             }
                         }
+                        
                         renderNode->SetConfigs({true});
                         renderNode->BuildRenderGraphNode();
                         renderNode->active = false;
@@ -631,8 +661,7 @@ namespace UI
                 });
                 callbacksRegistry.at(N_IMAGE_STORAGE).AddCallback("output_c", [](GraphNode& selfNode)
                 {
-                           std::string imgName = selfNode.GetTextInput("Img Name")->content;
-                            assert(!imgName.empty() && "Img name is not valid");
+                           std::string imgName = "nodeImage_" + std::to_string(selfNode.globalId);;
 
                             auto storageImageInfo = ENGINE::Image::CreateInfo2d(selfNode.windowProvider->GetWindowSize(), 1, 1,
                                 ENGINE::g_32bFormat,
@@ -641,7 +670,7 @@ namespace UI
 
                             ENGINE::ImageView* storageImgView = selfNode.renderGraph->resourcesManager->GetImage(
                                 imgName, storageImageInfo, 0, 0);
-                            selfNode.SetOuputData("out_img_storage", imgName);
+                            selfNode.SetOuputData("out_img_storage", storageImgView->id);
 
                             assert(storageImgView && "Image view must be valid");
                 });
@@ -870,7 +899,6 @@ namespace UI
                     break;
                 case N_IMAGE_STORAGE:
                     builder
-                        .AddTextInput(resManager->NextWidgetID(), {"Img Name", "Image Name"})
                         .AddOutput(resManager->NextWidgetID(), {"out_img_storage", N_IMAGE_STORAGE})
                         .SetNodeId(resManager->NextWidgetID(), "Storage Image Node");
                     break;
