@@ -119,6 +119,16 @@ namespace ENGINE
                 .setExtent({scissorSize.x, scissorSize.y});
             
         }
+        void Reset()
+        {
+            colorFormats.clear();
+            depthFormat = vk::Format::eUndefined;
+            expectedColorAttachmentSize = 0;
+            renderInfo = vk::RenderingInfo();
+            pipelineRenderingCreateInfo = vk::PipelineRenderingCreateInfo();
+            viewport = vk::Viewport();
+            scissor = vk::Rect2D();
+        }
         std::vector<vk::Format> colorFormats;
         vk::Format depthFormat;
         uint32_t expectedColorAttachmentSize = 0;

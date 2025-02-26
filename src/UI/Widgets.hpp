@@ -584,6 +584,10 @@ namespace UI
                     name = (nodeName)? nodeName->content : "PassName_" + std::to_string(selfNode.renderGraph->renderNodes.size());
                     
                     auto renderNode = selfNode.renderGraph->AddPass(name);
+                    if (renderNode->active)
+                    {
+                        return;
+                    }
 
                     for (auto& image : storageImages)
                     {

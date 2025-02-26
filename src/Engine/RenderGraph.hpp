@@ -3,6 +3,7 @@
 //
 
 
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -624,6 +625,37 @@ namespace ENGINE
         void SetConfigs(RenderNodeConfigs configs)
         {
             this->configs = configs;
+        }
+        void Reset()
+        {
+            pipeline.release();
+            pipelineLayout.release();
+            pipelineCache.release();
+            pipelineLayoutCI = vk::PipelineLayoutCreateInfo();
+            pushConstantRange = vk::PushConstantRange();
+            pipelineType = vk::PipelineBindPoint::eGraphics;
+            dynamicRenderPass.Reset();
+            descCache.release();
+            active = false;
+            rasterizationConfigs = R_FILL;
+            colorBlendConfigs.clear();
+            depthConfig = D_NONE;
+            vertexInput.bindingDescription.clear();
+            vertexInput.inputDescription.clear();
+            frameBufferSize = {0, 0};
+            pushConstantSize = 0;
+
+            colAttachments.clear();
+            depthAttachment = {};
+            depthImage = nullptr;
+            shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
+
+            imagesAttachment.clear();
+            storageImages.clear();
+            sampledImages.clear();
+            buffers.clear();
+            ClearOperations();
+            dependencies.clear();
         }
 
         vk::UniquePipeline pipeline;
