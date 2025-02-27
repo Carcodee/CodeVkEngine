@@ -189,7 +189,7 @@ namespace ENGINE
         return std::vector<uint32_t>();
     }
 
-    static std::string GetSlangEntryPoint(std::filesystem::path path, ShaderStage stage)
+    static std::string GetSlangEntryPoint(ShaderStage stage)
     {
         std::string entryPoint = "";
         switch (stage)
@@ -431,7 +431,7 @@ set "errorfound="
             std::vector<uint32_t> byteCode;
             if (std::filesystem::path(path).extension() == ".slang")
             {
-                std::string entryPoint = GetSlangEntryPoint(path, stage);
+                std::string entryPoint = GetSlangEntryPoint(stage);
                 byteCode = CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
                 if (byteCode.empty())
                 {
