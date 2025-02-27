@@ -483,7 +483,7 @@ set "errorfound="
                 {
                     if (filePath.extension() == ".slang")
                     {
-                        std::string entryPoint = GetSlangEntryPoint(filePath, stage);
+                        std::string entryPoint = GetSlangEntryPoint(stage);
                         std::string code = SYSTEMS::OS::ReadFile(path);
                         CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
                     }else
