@@ -25,14 +25,10 @@ namespace SYSTEMS
 			
 		}
 
-
 		static OS* GetInstance()
 		{
-			if (instance == nullptr)
-			{
-				instance = new OS;
-			}
-			return instance;
+			static OS instance;
+			return &instance;
 		}
 
 
@@ -128,7 +124,7 @@ namespace SYSTEMS
 			std::ofstream dst(dstFile, std::ios::binary);
 			if (!dst)
 			{
-				assert(false &&"Impossible to create dst file");
+				Logger::GetInstance()->Log("File: (" + dstFile + ") could not be created");
 			}
 		}
 
@@ -138,11 +134,13 @@ namespace SYSTEMS
 			if (!file.is_open())
 			{
 				assert(false &&"Impossible to write file");
+				Logger::GetInstance()->Log("File: (" + path + ") could not be opened");
+				return;
 			}
 			file.write(text, size);
 			file.close();
 
-			Logger::GetInstance()->Log("File: " + path + " was writed succesfully");
+			Logger::GetInstance()->Log("File: (" + path + ") was writed succesfully");
 			
 		}
 
@@ -160,12 +158,41 @@ namespace SYSTEMS
 			}
 
 			dst << src.rdbuf();
-			Logger::GetInstance()->Log("File: "+srcFile + " was copied to: " + dstFile);
+			Logger::GetInstance()->Log("File: ("+srcFile + ") was copied to: " + dstFile);
 			src.close();
 			dst.close();
-			
 		}
+			
+		static void DeleteExistingFile(const std::string& path)
+		{
+			if (!std::filesystem::exists(path))
+			{
+				Logger::GetInstance()->Log("File: (" + path + ") does not exist");
+				return;
+			}
+			if(std::remove(path.c_str()) == 0)
+			{
+				Logger::GetInstance()->Log("File: (" + path + ") was deleted succesfully");
+			}else
+			{
+				Logger::GetInstance()->Log("File: (" + path + ") was not deleted");
+			}
+		}
+		static void AppendDataToFile(const std::string& path, const std::string& data)
+		{
+			std::ofstream file(path, std::ios::app);
+			if (file)
+			{
+				file << data;
+				Logger::GetInstance()->Log("File: (" + path + ") was appended successfully");
+			}else
+			{
+				
+				Logger::GetInstance()->Log("File: (" + path + ") was not appended");
+			}
 		
+		}
+
 		std::filesystem::path workingDir;
 		std::filesystem::path projectPath;
         std::filesystem::path engineResourcesPath;
@@ -173,10 +200,10 @@ namespace SYSTEMS
 		std::filesystem::path shadersPath;
 		std::filesystem::path glslShadersTemplatePath;
 		std::filesystem::path slangShadersTemplatePath;
+		std::queue<std::string_view> tempFilesToDestroy;
         static OS* instance;
 	};
 	
-    OS* OS::instance = nullptr;
 }
 
 #endif //OS_HPP

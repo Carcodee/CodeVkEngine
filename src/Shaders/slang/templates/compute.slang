@@ -1,14 +1,14 @@
-﻿// BasicComputeShader.slang
-
 [[vk::binding(0, 0)]]
-Sampler2D InTex;
-
+StructuredBuffer<float> buffer0;
 [[vk::binding(1, 0)]]
-RWTexture2D<float4> OutTex;
+StructuredBuffer<float> buffer1;
+[[vk::binding(2, 0)]]
+RWStructuredBuffer<float> result;
 
 [shader("compute")]
-[numthreads(16, 16, 1)]
-void mainCS(uint2 dtid : SV_DispatchThreadID)
+[numthreads(1,1,1)]
+void mainCS(uint3 threadId : SV_DispatchThreadID)
 {
-    OutTex[dtid.xy] = InTex[dtid.xy];
+    uint index = threadId.x;
+    result[index] = buffer0[index] + buffer1[index];
 }

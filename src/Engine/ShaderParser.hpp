@@ -173,8 +173,6 @@ namespace ENGINE
         size_t spirvSize = 0;
         const void* spirvCode = spGetEntryPointCode(request, 0, &spirvSize);
 
-        spDestroyCompileRequest(request);
-        spDestroySession(session);
         
         if (spirvCode)
         {
@@ -185,6 +183,9 @@ namespace ENGINE
             return std::vector<uint32_t>(spirvWords, spirvWords + wordCount);
         }
 
+        spDestroyCompileRequest(request);
+        spDestroySession(session);
+        
         assert(false && "error when compiling into spirv at runtime");
         return std::vector<uint32_t>();
     }
@@ -484,7 +485,7 @@ set "errorfound="
                     if (filePath.extension() == ".slang")
                     {
                         std::string entryPoint = GetSlangEntryPoint(stage);
-                        std::string code = SYSTEMS::OS::ReadFile(path);
+                        std::string code = SYSTEMS::OS::ReadFile(filePath.string());
                         CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
                     }else
                     {

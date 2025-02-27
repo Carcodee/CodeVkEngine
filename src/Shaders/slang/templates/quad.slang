@@ -1,4 +1,4 @@
-﻿struct VSInput {
+struct VSInput {
     float2 position : POSITION;    // Input vertex position (clip-space)
     float2 uv : TEXCOORD;          // Input UV coordinates
 };

@@ -1,4 +1,4 @@
-﻿struct PushConstants {
+struct PushConstants {
     float4 color;
     int layerSelected;
     int painting;
@@ -15,6 +15,9 @@ cbuffer PushConstantsBuffer{
 // Declare textures for painting layers
 [[vk::binding(0, 0)]]
 RWTexture2D<float4> PaintingLayers[2];
+
+[[vk::binding(1, 0)]]
+Sampler2D InTex;
 
 // Entry point for compute shader
 [numthreads(1, 1, 1)]

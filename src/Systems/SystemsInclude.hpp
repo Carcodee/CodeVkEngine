@@ -48,5 +48,6 @@
 #include "ObserverSystem.hpp"
 #include "FileWatcher.hpp"
 #include "SerializeSystem.hpp"
+#include "FilesManager.hpp"
 
 #endif //SYSTEMSINCLUDE_HPP

@@ -159,7 +159,6 @@ namespace Rendering
 
             paintCompShader = renderGraph->resourcesManager->GetShader(
                                                        shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-
             auto* paintingNode = renderGraph->AddPass(paintingPassName);
             paintingNode->SetCompShader(paintCompShader);
             // paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);

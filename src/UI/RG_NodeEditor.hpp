@@ -45,17 +45,17 @@ namespace UI
 
             std::vector<Nodes::NodeType> nodesList = {
                Nodes::N_RENDER_NODE,
-               Nodes::N_RENDER_NODE,
-               Nodes::N_VERT_SHADER,
-               Nodes::N_FRAG_SHADER,
-               // Nodes::N_COMP_SHADER,
-               Nodes::N_COL_ATTACHMENT_STRUCTURE,
+               // Nodes::N_RENDER_NODE,
+               // Nodes::N_VERT_SHADER,
+               // Nodes::N_FRAG_SHADER,
+               Nodes::N_COMP_SHADER,
+               // Nodes::N_COL_ATTACHMENT_STRUCTURE,
                // Nodes::N_DEPTH_STRUCTURE,
                // Nodes::N_PUSH_CONSTANT,
-               Nodes::N_IMAGE_SAMPLER,
+               // Nodes::N_IMAGE_SAMPLER,
                // Nodes::N_IMAGE_STORAGE,
                // Nodes::N_DEPTH_IMAGE_SAMPLER,
-               Nodes::N_VERTEX_INPUT,
+               // Nodes::N_VERTEX_INPUT,
                 // N_BUFFER
             };
             //test
