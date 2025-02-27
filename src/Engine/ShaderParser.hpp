@@ -178,7 +178,8 @@ namespace ENGINE
         
         if (spirvCode)
         {
-            SYSTEMS::OS::WriteFile(outFile, reinterpret_cast<const char*>(spirvCode), spirvSize);
+            const char* spirvCodeData =  reinterpret_cast<const char*>(spirvCode);
+            SYSTEMS::OS::WriteFile(outFile,spirvCodeData , spirvSize);
             const uint32_t* spirvWords = reinterpret_cast<const uint32_t*>(spirvCode);
             size_t wordCount = spirvSize / sizeof(uint32_t);;
             return std::vector<uint32_t>(spirvWords, spirvWords + wordCount);
@@ -418,20 +419,7 @@ set "errorfound="
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
             shaderFileInfo = std::make_unique<SYSTEMS::FileInfo>(this->path);
         }
-        void CreateShaderFromTemplate(const std::filesystem::path path)
-        {
-            if (path.extension() == ".slang")
-            {
-                
-            }else if(path.extension() == ".frag" || path.extension() == ".vert" || path.extension() == ".comp")
-            {
-                
-            }else
-            {
-                assert(false && "impossible to create file at that location");
-            }
-            
-        }
+
         void Reload()
         {
             shaderFileInfo->CheckLastTimeWrite();

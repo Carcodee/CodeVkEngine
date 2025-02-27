@@ -468,16 +468,14 @@ namespace ENGINE
         Shader* CreateDefaultShader(std::string name, ShaderStage stage)
         {
             name += ".slang";
-            std::filesystem::path possibleShader = SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name;
-            possibleShader = ConvertShaderPathToSpirv(possibleShader, stage);
             
-            if (std::filesystem::exists(possibleShader))
-            {
-                assert(shadersNames.contains(possibleShader.string()));
-                return shaders.at(shadersNames.at(possibleShader.string())).get();
-            }
-            std::filesystem::path templatePath = SYSTEMS::OS::GetInstance()->slangShadersTemplatePath;
             std::filesystem::path targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "slang"/"generated"/ name;
+            if (std::filesystem::exists(targetPath))
+            {
+                return GetShader(targetPath.string(), stage);
+            }
+            
+            std::filesystem::path templatePath = SYSTEMS::OS::GetInstance()->slangShadersTemplatePath;
             if (stage == ShaderStage::S_COMP)
             {
                 templatePath /= "compute.slang";
