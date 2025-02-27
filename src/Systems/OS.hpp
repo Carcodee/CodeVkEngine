@@ -85,6 +85,27 @@ namespace SYSTEMS
 		{
 			return shadersPath.string();
 		}
+
+		std::string GetGlslTemplatePath()
+		{
+			return glslShadersTemplatePath.string();
+		}
+
+		std::string GetSlangTemplatePath()
+		{
+			return slangShadersTemplatePath.string();
+		}
+		static std::string GetExtension(std::string name)
+		{
+			size_t pointPos = name.find_last_of(".");
+			if (pointPos > name.size() || pointPos < 0)
+			{
+				return "";
+			}
+			std::string extension = name.substr(pointPos, name.back());
+			return extension;
+			
+		}
 		
 		static std::string ReadFile(const std::string& path)
 		{

@@ -27,7 +27,12 @@ namespace ENGINE
     
     static std::string ConvertShaderPathToSpirv(const std::filesystem::path& filePath, ShaderStage stage)
     {
-        assert((filePath.extension() == ".slang" || filePath.extension() == ".vert" || filePath.extension() == ".frag" || filePath.extension() == ".comp") && "Path is not a shader");
+        assert((filePath.extension() == ".slang" || filePath.extension() == ".vert" || filePath.extension() == ".frag" || filePath.extension() == ".comp" || filePath.extension() == ".spv") && "Path is not a shader");
+        if (filePath.extension().string() == ".spv")
+        {
+            SYSTEMS::Logger::GetInstance()->LogMessage("Shader is already spv no conversion needed");
+            return filePath.string();
+        }
         std::filesystem::path spirvPath;
         for (auto& dirsParts : filePath)
         {

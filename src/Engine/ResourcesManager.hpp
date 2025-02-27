@@ -2,6 +2,8 @@
 
 
 
+
+
 // Created by carlo on 2024-11-22.
 //
 
@@ -442,6 +444,8 @@ namespace ENGINE
             {
                 return shaders.at(shadersNames.at(path)).get();
             }
+            path = ConvertShaderPathToSpirv(path, stage);
+            
             shadersNames.try_emplace(path, shaders.size());
             shaders.emplace_back(std::make_unique<Shader>(core->logicalDevice.get(), path, stage));
             Shader* shader = shaders.back().get();
@@ -461,31 +465,25 @@ namespace ENGINE
         }
         Shader* CreateDefaultShader(std::string name, ShaderStage stage)
         {
-            if (std::filesystem::exists(
-                SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name))
-            {
-                assert(shadersNames.contains(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name));
-                return shaders.at(shadersNames.at(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\glsl\\generated\\" + name)).get();
-            }
-            if (std::filesystem::exists(
-                SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name))
-            {
-                assert(shadersNames.contains(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name));
-                return shaders.at(shadersNames.at(SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name)).get();
-            }
-            switch (stage)
-            {
-            case S_VERT:
-                
-                break;
-            case S_FRAG:
-                break;
-            case S_COMP:
-                break;
-            case S_UNKNOWN:
-                break;
-            }
+            name += ".slang";
+            std::filesystem::path possibleShader = SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\slang\\generated\\" + name;
+            possibleShader = ConvertShaderPathToSpirv(possibleShader, stage);
             
+            if (std::filesystem::exists(possibleShader))
+            {
+                assert(shadersNames.contains(possibleShader.string()));
+                return shaders.at(shadersNames.at(possibleShader.string())).get();
+            }
+            std::filesystem::path templatePath = SYSTEMS::OS::GetInstance()->slangShadersTemplatePath;
+            std::filesystem::path targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "generated"/ name;
+            if (targetPath.extension().string() == "")
+            {
+                 targetPath.string() += ".slang";  
+            }
+            SYSTEMS::OS::GetInstance()->CopyFileInto(templatePath.string(), targetPath.string());
+
+            Shader* shader= GetShader(targetPath.string(), stage);
+            return shader;
         }
 
         VertexInput* GetVertexInput(std::string name)
