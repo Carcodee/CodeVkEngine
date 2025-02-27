@@ -444,10 +444,12 @@ namespace ENGINE
             {
                 return shaders.at(shadersNames.at(path)).get();
             }
-            path = ConvertShaderPathToSpirv(path, stage);
+            int id = shaders.size();
             
-            shadersNames.try_emplace(path, shaders.size());
             shaders.emplace_back(std::make_unique<Shader>(core->logicalDevice.get(), path, stage));
+            
+            shadersNames.try_emplace(shaders.back()->spirvPath, id);
+            
             Shader* shader = shaders.back().get();
             return shader;
         }
@@ -475,11 +477,15 @@ namespace ENGINE
                 return shaders.at(shadersNames.at(possibleShader.string())).get();
             }
             std::filesystem::path templatePath = SYSTEMS::OS::GetInstance()->slangShadersTemplatePath;
-            std::filesystem::path targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "generated"/ name;
-            if (targetPath.extension().string() == "")
+            std::filesystem::path targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "slang"/"generated"/ name;
+            if (stage == ShaderStage::S_COMP)
             {
-                 targetPath.string() += ".slang";  
+                templatePath /= "compute.slang";
+            }else
+            {
+                templatePath /= "quad.slang";
             }
+            
             SYSTEMS::OS::GetInstance()->CopyFileInto(templatePath.string(), targetPath.string());
 
             Shader* shader= GetShader(targetPath.string(), stage);

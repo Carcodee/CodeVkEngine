@@ -188,8 +188,28 @@ namespace ENGINE
         return std::vector<uint32_t>();
     }
 
-    static void CompileGlslIntoSpirv(const std::string& path ,
-                                                      const std::string& outFile)
+    static std::string GetSlangEntryPoint(std::filesystem::path path, ShaderStage stage)
+    {
+        std::string entryPoint = "";
+        switch (stage)
+        {
+        case S_VERT:
+            entryPoint = "mainVS";
+            break;
+        case S_FRAG:
+            entryPoint = "mainFS";
+            break;
+        case S_COMP:
+            entryPoint = "mainCS";
+            break;
+        case S_UNKNOWN:
+            assert(false && "uknown stage");
+            break;
+        }
+        return entryPoint;
+    }
+
+    static void CompileGlslIntoSpirv(const std::string& outFile, const std::string& path)
     {
         std::string tempFilePath = SYSTEMS::OS::GetInstance()->GetShadersPath() + "\\tempFile.bat";
         SYSTEMS::OS::CreateFileAt(tempFilePath);
@@ -423,22 +443,7 @@ set "errorfound="
             std::vector<uint32_t> byteCode;
             if (std::filesystem::path(path).extension() == ".slang")
             {
-                std::string entryPoint = "";
-                switch (stage)
-                {
-                case S_VERT:
-                    entryPoint = "mainVS";
-                    break;
-                case S_FRAG:
-                    entryPoint = "mainFS";
-                    break;
-                case S_COMP:
-                    entryPoint = "mainCS";
-                    break;
-                case S_UNKNOWN:
-                    assert(false && "uknown stage");
-                    break;
-                }
+                std::string entryPoint = GetSlangEntryPoint(path, stage);
                 byteCode = CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
                 if (byteCode.empty())
                 {
@@ -449,7 +454,7 @@ set "errorfound="
                 || std::filesystem::path(path).extension() == ".comp")
             {
                 
-                CompileGlslIntoSpirv(path,spirvPath);
+                CompileGlslIntoSpirv(spirvPath, path);
                 byteCode = GetByteCode(spirvPath);
             }else
             {
@@ -464,6 +469,8 @@ set "errorfound="
             SYSTEMS::Logger::GetInstance()->LogMessage("SPIRV: "+ spirvPath);
             shaderFileInfo->Invalidate();
         }
+
+
 
         void HandlePathReceived(const std::string& path)
         {
@@ -483,7 +490,19 @@ set "errorfound="
 
                 std::string spirvPath ="";
                 spirvPath = ConvertShaderPathToSpirv(filePath, stage);
-                
+
+                if (std::filesystem::exists(filePath) && !std::filesystem::exists(spirvPath))
+                {
+                    if (filePath.extension() == ".slang")
+                    {
+                        std::string entryPoint = GetSlangEntryPoint(filePath, stage);
+                        std::string code = SYSTEMS::OS::ReadFile(path);
+                        CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
+                    }else
+                    {
+                        CompileGlslIntoSpirv(spirvPath, path);
+                    }
+                }
                 assert((std::filesystem::exists(spirvPath) && (spirvPath != filePath) && "invalid shader path"));
                 this->spirvPath = spirvPath;
                 this->path = path;

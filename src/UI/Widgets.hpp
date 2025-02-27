@@ -12,6 +12,7 @@
 
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -733,9 +734,8 @@ namespace UI
                         shaderSelected = multiOption->scrollables.at(0).GetCurrent<std::string>();
                         break;
                     case 1:
-                        shaderSelected = SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\" + multiOption->
-                            inputTexts.at(1).content;
-                        selfNode.renderGraph->resourcesManager->GetShader(shaderSelected, stage);
+                        shaderSelected = multiOption->inputTexts.at(1).content;
+                        selfNode.renderGraph->resourcesManager->CreateDefaultShader(shaderSelected, stage);
                         break;
                     }
                     int shaderIdx = -1;
@@ -758,9 +758,8 @@ namespace UI
                         shaderSelected = multiOption->scrollables.at(0).GetCurrent<std::string>();
                         break;
                     case 1:
-                        shaderSelected = SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\" + multiOption->
-                            inputTexts.at(1).content;
-                        selfNode.renderGraph->resourcesManager->GetShader(shaderSelected, stage);
+                        shaderSelected = multiOption->inputTexts.at(1).content;
+                        selfNode.renderGraph->resourcesManager->CreateDefaultShader(shaderSelected, stage);
                         break;
                     }
                     int shaderIdx = -1;
@@ -783,9 +782,8 @@ namespace UI
                         shaderSelected = multiOption->scrollables.at(0).GetCurrent<std::string>();
                         break;
                     case 1:
-                        shaderSelected = SYSTEMS::OS::GetInstance()->shadersPath.string() + "\\" + multiOption->
-                            inputTexts.at(1).content;
-                        selfNode.renderGraph->resourcesManager->GetShader(shaderSelected, stage);
+                        shaderSelected = multiOption->inputTexts.at(1).content;
+                        selfNode.renderGraph->resourcesManager->CreateDefaultShader(shaderSelected, stage);
                         break;
                     }
                     int shaderIdx = -1;

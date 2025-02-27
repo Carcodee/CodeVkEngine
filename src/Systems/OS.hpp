@@ -17,10 +17,11 @@ namespace SYSTEMS
 			workingDir = std::filesystem::current_path();
 			projectPath = GetProjectPath(workingDir);
 			shadersPath = projectPath / "src" / "Shaders";
-			glslShadersTemplatePath = shadersPath / "glsl"/"templates"/
-			slangShadersTemplatePath = shadersPath / "slang"/"templates"/
 			assetsPath = projectPath / "Resources"/"Assets";
 			engineResourcesPath = projectPath / "Resources"/"Engine";
+			
+			glslShadersTemplatePath = shadersPath / "glsl"/"templates";
+			slangShadersTemplatePath = shadersPath / "slang"/"templates";
 			
 		}
 
