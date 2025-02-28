@@ -19,6 +19,7 @@
 
 
 
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -44,6 +45,7 @@ namespace UI
             this->factory.resManager = &resManager;
 
             std::vector<Nodes::NodeType> nodesList = {
+               Nodes::N_ROOT_NODE,
                Nodes::N_RENDER_NODE,
                // Nodes::N_RENDER_NODE,
                // Nodes::N_VERT_SHADER,
@@ -125,7 +127,9 @@ namespace UI
 
                         if ((startPin && endPin) && (pinNodes.size() == 2))
                         {
-                            if (startPin->nodeType == endPin->nodeType)
+                            bool validLink= Nodes::IsValidNodeCombination(startPin->nodeType, endPin->nodeType);
+                            
+                            if (validLink)
                             {
                                 Nodes::GraphNode* outputGraphNodeRef = pinNodes.at(ed::PinKind::Output);
                                 Nodes::GraphNode* inputGraphNodeRef = pinNodes.at(ed::PinKind::Input);

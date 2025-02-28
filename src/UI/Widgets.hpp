@@ -395,6 +395,7 @@ namespace UI
                 return nullptr;
             }
             GraphNodeRegistry() {
+                callbacksRegistry.try_emplace(N_ROOT_NODE, CallbackInfo{});
                 callbacksRegistry.try_emplace(N_RENDER_NODE, CallbackInfo{});
                 callbacksRegistry.try_emplace(N_VERT_SHADER, CallbackInfo{});
                 callbacksRegistry.try_emplace(N_FRAG_SHADER, CallbackInfo{});
@@ -407,6 +408,11 @@ namespace UI
                 callbacksRegistry.try_emplace(N_DEPTH_IMAGE_SAMPLER, CallbackInfo{});
                 callbacksRegistry.try_emplace(N_VERTEX_INPUT, CallbackInfo{});
 
+                callbacksRegistry.at(N_ROOT_NODE).AddCallback("output_c", [](GraphNode& selfNode){
+                    auto lastNodeName = selfNode.renderGraph->renderNodesSorted.back();
+                    selfNode.SetOuputData("out_root_node", lastNodeName->passName);
+                    SYSTEMS::Logger::GetInstance()->LogMessage(lastNodeName->passName);
+                });
                 callbacksRegistry.at(N_RENDER_NODE).AddCallback("output_c", [](GraphNode& selfNode)
                 {
                     struct ExpectedConfigs
@@ -694,8 +700,7 @@ namespace UI
 
                     assert(imgView && "Image view must be valid");
                 });
-                callbacksRegistry.at(N_VERTEX_INPUT).AddCallback("output_c", [](GraphNode& selfNode)
-                {
+                callbacksRegistry.at(N_VERTEX_INPUT).AddCallback("output_c", [](GraphNode& selfNode){
                     std::string vertexName = "vertex_input_" + std::to_string(selfNode.globalId);
                     ENGINE::VertexInput* vertexInput = selfNode.renderGraph->resourcesManager->GetVertexInput(vertexName);
                     vertexInput->bindingDescription.clear();
@@ -839,8 +844,6 @@ namespace UI
 
         struct GraphNodeFactory
         {
-            int widgetsIdGen = 100;
-            int idNodeGen = 0;
             GraphNodeBuilder builder = {};
             GraphNodeRegistry nodeRegistry = {};
             ENGINE::RenderGraph* renderGraph;
@@ -855,11 +858,16 @@ namespace UI
                 GraphNode node;
                 switch (nodeType)
                 {
+                case N_ROOT_NODE:
+                    builder
+                        .AddOutput(resManager->NextWidgetID(), {"out_root_node", N_ROOT_NODE})
+                        .SetNodeId(resManager->NextWidgetID(), "Root Node");
+                    break;
                 case N_RENDER_NODE:
                     builder
                         .AddTextInput(resManager->NextWidgetID(), {"RenderNode Name"})
                         .AddOutput(resManager->NextWidgetID(), {"out_render_node", N_RENDER_NODE})
-                        .AddInput(resManager->NextWidgetID(), {"Input Node", N_RENDER_NODE})
+                        .AddInput(resManager->NextWidgetID(), {"Input Node", static_cast<NodeType>(N_RENDER_NODE | N_ROOT_NODE)})
                         .AddInput(resManager->NextWidgetID(), {"Vertex Shader", N_VERT_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Fragment Shader", N_FRAG_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Compute Shader", N_COMP_SHADER})

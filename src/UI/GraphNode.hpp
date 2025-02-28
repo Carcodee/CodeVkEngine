@@ -15,21 +15,23 @@ namespace UI::Nodes{
         namespace ed = ax::NodeEditor;
         enum NodeType
         {
-            N_RENDER_NODE,
-            N_VERT_SHADER,
-            N_FRAG_SHADER,
-            N_COMP_SHADER,
-            N_COL_ATTACHMENT_STRUCTURE,
-            N_DEPTH_STRUCTURE,
-            N_PUSH_CONSTANT,
-            N_IMAGE_SAMPLER,
-            N_IMAGE_STORAGE,
-            N_DEPTH_IMAGE_SAMPLER,
-            N_VERTEX_INPUT,
-            N_BUFFER,
-            N_NONE,
+            N_ROOT_NODE = 1 << 0,
+            N_RENDER_NODE = 1 << 1,
+            N_VERT_SHADER = 1 << 2,
+            N_FRAG_SHADER = 1 << 3,
+            N_COMP_SHADER = 1 << 4,
+            N_COL_ATTACHMENT_STRUCTURE = 1 << 5,
+            N_DEPTH_STRUCTURE = 1 << 6,
+            N_PUSH_CONSTANT = 1 << 7,
+            N_IMAGE_SAMPLER = 1 << 8,
+            N_IMAGE_STORAGE = 1 << 9,
+            N_DEPTH_IMAGE_SAMPLER = 1 << 10,
+            N_VERTEX_INPUT = 1 << 11,
+            N_BUFFER = 1 << 12,
+            N_NONE = 1 << 13,
         };
         static std::map<NodeType, std::string> nodeTypeStrings{
+            {N_ROOT_NODE, "N_ROOT_NODE"},
             {N_RENDER_NODE, "N_RENDER_NODE"},
             {N_VERT_SHADER, "N_VERT_SHADER"},
             {N_FRAG_SHADER, "N_FRAG_SHADER"},
@@ -63,6 +65,74 @@ namespace UI::Nodes{
             ed::PinId outputId;
         };
 
+        static bool IsValidNodeCombination(NodeType nodeType, NodeType dstNode)
+        {
+            if (nodeType & dstNode)
+            {
+                return true;
+            }
+        }
+        static std::set<NodeType> GetNodeType(NodeType nodeType)
+        {
+            std::set<NodeType> nodesFind = {};
+            if (nodeType & N_ROOT_NODE)
+            {
+                nodesFind.insert(N_ROOT_NODE);
+            }
+            if (nodeType & N_RENDER_NODE)
+            {
+                nodesFind.insert(N_RENDER_NODE);
+            }
+            if (nodeType & N_VERT_SHADER)
+            {
+                nodesFind.insert(N_VERT_SHADER);
+            }
+            if (nodeType & N_FRAG_SHADER)
+            {
+                nodesFind.insert(N_FRAG_SHADER);
+            }
+            if (nodeType & N_COMP_SHADER)
+            {
+                nodesFind.insert(N_COMP_SHADER);
+            }
+            if (nodeType & N_COL_ATTACHMENT_STRUCTURE)
+            {
+                nodesFind.insert(N_COL_ATTACHMENT_STRUCTURE);
+            }
+            if (nodeType & N_DEPTH_STRUCTURE)
+            {
+                nodesFind.insert(N_DEPTH_STRUCTURE);
+            }
+            if (nodeType & N_PUSH_CONSTANT)
+            {
+                nodesFind.insert(N_PUSH_CONSTANT);
+            }
+            if (nodeType & N_IMAGE_SAMPLER)
+            {
+                nodesFind.insert(N_IMAGE_SAMPLER);
+            }
+            if (nodeType & N_IMAGE_STORAGE)
+            {
+                nodesFind.insert(N_IMAGE_STORAGE);
+            }
+            if (nodeType & N_DEPTH_IMAGE_SAMPLER)
+            {
+                nodesFind.insert(N_DEPTH_IMAGE_SAMPLER);
+            }
+            if (nodeType & N_VERTEX_INPUT)
+            {
+                nodesFind.insert(N_VERTEX_INPUT);
+            }
+            if (nodeType & N_BUFFER)
+            {
+                nodesFind.insert(N_BUFFER);
+            }
+            if (nodesFind.empty())
+            {
+                nodesFind.insert(N_NONE);
+                SYSTEMS::Logger::GetInstance()->LogMessage("There was no nodes finded in nodeType structure");
+            }
+        }
         struct PinInfo : SYSTEMS::ISerializable<PinInfo>
         {
             std::string name{};

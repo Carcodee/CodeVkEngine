@@ -16,7 +16,7 @@ namespace UI::Nodes
 
         std::unordered_map<int, GraphNode*> graphNodes;
 
-        int widgetsIdGen = 0;
+        int widgetsIdGen = 100;
         int idNodeGen = 100;
 
         GraphNodeResManager();
