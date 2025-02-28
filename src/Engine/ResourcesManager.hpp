@@ -8,6 +8,7 @@
 //
 
 
+
 #ifndef RESOURCESMANAGER_HPP
 #define RESOURCESMANAGER_HPP
 
@@ -332,6 +333,7 @@ namespace ENGINE
             freeIdsBucket.clear();
             shaders.clear();
             descriptorAllocator.reset();
+            filesManager.reset();
         }
 
         void CreateBatchedResources()
@@ -486,7 +488,15 @@ namespace ENGINE
             
             SYSTEMS::OS::GetInstance()->CopyFileInto(templatePath.string(), targetPath.string());
 
+
+            
+            std::string spirvPath = ConvertShaderPathToSpirv(targetPath.string(), stage);
             Shader* shader= GetShader(targetPath.string(), stage);
+
+            //danger
+            filesManager->AddPathToDelete(targetPath.string());
+            filesManager->AddPathToDelete(spirvPath);
+            
             return shader;
         }
 
@@ -655,7 +665,7 @@ namespace ENGINE
             storageImagesViews.reserve(BASE_SIZE);
             imageViews.reserve(BASE_SIZE);
             images.reserve(BASE_SIZE);
-
+            filesManager = std::make_unique<SYSTEMS::FilesManager>();
             descriptorAllocator = std::make_unique<DescriptorAllocator>();
             descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
 
@@ -738,6 +748,7 @@ namespace ENGINE
             {vk::DescriptorType::eUniformBuffer, 1.5f},
             {vk::DescriptorType::eStorageImage, 1.5f},
         };
+        std::unique_ptr<SYSTEMS::FilesManager> filesManager;
 
         Sampler* shipperSampler;
 

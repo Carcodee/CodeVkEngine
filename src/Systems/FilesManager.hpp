@@ -6,14 +6,15 @@
 #ifndef FILESMANAGER_HPP
 #define FILESMANAGER_HPP
 
-namespace SYSTEMS{
-    class FilesManager{
-        
-
+namespace SYSTEMS
+{
+    class FilesManager
+    {
+    public:
         FilesManager()
         {
-            
         }
+
         ~FilesManager()
         {
             for (auto& path : pathsToDelete)
@@ -22,6 +23,12 @@ namespace SYSTEMS{
             }
             pathsToDelete.clear();
         }
+
+        void AddPathToDelete(std::string path)
+        {
+            pathsToDelete.push_back(path);
+        }
+
         std::deque<std::string> pathsToDelete;
     };
 }
