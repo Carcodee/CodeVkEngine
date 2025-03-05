@@ -13,6 +13,9 @@
 
 
 
+
+
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -415,6 +418,37 @@ namespace UI
                 });
                 callbacksRegistry.at(N_RENDER_NODE).AddCallback("output_c", [](GraphNode& selfNode)
                 {
+                    
+                    bool InRootNodeChain = false;
+                    GraphNode* currentGraphNode = &selfNode;
+                    int maxSearch = 100;
+                    int currSearch = 0;
+                    while (currSearch < maxSearch)
+                    {
+                        PinInfo* inputNode = GetFromNameInMap(currentGraphNode->inputNodes, "Input Render Node");
+                        if (!inputNode || !inputNode->HasData())
+                        {
+                            break;
+                        }
+                        auto mapValidNodes =currentGraphNode->GetGraphNodeRef(static_cast<NodeType>(N_ROOT_NODE | N_RENDER_NODE));
+                        if (mapValidNodes.contains(N_ROOT_NODE))
+                        {
+                            InRootNodeChain = true;
+                        }else if(mapValidNodes.contains(N_ROOT_NODE))
+                        {
+                            currentGraphNode = mapValidNodes.at(N_ROOT_NODE);
+                        }else
+                        {
+                            assert(false);
+                        }
+                        currSearch++;
+                    }
+                    if (!InRootNodeChain)
+                    {
+                        SYSTEMS::Logger::GetInstance()->LogMessage("Node is not connected to the root chain");
+                        return;
+                    }
+                    
                     struct ExpectedConfigs
                     {
                         int added = 0;
@@ -867,7 +901,7 @@ namespace UI
                     builder
                         .AddTextInput(resManager->NextWidgetID(), {"RenderNode Name"})
                         .AddOutput(resManager->NextWidgetID(), {"out_render_node", N_RENDER_NODE})
-                        .AddInput(resManager->NextWidgetID(), {"Input Node", static_cast<NodeType>(N_RENDER_NODE | N_ROOT_NODE)})
+                        .AddInput(resManager->NextWidgetID(), {"Input Render Node", static_cast<NodeType>(N_RENDER_NODE | N_ROOT_NODE)})
                         .AddInput(resManager->NextWidgetID(), {"Vertex Shader", N_VERT_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Fragment Shader", N_FRAG_SHADER})
                         .AddInput(resManager->NextWidgetID(), {"Compute Shader", N_COMP_SHADER})

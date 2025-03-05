@@ -761,6 +761,8 @@ namespace UI::Nodes{
 
             int AddLink(int id, NodeType nodeType = N_NONE);
 
+            std::map<NodeType, GraphNode*> GetGraphNodeRef(NodeType nodeType);
+
             PinInfo* GetInputDataById(int id);
 
 

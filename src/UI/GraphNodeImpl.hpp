@@ -6,6 +6,7 @@
 //
 
 
+
 #ifndef GRAPHNODEIMPL_HPP
 #define GRAPHNODEIMPL_HPP
 
@@ -203,10 +204,23 @@ namespace UI::Nodes{
         if (nodeType != N_NONE && !graphNodesLinks.contains(id))
         {
             graphNodesLinks.try_emplace(id, nodeType);
+            return 0;
         }
-        return 0;
+        return 1;
     }
 
+    std::map<NodeType, GraphNode*> GraphNode::GetGraphNodeRef(NodeType nodeType)
+    {
+        std::map<NodeType, GraphNode*> graphNodes;
+        for (auto nodeId : graphNodesLinks)
+        {
+            if (IsValidNodeCombination(nodeId.second,nodeType)){
+                SYSTEMS::Logger::GetInstance()->LogMessage("Returning: " + nodeTypeStrings.at(nodeType));
+                graphNodes.try_emplace(nodeId.second, graphNodeResManager->graphNodes.at(nodeId.second));
+            }
+        }
+        return graphNodes;
+    }
     PinInfo* GraphNode::GetInputDataById(int id)
     {
         if (!inputNodes.contains(id))
@@ -246,7 +260,6 @@ namespace UI::Nodes{
                 return &node.second;
             }
         }
-        assert(false);
         return nullptr;
     }
 

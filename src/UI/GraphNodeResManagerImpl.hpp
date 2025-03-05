@@ -58,7 +58,10 @@ namespace UI::Nodes
 
     GraphNode* GraphNodeResManager::GetNodeByInputOutputId(int id)
     {
-        assert(inputOutputsIds.contains(id));
+        if(!inputOutputsIds.contains(id))
+        {
+            return nullptr;
+        }
 
         return graphNodes.at(inputOutputsIds.at(id));
     }

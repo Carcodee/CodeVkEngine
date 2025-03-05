@@ -47,10 +47,10 @@ namespace UI
             std::vector<Nodes::NodeType> nodesList = {
                Nodes::N_ROOT_NODE,
                Nodes::N_RENDER_NODE,
-               // Nodes::N_RENDER_NODE,
+               Nodes::N_RENDER_NODE,
                // Nodes::N_VERT_SHADER,
                // Nodes::N_FRAG_SHADER,
-               Nodes::N_COMP_SHADER,
+               // Nodes::N_COMP_SHADER,
                // Nodes::N_COL_ATTACHMENT_STRUCTURE,
                // Nodes::N_DEPTH_STRUCTURE,
                // Nodes::N_PUSH_CONSTANT,
