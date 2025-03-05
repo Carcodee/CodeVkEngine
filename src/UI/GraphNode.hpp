@@ -140,6 +140,7 @@ namespace UI::Nodes{
             std::any data = std::any();
             ed::PinKind pinKind{};
             int id = -1;
+            PinInfo* linkedPin = nullptr;
             PinInfo(std::string name, NodeType nodeType)
             {
                 this->name = name;
@@ -758,7 +759,6 @@ namespace UI::Nodes{
 
             void RecompileNode();
 
-
             int AddLink(int id, NodeType nodeType = N_NONE);
 
             std::map<NodeType, GraphNode*> GetGraphNodeRef(NodeType nodeType);
@@ -774,7 +774,10 @@ namespace UI::Nodes{
 
             PinInfo* GetOutputDataByName(const std::string& name);
 
+            bool HasOutput(NodeType type);
 
+            bool HasInput(NodeType type);
+            
             void SetOuputData(const std::string& name, std::any data);
 
 

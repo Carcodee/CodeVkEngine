@@ -7,6 +7,9 @@
 
 
 
+
+
+
 #ifndef GRAPHNODEIMPL_HPP
 #define GRAPHNODEIMPL_HPP
 
@@ -263,6 +266,29 @@ namespace UI::Nodes{
         return nullptr;
     }
 
+    bool GraphNode::HasOutput(NodeType type)
+    {
+        for (auto& output : outputNodes)
+        {
+            if (output.second.nodeType == type)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+     bool GraphNode::HasInput(NodeType type)
+    {
+        for (auto& input : inputNodes)
+        {
+            if (input.second.nodeType == type)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     void GraphNode::SetOuputData(const std::string& name, std::any data)
     {
         GetOutputDataByName(name)->data = data;

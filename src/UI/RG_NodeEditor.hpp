@@ -20,6 +20,8 @@
 
 
 
+
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -46,6 +48,8 @@ namespace UI
 
             std::vector<Nodes::NodeType> nodesList = {
                Nodes::N_ROOT_NODE,
+               Nodes::N_RENDER_NODE,
+               Nodes::N_RENDER_NODE,
                Nodes::N_RENDER_NODE,
                Nodes::N_RENDER_NODE,
                // Nodes::N_VERT_SHADER,
@@ -138,12 +142,13 @@ namespace UI
                                 if (ed::AcceptNewItem())
                                 {
                                     outputGraphNodeRef->RunCallback("output_c");
-                                    inputGraphNodeRef->AddLink(outputGraphNodeRef->globalId,
-                                                               outputGraphNodeRef->outputNodes.at(
-                                                                   pinIds.at(ed::PinKind::Output)).nodeType);
-                                    outputGraphNodeRef->AddLink(inputGraphNodeRef->globalId,
-                                                                inputGraphNodeRef->inputNodes.at(
-                                                                    pinIds.at(ed::PinKind::Input)).nodeType);
+                                    Nodes::PinInfo* outputPin = &outputGraphNodeRef->outputNodes.at(pinIds.at(ed::PinKind::Output));
+                                    Nodes::PinInfo* inputPin = &inputGraphNodeRef->inputNodes.at(pinIds.at(ed::PinKind::Input));
+                                    outputPin->linkedPin = inputPin;
+                                    inputPin->linkedPin = outputPin;
+                                    
+                                    inputGraphNodeRef->AddLink(outputGraphNodeRef->globalId, outputGraphNodeRef->outputNodes.at(pinIds.at(ed::PinKind::Output)).nodeType);
+                                    outputGraphNodeRef->AddLink(inputGraphNodeRef->globalId, inputGraphNodeRef->inputNodes.at(pinIds.at(ed::PinKind::Input)).nodeType);
                                     inputGraphNodeRef->GetInputDataById(pinIds.at(ed::PinKind::Input))->data =
                                         outputGraphNodeRef->GetOutputDataById(pinIds.at(ed::PinKind::Output))->data;
                                     

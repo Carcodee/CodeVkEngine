@@ -419,34 +419,22 @@ namespace UI
                 callbacksRegistry.at(N_RENDER_NODE).AddCallback("output_c", [](GraphNode& selfNode)
                 {
                     
-                    bool InRootNodeChain = false;
+                    bool inRootNodeChain = false;
                     GraphNode* currentGraphNode = &selfNode;
-                    int maxSearch = 100;
-                    int currSearch = 0;
-                    while (currSearch < maxSearch)
+                    PinInfo* inputNode = GetFromNameInMap(currentGraphNode->inputNodes, "Input Render Node");
+                    while (inputNode != nullptr && inputNode->HasData())
                     {
-                        PinInfo* inputNode = GetFromNameInMap(currentGraphNode->inputNodes, "Input Render Node");
-                        if (!inputNode || !inputNode->HasData())
+                        currentGraphNode = selfNode.graphNodeResManager->GetNodeByInputOutputId(inputNode->linkedPin->id);
+                        if (currentGraphNode->HasOutput(N_ROOT_NODE))
                         {
+                            inRootNodeChain = true;
                             break;
                         }
-                        auto mapValidNodes =currentGraphNode->GetGraphNodeRef(static_cast<NodeType>(N_ROOT_NODE | N_RENDER_NODE));
-                        if (mapValidNodes.contains(N_ROOT_NODE))
-                        {
-                            InRootNodeChain = true;
-                        }else if(mapValidNodes.contains(N_ROOT_NODE))
-                        {
-                            currentGraphNode = mapValidNodes.at(N_ROOT_NODE);
-                        }else
-                        {
-                            assert(false);
-                        }
-                        currSearch++;
+                        inputNode = GetFromNameInMap(currentGraphNode->inputNodes, "Input Render Node");
                     }
-                    if (!InRootNodeChain)
+                    if (!inRootNodeChain)
                     {
                         SYSTEMS::Logger::GetInstance()->LogMessage("Node is not connected to the root chain");
-                        return;
                     }
                     
                     struct ExpectedConfigs
@@ -610,12 +598,16 @@ namespace UI
                         }
                         configsMatched++;
                     }
-                    if (configsMatched != configsToMatch)
+                    if (configsMatched != configsToMatch || !inRootNodeChain)
                     {
                         std::string missingInfo = "";
                         for (auto added : confingsMissing)
                         {
                             missingInfo+= nodeTypeStrings.at(added.first) + "\n";
+                        }
+                        if (!inRootNodeChain)
+                        {
+                            missingInfo+= "NOT_LINKED_WITH_ROOT_\n";
                         }
                         SYSTEMS::Logger::GetInstance()->LogMessage("Confgis missng: \n" + missingInfo);
                         return;
