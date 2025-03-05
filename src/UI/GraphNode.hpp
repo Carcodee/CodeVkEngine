@@ -133,7 +133,7 @@ namespace UI::Nodes{
                 SYSTEMS::Logger::GetInstance()->LogMessage("There was no nodes finded in nodeType structure");
             }
         }
-        struct PinInfo : SYSTEMS::ISerializable<PinInfo>
+        struct PinInfo 
         {
             std::string name{};
             NodeType nodeType = N_NONE;
@@ -147,28 +147,6 @@ namespace UI::Nodes{
                 this->nodeType = nodeType;
             }
 
-            std::string Serialize(std::string filename) override{
-                nlohmann::json json;
-                json["name"] = name;
-                json["nodeType"] = nodeType;
-                //todo data needs to be known;
-                // json["data"] = ;
-                json["pinKind"] = pinKind;
-                json["id"] = id;
-
-                std::string text = json.dump(4);
-                if (!filename.empty())
-                {
-                    SYSTEMS::OS::GetInstance()->WriteFile(filename, text.c_str(), text.size());
-                    
-                }
-                return text; 
-            }
-            PinInfo Deserialize(std::string filename) override{
-                
-
-                return *this;
-            }
             
             bool HasData()
             {

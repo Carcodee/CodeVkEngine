@@ -60,11 +60,6 @@ namespace UI::Nodes{
         if (firstFrame)
         {
             ed::SetNodePosition(nodeId, ImVec2(pos.x, pos.y));
-            for (auto& input : inputNodes)
-            {
-                input.second.Serialize("C:\\Users\\carlo\\OneDrive\\Documents\\json.txt");
-                
-            }
         }
         assert(nodeId.Get() != -1);
         ImGui::PushID(nodeId.Get());

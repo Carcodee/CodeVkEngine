@@ -4,6 +4,9 @@
 
 
 
+
+
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -24,12 +27,63 @@ namespace ENGINE
 
     class RenderGraph;
 
-    struct RenderGraphNode
+    struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
     {
         RenderGraphNode()
         {
         }
 
+        std::string Serialize(std::string filename) override{
+            nlohmann::json json;
+            json["passName"] = passName;
+            json["active"] = active;
+            json["pipelineType"] = static_cast<int>(pipelineType);
+            json["frameBufferSize"] = {frameBufferSize.x, frameBufferSize.y};
+            json["pushConstantSize"] = pushConstantSize;
+            // json["configs"] = configs.ToJson();
+            json["rasterizationConfigs"] = static_cast<int>(rasterizationConfigs);
+            json["depthConfig"] = static_cast<int>(depthConfig);
+    
+            // Serialize shaders
+            for (const auto& [key, shader] : shaders) {
+                json["shaders"][key] = (shader) ? shader->path : "";
+            }
+    
+            // Serialize color attachments
+            for (const auto& attachment : colAttachments) {
+                // json["colAttachments"].push_back(attachment.ToJson());
+            }
+    
+            // Serialize depth attachment
+            // json["depthAttachment"] = depthAttachment.ToJson();
+    
+            // Serialize dependencies
+            for (const auto& dep : dependencies) {
+                json["dependencies"].push_back(dep);
+            }
+    
+            // Serialize resources
+            for (const auto& [name, imgView] : imagesAttachment) {
+                json["imagesAttachment"][name] = imgView->id();
+            }
+            for (const auto& [name, imgView] : storageImages) {
+                json["storageImages"][name] = imgView->id();
+            }
+            for (const auto& [name, imgView] : sampledImages) {
+                json["sampledImages"][name] = imgView->id();
+            }
+    
+            std::string text = json.dump(4);
+            if (!filename.empty()) {
+                SYSTEMS::OS::GetInstance()->WriteFile(filename, text.c_str(), text.size());
+            }
+            return text;
+        }
+        RenderGraphNode* Deserialize(std::string filename) override{
+
+            return this;
+        }
+        
         void RecreateResources()
         {
             assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
@@ -995,6 +1049,26 @@ namespace ENGINE
             {
                 assert(false &&"reload shaders failed");
             }
+        }
+        void ResolveNodesOrder()
+        {
+            renderNodesSorted.clear();
+            for (auto& node : renderNodesSorted)
+            {
+                for (auto& toCheckNode: renderNodesSorted)
+                {
+                    for (auto& image : toCheckNode->sampledImages)
+                    {
+                        if (node->sampledImages.contains(image.first))
+                        {
+                            node->DependsOn(toCheckNode->passName);
+                        }
+                    }
+                    
+                }
+                
+            }
+            
         }
 
         void ExecuteAll()
