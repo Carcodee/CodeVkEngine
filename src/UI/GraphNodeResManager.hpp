@@ -8,6 +8,7 @@
 namespace UI::Nodes
 {
     struct GraphNode;
+    struct PinInfo;
     struct GraphNodeResManager
     {
         std::unique_ptr<Systems::Arena> graphNodesArena;
@@ -24,6 +25,7 @@ namespace UI::Nodes
         void AddNodeIds(GraphNode* node);
         GraphNode* GetNode(int id);
         GraphNode* GetNodeByInputOutputId(int id);
+        PinInfo* GetPinFromId(int id);
         int NextWidgetID();
         int NextNodeID();
     };

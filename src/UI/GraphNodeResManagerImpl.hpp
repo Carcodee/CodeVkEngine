@@ -66,6 +66,22 @@ namespace UI::Nodes
         return graphNodes.at(inputOutputsIds.at(id));
     }
 
+    PinInfo* GraphNodeResManager::GetPinFromId(int id)
+    {
+        for (auto& graphNode : graphNodes)
+        {
+            if (graphNode.second->inputNodes.contains(id))
+            {
+                return &graphNode.second->inputNodes.at(id);
+            }
+            if (graphNode.second->outputNodes.contains(id))
+            {
+                return &graphNode.second->outputNodes.at(id);
+            }
+        }
+        return nullptr;
+        
+    }
     int GraphNodeResManager::NextWidgetID()
     {
         return widgetsIdGen++;

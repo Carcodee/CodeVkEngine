@@ -422,7 +422,7 @@ namespace UI
                     bool inRootNodeChain = false;
                     GraphNode* currentGraphNode = &selfNode;
                     PinInfo* inputNode = GetFromNameInMap(currentGraphNode->inputNodes, "Input Render Node");
-                    while (inputNode != nullptr && inputNode->HasData())
+                    while (inputNode != nullptr && inputNode->linkedPin != nullptr)
                     {
                         currentGraphNode = selfNode.graphNodeResManager->GetNodeByInputOutputId(inputNode->linkedPin->id);
                         if (currentGraphNode->HasOutput(N_ROOT_NODE))

@@ -22,6 +22,7 @@
 
 
 
+
 #ifndef RG_NODEEDITOR_HPP
 #define RG_NODEEDITOR_HPP
 
@@ -106,7 +107,7 @@ namespace UI
                         ed::PinKind endPinType;
                         std::map<ed::PinKind, Nodes::GraphNode*> pinNodes;
                         std::map<ed::PinKind, int> pinIds;
-                        
+
                         Nodes::PinInfo* startPin = startNode->inputNodes.contains(startId.Get())? &startNode->inputNodes.at(startId.Get()) : nullptr;
                         startPinType = ed::PinKind::Input;
                         if (startPin == nullptr)
@@ -135,25 +136,26 @@ namespace UI
                             
                             if (validLink)
                             {
-                                Nodes::GraphNode* outputGraphNodeRef = pinNodes.at(ed::PinKind::Output);
-                                Nodes::GraphNode* inputGraphNodeRef = pinNodes.at(ed::PinKind::Input);
+                                Nodes::GraphNode* outputNode = pinNodes.at(ed::PinKind::Output);
+                                Nodes::GraphNode* inputNode = pinNodes.at(ed::PinKind::Input);
 
                                 
                                 if (ed::AcceptNewItem())
                                 {
-                                    outputGraphNodeRef->RunCallback("output_c");
-                                    Nodes::PinInfo* outputPin = &outputGraphNodeRef->outputNodes.at(pinIds.at(ed::PinKind::Output));
-                                    Nodes::PinInfo* inputPin = &inputGraphNodeRef->inputNodes.at(pinIds.at(ed::PinKind::Input));
+                                    outputNode->RunCallback("output_c");
+                                    Nodes::PinInfo* outputPin = &outputNode->outputNodes.at(pinIds.at(ed::PinKind::Output));
+                                    Nodes::PinInfo* inputPin = &inputNode->inputNodes.at(pinIds.at(ed::PinKind::Input));
                                     outputPin->linkedPin = inputPin;
                                     inputPin->linkedPin = outputPin;
                                     
-                                    inputGraphNodeRef->AddLink(outputGraphNodeRef->globalId, outputGraphNodeRef->outputNodes.at(pinIds.at(ed::PinKind::Output)).nodeType);
-                                    outputGraphNodeRef->AddLink(inputGraphNodeRef->globalId, inputGraphNodeRef->inputNodes.at(pinIds.at(ed::PinKind::Input)).nodeType);
-                                    inputGraphNodeRef->GetInputDataById(pinIds.at(ed::PinKind::Input))->data =
-                                        outputGraphNodeRef->GetOutputDataById(pinIds.at(ed::PinKind::Output))->data;
+                                    inputNode->AddLink(outputNode->globalId, outputNode->outputNodes.at(pinIds.at(ed::PinKind::Output)).nodeType);
+                                    outputNode->AddLink(inputNode->globalId, inputNode->inputNodes.at(pinIds.at(ed::PinKind::Input)).nodeType);
+                                    inputNode->GetInputDataById(pinIds.at(ed::PinKind::Input))->data =
+                                        outputNode->GetOutputDataById(pinIds.at(ed::PinKind::Output))->data;
                                     
-                                    inputGraphNodeRef->RunCallback("link_c");
-                                    outputGraphNodeRef->RunCallback("link_c");
+                                    inputNode->RunCallback("link_c");
+                                    outputNode->RunCallback("link_c");
+                                    
                                     links.push_back({ed::LinkId(linkIdGen++), startId, endId});
                                     ed::Link(links.back().id, links.back().inputId, links.back().outputId);
                                 }
@@ -176,6 +178,17 @@ namespace UI
                     {
                         if (link.id == deletedLinkId)
                         {
+                            Nodes::PinInfo* output = resManager.GetPinFromId(link.outputId.Get());
+                            Nodes::PinInfo* input = resManager.GetPinFromId(link.inputId.Get());
+                            output->linkedPin = nullptr;
+                            input->linkedPin = nullptr;
+
+                            Nodes::GraphNode* inputNode = resManager.GetNodeByInputOutputId(input->id);
+                            Nodes::GraphNode* outputNode = resManager.GetNodeByInputOutputId(output->id);
+                            //do some callback;
+                            inputNode->RunCallback("unlink_c");
+                            outputNode->RunCallback("unlink_c");
+                                    
                             links.erase(&link);
                             break;
                         }
