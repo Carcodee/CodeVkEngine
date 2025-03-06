@@ -194,8 +194,7 @@ namespace Rendering
                 renderNode->SetVertexInput(vertexInput);
                 renderNode->AddColorAttachmentOutput("CascadeAttachment_" + std::to_string(i), colInfo, BlendConfigs::B_OPAQUE);
                 renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
-                renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i),
-                                                  cascadesAttachmentsImagesViews[i]);
+                renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i), cascadesAttachmentsImagesViews[i]);
                 renderNode->BuildRenderGraphNode();
             }
 
@@ -233,10 +232,9 @@ namespace Rendering
             renderNode->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->BuildRenderGraphNode();
-            renderNode->DependsOn(paintingPassName);
             for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
             {
-                renderNode->DependsOn(probesGenPassNames[i]);
+                
             }
 
             AttachmentInfo mergeColInfo = GetColorAttachmentInfo(
@@ -272,11 +270,9 @@ namespace Rendering
                 mergeRenderNode->AddStorageResource(name2, radiancesImages[i + 1]);
 
                 mergeRenderNode->BuildRenderGraphNode();
-                mergeRenderNode->DependsOn(rCascadesPassName);
                 if (i < cascadesInfo.cascadeCount - 2)
                 {
                     std::string dependancyName = rMergePassName + "_" + std::to_string(i + 1);
-                    mergeRenderNode->DependsOn(rCascadesPassName);
                 }
             }
 
@@ -306,7 +302,6 @@ namespace Rendering
             resultNode->AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
             resultNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             resultNode->BuildRenderGraphNode();
-            resultNode->DependsOn(rMergePassName);
         }
 
         void RecreateSwapChainResources() override

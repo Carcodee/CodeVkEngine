@@ -63,14 +63,14 @@ namespace ENGINE
             }
     
             // Serialize resources
-            for (const auto& [name, imgView] : imagesAttachment) {
-                json["imagesAttachment"][name] = imgView->id();
+            for (const auto& [name, imgView] : imagesAttachmentOutputs) {
+                // json["imagesAttachmentOutputs"][name] = imgView->id();
             }
             for (const auto& [name, imgView] : storageImages) {
-                json["storageImages"][name] = imgView->id();
+                // json["storageImages"][name] = imgView->id();
             }
             for (const auto& [name, imgView] : sampledImages) {
-                json["sampledImages"][name] = imgView->id();
+                // json["sampledImages"][name] = imgView->id();
             }
     
             std::string text = json.dump(4);
@@ -357,11 +357,11 @@ namespace ENGINE
             commandBuffer.setViewport(0, 1, &dynamicRenderPass.viewport);
             commandBuffer.setScissor(0, 1, &dynamicRenderPass.scissor);
 
-            assert(imagesAttachment.size()== colAttachments.size()&& "Not all color attachments were set");
+            assert(imagesAttachmentOutputs.size()== colAttachments.size()&& "Not all color attachments were set");
             int index = 0;
             std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
             attachmentInfos.reserve(colAttachments.size());
-            for (auto& imagePair : imagesAttachment)
+            for (auto& imagePair : imagesAttachmentOutputs)
             {
                 if (IsImageTransitionNeeded(imagePair.second->imageData->currentLayout, COLOR_ATTACHMENT))
                 {
@@ -577,13 +577,13 @@ namespace ENGINE
         void AddColorImageResource(std::string name, ImageView* imageView)
         {
             assert(imageView && "Name does not exist or image view is null");
-            if (!imagesAttachment.contains(name))
+            if (!imagesAttachmentOutputs.contains(name))
             {
-                imagesAttachment.try_emplace(name, imageView);
+                imagesAttachmentOutputs.try_emplace(name, imageView);
             }
             else
             {
-                imagesAttachment.at(name) = imageView;
+                imagesAttachmentOutputs.at(name) = imageView;
             }
             AddImageToProxy(name, imageView);
         }
@@ -634,10 +634,7 @@ namespace ENGINE
             if (!dependencies.contains(dependency))
             {
                 dependencies.insert(dependency);
-            }
-            else
-            {
-                std::cout << "Renderpass \"" << this->passName << " Already depends on \"" << dependency << "\" \n";
+                SYSTEMS::Logger::GetInstance()->LogMessage("Renderpass: (" +  this->passName + ") Depends On-> (" + dependency + ")");
             }
         }
 
@@ -704,7 +701,7 @@ namespace ENGINE
             depthImage = nullptr;
             shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
 
-            imagesAttachment.clear();
+            imagesAttachmentOutputs.clear();
             storageImages.clear();
             sampledImages.clear();
             buffers.clear();
@@ -721,6 +718,7 @@ namespace ENGINE
         DynamicRenderPass dynamicRenderPass;
         std::unique_ptr<DescriptorCache> descCache;
         std::string passName;
+        int degrees = 0;
         bool active = false;
 
     private:
@@ -739,7 +737,7 @@ namespace ENGINE
         ImageView* depthImage = nullptr;
         std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
 
-        std::unordered_map<std::string, ImageView*> imagesAttachment;
+        std::unordered_map<std::string, ImageView*> imagesAttachmentOutputs;
         std::unordered_map<std::string, ImageView*> storageImages;
         std::unordered_map<std::string, ImageView*> sampledImages;
         std::unordered_map<std::string, BufferKey> buffers;
@@ -1052,21 +1050,52 @@ namespace ENGINE
         }
         void ResolveNodesOrder()
         {
-            renderNodesSorted.clear();
-            for (auto& node : renderNodesSorted)
+            std::vector<RenderGraphNode>nodes;
+            for (int i = renderNodesSorted.size() -1 ; i >= 0 ; i--)
             {
-                for (auto& toCheckNode: renderNodesSorted)
+                RenderGraphNode* node = renderNodesSorted[i];
+                for (int j = i - 1; j >= 0 ; j--)
                 {
+                    RenderGraphNode* toCheckNode = renderNodesSorted[j];
+                    
+                    for (auto& image : toCheckNode->imagesAttachmentOutputs)
+                    {
+                        if (node->imagesAttachmentOutputs.contains(image.first))
+                        {
+                            node->DependsOn(toCheckNode->passName);
+                            break;
+                        }
+                        if (node->sampledImages.contains(image.first))
+                        {
+                            node->DependsOn(toCheckNode->passName);
+                            break;
+                        }
+                    }
                     for (auto& image : toCheckNode->sampledImages)
                     {
                         if (node->sampledImages.contains(image.first))
                         {
                             node->DependsOn(toCheckNode->passName);
+                            break;
                         }
                     }
-                    
+                    for (auto& image : toCheckNode->storageImages)
+                    {
+                        if (node->storageImages.contains(image.first))
+                        {
+                            node->DependsOn(toCheckNode->passName);
+                            break;
+                        }
+                    }
+                    for (auto& buffer : toCheckNode->buffers)
+                    {
+                        if (node->buffers.contains(buffer.first))
+                        {
+                            node->DependsOn(toCheckNode->passName);
+                            break;
+                        }
+                    }
                 }
-                
             }
             
         }
@@ -1074,6 +1103,8 @@ namespace ENGINE
         void ExecuteAll()
         {
             assert(currentFrameResources && "Current frame reference is null");
+            ResolveNodesOrder();
+            
             std::vector<std::string> allPassesNames;
             int idx = 0;
             for (auto& renderNode : renderNodesSorted)
@@ -1083,23 +1114,23 @@ namespace ENGINE
                 Profiler::GetInstance()->
                     AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
                 RenderGraphNode* node = renderNode;
-                bool dependancyNeed = false;
-                std::string dependancyName = "";
+                bool depenNeed = false;
+                std::string depenName = "";
                 for (auto& passName : allPassesNames)
                 {
                     if (node->dependencies.contains(passName))
                     {
-                        dependancyNeed = true;
-                        dependancyName = passName;
+                        depenNeed = true;
+                        depenName = passName;
                     }
                 }
-                if (dependancyNeed)
+                if (depenNeed)
                 {
-                    RenderGraphNode* dependancyNode = renderNodes.at(dependancyName).get();
-                    if (!dependancyNode->active)
+                    RenderGraphNode* depenNode = renderNodes.at(depenName).get();
+                    if (!depenNode->active)
                     {
                     }
-                    BufferUsageTypes lastNodeType = (dependancyNode->pipelineType == vk::PipelineBindPoint::eGraphics)
+                    BufferUsageTypes lastNodeType = (depenNode->pipelineType == vk::PipelineBindPoint::eGraphics)
                                                         ? B_GRAPHICS_WRITE
                                                         : B_COMPUTE_WRITE;
                     BufferUsageTypes currNodeType = (node->pipelineType == vk::PipelineBindPoint::eGraphics)
