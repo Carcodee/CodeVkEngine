@@ -74,8 +74,6 @@ namespace ENGINE
 	    std::string message = type + " with name \"" + resourceName + "\" does not exist\n";
      	std::cout <<message;
     }
-	
-    
 }
 
 

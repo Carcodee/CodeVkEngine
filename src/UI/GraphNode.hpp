@@ -7,6 +7,7 @@
 
 
 
+
 #ifndef GRAPHNODE_HPP
 #define GRAPHNODE_HPP
 
@@ -71,6 +72,7 @@ namespace UI::Nodes{
             {
                 return true;
             }
+            return false;
         }
         static std::set<NodeType> GetNodeType(NodeType nodeType)
         {

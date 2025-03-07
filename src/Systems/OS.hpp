@@ -119,6 +119,20 @@ namespace SYSTEMS
 			return oss.str();
 		}
 
+		static nlohmann::json GetJsonFromFile(const std::string& path)
+		{
+			std::ifstream inFile(path);
+			if (!inFile)
+			{
+				assert(false && "impossible to open the path");
+			}
+			nlohmann::json json;
+
+			inFile >> json;
+
+			inFile.close();
+			return json;
+		}
 		static void CreateFileAt(const std::string dstFile)
 		{
 			std::ofstream dst(dstFile, std::ios::binary);

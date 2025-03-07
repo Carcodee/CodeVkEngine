@@ -157,6 +157,7 @@ void run(WindowProvider* windowProvider)
         profiler->UpdateProfiler();
     }
     imguiRenderer->Destroy();
+    renderGraph->SerializeAll();
     ENGINE::ResourcesManager::GetInstance()->DestroyResources();
     windowProvider->DestroyWindow();
 }

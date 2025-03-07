@@ -7,6 +7,10 @@
 
 
 
+
+
+
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -33,7 +37,7 @@ namespace ENGINE
         {
         }
 
-        std::string Serialize(std::string filename) override{
+        nlohmann::json Serialize() override{
             nlohmann::json json;
             json["passName"] = passName;
             json["active"] = active;
@@ -48,14 +52,12 @@ namespace ENGINE
             for (const auto& [key, shader] : shaders) {
                 json["shaders"][key] = (shader) ? shader->path : "";
             }
-    
             // Serialize color attachments
-            for (const auto& attachment : colAttachments) {
-                // json["colAttachments"].push_back(attachment.ToJson());
+            for (auto& attachment : colAttachments) {
+                json["colAttachments"].push_back(attachment.Serialize());
             }
-    
             // Serialize depth attachment
-            // json["depthAttachment"] = depthAttachment.ToJson();
+            json["depthAttachment"] = depthAttachment.Serialize();
     
             // Serialize dependencies
             for (const auto& dep : dependencies) {
@@ -63,17 +65,20 @@ namespace ENGINE
             }
     
             // Serialize resources
+            json["imagesAttachmentOutputs"] = nlohmann::json::array();
             for (const auto& [name, imgView] : imagesAttachmentOutputs) {
-                // json["imagesAttachmentOutputs"][name] = imgView->id();
+                json["imagesAttachmentOutputs"].push_back({{"id", imgView->id}, {"name", name}});
             }
+            json["storageImages"] = nlohmann::json::array();
             for (const auto& [name, imgView] : storageImages) {
-                // json["storageImages"][name] = imgView->id();
+                json["storageImages"].push_back({{"id", imgView->id}, {"name", name}});
             }
+            json["sampledImages"] = nlohmann::json::array();
             for (const auto& [name, imgView] : sampledImages) {
-                // json["sampledImages"][name] = imgView->id();
+                json["sampledImages"].push_back({{"id", imgView->id}, {"name", name}});
             }
-    
             std::string text = json.dump(4);
+            std::string filename = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath()+"\\RenderNodes\\pass_"+ passName +".json";
             if (!filename.empty()) {
                 SYSTEMS::OS::GetInstance()->WriteFile(filename, text.c_str(), text.size());
             }
@@ -783,6 +788,14 @@ namespace ENGINE
         RenderGraph(Core* core)
         {
             this->core = core;
+        }
+
+        void SerializeAll()
+        {
+            for (auto node : renderNodesSorted)
+            {
+                node->Serialize();
+            }
         }
 
         ~RenderGraph()

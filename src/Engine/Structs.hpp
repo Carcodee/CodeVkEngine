@@ -1,5 +1,8 @@
 ﻿//
 
+
+
+
 // Created by carlo on 2024-09-22.
 //
 
@@ -48,10 +51,52 @@ namespace ENGINE
         vk::UniqueCommandBuffer commandBuffer;
     };
 
-    struct AttachmentInfo
+    struct AttachmentInfo : SYSTEMS::ISerializable<AttachmentInfo>
     {
         vk::RenderingAttachmentInfo attachmentInfo;
         vk::Format format = vk::Format::eUndefined;
+
+        nlohmann::json Serialize() override
+        {
+	        nlohmann::json j = nlohmann::json{
+		        {"format", static_cast<int>(this->format)}, // Store format as an integer
+		        {
+			        "attachmentInfo", {
+				        // Store as uint64_t for safety
+				        // Convert Vulkan enum to int
+				        {"resolveMode", static_cast<int>(this->attachmentInfo.resolveMode)},
+				        {"loadOp", static_cast<int>(this->attachmentInfo.loadOp)},
+				        {"storeOp", static_cast<int>(this->attachmentInfo.storeOp)},
+				        {
+					        "clearValue", {
+						        this->attachmentInfo.clearValue.color.float32[0],
+						        this->attachmentInfo.clearValue.color.float32[1],
+						        this->attachmentInfo.clearValue.color.float32[2],
+						        this->attachmentInfo.clearValue.color.float32[3]
+					        }
+				        }
+			        }
+		        }
+	        };
+        	return j;
+        }
+        // Deserialization function for `AttachmentInfo`
+        AttachmentInfo* Deserialize(std::string filename) override
+        {
+        	nlohmann::json json = SYSTEMS::OS::GetJsonFromFile(filename);
+        	
+	        this->format = static_cast<vk::Format>(json.at("format").get<int>());
+
+	        const auto& ai = json.at("attachmentInfo");
+	        this->attachmentInfo.loadOp = static_cast<vk::AttachmentLoadOp>(ai.at("loadOp").get<int>());
+	        this->attachmentInfo.storeOp = static_cast<vk::AttachmentStoreOp>(ai.at("storeOp").get<int>());
+	        auto clearValues = ai.at("clearValue").get<std::vector<float>>();
+	        for (int i = 0; i < 4; i++)
+	        {
+		        this->attachmentInfo.clearValue.color.float32[i] = clearValues[i];
+	        }
+	        return this;
+        }
     };
 
     struct ImageAccessPattern
