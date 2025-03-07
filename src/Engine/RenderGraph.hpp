@@ -24,9 +24,20 @@ namespace ENGINE
         Buffer* buffer;
     };
 
-    struct RenderNodeConfigs
+    struct RenderNodeConfigs :SYSTEMS::ISerializable<RenderNodeConfigs> 
     {
         bool AutomaticCache = false;
+
+        nlohmann::json Serialize() override
+        {
+            nlohmann::json json;
+            json["AutomaticCache"] = false;
+            
+            return json;
+        }
+        RenderNodeConfigs* Deserialize(std::string filename) override{
+            return this;
+        }
     };
 
     class RenderGraph;
@@ -41,16 +52,17 @@ namespace ENGINE
             nlohmann::json json;
             json["passName"] = passName;
             json["active"] = active;
+            json["waitForResourcesCreation"] = waitForResourcesCreation;
             json["pipelineType"] = static_cast<int>(pipelineType);
             json["frameBufferSize"] = {frameBufferSize.x, frameBufferSize.y};
             json["pushConstantSize"] = pushConstantSize;
-            // json["configs"] = configs.ToJson();
+            json["configs"] = configs.Serialize();
             json["rasterizationConfigs"] = static_cast<int>(rasterizationConfigs);
             json["depthConfig"] = static_cast<int>(depthConfig);
     
             // Serialize shaders
             for (const auto& [key, shader] : shaders) {
-                json["shaders"][key] = (shader) ? shader->path : "";
+                json["shaders"].push_back({shader->stage, shader->path});
             }
             // Serialize color attachments
             for (auto& attachment : colAttachments) {
@@ -84,8 +96,77 @@ namespace ENGINE
             }
             return text;
         }
-        RenderGraphNode* Deserialize(std::string filename) override{
 
+        RenderGraphNode* Deserialize(std::string filename) override
+        {
+            nlohmann::json json = SYSTEMS::OS::GetJsonFromFile(filename);
+            assert(!json.empty());
+            std::vector<float> fSize;
+            passName = json.at("passName");
+            active = json.at("active");
+            waitForResourcesCreation = json.at("waitForResourcesCreation");
+            pipelineType = json.at("pipelineType");
+            
+            fSize = json.at("frameBufferSize").get<std::vector<float>>();
+            frameBufferSize.x = fSize[0];
+            frameBufferSize.y = fSize[1];
+            
+            pushConstantSize = json.at("pushConstantSize");
+            configs.Serialize() = json.at("configs");
+            rasterizationConfigs = json.at("rasterizationConfigs");
+            depthConfig = json.at("depthConfig");
+
+            std::vector<std::string> shaderPaths;
+            // Serialize shaders
+            shaderPaths = json.at("shaders").get<std::vector<std::string>>();
+            if (json.contains("shaders") && json["shaders"].is_array())
+            {
+                for (auto& shaderJson : json["shaders"])
+                {
+                    if (shaderJson.is_array() && shaderJson.size() == 2)
+                    {
+                        ShaderStage stage = static_cast<ShaderStage>(shaderJson[0]);
+                        std::string path = path;
+                        Shader* shader = resManagerRef->GetShader(path, stage); 
+                        switch (stage)
+                        {
+                        case S_VERT:
+                            SetVertShader(shader);
+                            break;
+                        case S_FRAG:
+                            SetFragShader(shader);
+                            break;
+                        case S_COMP:
+                            SetCompShader(shader);
+                            break;
+                        case S_UNKNOWN:
+                            assert(false);
+                            break;
+                        }
+                        
+                    }else
+                    {
+                        assert(false);
+                    }
+                }
+            }
+
+            for (auto& colAttachment : json["colAttachments"])
+            {
+                colAttachments.emplace_back(AttachmentInfo{});
+                colAttachments.back().Deserialize(filename);
+            }
+
+            // Serialize depth attachment
+            depthAttachment.Deserialize(filename);
+
+            // Serialize dependencies
+            for (const auto& dep : json["dependencies"])
+            {
+                DependsOn(dep);
+            }
+            waitForResourcesCreation = true;
+            
             return this;
         }
         
@@ -725,6 +806,7 @@ namespace ENGINE
         std::string passName;
         int degrees = 0;
         bool active = false;
+        bool waitForResourcesCreation = false;
 
     private:
         friend class RenderGraph;
@@ -753,6 +835,7 @@ namespace ENGINE
         std::set<std::string> dependencies;
 
         Core* core;
+        ResourcesManager* resManagerRef;
         std::unordered_map<std::string, ImageView*>* imagesProxyRef;
         std::unordered_map<std::string, BufferKey>* bufferProxyRef;
         std::unordered_map<std::string, AttachmentInfo>* outColAttachmentsProxyRef;
@@ -834,6 +917,7 @@ namespace ENGINE
                 renderGraphNode->bufferProxyRef = &buffersProxy;
                 renderGraphNode->shadersProxyRef = &shadersProxy;
                 renderGraphNode->core = core;
+                renderGraphNode->resManagerRef = resourcesManager;
 
                 renderNodes.try_emplace(name, std::move(renderGraphNode));
                 renderNodesSorted.push_back(renderNodes.at(name).get());
@@ -1159,7 +1243,13 @@ namespace ENGINE
                 idx++;
             }
         }
+
+        void BuildDeserializedPasses()
+        {
+            
+        }
     };
+    
 }
 
 
