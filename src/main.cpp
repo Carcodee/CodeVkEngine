@@ -78,7 +78,7 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation();
 
-
+    renderGraph->DeserializeAll();
     while (!windowProvider->WindowShouldClose())
     {
         //handle time and frames better
@@ -107,6 +107,7 @@ void run(WindowProvider* windowProvider)
                     renderer.second->SetRenderOperation();
                 }
                 debugRenderer->SetRenderOperation();
+                renderGraph->DeserializeAll();
             }
             try
             {

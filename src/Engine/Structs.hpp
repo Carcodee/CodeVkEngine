@@ -53,7 +53,7 @@ namespace ENGINE
 
     struct AttachmentInfo : SYSTEMS::ISerializable<AttachmentInfo>
     {
-        vk::RenderingAttachmentInfo attachmentInfo;
+        vk::RenderingAttachmentInfo attachmentInfo = {};
         vk::Format format = vk::Format::eUndefined;
 
         nlohmann::json Serialize() override

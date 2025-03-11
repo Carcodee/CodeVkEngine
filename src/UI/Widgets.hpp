@@ -17,6 +17,7 @@
 
 
 
+
 #ifndef WIDGETS_HPP
 #define WIDGETS_HPP
 
@@ -667,7 +668,7 @@ namespace UI
                             }
                         }
                         
-                        renderNode->SetConfigs({true});
+                        renderNode->SetConfigs(ENGINE::RenderNodeConfigs{true});
                         renderNode->BuildRenderGraphNode();
                         renderNode->active = false;
                         selfNode.valid = true;

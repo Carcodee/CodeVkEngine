@@ -26,12 +26,17 @@ namespace ENGINE
 
     struct RenderNodeConfigs :SYSTEMS::ISerializable<RenderNodeConfigs> 
     {
-        bool AutomaticCache = false;
+        bool automaticCache = false;
+
+        RenderNodeConfigs(bool automaticCache)
+        {
+            this->automaticCache = automaticCache;
+        }
 
         nlohmann::json Serialize() override
         {
             nlohmann::json json;
-            json["AutomaticCache"] = false;
+            json["automaticCache"] = false;
             
             return json;
         }
@@ -46,7 +51,9 @@ namespace ENGINE
     {
         RenderGraphNode()
         {
-        }
+            
+        };
+        
 
         nlohmann::json Serialize() override{
             nlohmann::json json;
@@ -61,17 +68,23 @@ namespace ENGINE
             json["depthConfig"] = static_cast<int>(depthConfig);
     
             // Serialize shaders
+            json["shaders"] = nlohmann::json::array();
             for (const auto& [key, shader] : shaders) {
-                json["shaders"].push_back({shader->stage, shader->path});
+                if (shader != nullptr && !shader->path.empty())
+                {
+                    json["shaders"].push_back({shader->stage, shader->path});
+                }
             }
             // Serialize color attachments
+            json["colAttachments"] = nlohmann::json::array();
             for (auto& attachment : colAttachments) {
                 json["colAttachments"].push_back(attachment.Serialize());
             }
             // Serialize depth attachment
-            json["depthAttachment"] = depthAttachment.Serialize();
+            json["depthAttachment"]= depthAttachment.Serialize();
     
             // Serialize dependencies
+            json["dependencies"] =  nlohmann::json::array();
             for (const auto& dep : dependencies) {
                 json["dependencies"].push_back(dep);
             }
@@ -182,7 +195,7 @@ namespace ENGINE
 
             if (fragShader && vertShader)
             {
-                if (configs.AutomaticCache)
+                if (configs.automaticCache)
                 {
                     descCache.reset();
                     descCache =std::make_unique<DescriptorCache>(core);
@@ -228,7 +241,7 @@ namespace ENGINE
             }
             else if (compShader)
             {
-                if (configs.AutomaticCache)
+                if (configs.automaticCache)
                 {
                     descCache.reset();
                     descCache = std::make_unique<DescriptorCache>(core);
@@ -276,7 +289,7 @@ namespace ENGINE
 
             if (fragShader && vertShader)
             {
-                if (configs.AutomaticCache)
+                if (configs.automaticCache)
                 {
                     descCache.reset();
                     descCache = std::make_unique<DescriptorCache>(core);
@@ -328,7 +341,7 @@ namespace ENGINE
             }
             else if (compShader)
             {
-                if (configs.AutomaticCache)
+                if (configs.automaticCache)
                 {
                     descCache.reset();
                     descCache = std::make_unique<DescriptorCache>(core);
@@ -811,16 +824,16 @@ namespace ENGINE
     private:
         friend class RenderGraph;
 
-        RenderNodeConfigs configs;
+        RenderNodeConfigs configs = {false};
         RasterizationConfigs rasterizationConfigs = R_FILL;
         std::vector<BlendConfigs> colorBlendConfigs;
         DepthConfigs depthConfig = D_NONE;
         VertexInput vertexInput;
-        glm::uvec2 frameBufferSize;
+        glm::uvec2 frameBufferSize = {0, 0};
         size_t pushConstantSize = 0;
 
         std::vector<AttachmentInfo> colAttachments;
-        AttachmentInfo depthAttachment;
+        AttachmentInfo depthAttachment = {};
         ImageView* depthImage = nullptr;
         std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
 
@@ -878,6 +891,25 @@ namespace ENGINE
             for (auto node : renderNodesSorted)
             {
                 node->Serialize();
+            }
+        }
+        void DeserializeAll()
+        {
+            std::string nodesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +"\\RenderNodes";
+            std::vector<std::string> paths;
+            assert(std::filesystem::exists(nodesPath));
+            for (auto path : std::filesystem::directory_iterator(nodesPath))
+            {
+                std::unique_ptr<RenderGraphNode> node = std::make_unique<RenderGraphNode>();
+                node->Deserialize(path.path().string());
+                if (!renderNodes.contains(node->passName))
+                {
+                    renderNodes.try_emplace(node->passName, std::move(node));
+                }else
+                {
+                    SYSTEMS::Logger::GetInstance()->Log("Render Node already is in ram, updating serialized data");
+                    renderNodes.at(node->passName)->Serialize();
+                }
             }
         }
 
