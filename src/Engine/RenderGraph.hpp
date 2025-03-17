@@ -162,14 +162,22 @@ namespace ENGINE
                 }
             }
 
-            for (auto& colAttachment : json["colAttachments"])
+            if (colAttachments.size() == json["colAttachments"].size())
             {
-                colAttachments.emplace_back(AttachmentInfo{});
-                colAttachments.back().Deserialize(filename);
+                colAttachments.clear();
+                for (auto& colAttachment : json["colAttachments"])
+                {
+                    colAttachments.emplace_back(AttachmentInfo{});
+                    colAttachments.back().GetFromJson(colAttachment);
+                }               
+            }else
+            {
+                SYSTEMS::Logger::GetInstance()->LogMessage("There is a mismatch in size with the col attachments(" + filename+") avoiding override");
             }
 
+
             // Serialize depth attachment
-            depthAttachment.Deserialize(filename);
+            depthAttachment.GetFromJson(json.at("depthAttachment"));
 
             // Serialize dependencies
             for (const auto& dep : json["dependencies"])

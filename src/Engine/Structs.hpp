@@ -85,7 +85,21 @@ namespace ENGINE
         {
         	nlohmann::json json = SYSTEMS::OS::GetJsonFromFile(filename);
         	
-	        this->format = static_cast<vk::Format>(json.at("depthAttachment").at("format").get<int>());
+	        this->format = static_cast<vk::Format>(json.at("format").get<int>());
+
+	        const auto& ai = json.at("attachmentInfo");
+	        this->attachmentInfo.loadOp = static_cast<vk::AttachmentLoadOp>(ai.at("loadOp").get<int>());
+	        this->attachmentInfo.storeOp = static_cast<vk::AttachmentStoreOp>(ai.at("storeOp").get<int>());
+	        auto clearValues = ai.at("clearValue").get<std::vector<float>>();
+	        for (int i = 0; i < 4; i++)
+	        {
+		        this->attachmentInfo.clearValue.color.float32[i] = clearValues[i];
+	        }
+	        return this;
+        }
+    	AttachmentInfo* GetFromJson(nlohmann::json json) 
+        {
+	        this->format = static_cast<vk::Format>(json.at("format").get<int>());
 
 	        const auto& ai = json.at("attachmentInfo");
 	        this->attachmentInfo.loadOp = static_cast<vk::AttachmentLoadOp>(ai.at("loadOp").get<int>());
