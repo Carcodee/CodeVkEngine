@@ -11,17 +11,26 @@ namespace SYSTEMS
     struct FileInfo
     {
         //lastTime write it
-        FileInfo(const std::string& path)
+        FileInfo(const std::string& path, std::function<void()> onChangeCallback)
         {
             assert(std::filesystem::exists(path) && "invalid path");
-            
+
+            this->onChangeCallback = onChangeCallback;
             this->path = path;
             this->name = this->path.filename().string();
             this->extension = this->path.extension().string();
             this->modified = false;
             lastTimeCheck = std::filesystem::last_write_time(this->path);
-            
-            
+        }
+        FileInfo(const std::string& path)
+        {
+            assert(std::filesystem::exists(path) && "invalid path");
+
+            this->path = path;
+            this->name = this->path.filename().string();
+            this->extension = this->path.extension().string();
+            this->modified = false;
+            lastTimeCheck = std::filesystem::last_write_time(this->path);
         }
         void CheckLastTimeWrite()
         {
@@ -30,6 +39,7 @@ namespace SYSTEMS
             {
                 modified = true;
                 lastTimeCheck = fTime;
+                onChangeCallback();
             }
         }
         void Invalidate()
@@ -41,6 +51,7 @@ namespace SYSTEMS
         std::string extension;
         std::atomic<bool> modified;
         std::filesystem::file_time_type lastTimeCheck;
+        std::function<void()> onChangeCallback = {}; 
         
     };
     //use background threat for this eventually

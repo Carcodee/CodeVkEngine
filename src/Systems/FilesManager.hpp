@@ -28,8 +28,22 @@ namespace SYSTEMS
         {
             pathsToDelete.push_back(path);
         }
+        void CheckAllChanges()
+        {
+            for (auto& file : filesWatched)
+            {
+                //calling some callbacks
+                file->CheckLastTimeWrite();
+            }
+        }
+        void AddFileToWatch(std::string path, std::function<void()> function)
+        {
+            assert(!path.empty() && "Path is empty");
+            filesWatched.emplace_back(std::make_unique<FileInfo>(path, function));
+        }
 
         std::deque<std::string> pathsToDelete;
+        std::vector<std::unique_ptr<FileInfo>> filesWatched;
     };
 }
 

@@ -11,6 +11,7 @@
 
 
 
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -129,9 +130,7 @@ namespace ENGINE
             rasterizationConfigs = json.at("rasterizationConfigs");
             depthConfig = json.at("depthConfig");
 
-            std::vector<std::string> shaderPaths;
             // Serialize shaders
-            shaderPaths = json.at("shaders").get<std::vector<std::string>>();
             if (json.contains("shaders") && json["shaders"].is_array())
             {
                 for (auto& shaderJson : json["shaders"])
@@ -139,7 +138,7 @@ namespace ENGINE
                     if (shaderJson.is_array() && shaderJson.size() == 2)
                     {
                         ShaderStage stage = static_cast<ShaderStage>(shaderJson[0]);
-                        std::string path = path;
+                        std::string path = static_cast<std::string>(shaderJson[1]);
                         Shader* shader = resManagerRef->GetShader(path, stage); 
                         switch (stage)
                         {
@@ -156,7 +155,6 @@ namespace ENGINE
                             assert(false);
                             break;
                         }
-                        
                     }else
                     {
                         assert(false);
@@ -900,15 +898,19 @@ namespace ENGINE
             assert(std::filesystem::exists(nodesPath));
             for (auto path : std::filesystem::directory_iterator(nodesPath))
             {
-                std::unique_ptr<RenderGraphNode> node = std::make_unique<RenderGraphNode>();
-                node->Deserialize(path.path().string());
+                size_t pos = path.path().string().find('_');
+                std::string passName = path.path().string().substr(pos + 1, path.path().string().length());
+                size_t extPos = passName.find_last_of('.');
+                passName = passName.substr(0, extPos);
+                
+                RenderGraphNode* node = AddPass(passName);
                 if (!renderNodes.contains(node->passName))
                 {
-                    renderNodes.try_emplace(node->passName, std::move(node));
+                    node->Deserialize(path.path().string());
                 }else
                 {
-                    SYSTEMS::Logger::GetInstance()->Log("Render Node already is in ram, updating serialized data");
-                    renderNodes.at(node->passName)->Serialize();
+                    SYSTEMS::Logger::GetInstance()->LogMessage("Render Node already is in ram");
+                    node->Deserialize(path.path().string());
                 }
             }
         }

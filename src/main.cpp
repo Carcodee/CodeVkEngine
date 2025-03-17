@@ -112,6 +112,10 @@ void run(WindowProvider* windowProvider)
             try
             {
                 profiler->AddProfilerCpuSpot(legit::Colors::sunFlower, "Cpu");
+                if (ImGui::IsKeyPressed(ImGuiKey_N, false))
+                {
+                    renderGraph->resourcesManager->filesManager->CheckAllChanges();
+                }
                 if (ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {
                     // clusterRenderer->ReloadShaders();
