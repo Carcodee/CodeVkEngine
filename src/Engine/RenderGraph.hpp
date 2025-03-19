@@ -474,6 +474,7 @@ namespace ENGINE
                                     imagePair.second->GetSubresourceRange(), commandBuffer);
                 }
                 colAttachments[index].attachmentInfo.setImageView(imagePair.second->imageView.get());
+                colAttachments[index].attachmentInfo.imageLayout = imagePair.second->imageData->currentPattern.layout;
                 attachmentInfos.push_back(colAttachments[index].attachmentInfo);
                 index++;
             }
@@ -921,6 +922,14 @@ namespace ENGINE
                     node->Deserialize(path.path().string());
                 }
             }
+        }
+        void UpdateFromMetaData()
+        {
+            for (auto& node : renderNodesSorted)
+            {
+                
+            }
+            
         }
 
         ~RenderGraph()

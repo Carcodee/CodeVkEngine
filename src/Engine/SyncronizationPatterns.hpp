@@ -7,6 +7,7 @@
 //
 
 
+
 #ifndef SYNCRONIZATIONPATTERNS_HPP
 #define SYNCRONIZATIONPATTERNS_HPP
 
@@ -115,6 +116,7 @@ namespace ENGINE
 
         commandBuffer.pipelineBarrier(imagePattern.stage, dstPattern.stage, vk::DependencyFlags(), {}, nullptr, imageBarrier);
         imageData->currentLayout = dstLayout;
+        imageData->currentPattern = dstPattern;
     }
     static BufferAccessPattern GetSrcBufferAccessPattern(BufferUsageTypes usageType)
     {

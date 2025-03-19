@@ -54,6 +54,10 @@ namespace ENGINE
             this->imageType = imageType;
 
             currentLayout = EMPTY;
+            currentPattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
+            currentPattern.accessMask = vk::AccessFlagBits::eNone;
+            currentPattern.layout = vk::ImageLayout::eUndefined;
+            currentPattern.queueFamilyType = QueueFamilyTypes::UNDEFINED;
 
             glm::vec3 currSize = size;
 
@@ -94,8 +98,9 @@ namespace ENGINE
         vk::ImageType imageType;
         uint32_t mipsCount;
         uint32_t arrayLayersCount;
-        // ImageAccessPattern currentPattern;
         LayoutPatterns currentLayout;
+        ImageAccessPattern currentPattern;
+        
         std::string debugName;
         friend class Image;
         friend class SwapChain;
