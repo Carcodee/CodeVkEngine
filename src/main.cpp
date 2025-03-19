@@ -114,7 +114,8 @@ void run(WindowProvider* windowProvider)
                 profiler->AddProfilerCpuSpot(legit::Colors::sunFlower, "Cpu");
                 if (ImGui::IsKeyPressed(ImGuiKey_N, false))
                 {
-                    renderGraph->resourcesManager->filesManager->CheckAllChanges();
+                    // renderGraph->resourcesManager->filesManager->CheckAllChanges();
+                    renderGraph->UpdateAllFromMetaData();
                 }
                 if (ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {

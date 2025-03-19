@@ -188,7 +188,6 @@ namespace ENGINE
             
             return this;
         }
-        
         void RecreateResources()
         {
             assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
@@ -827,6 +826,7 @@ namespace ENGINE
         int degrees = 0;
         bool active = false;
         bool waitForResourcesCreation = false;
+        std::string path;
 
     private:
         friend class RenderGraph;
@@ -923,11 +923,12 @@ namespace ENGINE
                 }
             }
         }
-        void UpdateFromMetaData()
+        void UpdateAllFromMetaData()
         {
             for (auto& node : renderNodesSorted)
             {
-                
+                node->Deserialize(node->path);
+                SYSTEMS::Logger::GetInstance()->LogMessage("Render Node: (+ "  + node->passName +") updated");
             }
             
         }
@@ -969,6 +970,8 @@ namespace ENGINE
                 renderGraphNode->shadersProxyRef = &shadersProxy;
                 renderGraphNode->core = core;
                 renderGraphNode->resManagerRef = resourcesManager;
+                renderGraphNode->path = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+                    name + ".json";
 
                 renderNodes.try_emplace(name, std::move(renderGraphNode));
                 renderNodesSorted.push_back(renderNodes.at(name).get());
