@@ -667,12 +667,13 @@ namespace ENGINE
             images.reserve(BASE_SIZE);
             filesManager = std::make_unique<SYSTEMS::FilesManager>();
             descriptorAllocator = std::make_unique<DescriptorAllocator>();
-            descriptorAllocator->BeginPool(core->logicalDevice.get(), 10, poolSizeRatios);
+            descriptorAllocator->BeginPool(core->logicalDevice.get(), 100, poolSizeRatios);
 
             samplerPool = std::make_unique<SamplerPool>();
 
             shipperSampler = samplerPool->AddSampler(core->logicalDevice.get(), vk::SamplerAddressMode::eRepeat,
                                                      vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+            
 
             std::string defaultTexturePath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +
                 "\\Images\\default_texture.jpg";

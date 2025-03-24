@@ -310,8 +310,8 @@ namespace Rendering
             std::random_device rd;
             std::mt19937 gen(rd());
 
-            pointLights.reserve(1);
-            for (int i = 0; i < 1; ++i)
+            pointLights.reserve(4000);
+            for (int i = 0; i < 4000; ++i)
             {
                 std::uniform_real_distribution<> distributionPos(-10.0f, 10.0f);
                 std::uniform_real_distribution<> distributionCol(0.0f, 1.0f);
@@ -393,9 +393,9 @@ namespace Rendering
             //Cull meshes
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
-            cullMeshesCompShader = std::make_unique<Shader>(logicalDevice, shaderPath + "\\spirv\\Compute\\meshCull.comp.spv", S_COMP);
+            cullMeshesCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\meshCull.comp.spv", S_COMP);
 
-            cullMeshesCache->AddShaderInfo(cullMeshesCompShader.get()->sParser.get());
+            cullMeshesCache->AddShaderInfo(cullMeshesCompShader->sParser.get());
             cullMeshesCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
 
             auto meshCullLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
@@ -403,15 +403,15 @@ namespace Rendering
                                         .setPSetLayouts(&cullMeshesCache->dstLayout.get());
 
             auto* meshCullRenderNode = renderGraphRef->AddPass(meshCullPassName);
-            meshCullRenderNode->SetCompShader(cullMeshesCompShader.get());
+            meshCullRenderNode->SetCompShader(cullMeshesCompShader);
             meshCullRenderNode->SetPipelineLayoutCI(meshCullLayoutCreateInfo);
             meshCullRenderNode->BuildRenderGraphNode();
             
             //Cull pass//
 
-            cullCompShader = std::make_unique<Shader>(logicalDevice, shaderPath+ "\\spirv\\Compute\\lightCulling.comp.spv", S_COMP);
+            cullCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath+ "\\spirvGlsl\\Compute\\lightCulling.comp.spv", S_COMP);
 
-            computeDescCache->AddShaderInfo(cullCompShader.get()->sParser.get());
+            computeDescCache->AddShaderInfo(cullCompShader->sParser.get());
             computeDescCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
 
             auto cullPushConstantRange = vk::PushConstantRange()
@@ -425,15 +425,15 @@ namespace Rendering
                                         .setPSetLayouts(&computeDescCache->dstLayout.get());
 
             auto* cullRenderNode = renderGraphRef->AddPass(computePassName);
-            cullRenderNode->SetCompShader(cullCompShader.get());
+            cullRenderNode->SetCompShader(cullCompShader);
             cullRenderNode->SetPipelineLayoutCI(cullLayoutCreateInfo);
             cullRenderNode->BuildRenderGraphNode();
 
 
             //gbuffer
 
-            gVertShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv", S_VERT);
-            gFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
+            gVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv", S_VERT);
+            gFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
             gBuffDescCache->AddShaderInfo(gVertShader->sParser.get());
             gBuffDescCache->AddShaderInfo(gFragShader->sParser.get());
             gBuffDescCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
@@ -455,8 +455,8 @@ namespace Rendering
             AttachmentInfo depthInfo = GetDepthAttachmentInfo();
             auto renderNode = renderGraphRef->AddPass(gBufferPassName);
 
-            renderNode->SetVertShader(gVertShader.get());
-            renderNode->SetFragShader(gFragShader.get());
+            renderNode->SetVertShader(gVertShader);
+            renderNode->SetFragShader(gFragShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetPipelineLayoutCI(layoutCreateInfo);
             renderNode->SetVertexInput(vertexInput);
@@ -474,8 +474,8 @@ namespace Rendering
 
             //light pass//
 
-            lVertShader = std::make_unique<Shader>(logicalDevice, "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
-            lFragShader = std::make_unique<Shader>(logicalDevice,"C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\Shaders\\spirvGlsl\\ClusterRendering\\light.frag.spv", S_FRAG);
+            lVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath +  "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
+            lFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\light.frag.spv", S_FRAG);
 
             lightDecCache->AddShaderInfo(lVertShader->sParser.get());
             lightDecCache->AddShaderInfo(lFragShader->sParser.get());
@@ -498,8 +498,8 @@ namespace Rendering
             VertexInput lVertexInput = Vertex2D::GetVertexInput();
 
             auto lRenderNode = renderGraphRef->AddPass(lightPassName);
-            lRenderNode->SetVertShader(lVertShader.get());
-            lRenderNode->SetFragShader(lFragShader.get());
+            lRenderNode->SetVertShader(lVertShader);
+            lRenderNode->SetFragShader(lFragShader);
             lRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             lRenderNode->SetPipelineLayoutCI(lLayoutCreateInfo);
             lRenderNode->SetVertexInput(lVertexInput);
@@ -605,14 +605,14 @@ namespace Rendering
         Core* core;
         RenderGraph* renderGraphRef;
 
-        std::unique_ptr<Shader> gVertShader;
-        std::unique_ptr<Shader> gFragShader;
+        Shader* gVertShader;
+        Shader* gFragShader;
 
-        std::unique_ptr<Shader> lVertShader;
-        std::unique_ptr<Shader> lFragShader;
+        Shader* lVertShader;
+        Shader* lFragShader;
 
-        std::unique_ptr<Shader> cullCompShader;
-        std::unique_ptr<Shader> cullMeshesCompShader;
+        Shader* cullCompShader;
+        Shader* cullMeshesCompShader;
         
         ImageView* colAttachmentView;
         ImageView* normAttachmentView;

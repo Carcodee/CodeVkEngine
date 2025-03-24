@@ -1259,10 +1259,15 @@ namespace ENGINE
             int idx = 0;
             for (auto& renderNode : renderNodesSorted)
             {
-                if (!renderNode->active) { continue; }
-
                 Profiler::GetInstance()->
                     AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
+                if (!renderNode->active)
+                {
+                    Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
+                    continue;
+                }
+
+
                 RenderGraphNode* node = renderNode;
                 bool depenNeed = false;
                 std::string depenName = "";

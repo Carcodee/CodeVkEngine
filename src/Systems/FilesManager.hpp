@@ -30,7 +30,7 @@ namespace SYSTEMS
         }
         void CheckAllChanges()
         {
-            for (auto& file : filesWatched)
+            for (auto& file : renderNodesFiles)
             {
                 //calling some callbacks
                 file->CheckLastTimeWrite();
@@ -39,11 +39,19 @@ namespace SYSTEMS
         void AddFileToWatch(std::string path, std::function<void()> function)
         {
             assert(!path.empty() && "Path is empty");
-            filesWatched.emplace_back(std::make_unique<FileInfo>(path, function));
+            renderNodesFiles.emplace_back(std::make_unique<FileInfo>(path, function));
+        }
+        void CollectRenderNodesMetadata(std::function<void()> onChangeCallback)
+        {
+            std::filesystem::path renderPassesDir = OS::GetInstance()->engineResourcesPath / "RenderNodes";
+            for (auto passFileData : std::filesystem::directory_iterator(renderPassesDir))
+            {
+                renderNodesFiles.emplace_back(std::make_unique<FileInfo>(passFileData.path().string(), onChangeCallback));
+            }
         }
 
         std::deque<std::string> pathsToDelete;
-        std::vector<std::unique_ptr<FileInfo>> filesWatched;
+        std::vector<std::unique_ptr<FileInfo>> renderNodesFiles;
     };
 }
 

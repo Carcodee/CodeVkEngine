@@ -60,16 +60,16 @@ void run(WindowProvider* windowProvider)
     
     std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>> renderers;
 
-    // renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
-    // core.get(), windowProvider));
+    renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
+    core.get(), windowProvider));
     
-    // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
-    // clusterRenderer->SetRenderOperation();
+    Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
+    clusterRenderer->SetRenderOperation();
     
-    renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core.get(), windowProvider));
+    // renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core.get(), windowProvider));
 
-    Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
-    flatRenderer->SetRenderOperation();
+    // Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
+    // flatRenderer->SetRenderOperation();
 
     std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(
         renderGraph.get(), windowProvider, renderers);

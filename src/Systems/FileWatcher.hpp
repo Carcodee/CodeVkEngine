@@ -39,7 +39,10 @@ namespace SYSTEMS
             {
                 modified = true;
                 lastTimeCheck = fTime;
-                onChangeCallback();
+                // if (onChangeCallback)
+                // {
+                    // onChangeCallback();
+                // }
             }
         }
         void Invalidate()
