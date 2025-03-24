@@ -900,7 +900,7 @@ namespace ENGINE
                 node->Serialize();
             }
         }
-        void DeserializeAll()
+        void LoadExternalPasses()
         {
             std::string nodesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() +"\\RenderNodes";
             std::vector<std::string> paths;
@@ -922,15 +922,15 @@ namespace ENGINE
                     node->Deserialize(path.path().string());
                 }
             }
+            RecreateNodePipelines();
         }
         void UpdateAllFromMetaData()
         {
             for (auto& node : renderNodesSorted)
             {
                 node->Deserialize(node->path);
-                SYSTEMS::Logger::GetInstance()->LogMessage("Render Node: (+ "  + node->passName +") updated");
+                SYSTEMS::Logger::GetInstance()->LogMessage("Render Node: ("  + node->passName +") updated");
             }
-            
         }
 
         ~RenderGraph()
@@ -1176,8 +1176,7 @@ namespace ENGINE
                 renderNode.second->ClearOperations();
             }
         }
-
-        void RecompileShaders()
+        void RecreateNodePipelines()
         {
             for (auto& node : renderNodes)
             {

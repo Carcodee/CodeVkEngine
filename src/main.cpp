@@ -78,7 +78,7 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation();
 
-    renderGraph->DeserializeAll();
+    //todo: error here
     while (!windowProvider->WindowShouldClose())
     {
         //handle time and frames better
@@ -101,13 +101,13 @@ void run(WindowProvider* windowProvider)
                     windowSize);
                 windowProvider->framebufferResized = false;
                 core->resizeRequested = false;
+                renderGraph->UpdateAllFromMetaData();
                 renderGraph->RecreateFrameResources();
                 for (auto& renderer : renderers)
                 {
                     renderer.second->SetRenderOperation();
                 }
                 debugRenderer->SetRenderOperation();
-                renderGraph->DeserializeAll();
             }
             try
             {
@@ -119,8 +119,8 @@ void run(WindowProvider* windowProvider)
                 }
                 if (ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {
-                    // clusterRenderer->ReloadShaders();
-                    renderGraph->RecompileShaders();
+                    //each shader is handling his recompilation process.
+                    renderGraph->RecreateNodePipelines();
                 }
                 if (ImGui::IsKeyPressed(ImGuiKey_LeftCtrl, false) && ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {
