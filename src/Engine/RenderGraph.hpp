@@ -268,6 +268,7 @@ namespace ENGINE
                     }
                 }
 
+
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
                 std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
                     core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
@@ -1298,7 +1299,7 @@ namespace ENGINE
                 node->Execute(currentFrameResources->commandBuffer.get());
                 Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
                 allPassesNames.push_back(node->passName);
-                idx++;
+                idx = (idx + 1) % 16;
             }
         }
 

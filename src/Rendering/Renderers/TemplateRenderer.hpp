@@ -50,7 +50,8 @@ namespace Rendering
             renderNode->SetVertShader(vShader);
             renderNode->SetFragShader(fShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            // renderNode->SetPipelineLayoutCI(genLayoutCreateInfo);
+            //change this to make it simpler
+            renderNode->SetPushConstantSize(4);
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
             renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorImageResource("shAttachment", attachmentOutput);

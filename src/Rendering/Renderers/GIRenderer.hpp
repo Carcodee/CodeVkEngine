@@ -1,4 +1,5 @@
 ﻿//
+
 // Created by carlo on 2025-03-26.
 //
 
@@ -7,10 +8,9 @@
 
 namespace Rendering
 {
-    using namespace ENGINE;
-    class GIRenderer : BaseRenderer
+    class GIRenderer :public BaseRenderer
     {
-        ~GIRenderer() override = default;
+    public:
 
         GIRenderer(Core* core, WindowProvider* windowProvider)
         {
@@ -37,24 +37,25 @@ namespace Rendering
         {
             
             AttachmentInfo colInfo = GetColorAttachmentInfo(
-                glm::vec4(0.0f), g_32bFormat);
+                glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
             
             Shader* vShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\slang\\test\\shView.slang", ShaderStage::S_VERT); 
             Shader* fShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\slang\\test\\shView.slang", ShaderStage::S_FRAG);
 
-            auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
-            ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
+            // auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
+            // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
+            
+            
             
             auto renderNode = renderGraph->AddPass(shPassName);
             renderNode->SetConfigs({true});
             renderNode->SetVertShader(vShader);
             renderNode->SetFragShader(fShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            // renderNode->SetPipelineLayoutCI(genLayoutCreateInfo);
+            renderNode->SetPushConstantSize(4);
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
             renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
-            renderNode->AddColorImageResource("shAttachment", attachmentOutput);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->BuildRenderGraphNode();
         }
@@ -66,6 +67,11 @@ namespace Rendering
 
         void SetRenderOperation() override
         {
+            auto taskOp = new std::function<void()>([this]{
+                auto renderNode = renderGraph->GetNode(shPassName);
+                auto currBackBuffer = renderGraph->currentBackBuffer;
+                renderNode->AddColorImageResource("shAttachment", currBackBuffer);
+            });
             
             auto shRenderOp = new std::function<void()>(
                 [this]()
@@ -82,11 +88,11 @@ namespace Rendering
                         &renderGraph->resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
                         &offset);
                     renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(
-                        renderGraph->resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->
-                                     bufferHandle.get(), 0, vk::IndexType::eUint32);
+                        renderGraph->resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
                     renderGraph->currentFrameResources->commandBuffer->drawIndexed(
                         Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
                 });
+            renderGraph->GetNode(shPassName)->AddTask(taskOp);
             renderGraph->GetNode(shPassName)->SetRenderOperation(shRenderOp);
             
         }

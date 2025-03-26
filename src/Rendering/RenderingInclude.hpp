@@ -19,8 +19,8 @@
 
 #include "BaseRenderer.hpp"
 #include "Renderers/TemplateRenderer.hpp"
-#include "Examples/ForwardRenderer.hpp"
-#include "Examples/ComputeRenderer.hpp"
+// #include "Examples/ForwardRenderer.hpp"
+// #include "Examples/ComputeRenderer.hpp"
 #include "Renderers/FlatRenderer.hpp"
 #include "Renderers/ClusterRenderer.hpp"
 #include "Renderers/GIRenderer.hpp"
