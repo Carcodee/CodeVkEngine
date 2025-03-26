@@ -30,8 +30,6 @@ namespace Rendering
 
         void CreateBuffers()
         {
-            quadVertBuffer = ResourcesManager::GetInstance()->GetStagedBuffFromName("quad_default")->deviceBuffer.get();
-            quadIndexBuffer = ResourcesManager::GetInstance()->GetStagedBuffFromName("quad_index_default")->deviceBuffer.get();
         }
 
         void CreatePipelines()
@@ -45,7 +43,7 @@ namespace Rendering
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
             
-            auto renderNode = renderGraph->AddPass(shPassName);
+            auto renderNode = renderGraph->AddPass(passName);
             renderNode->SetConfigs({true});
             renderNode->SetVertShader(vShader);
             renderNode->SetFragShader(fShader);
@@ -53,8 +51,8 @@ namespace Rendering
             //change this to make it simpler
             renderNode->SetPushConstantSize(4);
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
-            renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
-            renderNode->AddColorImageResource("shAttachment", attachmentOutput);
+            renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
+            renderNode->AddColorImageResource("default_attachment", attachmentOutput);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->BuildRenderGraphNode();
         }
@@ -66,10 +64,16 @@ namespace Rendering
         void SetRenderOperation() override
         {
             
-            auto shRenderOp = new std::function<void()>(
+            auto taskOp = new std::function<void()>(
+                [this]
+                {
+                    auto renderNode = renderGraph->GetNode(passName);
+                    renderNode->AddColorImageResource("default_attachment", renderGraph->currentBackBuffer);
+                });
+            auto renderOp = new std::function<void()>(
                 [this]()
                 {
-                    auto& renderNode = renderGraph->renderNodes.at(shPassName);
+                    auto& renderNode = renderGraph->renderNodes.at(passName);
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
@@ -86,8 +90,8 @@ namespace Rendering
                     renderGraph->currentFrameResources->commandBuffer->drawIndexed(
                         Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
                 });
-            renderGraph->GetNode(shPassName)->SetRenderOperation(shRenderOp);
-            
+            renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
+            renderGraph->GetNode(passName)->AddTask(taskOp);
         }
         
 
@@ -96,15 +100,13 @@ namespace Rendering
         }
 
 
-        std::string shPassName = "passName";
+        std::string passName = "passName";
 
         Core* core;
         RenderGraph* renderGraph;
         WindowProvider* windowProvider;
 
         ImageView* colAttachmentView;
-        Buffer* quadVertBuffer;
-        Buffer* quadIndexBuffer;
     };
 }
 
