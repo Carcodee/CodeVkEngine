@@ -661,7 +661,19 @@ namespace Rendering
     	std::vector<ENGINE::DrawIndirectIndexedCmd> indirectDrawsCmdInfos;
     	int cullCount =0;
         
-        RenderingResManager() = default;
+        RenderingResManager()
+        {
+	        
+            ENGINE::Buffer* quadVertBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
+                "quad_default", vk::BufferUsageFlagBits::eVertexBuffer,
+                sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
+                Vertex2D::GetQuadVertices().data())->deviceBuffer.get();
+
+            ENGINE::Buffer* quadIndexBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
+                "quad_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
+                sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
+                Vertex2D::GetQuadIndices().data())->deviceBuffer.get();
+        };
         ~RenderingResManager() = default;
     private:
         static RenderingResManager* instance;

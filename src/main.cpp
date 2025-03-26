@@ -25,6 +25,19 @@ CONST int WINDOWS_HEIGHT = 1024;
 #define ENGINE_ENABLE_DEBUGGING
 
 
+void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>>& renderers)
+{
+    renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
+    core, windowProvider));
+    
+    Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
+    clusterRenderer->SetRenderOperation();
+    
+    renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
+
+    Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
+    flatRenderer->SetRenderOperation();
+}
 void run(WindowProvider* windowProvider)
 {
     int imageCount = 3;
@@ -51,26 +64,16 @@ void run(WindowProvider* windowProvider)
         windowProvider->GetWindowSize());
 
     ENGINE::ResourcesManager* resourcesManager = ENGINE::ResourcesManager::GetInstance(core.get());
-    std::unique_ptr<ENGINE::DescriptorAllocator> descriptorAllocator = std::make_unique<ENGINE::DescriptorAllocator>();
-
+    
     Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());
 
     renderGraph->CreateResManager();
     
     std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>> renderers;
+    CreateRenderers(core.get(), windowProvider, renderers);
 
-    renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
-    core.get(), windowProvider));
     
-    Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
-    clusterRenderer->SetRenderOperation();
-    
-    // renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core.get(), windowProvider));
-
-    // Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
-    // flatRenderer->SetRenderOperation();
-
     std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(
         renderGraph.get(), windowProvider, renderers);
 

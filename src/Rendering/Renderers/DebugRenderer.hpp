@@ -22,7 +22,6 @@ namespace Rendering{
             this->core = core;
             this->renderGraph = core->renderGraphRef;
             this->windowProvider = windowProvider;
-            this->descriptorAllocator= descriptorAllocator;
             this->mDebuggerCache = std::make_unique<DescriptorCache>(core);
             if (renderers.contains("ClusterRenderer"))
             {
@@ -211,7 +210,6 @@ namespace Rendering{
         Core* core;
         RenderGraph* renderGraph;
         WindowProvider* windowProvider;
-        DescriptorAllocator* descriptorAllocator;
         std::unique_ptr<DescriptorCache> mDebuggerCache;
 
         ImageView* colAttachmentView;

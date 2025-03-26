@@ -24,7 +24,7 @@ namespace ENGINE
         }
         return usageFlags;
     }
-    
+
     static const vk::Format g_32bFormat = vk::Format::eR32G32B32A32Sfloat;
     static const vk::Format g_16bFormat = vk::Format::eR16G16B16A16Sfloat;
     static const vk::Format g_ShipperFormat = vk::Format::eR8G8B8A8Unorm;
