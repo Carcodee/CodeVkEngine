@@ -35,7 +35,7 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
     Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
     flatRenderer->SetRenderOperation();
-
+    
 
     renderers.try_emplace("GIRenderer", std::make_unique<Rendering::GIRenderer>(core, windowProvider));
     Rendering::GIRenderer* giRenderer = dynamic_cast<Rendering::GIRenderer*>(renderers.at("GIRenderer").get());

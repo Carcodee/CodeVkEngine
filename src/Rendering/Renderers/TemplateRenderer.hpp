@@ -48,9 +48,9 @@ namespace Rendering
             renderNode->SetVertShader(vShader);
             renderNode->SetFragShader(fShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            //change this to make it simpler
-            renderNode->SetPushConstantSize(4);
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+            //change this
+            renderNode->SetPushConstantSize(4);
             renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorImageResource("default_attachment", attachmentOutput);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);

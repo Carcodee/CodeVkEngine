@@ -31,6 +31,6 @@ Sampler2D myTexture; // Texture at set 0, binding 0
 
 PSOutput mainFS(PSInput input) {
     PSOutput output;
-    output.color = myTexture.Sample(input.uv); // Sample the texture
+    output.color = float4(input.uv, 0.0, 1.0); // Sample the texture
     return output;
 }

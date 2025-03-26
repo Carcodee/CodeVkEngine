@@ -824,8 +824,8 @@ namespace ENGINE
         DynamicRenderPass dynamicRenderPass;
         std::unique_ptr<DescriptorCache> descCache;
         std::string passName;
-        int degrees = 0;
         bool active = false;
+        //unused
         bool waitForResourcesCreation = false;
         std::string path;
 

@@ -53,6 +53,7 @@ namespace Rendering
             renderNode->SetVertShader(vShader);
             renderNode->SetFragShader(fShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
+            //change this
             renderNode->SetPushConstantSize(4);
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
             renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);

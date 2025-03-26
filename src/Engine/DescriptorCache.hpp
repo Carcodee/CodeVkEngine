@@ -230,6 +230,30 @@ namespace ENGINE
             }
             writerBuilder.UpdateSet(core->logicalDevice.get(), dsetsInfo.dset);
         }
+        bool HasBindings()
+        {
+            if (!samplerArrayResources.empty())
+            {
+                return true;
+            }
+            if (!storageArrayResources.empty())
+            {
+                return true;
+            }
+            if (!buffersResources.empty())
+            {
+                return true;
+            }
+            if (!imageSamplers.empty())
+            {
+                return true;
+            }
+            if (!storageImages.empty())
+            {
+                return true;
+            }
+            return false;
+        }
         template<typename T>
         void SetBuffer(std::string name, std::vector<T>& bufferData)
         {
