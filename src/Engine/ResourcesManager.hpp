@@ -487,8 +487,6 @@ namespace ENGINE
             }
             
             SYSTEMS::OS::GetInstance()->CopyFileInto(templatePath.string(), targetPath.string());
-
-
             
             std::string spirvPath = ConvertShaderPathToSpirv(targetPath.string(), stage);
             Shader* shader= GetShader(targetPath.string(), stage);
