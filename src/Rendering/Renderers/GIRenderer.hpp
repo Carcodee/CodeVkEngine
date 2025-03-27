@@ -3,6 +3,7 @@
 // Created by carlo on 2025-03-26.
 //
 
+
 #ifndef GIRENDERER_HPP
 #define GIRENDERER_HPP
 
@@ -40,24 +41,14 @@ namespace Rendering
                 glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
             std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
             
-            Shader* vShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\slang\\test\\shView.slang", ShaderStage::S_VERT); 
-            Shader* fShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\slang\\test\\shView.slang", ShaderStage::S_FRAG);
-
             // auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
-            
-            
-            
-            auto renderNode = renderGraph->AddPass(shPassName);
-            renderNode->SetConfigs({true});
-            renderNode->SetVertShader(vShader);
-            renderNode->SetFragShader(fShader);
+
+            auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode(
+                shPassName, shaderPath + "\\slang\\test\\shView.slang", shaderPath + "\\slang\\test\\shView.slang");
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            //change this
-            renderNode->SetPushConstantSize(4);
-            renderNode->SetVertexInput(Vertex2D::GetVertexInput());
             renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
-            renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
+            
             renderNode->BuildRenderGraphNode();
         }
 

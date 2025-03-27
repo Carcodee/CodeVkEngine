@@ -7,6 +7,7 @@
 
 
 
+
 double deltaTime;
 double previousTime;
 
@@ -68,10 +69,11 @@ void run(WindowProvider* windowProvider)
 
     ENGINE::ResourcesManager* resourcesManager = ENGINE::ResourcesManager::GetInstance(core.get());
     
-    Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
+    renderGraph->CreateResManager();
+    
+    Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance(renderGraph.get());
     // Rendering::ModelLoader::GetInstance(core.get());
 
-    renderGraph->CreateResManager();
     
     std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>> renderers;
     CreateRenderers(core.get(), windowProvider, renderers);

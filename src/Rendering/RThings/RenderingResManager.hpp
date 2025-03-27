@@ -473,11 +473,11 @@ namespace Rendering
             return material;
         }
 
-        static RenderingResManager* GetInstance()
+        static RenderingResManager* GetInstance(ENGINE::RenderGraph* renderGraph = nullptr)
         {
-            if (instance == nullptr)
+            if (instance == nullptr && renderGraph)
             {
-                instance = new RenderingResManager();
+                instance = new RenderingResManager(renderGraph);
             }
             return instance;
         }
@@ -646,6 +646,24 @@ namespace Rendering
     		individualDrawModels.try_emplace(name ,model);
     		return model;
     	}
+
+    	ENGINE::RenderGraphNode* GetTemplateNode(std::string name, std::string vPath, std::string fPath)
+    	{
+		    ENGINE::AttachmentInfo colInfo = ENGINE::GetColorAttachmentInfo(
+			    glm::vec4(0.0f), ENGINE::g_32bFormat);
+		    ENGINE::Shader* vShader = renderGraph->resourcesManager->GetShader(vPath, ENGINE::ShaderStage::S_VERT);
+		    ENGINE::Shader* fShader = renderGraph->resourcesManager->GetShader(fPath, ENGINE::ShaderStage::S_FRAG);
+		    auto renderNode = renderGraph->AddPass(name);
+		    renderNode->SetConfigs({true});
+		    renderNode->SetVertShader(vShader);
+		    renderNode->SetFragShader(fShader);
+		    renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		    //change this
+		    renderNode->SetPushConstantSize(4);
+		    renderNode->SetRasterizationConfigs(ENGINE::RasterizationConfigs::R_FILL);
+    		return renderNode;
+    	}
+    	
         std::map<std::string, int> materialsNames;
         std::map<std::string, int> modelsNames;
         std::map<std::string, int> texturesNames;
@@ -661,15 +679,15 @@ namespace Rendering
     	std::vector<ENGINE::DrawIndirectIndexedCmd> indirectDrawsCmdInfos;
     	int cullCount =0;
         
-        RenderingResManager()
+        RenderingResManager(ENGINE::RenderGraph* renderGraph)
         {
-	        
-            ENGINE::Buffer* quadVertBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
+	        this->renderGraph = renderGraph;	
+            ENGINE::Buffer* quadVertBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
                 "quad_default", vk::BufferUsageFlagBits::eVertexBuffer,
                 sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
                 Vertex2D::GetQuadVertices().data())->deviceBuffer.get();
 
-            ENGINE::Buffer* quadIndexBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
+            ENGINE::Buffer* quadIndexBuffer =this->renderGraph->resourcesManager->GetStageBuffer(
                 "quad_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
                 sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
                 Vertex2D::GetQuadIndices().data())->deviceBuffer.get();
@@ -677,6 +695,8 @@ namespace Rendering
         ~RenderingResManager() = default;
     private:
         static RenderingResManager* instance;
+    	ENGINE::RenderGraph* renderGraph;
+    	
     };
     
     RenderingResManager* RenderingResManager::instance = nullptr;
