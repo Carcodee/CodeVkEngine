@@ -26,6 +26,7 @@ namespace SYSTEMS
 
         void AddPathToDelete(std::string path)
         {
+            assert(false && "You are about to delete paths from generated folder, be sure is intended");
             pathsToDelete.push_back(path);
         }
         void CheckAllChanges()

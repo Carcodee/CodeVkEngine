@@ -647,6 +647,34 @@ namespace Rendering
     		return model;
     	}
 
+    	
+    	ENGINE::RenderGraphNode* GetTemplateNode_DF(std::string name, std::string shaderName)
+    	{
+		    ENGINE::AttachmentInfo colInfo = ENGINE::GetColorAttachmentInfo(
+			    glm::vec4(0.0f), ENGINE::g_32bFormat);
+		    ENGINE::Shader* vShader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_VERT);
+		    ENGINE::Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_FRAG);
+		    auto renderNode = renderGraph->AddPass(name);
+		    renderNode->SetConfigs({true});
+		    renderNode->SetVertShader(vShader);
+		    renderNode->SetFragShader(fShader);
+		    renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		    //change this
+		    renderNode->SetPushConstantSize(4);
+		    renderNode->SetRasterizationConfigs(ENGINE::RasterizationConfigs::R_FILL);
+    		return renderNode;
+    	}
+
+	    ENGINE::RenderGraphNode* GetTemplateComputeNode_DF(std::string name, std::string shaderName)
+	    {
+		    ENGINE::Shader* shader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_COMP);
+		    auto renderNode = renderGraph->AddPass(name);
+		    renderNode->SetConfigs({true});
+		    renderNode->SetCompShader(shader);
+		    //change this
+		    renderNode->SetPushConstantSize(4);
+		    return renderNode;
+	    }
     	ENGINE::RenderGraphNode* GetTemplateNode(std::string name, std::string vPath, std::string fPath)
     	{
 		    ENGINE::AttachmentInfo colInfo = ENGINE::GetColorAttachmentInfo(
@@ -663,6 +691,17 @@ namespace Rendering
 		    renderNode->SetRasterizationConfigs(ENGINE::RasterizationConfigs::R_FILL);
     		return renderNode;
     	}
+
+	    ENGINE::RenderGraphNode* GetTemplateComputeNode(std::string name, std::string path)
+	    {
+		    ENGINE::Shader* shader = renderGraph->resourcesManager->GetShader(path, ENGINE::ShaderStage::S_COMP);
+		    auto renderNode = renderGraph->AddPass(name);
+		    renderNode->SetConfigs({true});
+		    renderNode->SetCompShader(shader);
+		    //change this
+		    renderNode->SetPushConstantSize(4);
+		    return renderNode;
+	    }
     	
         std::map<std::string, int> materialsNames;
         std::map<std::string, int> modelsNames;

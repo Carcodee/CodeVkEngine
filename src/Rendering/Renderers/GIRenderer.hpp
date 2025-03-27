@@ -4,6 +4,7 @@
 //
 
 
+
 #ifndef GIRENDERER_HPP
 #define GIRENDERER_HPP
 
@@ -44,8 +45,8 @@ namespace Rendering
             // auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
 
-            auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode(
-                shPassName, shaderPath + "\\slang\\test\\shView.slang", shaderPath + "\\slang\\test\\shView.slang");
+            auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(
+                shPassName, "shView.slang");
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
             

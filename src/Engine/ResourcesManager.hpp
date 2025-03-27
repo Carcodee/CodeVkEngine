@@ -469,7 +469,10 @@ namespace ENGINE
         }
         Shader* CreateDefaultShader(std::string name, ShaderStage stage)
         {
-            name += ".slang";
+            if (std::filesystem::path(name).extension() != ".slang")
+            {
+                name += ".slang";
+            }
             
             std::filesystem::path targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "slang"/"generated"/ name;
             if (std::filesystem::exists(targetPath))
@@ -492,8 +495,8 @@ namespace ENGINE
             Shader* shader= GetShader(targetPath.string(), stage);
 
             //danger
-            filesManager->AddPathToDelete(targetPath.string());
-            filesManager->AddPathToDelete(spirvPath);
+            // filesManager->AddPathToDelete(targetPath.string());
+            // filesManager->AddPathToDelete(spirvPath);
             
             return shader;
         }
