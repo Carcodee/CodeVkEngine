@@ -236,6 +236,7 @@ namespace Rendering
                     lightDecCache->SetSampler("gCol", colAttachmentView);
                     lightDecCache->SetSampler("gNormals", normAttachmentView);
                     lightDecCache->SetSampler("gDepth", depthAttachmentView);
+                    lightDecCache->SetSampler("gMetRoughness", metRoughAttachmentView);
                     lightDecCache->SetBuffer("CameraProperties", cPropsUbo);
                     lightDecCache->SetBuffer("PointLights", pointLights);
                     lightDecCache->SetBuffer("LightMap", lightsMap);
@@ -287,6 +288,7 @@ namespace Rendering
 
             colAttachmentView = ResourcesManager::GetInstance()->GetImage("colAttachment", imageInfo, 0,  0);
             normAttachmentView = ResourcesManager::GetInstance()->GetImage("normAttachment", imageInfo, 0, 0); 
+            metRoughAttachmentView = ResourcesManager::GetInstance()->GetImage("metRoughnessAttachmentView", imageInfo, 0, 0); 
             depthAttachmentView = ResourcesManager::GetInstance()->GetImage("depthAttachment", depthImageInfo, 0, 0); 
 
             //gbuff
@@ -310,8 +312,8 @@ namespace Rendering
             std::random_device rd;
             std::mt19937 gen(rd());
 
-            pointLights.reserve(4000);
-            for (int i = 0; i < 4000; ++i)
+            pointLights.reserve(1);
+            for (int i = 0; i < 1; ++i)
             {
                 std::uniform_real_distribution<> distributionPos(-10.0f, 10.0f);
                 std::uniform_real_distribution<> distributionCol(0.0f, 1.0f);
@@ -467,6 +469,7 @@ namespace Rendering
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->AddColorImageResource("gColor", colAttachmentView);
             renderNode->AddColorImageResource("gNorm", normAttachmentView);
+            renderNode->SetDepthImageResource("gMetRoughness", metRoughAttachmentView);
             renderNode->SetDepthImageResource("gDepth", depthAttachmentView);
             renderNode->AddBufferSync("indirectBuffer", {B_COMPUTE_WRITE, B_DRAW_INDIRECT});
             renderNode->DependsOn(meshCullPassName);
@@ -506,6 +509,7 @@ namespace Rendering
             lRenderNode->AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
             lRenderNode->AddSamplerResource("colGSampler", colAttachmentView);
             lRenderNode->AddSamplerResource("normGSampler", normAttachmentView);
+            lRenderNode->AddSamplerResource("gMetRoughnessSampler", metRoughAttachmentView);
             lRenderNode->AddSamplerResource("depthGSampler", depthAttachmentView);
             lRenderNode->DependsOn(computePassName);
             lRenderNode->BuildRenderGraphNode();
@@ -617,6 +621,7 @@ namespace Rendering
         ImageView* colAttachmentView;
         ImageView* normAttachmentView;
         ImageView* depthAttachmentView;
+        ImageView* metRoughAttachmentView;
 
         StagedBuffer* vertexBuffer;
         StagedBuffer* indexBuffer;

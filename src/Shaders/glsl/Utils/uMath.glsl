@@ -3,6 +3,19 @@
 #define PI 3.1415
 #define INVERSE_PI 3.1415
 
+
+
+float AbsCosThetaWs(vec3 v1, vec3 v2){
+    return max(0.0, dot(v1, v2));
+}
+float CosThetaWs(vec3 v1, vec3 v2){
+    return dot(v1, v2);
+}
+float AbsCosThetaNs(vec3 v1){
+    return v1.z;
+}
+
+
 //float
 float u_Lerp(float start, float end, float v){
     return start + v * (end - start);

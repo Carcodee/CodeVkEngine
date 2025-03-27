@@ -9,6 +9,7 @@
 #include "../Utils/uRendering.glsl"
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
+#include "../Utils/uPBR.glsl"
 
 layout(location = 0) out vec4 outColor;
 
@@ -17,21 +18,29 @@ layout(location = 0) in vec2 textCoord;
 layout(set = 0, binding = 0) uniform sampler2D gCol;
 layout(set = 0, binding = 1) uniform sampler2D gNormals;
 layout(set = 0, binding = 2) uniform sampler2D gDepth;
-layout(set = 0, binding = 3, scalar) uniform CameraProperties{
+layout(set = 0, binding = 4) uniform sampler2D gMetRoughness;
+
+layout(set = 0, binding = 5, scalar) uniform CameraProperties{
     mat4 invProj;
     mat4 invView;
     vec3 pos;
     float zNear;
     float zFar;
 }cProps;
-layout (set = 0, binding = 4, scalar) buffer PointLights{
+layout (set = 0, binding = 6, scalar) buffer PointLights{
     u_PointLight[] pointLights;
 };
-layout (set = 0, binding = 5, scalar) buffer LightMap{
+layout (set = 0, binding = 7, scalar) buffer LightMap{
     u_ArrayIndexer[] lightMap;
 };
-layout (set = 0, binding = 6, scalar) buffer LightIndices{
+layout (set = 0, binding = 8, scalar) buffer LightIndices{
     int[] lightIndices;
+};
+
+layout(set = 0, binding = 9) writeonly uniform image2D samplerMap;
+
+layout (set = 0, binding = 10, scalar) writeonly buffer cameraPositions{
+    vec3[] camPositions;
 };
 
 layout(push_constant)uniform pushConstants{
@@ -56,6 +65,7 @@ vec3 EvalPointLight(u_PointLight light, vec3 col, vec3 pos, vec3 normal){
 void main() {
     
     vec4 norm = texture(gNormals, textCoord);
+    vec4 metRoughness = texture(gMetRoughness, textCoord);
     
     vec2 fragCoord = vec2(textCoord.x , textCoord.y);
     vec4 col = texture(gCol, textCoord);
@@ -64,6 +74,7 @@ void main() {
 
         discard;
     }
+    
 //    col =vec4(0.01);
     vec3 pos = u_ScreenToWorld(cProps.invProj, cProps.invView, depth, fragCoord);
 
@@ -80,8 +91,11 @@ void main() {
     int lightOffset = lightMap[mapIndex].offset;
     int lightsInTile = lightMap[mapIndex].size;
     
-    vec3 lightPos = vec3(2.0, -50.0, 0.0);
+    vec3 lightPos = vec3(2.0, 5.0, 0.0);
     vec3 lightDir = normalize(lightPos - pos);
+    vec3 viewDir = normalize(cProps.pos - pos);
+    vec3 halfway = normalize(lightDir + viewDir);
+    
     vec3 lightCol = vec3(1.0, 1.0, 1.0);
     vec3 ambientCol = vec3(0.0, 0.0, 0.0);
     vec3 finalCol = col.xyz * lightCol  * 1.5f + ambientCol;
@@ -102,11 +116,9 @@ void main() {
 //        vec3 debugCol = u_Lerp(vec3(0.0, 0.5, 0.4), vec3(1.0, 0.0, 0.0), intensity);
 //         finalCol += debugCol*2 + tileCol * 0.3;
 //    }
-
-    if(distance(pos, vec3(0.0)) < 0.1){
-        finalCol = vec3(1.0, 0.0, 0.0);
-    } 
     
-    outColor = vec4(finalCol, 1.0);
+    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0.0), metRoughness.r, metRoughness.g);
+    
+    outColor = vec4(brdf * lightCol, 1.0);
 
 }
