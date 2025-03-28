@@ -235,6 +235,7 @@ namespace Rendering
                     
                     lightDecCache->SetSampler("gCol", colAttachmentView);
                     lightDecCache->SetSampler("gNormals", normAttachmentView);
+                    lightDecCache->SetSampler("gTang", tangAttachmentView);
                     lightDecCache->SetSampler("gDepth", depthAttachmentView);
                     lightDecCache->SetSampler("gMetRoughness", metRoughAttachmentView);
                     lightDecCache->SetBuffer("CameraProperties", cPropsUbo);
@@ -288,6 +289,7 @@ namespace Rendering
 
             colAttachmentView = ResourcesManager::GetInstance()->GetImage("colAttachment", imageInfo, 0,  0);
             normAttachmentView = ResourcesManager::GetInstance()->GetImage("normAttachment", imageInfo, 0, 0); 
+            tangAttachmentView = ResourcesManager::GetInstance()->GetImage("tangAttachment", imageInfo, 0, 0); 
             metRoughAttachmentView = ResourcesManager::GetInstance()->GetImage("metRoughnessAttachmentView", imageInfo, 0, 0); 
             depthAttachmentView = ResourcesManager::GetInstance()->GetImage("depthAttachment", depthImageInfo, 0, 0); 
 
@@ -464,12 +466,14 @@ namespace Rendering
             renderNode->SetVertexInput(vertexInput);
             renderNode->AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
+            renderNode->AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
             renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->AddColorImageResource("gColor", colAttachmentView);
             renderNode->AddColorImageResource("gNorm", normAttachmentView);
+            renderNode->AddColorImageResource("gTang", tangAttachmentView);
             renderNode->AddColorImageResource("gMetRoughness", metRoughAttachmentView);
             renderNode->SetDepthImageResource("gDepth", depthAttachmentView);
             renderNode->AddBufferSync("indirectBuffer", {B_COMPUTE_WRITE, B_DRAW_INDIRECT});
@@ -510,7 +514,8 @@ namespace Rendering
             lRenderNode->AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
             lRenderNode->AddSamplerResource("colGSampler", colAttachmentView);
             lRenderNode->AddSamplerResource("normGSampler", normAttachmentView);
-            lRenderNode->AddSamplerResource("gMetRoughnessSampler", metRoughAttachmentView);
+            lRenderNode->AddSamplerResource("tangGSampler", tangAttachmentView);
+            lRenderNode->AddSamplerResource("metRoughnessGSampler", metRoughAttachmentView);
             lRenderNode->AddSamplerResource("depthGSampler", depthAttachmentView);
             lRenderNode->DependsOn(computePassName);
             lRenderNode->BuildRenderGraphNode();
@@ -621,8 +626,9 @@ namespace Rendering
         
         ImageView* colAttachmentView;
         ImageView* normAttachmentView;
-        ImageView* depthAttachmentView;
+        ImageView* tangAttachmentView;
         ImageView* metRoughAttachmentView;
+        ImageView* depthAttachmentView;
 
         StagedBuffer* vertexBuffer;
         StagedBuffer* indexBuffer;

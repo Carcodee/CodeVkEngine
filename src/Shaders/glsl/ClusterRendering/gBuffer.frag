@@ -9,11 +9,13 @@
 
 layout(location = 0) out vec4 colors;
 layout(location = 1) out vec4 normals;
-layout(location = 2) out vec4 metRoughnessAttachment;
+layout(location = 2) out vec4 tangents;
+layout(location = 3) out vec4 metRoughnessAttachment;
 
 layout(location = 0) in vec2 textCoord;
 layout(location = 1) in vec3 norm;
-layout(location = 2) in flat int id;
+layout(location = 2) in vec3 tang;
+layout(location = 3) in flat int id;
 
 layout (set = 0, binding = 0) uniform sampler2D textures[];
 
@@ -50,11 +52,11 @@ void main() {
 
     vec4 metRoughness;
     GetTexture(material.metRoughnessOffset, metRoughness);
-    if(metRoughness == vec4(0)){metRoughness = vec4(0.0,material.roughnessFactor, material.metallicFactor , 1.0);}
-
+    if(metRoughness == vec4(0)){metRoughness = vec4(0.0,material.roughnessFactor, material.metallicFactor, 1.0);}
 
     colors = albedo;
     normals = vec4(norm, 1.0);
+    tangents = vec4(tang, 1.0);
     metRoughnessAttachment = metRoughness;
     
 }

@@ -17,7 +17,8 @@ layout(location = 0) in vec2 textCoord;
 
 layout(set = 0, binding = 0) uniform sampler2D gCol;
 layout(set = 0, binding = 1) uniform sampler2D gNormals;
-layout(set = 0, binding = 2) uniform sampler2D gDepth;
+layout(set = 0, binding = 2) uniform sampler2D gTang;
+layout(set = 0, binding = 3) uniform sampler2D gDepth;
 layout(set = 0, binding = 4) uniform sampler2D gMetRoughness;
 
 layout(set = 0, binding = 5, scalar) uniform CameraProperties{
@@ -65,6 +66,10 @@ vec3 EvalPointLight(u_PointLight light, vec3 col, vec3 pos, vec3 normal){
 void main() {
     
     vec4 norm = texture(gNormals, textCoord);
+    vec4 tang = texture(gTang, textCoord);
+    vec3 bitTang = normalize(cross(tang.xyz, norm.xyz));
+    mat3 inverseTbn = inverse(mat3(tang.xyz, bitTang, norm.xyz));
+    
     vec4 metRoughness = texture(gMetRoughness, textCoord);
     
     vec2 fragCoord = vec2(textCoord.x , textCoord.y);
@@ -91,14 +96,15 @@ void main() {
     int lightOffset = lightMap[mapIndex].offset;
     int lightsInTile = lightMap[mapIndex].size;
     
-    vec3 lightPos = vec3(2.0, 15.0, 0.0);
-    vec3 lightDir = normalize(lightPos - pos);
-    vec3 viewDir = normalize(cProps.pos - pos);
+    vec3 lightPos = vec3(2.0, 25.0, 0.0);
+    vec3 lightDir = inverseTbn * normalize( pos- lightPos) ;
+    vec3 viewDir = inverseTbn * normalize(pos - cProps.pos) ;
+    
     vec3 halfway = normalize(lightDir + viewDir);
     
     vec3 lightCol = vec3(1.0, 1.0, 1.0);
     vec3 ambientCol = vec3(0.0, 0.0, 0.0);
-    vec3 finalCol = col.xyz * lightCol  * 1.5f + ambientCol;
+    vec3 finalCol = col.xyz;
 
     for (int i = 0; i < lightsInTile; i++) {
         int lightIndex = lightIndices[lightOffset + i];
@@ -117,8 +123,8 @@ void main() {
 //         finalCol += debugCol*2 + tileCol * 0.3;
 //    }
     
-    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0.0), metRoughness.g, metRoughness.b);
+    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0.0), 0.0, metRoughness.g);
     
-    outColor = vec4(brdf * lightCol * 1.5 * AbsCosThetaWs(norm.xyz, -lightDir), 1.0);
+    outColor = vec4(brdf * lightCol * AbsCosThetaNs(lightDir.xyz) * 1.5 , 1.0);
 
 }
