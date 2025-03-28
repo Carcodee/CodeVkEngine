@@ -4,11 +4,11 @@
 #include "../Utils/uMath.glsl"
 #include "../Utils/uShading.glsl"
 
-vec3 U_LambertDiffuse(vec3 col){
+vec3 u_LambertDiffuse(vec3 col){
 	return col/PI;
 }
 
-vec3 U_CookTorrance(vec3 normal, vec3 view,vec3 light, float D, float G, vec3 F){
+vec3 u_CookTorrance(vec3 normal, vec3 view,vec3 light, float D, float G, vec3 F){
 
 	vec3 DGF = D*G*F;
 	float dot1 = max(dot(view, normal), 0.0001);
@@ -17,7 +17,8 @@ vec3 U_CookTorrance(vec3 normal, vec3 view,vec3 light, float D, float G, vec3 F)
 	return DGF/dotProducts;
 }
 
-float U_GGX(float roughness, vec3 normal, vec3 halfway){
+
+float u_GGX(float roughness, vec3 normal, vec3 halfway){
 	float dot = max(dot(normal,halfway), 0.0001);
 	dot = pow(dot,2.0);
 	float roughnessPart = pow(roughness,2.0)-1;
@@ -25,7 +26,6 @@ float U_GGX(float roughness, vec3 normal, vec3 halfway){
 	return pow(roughness,2.0)/denom;
 }
 float u_G1( float rougness, vec3 xVector, vec3 normal){
-	
 	float k = rougness/2;
 	float dot1= max(dot(normal, xVector), 0.0001);
 	float denom= (dot1* (1-k)) +k;
@@ -36,14 +36,14 @@ float u_G(float alpha, vec3 N, vec3 V, vec3 L){
 	return u_G1(alpha,  N, V) * u_G1(alpha,  N, L);
 }
 
-vec3 u_GetBRDF(vec3 normal, vec3 wo, vec3 wi,vec3 wh, vec3 col, vec3 FO, float metallic,  float roughness){
+vec3 u_GetBRDF(vec3 normal, vec3 wo, vec3 wi,vec3 wh, vec3 col, vec3 F0, float metallic,  float roughness){
 
-	float D = U_GGX(roughness, normal, wh);
+	float D = u_GGX(roughness, normal, wh);
 	float G = u_G(roughness, normal, wo, wi);
-	vec3 F = u_FresnelShilck(wh, wo, FO);
-	vec3 cookTorrence = U_CookTorrance(normal, wo, wi, D, G, F);
-	vec3 lambert= U_LambertDiffuse(col);
-	vec3 ks = FO;
+	vec3 F = u_FresnelShilck(wh, wo, F0);
+	vec3 cookTorrence = u_CookTorrance(normal, wo, wi, D, G, F);
+	vec3 lambert= u_LambertDiffuse(col);
+	vec3 ks = F0;
 	vec3 kd = (vec3(1.0) - ks) * (1.0 - metallic);
 	vec3 BRDF =  (kd * lambert) + cookTorrence;
 	return BRDF;

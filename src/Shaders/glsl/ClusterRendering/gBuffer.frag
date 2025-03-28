@@ -35,27 +35,36 @@ void GetTexture(int offset, out vec4 value){
 
 void UnpackMaterial(out u_MaterialPacked mat){
     int matId = meshMatIds[id];
-    mat= materialsPacked[matId];
+    mat = materialsPacked[matId];
 }
 
 void main() {
     u_MaterialPacked material;
+    int issd =0;
     UnpackMaterial(material);
     
     vec4 albedo; 
     GetTexture(material.albedoOffset, albedo);
     if(albedo ==vec4(0)){albedo = material.diff;}
     
-    vec4 normal;
-    GetTexture(material.normalOffset, normal);
-    if(normal ==vec4(0)){normal = vec4(norm, 1.0);}
+    
+    vec4 materialNormal;
+    GetTexture(material.normalOffset, materialNormal);
+    
+    if(materialNormal ==vec4(0)){
+//        materialNormal = vec4(norm, 1.0);
+    }else{
+        vec3 bitTang = normalize(cross(tang.xyz, norm.xyz));
+        mat3 tbn = mat3(tang.xyz, bitTang, norm.xyz);
+        materialNormal.xyz = tbn * materialNormal.xyz;
+    }
 
     vec4 metRoughness;
     GetTexture(material.metRoughnessOffset, metRoughness);
     if(metRoughness == vec4(0)){metRoughness = vec4(0.0,material.roughnessFactor, material.metallicFactor, 1.0);}
 
     colors = albedo;
-    normals = vec4(norm, 1.0);
+    normals = vec4(materialNormal);
     tangents = vec4(tang, 1.0);
     metRoughnessAttachment = metRoughness;
     

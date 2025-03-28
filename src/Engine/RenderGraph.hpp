@@ -91,10 +91,16 @@ namespace ENGINE
             }
     
             // Serialize resources
-            json["imagesAttachmentOutputs"] = nlohmann::json::array();
-            for (const auto& [name, imgView] : imagesAttachmentOutputs) {
-                json["imagesAttachmentOutputs"].push_back({{"id", imgView->id}, {"name", name}});
+            json["imageAttachmentsNames"] = nlohmann::json::array();
+            for (const auto& pair : imageAttachmentsNames)
+            {
+                json["imageAttachmentsNames"].push_back({{"name", pair.first}, {"index", pair.second}});
             }
+            json["imagesAttachmentOutputs"] = nlohmann::json::array();
+            for (const auto& imgView : imagesAttachmentOutputs) {
+                json["imagesAttachmentOutputs"].push_back({{"id", imgView->id}});
+            }
+            
             json["storageImages"] = nlohmann::json::array();
             for (const auto& [name, imgView] : storageImages) {
                 json["storageImages"].push_back({{"id", imgView->id}, {"name", name}});
@@ -130,6 +136,7 @@ namespace ENGINE
             rasterizationConfigs = json.at("rasterizationConfigs");
             depthConfig = json.at("depthConfig");
 
+            //to do: missing images deserialize;
             // Serialize shaders
             if (json.contains("shaders") && json["shaders"].is_array())
             {
@@ -468,13 +475,13 @@ namespace ENGINE
             attachmentInfos.reserve(colAttachments.size());
             for (auto& imagePair : imagesAttachmentOutputs)
             {
-                if (IsImageTransitionNeeded(imagePair.second->imageData->currentLayout, COLOR_ATTACHMENT))
+                if (IsImageTransitionNeeded(imagePair->imageData->currentLayout, COLOR_ATTACHMENT))
                 {
-                    TransitionImage(imagePair.second->imageData, COLOR_ATTACHMENT,
-                                    imagePair.second->GetSubresourceRange(), commandBuffer);
+                    TransitionImage(imagePair->imageData, COLOR_ATTACHMENT,
+                                    imagePair->GetSubresourceRange(), commandBuffer);
                 }
-                colAttachments[index].attachmentInfo.setImageView(imagePair.second->imageView.get());
-                colAttachments[index].attachmentInfo.imageLayout = imagePair.second->imageData->currentPattern.layout;
+                colAttachments[index].attachmentInfo.setImageView(imagePair->imageView.get());
+                colAttachments[index].attachmentInfo.imageLayout = imagePair->imageData->currentPattern.layout;
                 attachmentInfos.push_back(colAttachments[index].attachmentInfo);
                 index++;
             }
@@ -683,13 +690,14 @@ namespace ENGINE
         void AddColorImageResource(std::string name, ImageView* imageView)
         {
             assert(imageView && "Name does not exist or image view is null");
-            if (!imagesAttachmentOutputs.contains(name))
+            if (!imageAttachmentsNames.contains(name))
             {
-                imagesAttachmentOutputs.try_emplace(name, imageView);
+                imageAttachmentsNames.try_emplace(name, imagesAttachmentOutputs.size());
+                imagesAttachmentOutputs.emplace_back(imageView);
             }
             else
             {
-                imagesAttachmentOutputs.at(name) = imageView;
+                imagesAttachmentOutputs.at(imageAttachmentsNames.at(name)) = imageView;
             }
             AddImageToProxy(name, imageView);
         }
@@ -845,7 +853,9 @@ namespace ENGINE
         ImageView* depthImage = nullptr;
         std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
 
-        std::unordered_map<std::string, ImageView*> imagesAttachmentOutputs;
+        std::unordered_map<std::string, int> imageAttachmentsNames;
+        std::vector<ImageView*> imagesAttachmentOutputs;
+        
         std::unordered_map<std::string, ImageView*> storageImages;
         std::unordered_map<std::string, ImageView*> sampledImages;
         std::unordered_map<std::string, BufferKey> buffers;
@@ -881,6 +891,7 @@ namespace ENGINE
         
         std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
         std::vector<RenderGraphNode*> renderNodesSorted;
+        
         std::unordered_map<std::string, ImageView*> imagesProxy;
         std::unordered_map<std::string, BufferKey> buffersProxy;
         std::unordered_map<std::string, AttachmentInfo> outColAttachmentsProxy;
@@ -1209,9 +1220,9 @@ namespace ENGINE
                 {
                     RenderGraphNode* toCheckNode = renderNodesSorted[j];
                     
-                    for (auto& image : toCheckNode->imagesAttachmentOutputs)
+                    for (auto& image : toCheckNode->imageAttachmentsNames)
                     {
-                        if (node->imagesAttachmentOutputs.contains(image.first))
+                        if (node->imageAttachmentsNames.contains(image.first))
                         {
                             node->DependsOn(toCheckNode->passName);
                             break;

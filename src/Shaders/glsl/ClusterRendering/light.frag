@@ -57,6 +57,7 @@ vec3 EvalPointLight(u_PointLight light, vec3 col, vec3 pos, vec3 normal){
         vec3 lightDir = normalize(light.pos - pos);
         float diff = max(0.00, dot(lightDir, normal));
         float attenuation = 1.0 / (1.0 + (light.lAttenuation * d) + (light.qAttenuation * (d * d)));
+        
         vec3 finalCol = col * diff *light.col * attenuation * light.intensity;
         return finalCol;
     }
@@ -66,11 +67,8 @@ vec3 EvalPointLight(u_PointLight light, vec3 col, vec3 pos, vec3 normal){
 void main() {
     
     vec4 norm = texture(gNormals, textCoord);
-    vec4 tang = texture(gTang, textCoord);
-    vec3 bitTang = normalize(cross(tang.xyz, norm.xyz));
-    mat3 inverseTbn = inverse(mat3(tang.xyz, bitTang, norm.xyz));
-    
     vec4 metRoughness = texture(gMetRoughness, textCoord);
+    vec4 tangs = texture(gTang, textCoord);
     
     vec2 fragCoord = vec2(textCoord.x , textCoord.y);
     vec4 col = texture(gCol, textCoord);
@@ -96,9 +94,9 @@ void main() {
     int lightOffset = lightMap[mapIndex].offset;
     int lightsInTile = lightMap[mapIndex].size;
     
-    vec3 lightPos = vec3(2.0, 25.0, 0.0);
-    vec3 lightDir = inverseTbn * normalize( pos- lightPos) ;
-    vec3 viewDir = inverseTbn * normalize(pos - cProps.pos) ;
+    vec3 lightPos = vec3(5.0, 10.0, 0.0);
+    vec3 lightDir = normalize(pos - lightPos) ;
+    vec3 viewDir = normalize(pos - cProps.pos) ;
     
     vec3 halfway = normalize(lightDir + viewDir);
     
@@ -108,7 +106,7 @@ void main() {
 
     for (int i = 0; i < lightsInTile; i++) {
         int lightIndex = lightIndices[lightOffset + i];
-        finalCol += EvalPointLight(pointLights[lightIndex], finalCol, pos, norm.xyz);
+//        finalCol += EvalPointLight(pointLights[lightIndex], finalCol, pos, norm.xyz);
     };
 //    if(true){
 //        float intensityId= u_InvLerp(0.0, pc.tileCountX * pc.tileCountY * float(pc.zSlicesSize), float(mapIndex));
@@ -123,8 +121,10 @@ void main() {
 //         finalCol += debugCol*2 + tileCol * 0.3;
 //    }
     
-    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0.0), 0.0, metRoughness.g);
+    //fix rough maps
+    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0, 0.0, 0.0), metRoughness.b, metRoughness.g);
+    brdf = brdf * lightCol * AbsCosThetaWs(lightDir, norm.xyz) * 2.0 ;
     
-    outColor = vec4(brdf * lightCol * AbsCosThetaNs(lightDir.xyz) * 1.5 , 1.0);
+    outColor = vec4(brdf.xyz, 1.0);
 
 }
