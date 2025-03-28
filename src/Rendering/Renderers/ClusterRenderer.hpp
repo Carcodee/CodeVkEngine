@@ -464,12 +464,13 @@ namespace Rendering
             renderNode->SetVertexInput(vertexInput);
             renderNode->AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
+            renderNode->AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
             renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->AddColorImageResource("gColor", colAttachmentView);
             renderNode->AddColorImageResource("gNorm", normAttachmentView);
-            renderNode->SetDepthImageResource("gMetRoughness", metRoughAttachmentView);
+            renderNode->AddColorImageResource("gMetRoughness", metRoughAttachmentView);
             renderNode->SetDepthImageResource("gDepth", depthAttachmentView);
             renderNode->AddBufferSync("indirectBuffer", {B_COMPUTE_WRITE, B_DRAW_INDIRECT});
             renderNode->DependsOn(meshCullPassName);

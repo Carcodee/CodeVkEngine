@@ -9,7 +9,7 @@
 
 layout(location = 0) out vec4 colors;
 layout(location = 1) out vec4 normals;
-layout(location = 2) out vec4 metRoughness;
+layout(location = 2) out vec4 metRoughnessAttachment;
 
 layout(location = 0) in vec2 textCoord;
 layout(location = 1) in vec3 norm;
@@ -50,11 +50,11 @@ void main() {
 
     vec4 metRoughness;
     GetTexture(material.metRoughnessOffset, metRoughness);
-    if(metRoughness == vec4(0)){metRoughness = vec4(material.metallicFactor ,material.roughnessFactor, 0.0, 1.0);}
+    if(metRoughness == vec4(0)){metRoughness = vec4(0.0,material.roughnessFactor, material.metallicFactor , 1.0);}
 
 
     colors = albedo;
     normals = vec4(norm, 1.0);
-    normals = metRoughness;
+    metRoughnessAttachment = metRoughness;
     
 }

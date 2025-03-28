@@ -43,8 +43,8 @@ vec3 u_GetBRDF(vec3 normal, vec3 wo, vec3 wi,vec3 wh, vec3 col, vec3 FO, float m
 	vec3 F = u_FresnelShilck(wh, wo, FO);
 	vec3 cookTorrence = U_CookTorrance(normal, wo, wi, D, G, F);
 	vec3 lambert= U_LambertDiffuse(col);
-	vec3 ks = F;
-	vec3 kd = (vec3(1.0) - ks) * (1 - metallic);
+	vec3 ks = FO;
+	vec3 kd = (vec3(1.0) - ks) * (1.0 - metallic);
 	vec3 BRDF =  (kd * lambert) + cookTorrence;
 	return BRDF;
 }

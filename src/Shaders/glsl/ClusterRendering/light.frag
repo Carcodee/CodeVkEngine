@@ -91,7 +91,7 @@ void main() {
     int lightOffset = lightMap[mapIndex].offset;
     int lightsInTile = lightMap[mapIndex].size;
     
-    vec3 lightPos = vec3(2.0, 5.0, 0.0);
+    vec3 lightPos = vec3(2.0, 15.0, 0.0);
     vec3 lightDir = normalize(lightPos - pos);
     vec3 viewDir = normalize(cProps.pos - pos);
     vec3 halfway = normalize(lightDir + viewDir);
@@ -117,8 +117,8 @@ void main() {
 //         finalCol += debugCol*2 + tileCol * 0.3;
 //    }
     
-    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0.0), metRoughness.r, metRoughness.g);
+    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0.0), metRoughness.g, metRoughness.b);
     
-    outColor = vec4(brdf * lightCol, 1.0);
+    outColor = vec4(brdf * lightCol * 1.5 * AbsCosThetaWs(norm.xyz, -lightDir), 1.0);
 
 }

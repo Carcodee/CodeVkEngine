@@ -6,7 +6,7 @@
 
 
 float AbsCosThetaWs(vec3 v1, vec3 v2){
-    return max(0.0, dot(v1, v2));
+    return abs(dot(v1, v2));
 }
 float CosThetaWs(vec3 v1, vec3 v2){
     return dot(v1, v2);
