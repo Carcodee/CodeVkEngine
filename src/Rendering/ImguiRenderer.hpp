@@ -654,10 +654,18 @@ namespace Rendering
     	{
     		AddAllImages();
 	    	ImGui::Begin("Images Loaded");
+    		char textBuff[256] = "";
+    		ImGui::InputText("Filter: ", textBuff, 256);
+    		std::string input(textBuff);
+    		
      		UI::TextureViewer textureViewer;
     		int size = 400;
 		    for (auto& image : renderGraph->resourcesManager->imageViews)
 		    {
+		    	if (!input.empty() && image->name.find(input) == std::string::npos)
+		    	{
+		    		continue;
+		    	}
 			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {size, size});
 		    }
 		    for (auto& image : renderGraph->resourcesManager->storageImagesViews)
@@ -666,6 +674,10 @@ namespace Rendering
 			    {
 			    	continue;
 			    }
+		    	if (!input.empty() && image->name.find(input) == std::string::npos)
+		    	{
+		    		continue;
+		    	}
 			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {size, size});
 		    }
 		    for (auto& image : renderGraph->resourcesManager->imageShippers)
@@ -674,6 +686,10 @@ namespace Rendering
 			    {
 				    continue;
 			    }
+			    if (!input.empty() && image->imageView->name.find(input)== std::string::npos)
+		    	{
+		    		continue;
+		    	}
 			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->imageView->name, image->imageView.get(),
 			                                                           (ImTextureID)dsetsArrays->GetDsetByName(
 				                                                           image->imageView->name), {size, size});
