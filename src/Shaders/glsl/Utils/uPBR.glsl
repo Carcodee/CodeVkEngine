@@ -3,6 +3,7 @@
 
 #include "../Utils/uMath.glsl"
 #include "../Utils/uShading.glsl"
+#include "../Utils/uStructs.glsl"
 
 vec3 u_LambertDiffuse(vec3 col){
 	return col/PI;
@@ -36,18 +37,37 @@ float u_G(float alpha, vec3 N, vec3 V, vec3 L){
 	return u_G1(alpha,  N, V) * u_G1(alpha,  N, L);
 }
 
-vec3 u_GetBRDF(vec3 normal, vec3 wo, vec3 wi,vec3 wh, vec3 col, vec3 F0, float metallic,  float roughness){
+vec3 u_GetBRDF(vec3 wo, vec3 wi,vec3 wh, u_PBRContext pbrContext){
 
-	float D = u_GGX(roughness, normal, wh);
-	float G = u_G(roughness, normal, wo, wi);
-	vec3 F = u_FresnelShilck(wh, wo, F0);
-	vec3 cookTorrence = u_CookTorrance(normal, wo, wi, D, G, F);
-	vec3 lambert= u_LambertDiffuse(col);
-	vec3 ks = F0;
-	vec3 kd = (vec3(1.0) - ks) * (1.0 - metallic);
+	float D = u_GGX(pbrContext.roughness, pbrContext.normal, wh);
+	float G = u_G(pbrContext.roughness, pbrContext.normal, wo, wi);
+	vec3 F = u_FresnelShilck(wh, wo, pbrContext.F0);
+	vec3 cookTorrence = u_CookTorrance(pbrContext.normal, wo, wi, D, G, F);
+	vec3 lambert= u_LambertDiffuse(pbrContext.col);
+	vec3 ks = pbrContext.F0;
+	vec3 kd = (vec3(1.0) - ks) * (1.0 - pbrContext.metallic);
 	vec3 BRDF =  (kd * lambert) + cookTorrence;
 	return BRDF;
 }
+
+vec3 u_EvalPointLight(u_PointLight light, vec3 pos, vec3 wo, u_PBRContext pbrContext){
+	float d = u_SDF_Sphere(light.pos, pos);
+	if(d > light.radius){
+		return vec3(0.0);
+	}
+
+	vec3 wi = normalize(light.pos - pos);
+	vec3 wh = normalize(wi + wo);
+
+	float diff = max(0.00, dot(wi, pbrContext.normal));
+	float attenuation = 1.0 / (1.0 + (light.lAttenuation * d) + (light.qAttenuation * (d * d)));
+
+	vec3 brdf = u_GetBRDF(wo, wi, wh, pbrContext);
+
+	vec3 finalCol = brdf * diff * light.col * attenuation * light.intensity;
+	return finalCol;
+}
+
 ///TESTING
 
 #endif 

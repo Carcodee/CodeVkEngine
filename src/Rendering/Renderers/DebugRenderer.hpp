@@ -40,7 +40,7 @@ namespace Rendering{
                                                          vk::ImageUsageFlagBits::eSampled);
 
             //image view not used right now
-            colAttachmentView = ResourcesManager::GetInstance()->GetImage("debugColAttachment", imageInfo, 0, 0);
+            // colAttachmentView = ResourcesManager::GetInstance()->GetImage("debugColAttachment", imageInfo, 0, 0);
             SetViewCamera();
         }
         

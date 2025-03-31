@@ -22,7 +22,7 @@ namespace Rendering
 
     		if (!std::filesystem::exists(path))
     		{
-    			SYSTEMS::Logger::GetInstance()->Log("Path do not exist: "+ path, SYSTEMS::LogLevel::L_ERROR);
+    			SYSTEMS::Logger::GetInstance()->LogMessage("Path do not exist: "+ path);
     			return;
     		}
     		tinygltf::Model gltfModel;
@@ -50,6 +50,8 @@ namespace Rendering
     		model.SetWorldMatrices();
     		model.SetMeshesSpheres();
     		LoadGLTFMaterials(gltfModel, path);
+		    SYSTEMS::Logger::GetInstance()->LogMessage("Model loader Errors: " + err);
+		    SYSTEMS::Logger::GetInstance()->LogMessage("Model loader Warns: " + warn);
     	}
     	void LoadGLTFNode(tinygltf::Model& gltfModel, tinygltf::Node& node, NodeMat* parentNodeMat, Model& model)
     	{

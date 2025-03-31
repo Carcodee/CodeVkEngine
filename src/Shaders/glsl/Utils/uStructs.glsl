@@ -86,6 +86,13 @@ struct u_RadianceCascadesConfigs
     int roughnessPow;
 };
 
+struct u_PBRContext{
+    vec3 col;
+    vec3 normal;
+    vec3 F0;
+    float metallic;
+    float roughness;
+};
 //End Util
 
 #endif 

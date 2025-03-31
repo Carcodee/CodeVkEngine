@@ -685,7 +685,7 @@ namespace ENGINE
             auto imageInfo = ENGINE::Image::CreateInfo2d(
                 glm::uvec2(core->swapchainRef->extent.width, core->swapchainRef->extent.height), 1, 1,
                 ENGINE::g_32bFormat,
-                vk::ImageUsageFlagBits::eStorage);
+                vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
 
             ImageView* defaultStorage = GetImage("default_storage", imageInfo, 0, 0);
         }

@@ -308,14 +308,14 @@ namespace Rendering
             camera.position = glm::vec3(0.0f);
 
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath();
-            RenderingResManager::GetInstance()->PushModelToIndirectBatch(path + "\\Models\\sponza\\scene.gltf");
+            RenderingResManager::GetInstance()->PushModelToIndirectBatch(path + "\\Models\\floating_lighthouse\\scene.gltf");
 
             //compute
             std::random_device rd;
             std::mt19937 gen(rd());
 
-            pointLights.reserve(1);
-            for (int i = 0; i < 1; ++i)
+            pointLights.reserve(100);
+            for (int i = 0; i < 100; ++i)
             {
                 std::uniform_real_distribution<> distributionPos(-10.0f, 10.0f);
                 std::uniform_real_distribution<> distributionCol(0.0f, 1.0f);

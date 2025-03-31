@@ -57,6 +57,7 @@ namespace Rendering
         {
 	    	this->core = renderGraph->core;
 	    	this->renderGraph = renderGraph;
+	    	this->renderers = &renderers;
 	    	
 	    	if (renderers.contains("ClusterRenderer"))
 	    	{
@@ -147,7 +148,8 @@ namespace Rendering
             ImGui::NewFrame();
     		StartNodeEditor();
 
-        	
+		    DisplayGeneralEngineInfo();
+    		
             // ImGui::ShowDemoWindow();
 	    	if (clusterRenderer)
 	    	{
@@ -182,11 +184,11 @@ namespace Rendering
 
 		    for (int i = 0; i < imageViewsToRecover.size(); ++i)
 		    {
-		    	TransitionImage(imageViewsToRecover[i]->imageData, layoutPatternsesToRecover[i], imageViewsToRecover[i]->GetSubresourceRange(), commandBuffer);
+		    	TransitionImage(imageViewsToRecover[i]->imageData, layoutPatternsToRecover[i], imageViewsToRecover[i]->GetSubresourceRange(), commandBuffer);
 		    }
 	    	
 	    	imageViewsToRecover.clear();
-	    	layoutPatternsesToRecover.clear();
+	    	layoutPatternsToRecover.clear();
         }
         void RenderGraphProfiler()
         {
@@ -264,6 +266,10 @@ namespace Rendering
 	        style->Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
 	        style->Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
         }
+    	void DisplayGeneralEngineInfo()
+    	{
+    		DisplayAllTextures();
+    	}
         
         void ClusterRendererInfo()
         {
@@ -272,7 +278,7 @@ namespace Rendering
             
             ImGui::SeparatorText("Light Info");
             
-            float speed = 0.1f;
+            float speed = 0.01f;
             for (auto& pointLight : clusterRenderer->pointLights)
             {
                 if (pointLight.pos.y >= 20.0f)
@@ -590,11 +596,11 @@ namespace Rendering
 	    	
 			ImGui::End();	
 	    }
-    	void AddImage(std::string name, ImageView* imageView,glm::vec2 size)
+    	void AddImage(std::string name, ImageView* imageView)
 	    {
 		    Sampler* sampler = ResourcesManager::GetInstance()->shipperSampler;
 	    	LayoutPatterns lastLayout = imageView->imageData->currentLayout;
-	    	layoutPatternsesToRecover.push_back(lastLayout);
+	    	layoutPatternsToRecover.push_back(lastLayout);
 	    	imageViewsToRecover.push_back(imageView);
 	    	
 	    	if (dsetsArrays->indexes.contains(name))
@@ -620,7 +626,7 @@ namespace Rendering
 		    		continue;
 		    	}
 		    	std::string name = mat->texturesStrings.at(texture.first);
-		    	AddImage(texture.second->name, texture.second, {50, 50});
+		    	AddImage(texture.second->name, texture.second);
 			    ImageView* imageViewRef = textureViewerBaseCol.DisplayTexture(name, texture.second, (ImTextureID)dsetsArrays->GetDsetByName(texture.second->name), {50,50});
 		     	if (imageViewRef->name != texture.second->name)
 		     	{
@@ -628,6 +634,40 @@ namespace Rendering
 		     	}
 		    }   
 	    }
+    	void AddAllImages()
+	    {
+		    for (auto& image : renderGraph->resourcesManager->imageViews)
+		    {
+		    	AddImage(image->name, image.get());
+		    }
+		    for (auto& image : renderGraph->resourcesManager->storageImagesViews)
+		    {
+		    	AddImage(image->name, image.get());
+		    }
+		    for (auto& image : renderGraph->resourcesManager->imageShippers)
+		    {
+		    	AddImage(image->imageView->name, image->imageView.get());
+		    }
+    	}
+    	void DisplayAllTextures()
+    	{
+    		AddAllImages();
+	    	ImGui::Begin("Images Loaded");
+     		UI::TextureViewer textureViewer;
+		    for (auto& image : renderGraph->resourcesManager->imageViews)
+		    {
+			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {50, 50});
+		    }
+		    for (auto& image : renderGraph->resourcesManager->storageImagesViews)
+		    {
+			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {50, 50});
+		    }
+		    for (auto& image : renderGraph->resourcesManager->imageShippers)
+		    {
+			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->imageView->name, image->imageView.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->imageView->name), {50, 50});
+		    }
+    		ImGui::End();
+    	}
         void Destroy()
         {
             ImGui_ImplVulkan_Shutdown();
@@ -639,15 +679,15 @@ namespace Rendering
         DescriptorAllocator descriptorAllocator;
         Core* core;
     	RenderGraph* renderGraph;
-    	
-    	
+
+	    std::map<std::string, std::unique_ptr<BaseRenderer>>* renderers = nullptr;
         ClusterRenderer* clusterRenderer = nullptr;
         FlatRenderer* flatRenderer = nullptr;
         ImGuiUtils::ProfilersWindow profilersWindow{};
 	    UI::RG_NodeEditor nodeEditor;
     	
     	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
-    	std::vector<LayoutPatterns> layoutPatternsesToRecover;
+    	std::vector<LayoutPatterns> layoutPatternsToRecover;
     	std::vector<ImageView*> imageViewsToRecover;
     };
 }

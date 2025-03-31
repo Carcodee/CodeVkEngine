@@ -105,6 +105,8 @@ namespace ENGINE
     {
         ImageAccessPattern imagePattern = GetImageDstPattern(imageData->currentLayout);
         ImageAccessPattern dstPattern = GetImageDstPattern(dstLayout);
+
+        assert(dstLayout != LayoutPatterns::EMPTY && "Right now the engine does not support transitions to empty states");
         
         auto imageBarrier = vk::ImageMemoryBarrier()
                             .setSrcAccessMask(imagePattern.accessMask)

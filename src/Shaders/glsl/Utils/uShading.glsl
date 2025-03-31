@@ -8,4 +8,6 @@ vec3 u_FresnelShilck(vec3 halfway, vec3 view, vec3 FO){
     return FO + vecPow;
 }
 
+
+
 #endif 

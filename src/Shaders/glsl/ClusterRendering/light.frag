@@ -43,6 +43,7 @@ layout(set = 0, binding = 9) writeonly uniform image2D samplerMap;
 layout (set = 0, binding = 10, scalar) writeonly buffer cameraPositions{
     vec3[] camPositions;
 };
+layout(set = 0, binding = 11) writeonly uniform image2D specularHolder;
 
 layout(push_constant)uniform pushConstants{
     uint tileCountX;
@@ -51,18 +52,7 @@ layout(push_constant)uniform pushConstants{
     int yTileSizePx;
     int zSlicesSize;
 }pc;
-vec3 EvalPointLight(u_PointLight light, vec3 col, vec3 pos, vec3 normal){
-    float d = u_SDF_Sphere(light.pos, pos);
-    if(d < light.radius){
-        vec3 lightDir = normalize(light.pos - pos);
-        float diff = max(0.00, dot(lightDir, normal));
-        float attenuation = 1.0 / (1.0 + (light.lAttenuation * d) + (light.qAttenuation * (d * d)));
-        
-        vec3 finalCol = col * diff *light.col * attenuation * light.intensity;
-        return finalCol;
-    }
-    return vec3(0.0);
-}
+
 
 void main() {
     
@@ -94,9 +84,17 @@ void main() {
     int lightOffset = lightMap[mapIndex].offset;
     int lightsInTile = lightMap[mapIndex].size;
     
-    vec3 lightPos = vec3(5.0, 10.0, 0.0);
-    vec3 lightDir = normalize(pos - lightPos) ;
-    vec3 viewDir = normalize(pos - cProps.pos) ;
+    vec3 lightPos = vec3(10.0, 25.0, 0.0);
+    vec3 lightDir = normalize(lightPos - pos);
+    vec3 viewDir = normalize(cProps.pos -  pos);
+    
+    u_PBRContext pbrContext;
+    pbrContext.col = col.xyz;
+    pbrContext.normal = norm.xyz;
+    pbrContext.roughness = metRoughness.g;
+    pbrContext.metallic = metRoughness.b;
+    pbrContext.F0 = vec3(0.0, 0.0, 0.0);
+    
     
     vec3 halfway = normalize(lightDir + viewDir);
     
@@ -106,7 +104,7 @@ void main() {
 
     for (int i = 0; i < lightsInTile; i++) {
         int lightIndex = lightIndices[lightOffset + i];
-//        finalCol += EvalPointLight(pointLights[lightIndex], finalCol, pos, norm.xyz);
+        finalCol += u_EvalPointLight(pointLights[lightIndex], pos, viewDir, pbrContext);
     };
 //    if(true){
 //        float intensityId= u_InvLerp(0.0, pc.tileCountX * pc.tileCountY * float(pc.zSlicesSize), float(mapIndex));
@@ -122,9 +120,10 @@ void main() {
 //    }
     
     //fix rough maps
-    vec3 brdf = u_GetBRDF(norm.xyz, viewDir, lightDir, halfway, finalCol, vec3(0, 0.0, 0.0), metRoughness.b, metRoughness.g);
-    brdf = brdf * lightCol * AbsCosThetaWs(lightDir, norm.xyz) * 2.0 ;
+    finalCol += u_GetBRDF(viewDir, lightDir, halfway, pbrContext);
+    finalCol = finalCol * lightCol * AbsCosThetaWs(lightDir, norm.xyz) * 1;
     
-    outColor = vec4(brdf.xyz, 1.0);
+    outColor = vec4(finalCol.xyz, 1.0);
+//    outColor = vec4(pbrContext.col, 1.0);
 
 }
