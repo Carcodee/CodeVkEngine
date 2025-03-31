@@ -598,6 +598,7 @@ namespace Rendering
 	    }
     	void AddImage(std::string name, ImageView* imageView)
 	    {
+		    if (name == "default_storage" || name == "default_tex") { return; }
 		    Sampler* sampler = ResourcesManager::GetInstance()->shipperSampler;
 	    	LayoutPatterns lastLayout = imageView->imageData->currentLayout;
 	    	layoutPatternsToRecover.push_back(lastLayout);
@@ -654,17 +655,28 @@ namespace Rendering
     		AddAllImages();
 	    	ImGui::Begin("Images Loaded");
      		UI::TextureViewer textureViewer;
+    		int size = 400;
 		    for (auto& image : renderGraph->resourcesManager->imageViews)
 		    {
-			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {50, 50});
+			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {size, size});
 		    }
 		    for (auto& image : renderGraph->resourcesManager->storageImagesViews)
 		    {
-			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {50, 50});
+			    if (image->name == "default_storage")
+			    {
+			    	continue;
+			    }
+			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {size, size});
 		    }
 		    for (auto& image : renderGraph->resourcesManager->imageShippers)
 		    {
-			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->imageView->name, image->imageView.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->imageView->name), {50, 50});
+			    if (image->imageView->name == "default_tex")
+			    {
+				    continue;
+			    }
+			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->imageView->name, image->imageView.get(),
+			                                                           (ImTextureID)dsetsArrays->GetDsetByName(
+				                                                           image->imageView->name), {size, size});
 		    }
     		ImGui::End();
     	}
