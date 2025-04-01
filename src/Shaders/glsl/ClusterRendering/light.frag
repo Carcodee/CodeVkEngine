@@ -59,6 +59,7 @@ void main() {
     vec4 norm = texture(gNormals, textCoord);
     vec4 metRoughness = texture(gMetRoughness, textCoord);
     vec4 tangs = texture(gTang, textCoord);
+    vec4 screenUvs = texture(gMeshUV, textCoord);
     
     vec2 fragCoord = vec2(textCoord.x , textCoord.y);
     vec4 col = texture(gCol, textCoord);
@@ -125,7 +126,7 @@ void main() {
     
     outColor = vec4(finalCol.xyz, 1.0);
     
-    ivec2 uvPos = ivec2(textCoord * 1024.0);
+    ivec2 uvPos = ivec2(screenUvs.xy * 1024.0);
     imageStore(specularHolder, uvPos, vec4(finalCol, 1.0));
     //    outColor = vec4(pbrContext.col, 1.0);
 

@@ -10,6 +10,7 @@ layout (location = 0) out vec2 textCoord;
 layout (location = 1) out vec3 norm;
 layout (location = 2) out vec3 tang;
 layout (location = 3) out int id;
+layout (location = 4) out vec2 screenUv;
 
 layout(push_constant)uniform pushConstants{
     mat4 model;
@@ -27,5 +28,6 @@ void main() {
     tang = tangents;
     textCoord = uv;
     id = meshId;
+    screenUv = gl_Position.xy / gl_Position.w * 0.5 + 0.5;
     
 }

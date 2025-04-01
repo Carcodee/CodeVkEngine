@@ -17,6 +17,7 @@ layout(location = 0) in vec2 textCoord;
 layout(location = 1) in vec3 norm;
 layout(location = 2) in vec3 tang;
 layout(location = 3) in flat int id;
+layout(location = 4) in vec2 screenUv;
 
 layout (set = 0, binding = 0) uniform sampler2D textures[];
 
@@ -68,6 +69,6 @@ void main() {
     normals = vec4(materialNormal);
     tangents = vec4(tang, 1.0);
     metRoughnessAttachment = metRoughness;
-    uvCoords = vec4(textCoord, 0.0, 1.0);
+    uvCoords = vec4(screenUv, 0.0, 1.0);
     
 }
