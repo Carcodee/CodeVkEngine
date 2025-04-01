@@ -9,5 +9,5 @@ void main() {
     ivec2 xy = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
     float xCol = float(xy.x) / 1024.0f;
     float yCol = float(xy.y) / 1024.0f;
-    imageStore(storageImg, xy , vec4(xCol, yCol, 0.0f,1.0f));
+    imageStore(storageImg, xy, vec4(xCol, yCol, 0.0f,1.0f));
 }

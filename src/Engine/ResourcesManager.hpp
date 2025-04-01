@@ -31,8 +31,14 @@ namespace ENGINE
             size_t size;
             void* data;
         };
+        struct ImgCreateConfigs
+        {
+            int baseMipLevel = 0;
+            int baseArrayLayer = 0; 
+            bool addToStorageClear = false;           
+        };
 
-        struct ImageUpdateInfo
+        struct ImgUpdateInfo
         {
             ResState bufferState;
             std::string path;
@@ -82,7 +88,7 @@ namespace ENGINE
             {
                 imagesShippersNames.try_emplace(name, id);
                 imageShippers.emplace_back(std::make_unique<ImageShipper>());
-                imagesUpdateInfos.emplace_back(ImageUpdateInfo{
+                imagesUpdateInfos.emplace_back(ImgUpdateInfo{
                      VALID, path, arrayLayersCount, mipsCount, format, dstPattern, name, id
                 });
                 imageShipper = GetShipperFromName(name);
@@ -111,7 +117,7 @@ namespace ENGINE
             {
                 imagesShippersNames.try_emplace(name, id);
                 imageShippers.emplace_back(std::make_unique<ImageShipper>());
-                imagesUpdateInfos.emplace_back(ImageUpdateInfo{
+                imagesUpdateInfos.emplace_back(ImgUpdateInfo{
                     VALID, "", arrayLayersCount, mipsCount, format, dstPattern,  name, id
                 });
                 imageShipper = GetShipperFromName(name);
@@ -139,10 +145,10 @@ namespace ENGINE
             int id = (int32_t)imageShippers.size();
             imagesShippersNames.try_emplace(name, id);
             imageShippers.emplace_back(std::make_unique<ImageShipper>());
-            imagesUpdateInfos.emplace_back(ImageUpdateInfo{
+            imagesUpdateInfos.emplace_back(ImgUpdateInfo{
                 INVALID, path, arrayLayersCount, mipsCount, format, dstPattern,  name, id
             });
-            updateImagesShippers = true;
+            updateImgsShippers = true;
             return GetShipperFromName(name);
         }
 
@@ -189,24 +195,23 @@ namespace ENGINE
                 return imageViewRef;
             }
 
-            auto image = std::make_unique<
-                Image>(core->physicalDevice, core->logicalDevice.get(), imageInfo);
+            auto image = std::make_unique<Image>(core->physicalDevice, core->logicalDevice.get(), imageInfo);
             if (imageInfo.usage & vk::ImageUsageFlagBits::eStorage)
             {
-                int32_t id = (int32_t)storageImagesViews.size();
-                assert(!storageImagesNames.contains(name) && "Image name already exist");
-                storageImagesNames.try_emplace(name, (int32_t)id);
+                int32_t id = (int32_t)storageImgsViews.size();
+                assert(!storageImgsNames.contains(name) && "Img name already exist");
+                storageImgsNames.try_emplace(name, (int32_t)id);
 
-                storageImagesViews.emplace_back(std::make_unique<ImageView>(
+                storageImgsViews.emplace_back(std::make_unique<ImageView>(
                     core->logicalDevice.get(), image->imageData.get(),
                     baseMipLevel, imageInfo.mipLevels, baseArrayLayer,
                     imageInfo.arrayLayers, name, id));
                 images.emplace_back(std::move(image));
-                return storageImagesViews.back().get();
+                return storageImgsViews.back().get();
             }
             else
             {
-                assert(!imagesNames.contains(name) && "Image name already exist");
+                assert(!imagesNames.contains(name) && "Img name already exist");
                 int32_t id = (int32_t)imageViews.size();
                 imagesNames.try_emplace(name, (int32_t)imageViews.size());
                 imageViews.emplace_back(std::make_unique<ImageView>(core->logicalDevice.get(), image->imageData.get(),
@@ -323,7 +328,7 @@ namespace ENGINE
         {
             buffers.clear();
             stagedBuffers.clear();
-            storageImagesViews.clear();
+            storageImgsViews.clear();
             imageViews.clear();
             imageShippers.clear();
             images.clear();
@@ -353,10 +358,10 @@ namespace ENGINE
 
         void UpdateImages()
         {
-            if (!updateImagesShippers) { return; }
+            if (!updateImgsShippers) { return; }
             for (int i = 0; i < imageShippers.size(); i++)
             {
-                ImageUpdateInfo& updateInfo = imagesUpdateInfos[i];
+                ImgUpdateInfo& updateInfo = imagesUpdateInfos[i];
                 if (updateInfo.bufferState == INVALID)
                 {
                     imageShippers[i]->SetDataFromPath(updateInfo.path);
@@ -414,9 +419,9 @@ namespace ENGINE
             BufferAccessPattern src = GetSrcBufferAccessPattern(BufferUsageTypes::B_GRAPHICS_WRITE);
             BufferAccessPattern dst = GetSrcBufferAccessPattern(BufferUsageTypes::B_TRANSFER_DST);
             CreateMemBarrier(src, dst, commandBuffer);
-            for (int i = 0; i < storageImagesToClear.size(); ++i)
+            for (int i = 0; i < storageImgsToClear.size(); ++i)
             {
-                ImageView* imageView = GetStorageFromName(storageImagesToClear[i]);
+                ImageView* imageView = GetStorageFromName(storageImgsToClear[i]);
                 vk::ClearColorValue clearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
 
                 commandBuffer.clearColorImage(
@@ -426,18 +431,18 @@ namespace ENGINE
                     imageView->GetSubresourceRange()
                 );
             }
-            storageImagesToClear.clear();
+            storageImgsToClear.clear();
         }
 
 
         void RequestStorageImageClear(std::string name)
         {
-            if (!storageImagesNames.contains(name))
+            if (!storageImgsNames.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->LogMessage("Storage Image with name does not exist: " + name);
+                SYSTEMS::Logger::GetInstance()->LogMessage("Storage Img with name does not exist: " + name);
                 return;
             }
-            storageImagesToClear.push_back(name);
+            storageImgsToClear.push_back(name);
         }
 
         Shader* GetShader(std::string path, ShaderStage stage)
@@ -562,7 +567,7 @@ namespace ENGINE
         {
             if (!imagesNames.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->Log("Image View With Name: " + name + "Does not exist");
+                SYSTEMS::Logger::GetInstance()->Log("Img View With Name: " + name + "Does not exist");
                 return nullptr;
             }
             return imageViews.at(imagesNames.at(name)).get();
@@ -572,7 +577,7 @@ namespace ENGINE
         {
             if (!imagesShippersNames.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->Log("Image Shipper With Name: " + name + "Does not exist");
+                SYSTEMS::Logger::GetInstance()->Log("Img Shipper With Name: " + name + "Does not exist");
                 return nullptr;
             }
             return imageShippers.at(imagesShippersNames.at(name)).get();
@@ -580,11 +585,11 @@ namespace ENGINE
 
         ImageView* GetStorageFromName(std::string name)
         {
-            if (!storageImagesNames.contains(name))
+            if (!storageImgsNames.contains(name))
             {
                 return nullptr;
             }
-            return storageImagesViews.at(storageImagesNames.at(name)).get();
+            return storageImgsViews.at(storageImgsNames.at(name)).get();
         }
 
         ImageView* GetImageViewFromId(int id)
@@ -596,7 +601,7 @@ namespace ENGINE
                     return imageViews.at(id).get();
                 }
             }
-            SYSTEMS::Logger::GetInstance()->Log("Image View With id: " + std::to_string(id) + "Does not exist");
+            SYSTEMS::Logger::GetInstance()->Log("Img View With id: " + std::to_string(id) + "Does not exist");
             return nullptr;
         }
 
@@ -609,20 +614,20 @@ namespace ENGINE
                     return imageShippers.at(id).get();
                 }
             }
-            SYSTEMS::Logger::GetInstance()->Log("Image View With id: " + std::to_string(id) + "Does not exist");
+            SYSTEMS::Logger::GetInstance()->Log("Img View With id: " + std::to_string(id) + "Does not exist");
             return nullptr;
         }
 
         ImageView* GetStorageFromId(int id)
         {
-            for (auto& imageName : storageImagesNames)
+            for (auto& imageName : storageImgsNames)
             {
                 if (imageName.second == id)
                 {
-                    return storageImagesViews.at(id).get();
+                    return storageImgsViews.at(id).get();
                 }
             }
-            SYSTEMS::Logger::GetInstance()->Log("Image View With id: " + std::to_string(id) + "Does not exist");
+            SYSTEMS::Logger::GetInstance()->Log("Img View With id: " + std::to_string(id) + "Does not exist");
             return nullptr;
         }
         
@@ -663,7 +668,7 @@ namespace ENGINE
             this->core = coreRefs;
             stagedBuffers.reserve(BASE_SIZE);
             buffers.reserve(BASE_SIZE);
-            storageImagesViews.reserve(BASE_SIZE);
+            storageImgsViews.reserve(BASE_SIZE);
             imageViews.reserve(BASE_SIZE);
             images.reserve(BASE_SIZE);
             filesManager = std::make_unique<SYSTEMS::FilesManager>();
@@ -715,7 +720,7 @@ namespace ENGINE
         std::unordered_map<std::string, int32_t> bufferNames;
         std::unordered_map<std::string, int32_t> stagedBufferNames;
         std::unordered_map<std::string, int32_t> imagesNames;
-        std::unordered_map<std::string, int32_t> storageImagesNames;
+        std::unordered_map<std::string, int32_t> storageImgsNames;
         std::unordered_map<std::string, int32_t> imagesShippersNames;
         std::unordered_map<std::string, int32_t> shadersNames;
         std::unordered_map<std::string, int32_t> verticesInputsNames;
@@ -726,10 +731,10 @@ namespace ENGINE
         std::vector<std::unique_ptr<Buffer>> buffers;
         std::vector<std::unique_ptr<StagedBuffer>> stagedBuffers;
         std::vector<std::unique_ptr<ImageView>> imageViews;
-        std::vector<std::unique_ptr<ImageView>> storageImagesViews;
+        std::vector<std::unique_ptr<ImageView>> storageImgsViews;
         std::vector<std::unique_ptr<ImageShipper>> imageShippers;
         std::vector<std::unique_ptr<Image>> images;
-        std::vector<std::string> storageImagesToClear;
+        std::vector<std::string> storageImgsToClear;
         std::unique_ptr<SamplerPool> samplerPool;
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
         std::vector<vk::UniqueDescriptorSet> dsets;
@@ -737,7 +742,7 @@ namespace ENGINE
         std::vector<std::unique_ptr<VertexInput>> verticesInputs;
 
 
-        std::vector<ImageUpdateInfo> imagesUpdateInfos;
+        std::vector<ImgUpdateInfo> imagesUpdateInfos;
         std::vector<BufferUpdateInfo> buffersState;
         std::vector<BufferUpdateInfo> stagedBuffersState;
         
@@ -755,8 +760,8 @@ namespace ENGINE
         Sampler* shipperSampler;
 
         bool invalidateBuffers = false;
-        bool updateImagesShippers = false;
-        bool updateImages = false;
+        bool updateImgsShippers = false;
+        bool updateImgs = false;
 
         Core* core;
         static ResourcesManager* instance;

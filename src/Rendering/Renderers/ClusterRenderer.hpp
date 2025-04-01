@@ -232,12 +232,16 @@ namespace Rendering
                 [this]()
                 {
 
-                    
+
+                    renderGraphRef->resourcesManager->RequestStorageImageClear("specularHolderStorage");
                     lightDecCache->SetSampler("gCol", colAttachmentView);
                     lightDecCache->SetSampler("gNormals", normAttachmentView);
                     lightDecCache->SetSampler("gTang", tangAttachmentView);
                     lightDecCache->SetSampler("gDepth", depthAttachmentView);
                     lightDecCache->SetSampler("gMetRoughness", metRoughAttachmentView);
+                    lightDecCache->SetSampler("gMeshUV", uvAttachmentView);
+                    
+                    lightDecCache->SetStorageImage("specularHolder", specularHolder);
                     lightDecCache->SetBuffer("CameraProperties", cPropsUbo);
                     lightDecCache->SetBuffer("PointLights", pointLights);
                     lightDecCache->SetBuffer("LightMap", lightsMap);
@@ -281,6 +285,12 @@ namespace Rendering
                                                          vk::Format::eR32G32B32A32Sfloat,
                                                          vk::ImageUsageFlagBits::eColorAttachment |
                                                          vk::ImageUsageFlagBits::eSampled);
+            
+            auto storageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+                                                         vk::Format::eR32G32B32A32Sfloat,
+                                                         vk::ImageUsageFlagBits::eStorage |
+                                                         vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+            
             auto depthImageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
                                                               core->swapchainRef->depthFormat,
                                                               vk::ImageUsageFlagBits::eDepthStencilAttachment |
@@ -291,7 +301,10 @@ namespace Rendering
             normAttachmentView = ResourcesManager::GetInstance()->GetImage("normAttachment", imageInfo, 0, 0); 
             tangAttachmentView = ResourcesManager::GetInstance()->GetImage("tangAttachment", imageInfo, 0, 0); 
             metRoughAttachmentView = ResourcesManager::GetInstance()->GetImage("metRoughnessAttachmentView", imageInfo, 0, 0); 
-            depthAttachmentView = ResourcesManager::GetInstance()->GetImage("depthAttachment", depthImageInfo, 0, 0); 
+            uvAttachmentView = ResourcesManager::GetInstance()->GetImage("uvAttachmentView", imageInfo, 0, 0);
+            
+            depthAttachmentView = ResourcesManager::GetInstance()->GetImage("depthAttachment", depthImageInfo, 0, 0);
+            specularHolder = ResourcesManager::GetInstance()->GetImage("specularHolderStorage", storageInfo, 0, 0); 
 
             //gbuff
             camera.SetPerspective(
@@ -468,6 +481,7 @@ namespace Rendering
             renderNode->AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
+            renderNode->AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
             renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
             renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
@@ -475,6 +489,7 @@ namespace Rendering
             renderNode->AddColorImageResource("gNorm", normAttachmentView);
             renderNode->AddColorImageResource("gTang", tangAttachmentView);
             renderNode->AddColorImageResource("gMetRoughness", metRoughAttachmentView);
+            renderNode->AddColorImageResource("gUVs", uvAttachmentView);
             renderNode->SetDepthImageResource("gDepth", depthAttachmentView);
             renderNode->AddBufferSync("indirectBuffer", {B_COMPUTE_WRITE, B_DRAW_INDIRECT});
             renderNode->DependsOn(meshCullPassName);
@@ -516,7 +531,9 @@ namespace Rendering
             lRenderNode->AddSamplerResource("normGSampler", normAttachmentView);
             lRenderNode->AddSamplerResource("tangGSampler", tangAttachmentView);
             lRenderNode->AddSamplerResource("metRoughnessGSampler", metRoughAttachmentView);
+            lRenderNode->AddSamplerResource("uvGSampler", uvAttachmentView);
             lRenderNode->AddSamplerResource("depthGSampler", depthAttachmentView);
+            lRenderNode->AddStorageResource("specularHolder", specularHolder);
             lRenderNode->DependsOn(computePassName);
             lRenderNode->BuildRenderGraphNode();
         }
@@ -629,6 +646,8 @@ namespace Rendering
         ImageView* tangAttachmentView;
         ImageView* metRoughAttachmentView;
         ImageView* depthAttachmentView;
+        ImageView* uvAttachmentView;
+        ImageView* specularHolder;
 
         StagedBuffer* vertexBuffer;
         StagedBuffer* indexBuffer;

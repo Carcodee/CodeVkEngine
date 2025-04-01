@@ -11,6 +11,7 @@ layout(location = 0) out vec4 colors;
 layout(location = 1) out vec4 normals;
 layout(location = 2) out vec4 tangents;
 layout(location = 3) out vec4 metRoughnessAttachment;
+layout(location = 4) out vec4 uvCoords;
 
 layout(location = 0) in vec2 textCoord;
 layout(location = 1) in vec3 norm;
@@ -67,5 +68,6 @@ void main() {
     normals = vec4(materialNormal);
     tangents = vec4(tang, 1.0);
     metRoughnessAttachment = metRoughness;
+    uvCoords = vec4(textCoord, 0.0, 1.0);
     
 }

@@ -641,7 +641,7 @@ namespace Rendering
 		    {
 		    	AddImage(image->name, image.get());
 		    }
-		    for (auto& image : renderGraph->resourcesManager->storageImagesViews)
+		    for (auto& image : renderGraph->resourcesManager->storageImgsViews)
 		    {
 		    	AddImage(image->name, image.get());
 		    }
@@ -654,7 +654,7 @@ namespace Rendering
     	{
     		AddAllImages();
 	    	ImGui::Begin("Images Loaded");
-    		char textBuff[256] = "";
+    		static char textBuff[256] = "";
     		ImGui::InputText("Filter: ", textBuff, 256);
     		std::string input(textBuff);
     		
@@ -668,7 +668,7 @@ namespace Rendering
 		    	}
 			    ImageView* imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID)dsetsArrays->GetDsetByName(image->name), {size, size});
 		    }
-		    for (auto& image : renderGraph->resourcesManager->storageImagesViews)
+		    for (auto& image : renderGraph->resourcesManager->storageImgsViews)
 		    {
 			    if (image->name == "default_storage")
 			    {

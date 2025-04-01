@@ -20,30 +20,30 @@ layout(set = 0, binding = 1) uniform sampler2D gNormals;
 layout(set = 0, binding = 2) uniform sampler2D gTang;
 layout(set = 0, binding = 3) uniform sampler2D gDepth;
 layout(set = 0, binding = 4) uniform sampler2D gMetRoughness;
+layout(set = 0, binding = 5) uniform sampler2D gMeshUV;
 
-layout(set = 0, binding = 5, scalar) uniform CameraProperties{
+layout(set = 0, binding = 6, scalar) uniform CameraProperties{
     mat4 invProj;
     mat4 invView;
     vec3 pos;
     float zNear;
     float zFar;
 }cProps;
-layout (set = 0, binding = 6, scalar) buffer PointLights{
+layout (set = 0, binding = 7, scalar) buffer PointLights{
     u_PointLight[] pointLights;
 };
-layout (set = 0, binding = 7, scalar) buffer LightMap{
+layout (set = 0, binding = 8, scalar) buffer LightMap{
     u_ArrayIndexer[] lightMap;
 };
-layout (set = 0, binding = 8, scalar) buffer LightIndices{
+layout (set = 0, binding = 9, scalar) buffer LightIndices{
     int[] lightIndices;
 };
 
-layout(set = 0, binding = 9) writeonly uniform image2D samplerMap;
+layout (set = 0, binding = 10, rgba8) uniform image2D specularHolder;
 
-layout (set = 0, binding = 10, scalar) writeonly buffer cameraPositions{
+layout (set = 0, binding = 11, scalar) writeonly buffer cameraPositions{
     vec3[] camPositions;
 };
-layout(set = 0, binding = 11) writeonly uniform image2D specularHolder;
 
 layout(push_constant)uniform pushConstants{
     uint tileCountX;
@@ -124,6 +124,9 @@ void main() {
     finalCol = finalCol * lightCol * AbsCosThetaWs(lightDir, norm.xyz) * 1;
     
     outColor = vec4(finalCol.xyz, 1.0);
-//    outColor = vec4(pbrContext.col, 1.0);
+    
+    ivec2 uvPos = ivec2(textCoord * 1024.0);
+    imageStore(specularHolder, uvPos, vec4(finalCol, 1.0));
+    //    outColor = vec4(pbrContext.col, 1.0);
 
 }
