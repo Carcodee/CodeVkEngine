@@ -24,6 +24,7 @@ layout (set = 0, binding = 3) readonly buffer MeshesModelMatrices{
 void main() {
     mat4 model = modelMatrices[meshId];
     gl_Position = pc.projView * model * vec4(pos, 1.0f);
+//    gl_PointSize = 10.0;
     norm = normal;
     tang = tangents;
     textCoord = uv;

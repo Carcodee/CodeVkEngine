@@ -489,6 +489,7 @@ namespace Rendering
             renderNode->AddColorImageResource("gMetRoughness", metRoughAttachmentView);
             renderNode->AddColorImageResource("gUVs", uvAttachmentView);
             renderNode->SetDepthImageResource("gDepth", depthAttachmentView);
+            renderNode->SetGraphicsPipelineConfigs({R_POINT, T_POINT_LIST});
             renderNode->AddBufferSync("indirectBuffer", {B_COMPUTE_WRITE, B_DRAW_INDIRECT});
             renderNode->DependsOn(meshCullPassName);
             renderNode->BuildRenderGraphNode();
