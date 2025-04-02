@@ -663,7 +663,6 @@ namespace Rendering
 		    renderNode->SetVertexInput(Vertex2D::GetVertexInput());
 		    //change this
 		    renderNode->SetPushConstantSize(4);
-		    renderNode->SetRasterizationConfigs(ENGINE::RasterizationConfigs::R_FILL);
     		return renderNode;
     	}
 
@@ -690,7 +689,6 @@ namespace Rendering
 		    renderNode->SetVertexInput(Vertex2D::GetVertexInput());
 		    //change this
 		    renderNode->SetPushConstantSize(4);
-		    renderNode->SetRasterizationConfigs(ENGINE::RasterizationConfigs::R_FILL);
     		return renderNode;
     	}
 

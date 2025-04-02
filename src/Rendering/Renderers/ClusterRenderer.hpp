@@ -28,7 +28,6 @@ namespace Rendering
             this->renderGraphRef = core->renderGraphRef;
             this->windowProvider = windowProvider;
             computeDescCache = std::make_unique<DescriptorCache>(this->core);
-            lightDecCache = std::make_unique<DescriptorCache>(this->core);
             gBuffDescCache = std::make_unique<DescriptorCache>(this->core);
             cullMeshesCache = std::make_unique<DescriptorCache>(this->core);
 
@@ -232,30 +231,30 @@ namespace Rendering
                 [this]()
                 {
 
-
+                    auto renderNode = renderGraphRef->GetNode(lightPassName);
                     renderGraphRef->resourcesManager->RequestStorageImageClear("specularHolderStorage");
-                    lightDecCache->SetSampler("gCol", colAttachmentView);
-                    lightDecCache->SetSampler("gNormals", normAttachmentView);
-                    lightDecCache->SetSampler("gTang", tangAttachmentView);
-                    lightDecCache->SetSampler("gDepth", depthAttachmentView);
-                    lightDecCache->SetSampler("gMetRoughness", metRoughAttachmentView);
-                    lightDecCache->SetSampler("gMeshUV", uvAttachmentView);
+                    renderNode->descCache->SetSampler("gCol", colAttachmentView);
+                    renderNode->descCache->SetSampler("gNormals", normAttachmentView);
+                    renderNode->descCache->SetSampler("gTang", tangAttachmentView);
+                    renderNode->descCache->SetSampler("gDepth", depthAttachmentView);
+                    renderNode->descCache->SetSampler("gMetRoughness", metRoughAttachmentView);
+                    renderNode->descCache->SetSampler("gMeshUV", uvAttachmentView);
                     
-                    lightDecCache->SetStorageImage("specularHolder", specularHolder);
-                    lightDecCache->SetBuffer("CameraProperties", cPropsUbo);
-                    lightDecCache->SetBuffer("PointLights", pointLights);
-                    lightDecCache->SetBuffer("LightMap", lightsMap);
-                    lightDecCache->SetBuffer("LightIndices", lightsIndices);
+                    renderNode->descCache->SetStorageImage("specularHolder", specularHolder);
+                    renderNode->descCache->SetBuffer("CameraProperties", cPropsUbo);
+                    renderNode->descCache->SetBuffer("PointLights", pointLights);
+                    renderNode->descCache->SetBuffer("LightMap", lightsMap);
+                    renderNode->descCache->SetBuffer("LightIndices", lightsIndices);
                     vk::DeviceSize offset = 0;
                     renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(lightPassName)->pipelineType,
                                                      renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
                                                      0, 1,
-                                                     &lightDecCache->dstSet, 0, nullptr);
+                                                     &renderNode->descCache->dstSet, 0, nullptr);
                     renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
                     renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
                     renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
-                                                vk::ShaderStageFlagBits::eFragment,
+                                                vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
                                                 0, sizeof(LightPc), &lightPc);
                     renderGraphRef->currentFrameResources->commandBuffer->drawIndexed(quadIndices.size(), 1, 0,
                                               0, 0);
@@ -484,7 +483,6 @@ namespace Rendering
             renderNode->AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
             renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
-            renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->AddColorImageResource("gColor", colAttachmentView);
             renderNode->AddColorImageResource("gNorm", normAttachmentView);
             renderNode->AddColorImageResource("gTang", tangAttachmentView);
@@ -500,20 +498,6 @@ namespace Rendering
             lVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath +  "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
             lFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\light.frag.spv", S_FRAG);
 
-            lightDecCache->AddShaderInfo(lVertShader->sParser.get());
-            lightDecCache->AddShaderInfo(lFragShader->sParser.get());
-            lightDecCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-
-            auto lPushConstantRange = vk::PushConstantRange()
-                                      .setOffset(0)
-                                      .setStageFlags(vk::ShaderStageFlagBits::eFragment)
-                                      .setSize(sizeof(LightPc));
-
-            auto lLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-                                     .setPushConstantRanges(lPushConstantRange)
-                                     .setSetLayoutCount(1)
-                                     .setPSetLayouts(&lightDecCache->dstLayout.get());
-
 
             AttachmentInfo lColInfo = GetColorAttachmentInfo(
                 glm::vec4(0.0f), core->swapchainRef->GetFormat());
@@ -523,8 +507,9 @@ namespace Rendering
             auto lRenderNode = renderGraphRef->AddPass(lightPassName);
             lRenderNode->SetVertShader(lVertShader);
             lRenderNode->SetFragShader(lFragShader);
+            lRenderNode->SetConfigs(true);
+            lRenderNode->SetPushConstantSize(sizeof(LightPc));
             lRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            lRenderNode->SetPipelineLayoutCI(lLayoutCreateInfo);
             lRenderNode->SetVertexInput(lVertexInput);
             lRenderNode->AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
             lRenderNode->AddSamplerResource("colGSampler", colAttachmentView);
@@ -656,7 +641,6 @@ namespace Rendering
         Buffer* lIndexBuffer;
 
         std::unique_ptr<DescriptorCache> computeDescCache;
-        std::unique_ptr<DescriptorCache> lightDecCache;
         std::unique_ptr<DescriptorCache> gBuffDescCache;
         std::unique_ptr<DescriptorCache> cullMeshesCache;
         

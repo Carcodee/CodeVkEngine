@@ -3,17 +3,17 @@
 //
 
 
-#ifndef TEMPLATERENDERER_HPP
-#define TEMPLATERENDERER_HPP
+#ifndef GSRENDERER_HPP
+#define GSRENDERER_HPP
 
 namespace Rendering
 {
     using namespace ENGINE;
-    class TemplateRenderer : BaseRenderer
+    class GSRenderer : BaseRenderer
     {
-        ~TemplateRenderer() override = default;
+        ~GSRenderer() override = default;
 
-        TemplateRenderer(Core* core, WindowProvider* windowProvider)
+        GSRenderer(Core* core, WindowProvider* windowProvider)
         {
             this->core = core;
             this->renderGraph = core->renderGraphRef;
@@ -26,6 +26,15 @@ namespace Rendering
 
         void CreateResources()
         {
+            ENGINE::Buffer* gsPointsVertexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
+                "gsPointsVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
+                sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
+                Vertex2D::GetQuadVertices().data())->deviceBuffer.get();
+
+            ENGINE::Buffer* gsPointsIndexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
+                "gsPointsIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
+                sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
+                Vertex2D::GetQuadIndices().data())->deviceBuffer.get();
         }
 
         void CreateBuffers()
@@ -37,23 +46,15 @@ namespace Rendering
             
             AttachmentInfo colInfo = GetColorAttachmentInfo(
                 glm::vec4(0.0f), g_32bFormat);
-            Shader* vShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_VERT); 
-            Shader* fShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_FRAG);
-
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
             
-            auto renderNode = renderGraph->AddPass(passName);
-            renderNode->SetConfigs({true});
-            renderNode->SetVertShader(vShader);
-            renderNode->SetFragShader(fShader);
+            auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF("GSLoader", "GSLoad");
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            renderNode->SetVertexInput(Vertex2D::GetVertexInput());
-            //change this
-            renderNode->SetPushConstantSize(4);
-            renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
-            renderNode->AddColorImageResource("default_attachment", attachmentOutput);
+            renderNode->SetVertexInput(D_Vertex3D::GetVertexInput());
+            renderNode->SetGraphicsPipelineConfigs({R_POINT, T_POINT_LIST});
             renderNode->BuildRenderGraphNode();
+            
         }
 
         void RecreateSwapChainResources() override
@@ -109,4 +110,4 @@ namespace Rendering
     };
 }
 
-#endif //TEMPLATERENDERER_HPP
+#endif //GSRENDERER_HPP

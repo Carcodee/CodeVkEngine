@@ -88,7 +88,7 @@ namespace Rendering{
                 renderNode->SetPipelineLayoutCI(layoutCreateInfo);
                 renderNode->SetVertexInput(vertexInput);
                 renderNode->AddColorAttachmentOutput("modelCol", colInfo, BlendConfigs::B_OPAQUE);
-                renderNode->SetRasterizationConfigs(RasterizationConfigs::R_LINE);
+                renderNode->SetGraphicsPipelineConfigs({RasterizationConfigs::R_LINE, TopologyConfigs::T_TRIANGLE});
                 renderNode->SetDepthConfig(DepthConfigs::D_NONE);
                 renderNode->DependsOn("light");
                 renderNode->BuildRenderGraphNode();

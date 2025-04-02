@@ -7,6 +7,7 @@
 //
 
 
+
 #ifndef STRUCTS_HPP
 namespace ENGINE
 {
@@ -162,6 +163,11 @@ namespace ENGINE
         uint32_t firstIndex;
         uint32_t firstInstance;
     };
+	struct GraphicsPipelineConfigs 
+	{
+		RasterizationConfigs rasterizationConfigs = RasterizationConfigs::R_FILL;
+		TopologyConfigs topologyConfigs = TopologyConfigs::T_TRIANGLE;
+	};
 
 }
 #define STRUCTS_HPP

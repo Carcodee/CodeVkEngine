@@ -1,5 +1,6 @@
 ﻿//
 
+
 // Created by carlo on 2024-09-26.
 //
 
@@ -10,6 +11,22 @@
 namespace ENGINE
 {
 
+    static vk::PrimitiveTopology GetTopology(TopologyConfigs topologyConfigs)
+    {
+        switch (topologyConfigs)
+        {
+        case T_TRIANGLE:
+            return vk::PrimitiveTopology::eTriangleList;
+            break;
+        case T_POINT_LIST:
+            return vk::PrimitiveTopology::ePointList;
+            break;
+        default:
+            assert(false);
+            break;
+        }
+        
+    }
     static vk::PipelineRasterizationStateCreateInfo GetRasterizationInfo(RasterizationConfigs configs)
     {
         auto rasterizationInfo = vk::PipelineRasterizationStateCreateInfo();
@@ -130,7 +147,7 @@ namespace ENGINE
     public:
         GraphicsPipeline(vk::Device& logicalDevice, vk::ShaderModule vertexShader, vk::ShaderModule fragmentShader,
                          vk::PipelineLayout pipelineLayout,
-                         vk::PipelineRenderingCreateInfo dynamicRenderPass, RasterizationConfigs rasterizationConfigs,
+                         vk::PipelineRenderingCreateInfo dynamicRenderPass, GraphicsPipelineConfigs pipelineDisplayInfo,
                          std::vector<BlendConfigs>& blendConfigs, DepthConfigs depthConfigs, VertexInput& vertexInput,
                          vk::PipelineCache pipelineCache = nullptr)
         {
@@ -154,10 +171,10 @@ namespace ENGINE
 
 
             auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
-                                 .setTopology(vk::PrimitiveTopology::eTriangleList)
+                                 .setTopology(GetTopology(pipelineDisplayInfo.topologyConfigs))
                                  .setPrimitiveRestartEnable(VK_FALSE);
 
-            auto rasterization = GetRasterizationInfo(rasterizationConfigs);
+            auto rasterization = GetRasterizationInfo(pipelineDisplayInfo.rasterizationConfigs);
 
             vk::DynamicState dynamicStates[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 

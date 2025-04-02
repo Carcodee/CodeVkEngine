@@ -24,6 +24,7 @@
 #include "Renderers/FlatRenderer.hpp"
 #include "Renderers/ClusterRenderer.hpp"
 #include "Renderers/GIRenderer.hpp"
+#include "Renderers/GSRenderer.hpp"
 #include "Renderers/DebugRenderer.hpp"
 #include "ImguiRenderer.hpp"
 

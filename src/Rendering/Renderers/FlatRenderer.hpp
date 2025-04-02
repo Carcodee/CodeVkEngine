@@ -194,7 +194,6 @@ namespace Rendering
                 // renderNode->SetPipelineLayoutCI(genLayoutCreateInfo);
                 renderNode->SetVertexInput(vertexInput);
                 renderNode->AddColorAttachmentOutput("CascadeAttachment_" + std::to_string(i), colInfo, BlendConfigs::B_OPAQUE);
-                renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
                 renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i), cascadesAttachmentsImagesViews[i]);
                 renderNode->BuildRenderGraphNode();
             }
@@ -231,7 +230,6 @@ namespace Rendering
             renderNode->SetPipelineLayoutCI(layoutCreateInfo);
             renderNode->SetVertexInput(vertexInput);
             renderNode->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
-            renderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             renderNode->BuildRenderGraphNode();
             for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
             {
@@ -264,7 +262,6 @@ namespace Rendering
                 mergeRenderNode->SetPipelineLayoutCI(mergeLayoutCreateInfo);
                 mergeRenderNode->SetVertexInput(vertexInput);
                 mergeRenderNode->AddColorAttachmentOutput("mergeColor_" + std::to_string(i), mergeColInfo, BlendConfigs::B_OPAQUE);
-                mergeRenderNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
                 std::string name1 = "radianceStorage_" + std::to_string(i);
                 mergeRenderNode->AddStorageResource(name1, radiancesImages[i]);
                 std::string name2 = "radianceStorage_" + std::to_string(i + 1);
@@ -301,7 +298,6 @@ namespace Rendering
             resultNode->SetPipelineLayoutCI(resultLayoutCreateInfo);
             resultNode->SetVertexInput(vertexInput);
             resultNode->AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
-            resultNode->SetRasterizationConfigs(RasterizationConfigs::R_FILL);
             resultNode->BuildRenderGraphNode();
         }
 

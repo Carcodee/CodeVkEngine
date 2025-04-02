@@ -12,6 +12,7 @@
 
 
 
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 
@@ -65,7 +66,8 @@ namespace ENGINE
             json["frameBufferSize"] = {frameBufferSize.x, frameBufferSize.y};
             json["pushConstantSize"] = pushConstantSize;
             json["configs"] = configs.Serialize();
-            json["rasterizationConfigs"] = static_cast<int>(rasterizationConfigs);
+            json["rasterizationConfigs"] = static_cast<int>(graphicsPipelineConfigs.rasterizationConfigs);
+            json["topologyConfigs"] = static_cast<int>(graphicsPipelineConfigs.topologyConfigs);
             json["depthConfig"] = static_cast<int>(depthConfig);
     
             // Serialize shaders
@@ -119,6 +121,12 @@ namespace ENGINE
 
         RenderGraphNode* Deserialize(std::string filename) override
         {
+            if (!std::filesystem::exists(filename))
+            {
+                SYSTEMS::Logger::GetInstance()->LogMessage(
+                    "Pass with name: (" + passName + ") does not have a serialized file, the pass may be null"); 
+                return this;
+            }
             nlohmann::json json = SYSTEMS::OS::GetJsonFromFile(filename);
             assert(!json.empty());
             std::vector<float> fSize;
@@ -133,7 +141,8 @@ namespace ENGINE
             
             pushConstantSize = json.at("pushConstantSize");
             configs.Serialize() = json.at("configs");
-            rasterizationConfigs = json.at("rasterizationConfigs");
+            graphicsPipelineConfigs.rasterizationConfigs = json.at("rasterizationConfigs");
+            graphicsPipelineConfigs.topologyConfigs = json.at("topologyConfigs");
             depthConfig = json.at("depthConfig");
 
             //to do: missing images deserialize;
@@ -244,7 +253,7 @@ namespace ENGINE
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
                     core->logicalDevice.get(), vertShader->sModule->shaderModuleHandle.get(),
                     fragShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
-                    dynamicRenderPass.pipelineRenderingCreateInfo, rasterizationConfigs,
+                    dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
                     colorBlendConfigs, depthConfig,
                     vertexInput, pipelineCache.get()
                 );
@@ -343,7 +352,7 @@ namespace ENGINE
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
                     core->logicalDevice.get(), vertShader->sModule->shaderModuleHandle.get(),
                     fragShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
-                    dynamicRenderPass.pipelineRenderingCreateInfo, rasterizationConfigs,
+                    dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
                     colorBlendConfigs, depthConfig,
                     vertexInput, pipelineCache.get()
                 );
@@ -575,9 +584,9 @@ namespace ENGINE
             pushConstantSize = size;
         }
 
-        void SetRasterizationConfigs(RasterizationConfigs rasterizationConfigs)
+        void SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
         {
-            this->rasterizationConfigs = rasterizationConfigs;
+            this->graphicsPipelineConfigs = graphicsPipelineConfigs;
         }
 
         void SetDepthConfig(DepthConfigs dephtConfig)
@@ -802,7 +811,8 @@ namespace ENGINE
             dynamicRenderPass.Reset();
             descCache.release();
             active = false;
-            rasterizationConfigs = R_FILL;
+            graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
+            graphicsPipelineConfigs.topologyConfigs = T_TRIANGLE;
             colorBlendConfigs.clear();
             depthConfig = D_NONE;
             vertexInput.bindingDescription.clear();
@@ -841,7 +851,7 @@ namespace ENGINE
         friend class RenderGraph;
 
         RenderNodeConfigs configs = {false};
-        RasterizationConfigs rasterizationConfigs = R_FILL;
+        GraphicsPipelineConfigs graphicsPipelineConfigs = {};
         std::vector<BlendConfigs> colorBlendConfigs;
         DepthConfigs depthConfig = D_NONE;
         VertexInput vertexInput;

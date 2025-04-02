@@ -66,6 +66,12 @@ namespace ENGINE{
         R_LINE,
         R_POINT
     };
+
+    enum TopologyConfigs
+    {
+       T_TRIANGLE,
+       T_POINT_LIST,
+    };
     ///
 
 
