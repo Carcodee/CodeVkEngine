@@ -31,6 +31,7 @@ set(IMGUI_NODE_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/imgui-node-editor-maste
 set(SLANG_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/Slang/include")
 set(SLANG_LIBRARIES "${SOLUTION_DIR}/dependencies/Slang/lib/slang.lib")
 set(NLOHMANN_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/nlohmann")
+set(HAPPLY_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/happly-master")
 
         
 include_directories("${Vulkan_INCLUDE_DIRS}")
@@ -44,6 +45,7 @@ include_directories("${PROFILER_EXT_INCLUDE_DIR}")
 include_directories("${IMGUI_NODE_INCLUDE_DIR}")
 include_directories("${SLANG_INCLUDE_DIR}")
 include_directories("${NLOHMANN_INCLUDE_DIR}")
+include_directories("${HAPPLY_INCLUDE_DIR}")
 
 
 file(GLOB_RECURSE dep_sources "${SPIRVCROSS_INCLUDE_DIR}/*.cpp" "${IMGUI_INCLUDE_DIR}/*.cpp" "${IMGUI_NODE_INCLUDE_DIR}/*.cpp")

@@ -8,6 +8,8 @@
 #pragma once
 
 
+#include <happly.h>
+
 #include "RendererStructs.hpp"
 
 #include "RThings/Material.hpp"

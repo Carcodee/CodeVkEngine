@@ -9,8 +9,9 @@
 namespace Rendering
 {
     using namespace ENGINE;
-    class TemplateRenderer : BaseRenderer
+    class TemplateRenderer : public BaseRenderer
     {
+    public:
         ~TemplateRenderer() override = default;
 
         TemplateRenderer(Core* core, WindowProvider* windowProvider)
@@ -41,7 +42,7 @@ namespace Rendering
             Shader* fShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_FRAG);
 
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
-            ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
+            ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
             
             auto renderNode = renderGraph->AddPass(passName);
             renderNode->SetConfigs({true});

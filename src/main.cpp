@@ -28,10 +28,13 @@ CONST int WINDOWS_HEIGHT = 1024;
 
 void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>>& renderers)
 {
-    renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
-    core, windowProvider));
-    Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
-    clusterRenderer->SetRenderOperation();
+    // renderers.try_emplace("ClusterRenderer", std::make_unique<Rendering::ClusterRenderer>(
+    // core, windowProvider));
+    // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
+    // clusterRenderer->SetRenderOperation();
+    renderers.try_emplace("GSRenderer", std::make_unique<Rendering::GSRenderer>(core, windowProvider));
+    Rendering::GSRenderer* gsRenderer = dynamic_cast<Rendering::GSRenderer*>(renderers.at("GSRenderer").get());
+    gsRenderer->SetRenderOperation();
     //
     // renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
     // Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());

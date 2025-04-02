@@ -227,7 +227,28 @@ namespace Rendering
 		int specularPow = 2;
 		int roughnessPow = 2;
 	};
-    
+
+	struct GaussianSplat
+	{
+		glm::mat3 covarianceMatrix = glm::identity<glm::mat3>();
+		glm::vec3 pos = glm::vec3(0.0);
+		glm::vec3 col = glm::vec3(1.0);
+		float alpha = 1.0;
+	};
+ 	struct ArraysOfGaussians
+	{
+		std::vector<glm::mat3> covarianceMats;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec3> cols;
+		std::vector<float> alphas;
+
+ 		GaussianSplat GetGaussianAt(int idx)
+ 		{
+ 			GaussianSplat gaussianSplat = {covarianceMats[idx], positions[idx], cols[idx], alphas[idx]};
+ 			return gaussianSplat;
+ 		}
+ 		
+	};   
 }
 
 namespace std

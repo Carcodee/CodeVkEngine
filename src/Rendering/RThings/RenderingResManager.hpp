@@ -8,6 +8,8 @@
 
 
 
+
+
 #ifndef ENGINERESMANAGER_HPP
 #define ENGINERESMANAGER_HPP
 
@@ -17,9 +19,21 @@ namespace Rendering
     class RenderingResManager
     {
     public:
+    	void LoadPLY(std::string path, std::vector<glm::vec3>& positions)
+    	{
+    		// Construct the data object by reading from file
+    		assert(std::filesystem::path(path).extension() == ".ply" && "Invalid PLY file");
+    		assert(std::filesystem::exists(path));
+    		
+    		happly::PLYData plyIn(path);
+
+    		// Get mesh-style data from the object
+    		positions = plyIn.getVertexPositions_glm();
+    		std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+    		
+    	}
     	void LoadGLTF(std::string path,Model& model, bool compactIndices)
     	{
-
     		if (!std::filesystem::exists(path))
     		{
     			SYSTEMS::Logger::GetInstance()->LogMessage("Path do not exist: "+ path);
@@ -730,6 +744,8 @@ namespace Rendering
                 "quad_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
                 sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
                 Vertex2D::GetQuadIndices().data())->deviceBuffer.get();
+
+
         };
         ~RenderingResManager() = default;
     private:
