@@ -176,7 +176,6 @@ namespace ENGINE
         size_t spirvSize = 0;
         const void* spirvCode = spGetEntryPointCode(request, 0, &spirvSize);
 
-        
         if (spirvCode)
         {
             const char* spirvCodeData =  reinterpret_cast<const char*>(spirvCode);

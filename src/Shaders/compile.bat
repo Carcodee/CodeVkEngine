@@ -51,7 +51,7 @@ for /r slang/ %%I in (*.slang) do (
         %SlangCompExe% -target spirv -profile glsl_450 -stage compute -entry mainCS "%%I" -o "!outname!"_CS.spv || set "errorfound=1"
     ) || (
         %SlangCompExe% -target spirv -profile glsl_450 -stage vertex -entry mainVS "%%I" -o "!outname!"_VS.spv || set "errorfound=1"
-        %SlangCompExe% -target  spirv -profile glsl_450 -stage fragment -entry mainFS "%%I" -o "!outname!"_FS.spv || set "errorfound=1"
+        %SlangCompExe% -target spirv -profile glsl_450 -stage fragment -entry mainFS "%%I" -o "!outname!"_FS.spv || set "errorfound=1"
     )
 )
 if defined errorfound (
