@@ -111,7 +111,8 @@ void run(WindowProvider* windowProvider)
                     windowSize);
                 windowProvider->framebufferResized = false;
                 core->resizeRequested = false;
-                renderGraph->UpdateAllFromMetaData();
+                //unused for now
+                // renderGraph->UpdateAllFromMetaData();
                 renderGraph->RecreateFrameResources();
                 for (auto& renderer : renderers)
                 {
@@ -125,7 +126,8 @@ void run(WindowProvider* windowProvider)
                 if (ImGui::IsKeyPressed(ImGuiKey_N, false))
                 {
                     // renderGraph->resourcesManager->filesManager->CheckAllChanges();
-                    renderGraph->UpdateAllFromMetaData();
+                    //unused for now
+                    // renderGraph->UpdateAllFromMetaData();
                 }
                 if (ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {

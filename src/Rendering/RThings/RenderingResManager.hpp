@@ -664,12 +664,12 @@ namespace Rendering
     	}
 
     	
-    	ENGINE::RenderGraphNode* GetTemplateNode_DF(std::string name, std::string shaderName)
+    	ENGINE::RenderGraphNode* GetTemplateNode_DF(std::string name, std::string shaderName, ENGINE::ShaderCompiler compiler)
     	{
 		    ENGINE::AttachmentInfo colInfo = ENGINE::GetColorAttachmentInfo(
 			    glm::vec4(0.0f), ENGINE::g_32bFormat);
-		    ENGINE::Shader* vShader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_VERT);
-		    ENGINE::Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_FRAG);
+		    ENGINE::Shader* vShader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_VERT, compiler);
+		    ENGINE::Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_FRAG, compiler);
 		    auto renderNode = renderGraph->AddPass(name);
 		    renderNode->SetConfigs({true});
 		    renderNode->SetVertShader(vShader);
@@ -680,9 +680,9 @@ namespace Rendering
     		return renderNode;
     	}
 
-	    ENGINE::RenderGraphNode* GetTemplateComputeNode_DF(std::string name, std::string shaderName)
+	    ENGINE::RenderGraphNode* GetTemplateComputeNode_DF(std::string name, std::string shaderName, ENGINE::ShaderCompiler compiler)
 	    {
-		    ENGINE::Shader* shader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_COMP);
+		    ENGINE::Shader* shader = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_COMP, compiler);
 		    auto renderNode = renderGraph->AddPass(name);
 		    renderNode->SetConfigs({true});
 		    renderNode->SetCompShader(shader);

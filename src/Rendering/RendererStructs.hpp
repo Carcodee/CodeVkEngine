@@ -100,6 +100,24 @@ namespace Rendering
  		}
 	
 	};
+
+	struct GS_Vertex3D
+	{
+	    int pointId;
+        
+		bool operator==(const GS_Vertex3D& other) const {
+			return pointId == other.pointId;
+		}
+
+    	static ENGINE::VertexInput GetVertexInput()
+		{
+            ENGINE::VertexInput vertexInput;
+            vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(D_Vertex3D, pos), 0);
+            vertexInput.AddVertexInputBinding(0, sizeof(D_Vertex3D));
+			return vertexInput;
+ 		}
+	
+	};
 	
 
 	struct MvpPc 
@@ -241,6 +259,22 @@ namespace Rendering
 		std::vector<glm::vec3> positions;
 		std::vector<glm::vec3> cols;
 		std::vector<float> alphas;
+ 		std::vector<int> ids;
+ 		void Init()
+ 		{
+ 			assert(!positions.empty());
+ 			ids.reserve(positions.size());
+ 			cols.reserve(positions.size());
+ 			covarianceMats.reserve(positions.size());
+ 			alphas.reserve(positions.size());
+		    for (int i = 0; i < positions.size(); ++i)
+		    {
+		    	covarianceMats.emplace_back(glm::identity<glm::mat3>());
+		    	cols.emplace_back(glm::vec3(1.0));
+		    	alphas.emplace_back(1.0);
+		    	ids.emplace_back(i);
+		    }
+ 		}
 
  		GaussianSplat GetGaussianAt(int idx)
  		{

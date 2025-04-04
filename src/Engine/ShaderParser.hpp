@@ -27,6 +27,12 @@ namespace ENGINE
         S_COMP,
         S_UNKNOWN
     };
+
+    enum ShaderCompiler
+    {
+        C_GLSL,
+        C_SLANG
+    };
     
     static std::string ConvertShaderPathToSpirv(const std::filesystem::path& filePath, ShaderStage stage)
     {
@@ -252,7 +258,8 @@ set "errorfound="
 
         ShaderParser(std::vector<uint32_t>& byteCode)
         {
-            spirv_cross::CompilerGLSL glsl((byteCode));
+            
+            spirv_cross::Compiler glsl((byteCode));
 
             spirv_cross::ShaderResources resources = glsl.get_shader_resources();
 
@@ -438,6 +445,7 @@ set "errorfound="
                 byteCode = CompileSlangIntoSpirv(spirvPath, code, entryPoint, stage);
                 if (byteCode.empty())
                 {
+                    SYSTEMS::Logger::GetInstance()->LogMessage("Byte code compilation is empty in: ("+path+")");
                     byteCode = GetByteCode(spirvPath);
                 }
             }

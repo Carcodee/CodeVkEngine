@@ -1,4 +1,6 @@
 ﻿//
+
+
 // Created by carlo on 2025-03-26.
 //
 
@@ -30,14 +32,15 @@ namespace Rendering
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
                 "\\PointClouds\\goat_skull_ply_1\\Goat skull.ply";
             RenderingResManager::GetInstance()->LoadPLY(path, gaussians.positions);
+            gaussians.Init();
         }
 
         void CreateBuffers()
         {
             gsPointsVertexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
                 "gsPointsVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
-                sizeof(D_Vertex3D) * gaussians.positions.size(),
-                gaussians.positions.data())->deviceBuffer.get();
+                sizeof(GS_Vertex3D) * gaussians.ids.size(),
+                gaussians.ids.data())->deviceBuffer.get();
         }
 
         void CreatePipelines()
@@ -50,7 +53,7 @@ namespace Rendering
             
             auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad");
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            renderNode->SetVertexInput(D_Vertex3D::GetVertexInput());
+            renderNode->SetVertexInput(GS_Vertex3D::GetVertexInput());
             renderNode->SetPushConstantSize(sizeof(MvpPc));
             renderNode->AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->SetGraphicsPipelineConfigs({R_POINT, T_POINT_LIST});
@@ -74,7 +77,13 @@ namespace Rendering
             auto renderOp = new std::function<void()>(
                 [this]()
                 {
+                    
                     auto& renderNode = renderGraph->renderNodes.at(passName);
+                    // renderNode->descCache->SetBuffer("gsMats", gaussians.covarianceMats);
+                    renderNode->descCache->SetBuffer("Pos", gaussians.positions);
+                    // renderNode->descCache->SetBuffer("gsCols", gaussians.cols);
+                    // renderNode->descCache->SetBuffer("gsAlphas", gaussians.alphas);
+                    
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,

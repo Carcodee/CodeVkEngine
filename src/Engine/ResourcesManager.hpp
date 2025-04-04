@@ -9,6 +9,7 @@
 
 
 
+
 #ifndef RESOURCESMANAGER_HPP
 #define RESOURCESMANAGER_HPP
 
@@ -472,26 +473,66 @@ namespace ENGINE
             assert(false && "invalid shader id");
             return nullptr;
         }
-        Shader* CreateDefaultShader(std::string name, ShaderStage stage)
+        Shader* CreateDefaultShader(std::string name, ShaderStage stage, ShaderCompiler compiler)
         {
-            if (std::filesystem::path(name).extension() != ".slang")
+            std::filesystem::path targetPath;
+            std::filesystem::path templatePath;
+            switch (compiler)
             {
-                name += ".slang";
+            case C_GLSL:
+                switch (stage)
+                {
+                case S_VERT:
+                    if (std::filesystem::path(name).extension() != ".vert")
+                    {
+                        name += ".vert";
+                    }
+                    templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath /"tVert.vert";
+                    break;
+                case S_FRAG:
+                    if (std::filesystem::path(name).extension() != ".frag")
+                    {
+                        name += ".frag";
+                    }
+                    templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath / "tFrag.frag";
+                    break;
+
+                case S_COMP:
+                    if (std::filesystem::path(name).extension() != ".comp")
+                    {
+                        name += ".comp";
+                    }
+                    templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath / "tComp.comp";
+                    break;
+                case S_UNKNOWN:
+                    break;
+                }
+                targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "glsl" / "generated" / name;
+                break;
+            case C_SLANG:
+                if (std::filesystem::path(name).extension() != ".slang")
+                {
+                    name += ".slang";
+                }
+                targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "slang" / "generated" / name;
+                templatePath = SYSTEMS::OS::GetInstance()->slangShadersTemplatePath;
+                if (stage == ShaderStage::S_COMP)
+                {
+                    templatePath /= "compute.slang";
+                }
+                else
+                {
+                    templatePath /= "quad.slang";
+                }
+                break;
+            default:
+                assert(false);
+                break;
             }
-            
-            std::filesystem::path targetPath = SYSTEMS::OS::GetInstance()->shadersPath / "slang"/"generated"/ name;
+           
             if (std::filesystem::exists(targetPath))
             {
                 return GetShader(targetPath.string(), stage);
-            }
-            
-            std::filesystem::path templatePath = SYSTEMS::OS::GetInstance()->slangShadersTemplatePath;
-            if (stage == ShaderStage::S_COMP)
-            {
-                templatePath /= "compute.slang";
-            }else
-            {
-                templatePath /= "quad.slang";
             }
             
             SYSTEMS::OS::GetInstance()->CopyFileInto(templatePath.string(), targetPath.string());
