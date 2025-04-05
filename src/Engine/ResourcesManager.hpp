@@ -270,12 +270,13 @@ namespace ENGINE
             return stagedBuffers.back().get();
         }
 
-        Buffer* SetBuffer(std::string name, vk::DeviceSize deviceSize
-                          , void* data)
+        Buffer* SetBuffer(std::string name, vk::DeviceSize deviceSize, void* data)
         {
             assert(core!= nullptr &&"core must be set");
             assert(bufferNames.contains(name) && "Buffer dont exist");
+            assert(!stagedBufferNames.contains(name) && "buffer is in staged buffers poll");
 
+            
             Buffer* bufferRef = buffers.at(bufferNames.at(name)).get();
             if (deviceSize > bufferRef->deviceSize)
             {
@@ -290,7 +291,10 @@ namespace ENGINE
                 {
                     bufferRef->Map();
                 }
+                Profiler::GetInstance()->
+                    AddProfilerCpuSpot(legit::Colors::getColor(bufferNames.at(name)), "Buffer: " + name);
                 memcpy(bufferRef->mappedMem, data, deviceSize);
+                Profiler::GetInstance()->EndProfilerCpuSpot("Buffer: " + name);
                 if (bufferRef->usageFlags == vk::BufferUsageFlagBits::eStorageBuffer)
                 {
                     bufferRef->Unmap();
@@ -305,6 +309,7 @@ namespace ENGINE
             //todo
             assert(core!= nullptr &&"core must be set");
             assert(stagedBufferNames.contains(name) && "staged buffer dont exist");
+            assert(!bufferNames.contains(name) && "buffer is normal buffers poll");
 
             if (deviceSize > stagedBuffers.at(stagedBufferNames.at(name))->size)
             {

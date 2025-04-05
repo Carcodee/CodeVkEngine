@@ -1270,11 +1270,11 @@ namespace ENGINE
             int idx = 0;
             for (auto& renderNode : renderNodesSorted)
             {
-                Profiler::GetInstance()->
-                    AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
+                // Profiler::GetInstance()->
+                    // AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
                 if (!renderNode->active)
                 {
-                    Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
+                    // Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
                     continue;
                 }
 
@@ -1307,7 +1307,7 @@ namespace ENGINE
                     CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
                 }
                 node->Execute(currentFrameResources->commandBuffer.get());
-                Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
+                // Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
                 allPassesNames.push_back(node->passName);
                 idx = (idx + 1) % 16;
             }

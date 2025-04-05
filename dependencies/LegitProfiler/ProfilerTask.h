@@ -31,6 +31,8 @@ namespace legit
     const static uint32_t silver = RGBA_LE(0xbdc3c7ffu);
     const static uint32_t imguiText = RGBA_LE(0xF2F5FAFFu);
     static uint32_t getColor(uint32_t index) {
+
+      index = index % 17;
       switch (index) {
       case 0: return turqoise;
       case 1: return greenSea;

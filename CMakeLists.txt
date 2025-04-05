@@ -61,6 +61,10 @@ if(MSVC)
     target_compile_options(Engine PRIVATE /bigobj)
 endif()
 
+if(MINGW)
+    target_compile_options(Engine PRIVATE -Wa,-mbig-obj)
+endif()
+
 target_sources(Engine PRIVATE
         ${dep_sources}
         ${engine_headers}

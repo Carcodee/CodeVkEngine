@@ -134,6 +134,8 @@ namespace UI::Nodes{
                 nodesFind.insert(N_NONE);
                 SYSTEMS::Logger::GetInstance()->LogMessage("There was no nodes finded in nodeType structure");
             }
+            return nodesFind;
+            
         }
         struct PinInfo 
         {

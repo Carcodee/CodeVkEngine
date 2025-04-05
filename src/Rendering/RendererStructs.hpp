@@ -103,17 +103,21 @@ namespace Rendering
 
 	struct GS_Vertex3D
 	{
-	    int pointId;
+	    glm::vec3 gsPos;
+		int id;
         
 		bool operator==(const GS_Vertex3D& other) const {
-			return pointId == other.pointId;
+			return gsPos == other.gsPos;
 		}
 
     	static ENGINE::VertexInput GetVertexInput()
 		{
             ENGINE::VertexInput vertexInput;
-            vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(D_Vertex3D, pos), 0);
-            vertexInput.AddVertexInputBinding(0, sizeof(D_Vertex3D));
+            vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC3, 0, offsetof(GS_Vertex3D, gsPos), 0);
+            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex3D));
+			
+            vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(GS_Vertex3D, id), 1);
+            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex3D));
 			return vertexInput;
  		}
 	
@@ -246,43 +250,47 @@ namespace Rendering
 		int roughnessPow = 2;
 	};
 
-	struct GaussianSplat
-	{
-		glm::mat3 covarianceMatrix = glm::identity<glm::mat3>();
-		glm::vec3 pos = glm::vec3(0.0);
-		glm::vec3 col = glm::vec3(1.0);
-		float alpha = 1.0;
-	};
+
  	struct ArraysOfGaussians
 	{
+		struct GaussianSplat
+		{
+			glm::mat3 covarianceMatrix;
+			glm::vec3 pos;
+			glm::vec3 col;
+			float alpha;
+		};
+        std::vector<GS_Vertex3D> gsVertex3Ds;
+ 		
 		std::vector<glm::mat3> covarianceMats;
-		std::vector<glm::vec3> positions;
 		std::vector<glm::vec3> cols;
 		std::vector<float> alphas;
  		std::vector<int> ids;
- 		void Init()
- 		{
- 			assert(!positions.empty());
- 			ids.reserve(positions.size());
- 			cols.reserve(positions.size());
- 			covarianceMats.reserve(positions.size());
- 			alphas.reserve(positions.size());
-		    for (int i = 0; i < positions.size(); ++i)
-		    {
-		    	covarianceMats.emplace_back(glm::identity<glm::mat3>());
-		    	cols.emplace_back(glm::vec3(1.0));
-		    	alphas.emplace_back(1.0);
-		    	ids.emplace_back(i);
-		    }
- 		}
 
- 		GaussianSplat GetGaussianAt(int idx)
- 		{
- 			GaussianSplat gaussianSplat = {covarianceMats[idx], positions[idx], cols[idx], alphas[idx]};
- 			return gaussianSplat;
- 		}
- 		
-	};   
+		void Init(std::vector<glm::vec3> positions)
+		{
+			size_t size = positions.size();
+			assert(size > 0);
+
+			covarianceMats.assign(size, glm::identity<glm::mat3>());
+			cols.assign(size, glm::vec3(1.0f));
+			alphas.assign(size, 1.0f);
+			for (int i = 0; i < positions.size(); ++i)
+			{
+				gsVertex3Ds.emplace_back(GS_Vertex3D{positions[i], i});
+			}
+		}
+
+		GaussianSplat GetGaussianAt(size_t idx) const
+		{
+			return GaussianSplat{
+				covarianceMats[idx],
+				gsVertex3Ds[idx].gsPos,
+				cols[idx],
+				alphas[idx]
+			};
+		}
+	};
 }
 
 namespace std

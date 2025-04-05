@@ -106,7 +106,7 @@ namespace SYSTEMS
 		
 		static std::string ReadFile(const std::string& path)
 		{
-			std::ifstream inFile(path, std::ios::in || std::ios::binary);
+			std::ifstream inFile(path.c_str(), std::ios::in | std::ios::binary);
 			if (!inFile)
 			{
 				assert(false && "impossible to open the path");

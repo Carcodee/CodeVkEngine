@@ -40,6 +40,7 @@ for /r glsl/ %%I in (*.comp) do (
     
    %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o "!outname!".spv || set "errorfound=1"
 )
+pause
 
 for /r slang/ %%I in (*.slang) do (
     set outname=%%I

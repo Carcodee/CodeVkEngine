@@ -6,6 +6,7 @@
 
 
 
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -32,16 +33,18 @@ namespace Rendering
         {
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
                 "\\PointClouds\\goat_skull_ply_1\\Goat skull.ply";
-            RenderingResManager::GetInstance()->LoadPLY(path, gaussians.positions);
-            gaussians.Init();
+            std::vector<glm::vec3> positions;
+            RenderingResManager::GetInstance()->LoadPLY(path, positions);
+            gaussians.Init(positions);
         }
 
         void CreateBuffers()
         {
+            
             gsPointsVertexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
                 "gsPointsVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
-                sizeof(GS_Vertex3D) * gaussians.ids.size(),
-                gaussians.ids.data())->deviceBuffer.get();
+                sizeof(GS_Vertex3D) * gaussians.gsVertex3Ds.size(),
+                gaussians.gsVertex3Ds.data())->deviceBuffer.get();
         }
 
         void CreatePipelines()
@@ -71,6 +74,7 @@ namespace Rendering
             auto taskOp = new std::function<void()>(
                 [this]
                 {
+                    
                     MoveCam();
                     auto renderNode = renderGraph->GetNode(passName);
                     renderNode->AddColorImageResource("DisplayAttachment", renderGraph->currentBackBuffer);
@@ -78,21 +82,20 @@ namespace Rendering
             auto renderOp = new std::function<void()>(
                 [this]()
                 {
+
                     
                     auto& renderNode = renderGraph->renderNodes.at(passName);
                     renderNode->descCache->SetBuffer("GSMats", gaussians.covarianceMats);
-                    renderNode->descCache->SetBuffer("GSPos", gaussians.positions);
-                    renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
-                    renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
+                    // renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
+                    // renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
                     
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
                                                      1,
                                                      &renderNode->descCache->dstSet, 0, nullptr);
                     renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-                        vk::DeviceSize offset = 0;
-
-
+                    vk::DeviceSize offset = 0;
+                    
                     renderGraph->currentFrameResources->commandBuffer->pushConstants(
                         renderGraph->GetNode(passName)->pipelineLayout.get(),
                         vk::ShaderStageFlagBits::eVertex |
@@ -103,8 +106,10 @@ namespace Rendering
                         0, 1,
                         &gsPointsVertexBuffer->bufferHandle.get(),
                         &offset);
+                    
                     renderGraph->currentFrameResources->commandBuffer->draw(
-                        gaussians.positions.size(), 1, 0, 0);
+                        gaussians.gsVertex3Ds.size(), 1, 0, 0);
+                    
                     
                 });
             renderGraph->GetNode(passName)->SetRenderOperation(renderOp);

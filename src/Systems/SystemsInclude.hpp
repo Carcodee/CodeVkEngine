@@ -28,6 +28,7 @@
 #include <filesystem>
 #include <assert.h>
 #include <json.hpp>
+#include <list>
 
 
 #define GLM_FORCE_RADIANS
