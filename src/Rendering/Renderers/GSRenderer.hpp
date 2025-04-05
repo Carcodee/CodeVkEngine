@@ -5,6 +5,7 @@
 //
 
 
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -51,7 +52,7 @@ namespace Rendering
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
             
-            auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad");
+            auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetVertexInput(GS_Vertex3D::GetVertexInput());
             renderNode->SetPushConstantSize(sizeof(MvpPc));
@@ -79,10 +80,10 @@ namespace Rendering
                 {
                     
                     auto& renderNode = renderGraph->renderNodes.at(passName);
-                    // renderNode->descCache->SetBuffer("gsMats", gaussians.covarianceMats);
-                    renderNode->descCache->SetBuffer("Pos", gaussians.positions);
-                    // renderNode->descCache->SetBuffer("gsCols", gaussians.cols);
-                    // renderNode->descCache->SetBuffer("gsAlphas", gaussians.alphas);
+                    renderNode->descCache->SetBuffer("GSMats", gaussians.covarianceMats);
+                    renderNode->descCache->SetBuffer("GSPos", gaussians.positions);
+                    renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
+                    renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
                     
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,

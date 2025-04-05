@@ -42,6 +42,9 @@ namespace ENGINE
             SYSTEMS::Logger::GetInstance()->LogMessage("Shader is already spv no conversion needed");
             return filePath.string();
         }
+        std::filesystem::path shaderPath(filePath);
+        std::string filename = shaderPath.filename().string();
+       
         std::filesystem::path spirvPath;
         for (auto& dirsParts : filePath)
         {
@@ -53,7 +56,7 @@ namespace ENGINE
             {
                 spirvPath /= "spirvGlsl";
             }
-            else if (dirsParts.extension() == ".slang")
+            else if ( dirsParts.string() == filename && dirsParts.extension() == ".slang")
             {
                 int firstDotPos = dirsParts.string().find_first_of('.');
                 std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
@@ -68,6 +71,28 @@ namespace ENGINE
                     break;
                 case S_COMP:
                     extension += "_CS.spv";
+                    break;
+                case S_UNKNOWN:
+                    assert(false && "invalid stage");
+                    break;
+                }
+                spirvPath /= fileNameNoExt + extension;
+            }
+            else if (dirsParts.string() == filename && (dirsParts.extension() == ".comp" || dirsParts.extension() == ".vert" || dirsParts.extension() == ".frag"))
+            {
+                int firstDotPos = dirsParts.string().find_first_of('.');
+                std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
+                std::string extension = dirsParts.extension().string();
+                switch (stage)
+                {
+                case S_VERT:
+                    extension += ".spv";
+                    break;
+                case S_FRAG:
+                    extension += ".spv";
+                    break;
+                case S_COMP:
+                    extension += ".spv";
                     break;
                 case S_UNKNOWN:
                     assert(false && "invalid stage");
@@ -259,7 +284,7 @@ set "errorfound="
         ShaderParser(std::vector<uint32_t>& byteCode)
         {
             
-            spirv_cross::Compiler glsl((byteCode));
+            spirv_cross::CompilerGLSL glsl((byteCode));
 
             spirv_cross::ShaderResources resources = glsl.get_shader_resources();
 
@@ -423,6 +448,7 @@ set "errorfound="
             assert(std::filesystem::exists(path) && "Path does not exist");
             this->stage = stage;
             HandlePathReceived(path);
+            assert(std::filesystem::path(this->spirvPath).extension() == ".spv" && "spv must be .spv filetypes");
             this->logicalDevice = logicalDevice;
             std::vector<uint32_t> byteCode = GetByteCode(spirvPath);
             sParser = std::make_unique<ShaderParser>(byteCode);

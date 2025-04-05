@@ -24,6 +24,7 @@ namespace Rendering
             CreateBuffers();
             CreatePipelines();
         }
+        
 
         void CreateResources()
         {
@@ -46,7 +47,7 @@ namespace Rendering
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
 
             auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(
-                shPassName, "shView.slang");
+                shPassName, "shView.slang", C_GLSL);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
             
@@ -87,7 +88,6 @@ namespace Rendering
                 });
             renderGraph->GetNode(shPassName)->AddTask(taskOp);
             renderGraph->GetNode(shPassName)->SetRenderOperation(shRenderOp);
-            
         }
         
 
