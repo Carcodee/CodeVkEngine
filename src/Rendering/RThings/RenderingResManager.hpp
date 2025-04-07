@@ -29,7 +29,7 @@ namespace Rendering
 
     		// Get mesh-style data from the object
     		positions = plyIn.getVertexPositions_glm();
-    		std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+    		// std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
     		
     	}
     	void LoadGLTF(std::string path,Model& model, bool compactIndices)

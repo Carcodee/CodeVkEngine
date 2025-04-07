@@ -257,28 +257,32 @@ namespace Rendering
 		int roughnessPow = 2;
 	};
 
-
+	struct GaussianSplat
+	{
+		float nx, ny, nz;
+		float f_dc_0, f_dc_1, f_dc_2;
+		float opacity;
+		float scale_0, scale_1, scale_2;
+		float rot_0, rot_1, rot_2, rot_3;
+	};
  	struct ArraysOfGaussians
 	{
-		struct GaussianSplat
-		{
-			glm::mat3 covarianceMatrix;
-			glm::vec3 pos;
-			glm::vec3 col;
-			float alpha;
-		};
+		
 		std::vector<glm::vec3> pos;
-		std::vector<glm::mat3> covarianceMats;
+ 		std::vector<glm::vec3> scales;
+ 		std::vector<glm::vec4> rots;
 		std::vector<glm::vec3> cols;
 		std::vector<float> alphas;
  		std::vector<int> ids;
+        glm::vec3 hfovFocal;
 
 		void Init(std::vector<glm::vec3> positions)
 		{
 			size_t size = positions.size();
 			assert(size > 0);
 			
-			covarianceMats.assign(size, glm::identity<glm::mat3>());
+			scales.assign(size, glm::vec3(1.0f));
+			rots.assign(size, glm::vec4(0.0f));
 			cols.assign(size, glm::vec3(1.0f));
 			alphas.assign(size, 1.0f);
 			std::random_device rd;
@@ -286,10 +290,16 @@ namespace Rendering
 
 			for (int i = 0; i < positions.size(); ++i)
 			{
-				// std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
-				// covarianceMats[i][0].x = distributionCov(gen);
-				// covarianceMats[i][1].y = distributionCov(gen);
-				// covarianceMats[i][2].z = distributionCov(gen);
+				std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
+				// rots[i].x = distributionCov(gen);
+				// rots[i].y = distributionCov(gen);
+				// rots[i].z = distributionCov(gen);
+				// rots[i].w = distributionCov(gen);
+				//
+				// scales[i].x = distributionCov(gen);
+				// scales[i].y = distributionCov(gen);
+				// scales[i].z = distributionCov(gen);
+				//
 				pos.emplace_back(positions[i]);
 			}
 
@@ -306,17 +316,6 @@ namespace Rendering
 				return aView.z < bView.z;
 			});
 			
-		}
- 		
-
-		GaussianSplat GetGaussianAt(size_t idx) const
-		{
-			return GaussianSplat{
-				covarianceMats[idx],
-				pos[idx],
-				cols[idx],
-				alphas[idx]
-			};
 		}
 	};
 }

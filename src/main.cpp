@@ -12,8 +12,8 @@ double deltaTime;
 double previousTime;
 
 
-# include "Utility/UtilityInclude.hpp"
 #include "WindowAPI/WindowInclude.hpp"
+#include "Utility/UtilityInclude.hpp"
 #include "Systems/SystemsInclude.hpp"
 #include "Engine/EngineInclude.hpp"
 #include "UI/UI_Include.hpp"

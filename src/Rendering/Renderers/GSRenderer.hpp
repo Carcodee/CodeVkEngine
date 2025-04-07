@@ -9,6 +9,7 @@
 
 
 
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -34,13 +35,13 @@ namespace Rendering
         void CreateResources()
         {
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
-                "\\PointClouds\\goat_skull_ply_1\\Goat skull.ply";
+                "\\PointClouds\\train30000.ply";
             std::vector<glm::vec3> positions;
             RenderingResManager::GetInstance()->LoadPLY(path, positions);
             gaussians.Init(positions);
             gaussians.SortByDepth(splitMvp.view);
 
-            for (int i = 0; i < gaussians.pos.size(); ++i)
+            for (int i = 0; i < gaussians.pos.size()/10; ++i)
             {
                 ENGINE::DrawIndirectIndexedCmd indirectCmd{};
                 indirectCmd.firstIndex = 0;
@@ -87,7 +88,8 @@ namespace Rendering
             renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
             renderNode->BuildRenderGraphNode();
             
-            renderNode->descCache->SetBuffer("GSMats", gaussians.covarianceMats);
+            renderNode->descCache->SetBuffer("GSScale", gaussians.scales);
+            renderNode->descCache->SetBuffer("GSRot", gaussians.rots);
             renderNode->descCache->SetBuffer("GSPos", gaussians.pos);
             renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
             renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
@@ -144,7 +146,7 @@ namespace Rendering
                     renderGraph->currentFrameResources->commandBuffer->drawIndexedIndirect(
                         indirectBuffer->bufferHandle.get(),
                         sizeOffset,
-                        gaussians.pos.size(),
+                        gaussians.pos.size()/10,
                         stride);
                     
                 });

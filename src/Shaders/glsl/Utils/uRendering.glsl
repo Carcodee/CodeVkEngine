@@ -81,5 +81,43 @@ vec2 u_GetSpriteCoordInAtlas(int frameIndex, ivec2 spriteSizePx, int rows, int c
     
     return vec2(finalPos) / spriteSize;
 }
+mat3 u_GetCov3D(vec4 rots, vec3 scales, float scaleMod){
+
+    vec3 firstRow = vec3(
+    1.f - 2.f * (rots.z * rots.z + rots.w * rots.w),
+    2.f * (rots.y * rots.z - rots.x * rots.w),
+    2.f * (rots.y * rots.w + rots.x * rots.z)
+    );
+
+    vec3 secondRow = vec3(
+    2.f * (rots.y * rots.z + rots.x * rots.w),
+    1.f - 2.f * (rots.y * rots.y + rots.w * rots.w),
+    2.f * (rots.z * rots.w - rots.x * rots.y)
+    );
+
+    vec3 thirdRow = vec3(
+    2.f * (rots.y * rots.w - rots.x * rots.z),
+    2.f * (rots.z * rots.w + rots.x * rots.y),
+    1.f - 2.f * (rots.y * rots.y + rots.z * rots.z)
+    );
+
+
+    mat3 scaleMatrix = mat3(
+    scaleMod * scales.x, 0, 0,
+    0, scaleMod * scales.y, 0,
+    0, 0, scaleMod * scales.z
+    );
+
+    mat3 rotMatrix = mat3(
+    firstRow,
+    secondRow,
+    thirdRow
+    );
+
+    mat3 mMatrix = scaleMatrix * rotMatrix;
+
+    mat3 sigma = transpose(mMatrix) * mMatrix;
+    return sigma; 
+}
 
 #endif 
