@@ -103,7 +103,8 @@ namespace Rendering
 
 		void SetPerspective(float fov, float aspect, float znear, float zfar)
 		{
-			matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+			this->fov = fov;
+			matrices.perspective = glm::perspective(glm::radians(this->fov), aspect, znear, zfar);
 			matrices.perspective[1][1] *=-1;
 			
 			this->cameraProperties.fov = fov;
@@ -141,6 +142,7 @@ namespace Rendering
 		bool inverseY = false;
 		CameraMode currentMode;
 		float movementSpeed = 5.0f;
+		float fov;
 	};
 }
 #endif //CAMERA_HPP

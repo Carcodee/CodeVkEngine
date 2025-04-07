@@ -259,6 +259,7 @@ namespace Rendering
 
 	struct GaussianSplat
 	{
+		float x, y, z;
 		float nx, ny, nz;
 		float f_dc_0, f_dc_1, f_dc_2;
 		float opacity;
@@ -274,21 +275,18 @@ namespace Rendering
 		std::vector<glm::vec3> cols;
 		std::vector<float> alphas;
  		std::vector<int> ids;
-        glm::vec3 hfovFocal;
+        glm::vec3 hFovFocal;
 
-		void Init(std::vector<glm::vec3> positions)
+		void Init(std::vector<GaussianSplat> splats, float fov, float sWidth, float sHeight)
 		{
-			size_t size = positions.size();
+			size_t size = splats.size();
 			assert(size > 0);
 			
-			scales.assign(size, glm::vec3(1.0f));
-			rots.assign(size, glm::vec4(0.0f));
-			cols.assign(size, glm::vec3(1.0f));
-			alphas.assign(size, 1.0f);
+
 			std::random_device rd;
 			std::mt19937 gen(rd());
 
-			for (int i = 0; i < positions.size(); ++i)
+			for (int i = 0; i < splats.size(); ++i)
 			{
 				std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
 				// rots[i].x = distributionCov(gen);
@@ -300,10 +298,19 @@ namespace Rendering
 				// scales[i].y = distributionCov(gen);
 				// scales[i].z = distributionCov(gen);
 				//
-				pos.emplace_back(positions[i]);
+				pos.emplace_back(glm::vec3(splats[i].x ,splats[i].y , splats[i].z));
+				scales.emplace_back(glm::vec3(splats[i].scale_0 ,splats[i].scale_1 , splats[i].scale_2));
+				rots.emplace_back(glm::vec4(splats[i].rot_0 ,splats[i].rot_1 , splats[i].rot_2, splats[i].rot_3));
+				rots[i] = UTIL::NormalizeRotation(rots[i]);
+				cols.emplace_back(glm::vec3(splats[i].f_dc_0 ,splats[i].f_dc_1 , splats[i].f_dc_2));
+				alphas.emplace_back(splats[i].opacity);
+				alphas[i] = UTIL::Sigmoid(alphas[i]);
 			}
 
-
+			float hTanY = tan(glm::radians(fov)/ 2.0);
+			float hTanX = hTanY / sWidth * sHeight;
+			float focalZ = sHeight / (2 * hTanY);
+			hFovFocal = glm::vec3(hTanX, hTanY, focalZ);
 			
 		}
  		void SortByDepth(glm::mat4 view)

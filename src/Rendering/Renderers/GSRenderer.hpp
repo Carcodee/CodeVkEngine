@@ -10,6 +10,9 @@
 
 
 
+
+
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -35,13 +38,13 @@ namespace Rendering
         void CreateResources()
         {
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
-                "\\PointClouds\\train30000.ply";
-            std::vector<glm::vec3> positions;
-            RenderingResManager::GetInstance()->LoadPLY(path, positions);
-            gaussians.Init(positions);
+                "\\PointClouds\\train7000.ply";
+            std::vector<GaussianSplat> gaussianSplats;
+            RenderingResManager::GetInstance()->LoadGS(path, gaussianSplats);
+            gaussians.Init(gaussianSplats, camera.fov, 1024.0, 1024.0);
             gaussians.SortByDepth(splitMvp.view);
 
-            for (int i = 0; i < gaussians.pos.size()/10; ++i)
+            for (int i = 0; i < gaussians.pos.size(); ++i)
             {
                 ENGINE::DrawIndirectIndexedCmd indirectCmd{};
                 indirectCmd.firstIndex = 0;
@@ -93,6 +96,7 @@ namespace Rendering
             renderNode->descCache->SetBuffer("GSPos", gaussians.pos);
             renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
             renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
+            renderNode->descCache->SetBuffer("HFov", gaussians.hFovFocal);
             
         }
 
@@ -146,7 +150,7 @@ namespace Rendering
                     renderGraph->currentFrameResources->commandBuffer->drawIndexedIndirect(
                         indirectBuffer->bufferHandle.get(),
                         sizeOffset,
-                        gaussians.pos.size()/10,
+                        gaussians.pos.size(),
                         stride);
                     
                 });

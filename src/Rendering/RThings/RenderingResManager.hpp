@@ -10,6 +10,7 @@
 
 
 
+
 #ifndef ENGINERESMANAGER_HPP
 #define ENGINERESMANAGER_HPP
 
@@ -30,7 +31,51 @@ namespace Rendering
     		// Get mesh-style data from the object
     		positions = plyIn.getVertexPositions_glm();
     		// std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+    	}
+    	void LoadGS(std::string path, std::vector<GaussianSplat>& splats)
+    	{
+    		// Construct the data object by reading from file
+    		assert(std::filesystem::path(path).extension() == ".ply" && "Invalid PLY file");
+    		assert(std::filesystem::exists(path));
     		
+    		happly::PLYData plyIn(path);
+
+    		// Get mesh-style data from the object
+		    std::vector<float> xPos = plyIn.getElement("vertex").getProperty<float>("x");
+		    std::vector<float> yPos = plyIn.getElement("vertex").getProperty<float>("y");
+		    std::vector<float> zPos = plyIn.getElement("vertex").getProperty<float>("z");
+
+		    std::vector<float> nx = plyIn.getElement("vertex").getProperty<float>("nx");
+		    std::vector<float> ny = plyIn.getElement("vertex").getProperty<float>("ny");
+		    std::vector<float> nz = plyIn.getElement("vertex").getProperty<float>("nz");
+    		
+		    std::vector<float> fdc0 = plyIn.getElement("vertex").getProperty<float>("f_dc_0");
+		    std::vector<float> fdc1 = plyIn.getElement("vertex").getProperty<float>("f_dc_1");
+		    std::vector<float> fdc2 = plyIn.getElement("vertex").getProperty<float>("f_dc_2");
+    		
+		    std::vector<float> opacity = plyIn.getElement("vertex").getProperty<float>("opacity");
+    		
+		    std::vector<float> scale0 = plyIn.getElement("vertex").getProperty<float>("scale_0");
+		    std::vector<float> scale1 = plyIn.getElement("vertex").getProperty<float>("scale_1");
+		    std::vector<float> scale2 = plyIn.getElement("vertex").getProperty<float>("scale_2");
+
+		    std::vector<float> rot0 = plyIn.getElement("vertex").getProperty<float>("rot_0");
+		    std::vector<float> rot1 = plyIn.getElement("vertex").getProperty<float>("rot_1");
+		    std::vector<float> rot2 = plyIn.getElement("vertex").getProperty<float>("rot_2");
+		    std::vector<float> rot3 = plyIn.getElement("vertex").getProperty<float>("rot_3");
+
+		    for (int i = 0; i < xPos.size(); ++i)
+		    {
+			    splats.emplace_back(GaussianSplat{
+				    xPos[i], yPos[i], zPos[i],
+			    	nx[i], ny[i], nz[i],
+			    	fdc0[i], fdc1[i], fdc2[i],
+			    	opacity[i],
+				    scale0[i], scale1[i], scale2[i],
+			    	rot0[i], rot1[i], rot2[i], rot3[i]
+			    });
+		    }
+
     	}
     	void LoadGLTF(std::string path,Model& model, bool compactIndices)
     	{
