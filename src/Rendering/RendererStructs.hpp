@@ -129,6 +129,13 @@ namespace Rendering
 		glm::mat4 model = glm::mat4(1.0);
 		glm::mat4 projView = glm::mat4(1.0);
 	};
+
+	struct SplitMVP 
+	{
+		glm::mat4 model = glm::mat4(1.0);
+		glm::mat4 view = glm::mat4(1.0);
+		glm::mat4 proj = glm::mat4(1.0);
+	};
 	enum PintMode
 	{
 		P_OCCLUDER = 0,
@@ -260,8 +267,7 @@ namespace Rendering
 			glm::vec3 col;
 			float alpha;
 		};
-        std::vector<GS_Vertex3D> gsVertex3Ds;
- 		
+		std::vector<glm::vec3> pos;
 		std::vector<glm::mat3> covarianceMats;
 		std::vector<glm::vec3> cols;
 		std::vector<float> alphas;
@@ -271,13 +277,21 @@ namespace Rendering
 		{
 			size_t size = positions.size();
 			assert(size > 0);
-
+			
 			covarianceMats.assign(size, glm::identity<glm::mat3>());
 			cols.assign(size, glm::vec3(1.0f));
 			alphas.assign(size, 1.0f);
+			std::random_device rd;
+			std::mt19937 gen(rd());
+
 			for (int i = 0; i < positions.size(); ++i)
 			{
-				gsVertex3Ds.emplace_back(GS_Vertex3D{positions[i], i});
+
+				std::uniform_real_distribution<> distributionCov(-1.0f, 1.0f);
+				covarianceMats[i][0].x = distributionCov(gen);
+				covarianceMats[i][1].y = distributionCov(gen);
+				covarianceMats[i][2].z = distributionCov(gen);
+				pos.emplace_back(positions[i]);
 			}
 		}
 
@@ -285,7 +299,7 @@ namespace Rendering
 		{
 			return GaussianSplat{
 				covarianceMats[idx],
-				gsVertex3Ds[idx].gsPos,
+				pos[idx],
 				cols[idx],
 				alphas[idx]
 			};

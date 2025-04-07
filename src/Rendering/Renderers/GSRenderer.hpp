@@ -7,6 +7,7 @@
 
 
 
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -43,8 +44,12 @@ namespace Rendering
             
             gsPointsVertexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
                 "gsPointsVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
-                sizeof(GS_Vertex3D) * gaussians.gsVertex3Ds.size(),
-                gaussians.gsVertex3Ds.data())->deviceBuffer.get();
+                sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
+                Vertex2D::GetQuadVertices().data())->deviceBuffer.get();
+            gsPointsIndexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
+                "gsPointsIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
+                sizeof(Vertex2D) * Vertex2D::GetQuadIndices().size(),
+                Vertex2D::GetQuadIndices().data())->deviceBuffer.get();
         }
 
         void CreatePipelines()
@@ -57,10 +62,10 @@ namespace Rendering
             
             auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-            renderNode->SetVertexInput(GS_Vertex3D::GetVertexInput());
-            renderNode->SetPushConstantSize(sizeof(MvpPc));
-            renderNode->AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_OPAQUE);
-            renderNode->SetGraphicsPipelineConfigs({R_POINT, T_POINT_LIST});
+            renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+            renderNode->SetPushConstantSize(sizeof(SplitMVP));
+            renderNode->AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_ALPHA_BLEND);
+            renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
             renderNode->BuildRenderGraphNode();
             
         }
@@ -74,7 +79,8 @@ namespace Rendering
             auto taskOp = new std::function<void()>(
                 [this]
                 {
-                    
+
+                    splitMvp.model = glm::identity<glm::mat4>();
                     MoveCam();
                     auto renderNode = renderGraph->GetNode(passName);
                     renderNode->AddColorImageResource("DisplayAttachment", renderGraph->currentBackBuffer);
@@ -86,8 +92,9 @@ namespace Rendering
                     
                     auto& renderNode = renderGraph->renderNodes.at(passName);
                     renderNode->descCache->SetBuffer("GSMats", gaussians.covarianceMats);
-                    // renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
-                    // renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
+                    renderNode->descCache->SetBuffer("GSPos", gaussians.pos);
+                    renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
+                    renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
                     
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
@@ -100,15 +107,17 @@ namespace Rendering
                         renderGraph->GetNode(passName)->pipelineLayout.get(),
                         vk::ShaderStageFlagBits::eVertex |
                         vk::ShaderStageFlagBits::eFragment,
-                        0, sizeof(MvpPc), &mvpPc);
+                        0, sizeof(SplitMVP), &splitMvp);
                     
                     renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(
                         0, 1,
                         &gsPointsVertexBuffer->bufferHandle.get(),
                         &offset);
-                    
-                    renderGraph->currentFrameResources->commandBuffer->draw(
-                        gaussians.gsVertex3Ds.size(), 1, 0, 0);
+
+                    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(
+                        gsPointsIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                    renderGraph->currentFrameResources->commandBuffer->drawIndexed(
+                        Vertex2D::GetQuadIndices().size(), gaussians.pos.size(), 0, 0, 0);
                     
                     
                 });
@@ -145,7 +154,8 @@ namespace Rendering
             }
             
             camera.UpdateCam();
-            mvpPc.projView = camera.matrices.perspective * camera.matrices.view;
+            splitMvp.view = camera.matrices.view;
+            splitMvp.proj = camera.matrices.perspective;
         }
 
         void ReloadShaders() override
@@ -159,8 +169,9 @@ namespace Rendering
         RenderGraph* renderGraph;
         WindowProvider* windowProvider;
         ENGINE::Buffer* gsPointsVertexBuffer = nullptr;
+        ENGINE::Buffer* gsPointsIndexBuffer = nullptr;
         ArraysOfGaussians gaussians = {};
-        MvpPc mvpPc = {};
+        SplitMVP splitMvp = {};
         Camera camera = {glm::vec3(5.0f), Camera::CameraMode::E_FREE};
 
         ImageView* colAttachmentView;

@@ -12,6 +12,7 @@ double deltaTime;
 double previousTime;
 
 
+# include "Utility/UtilityInclude.hpp"
 #include "WindowAPI/WindowInclude.hpp"
 #include "Systems/SystemsInclude.hpp"
 #include "Engine/EngineInclude.hpp"
