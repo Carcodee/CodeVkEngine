@@ -39,6 +39,22 @@ namespace Rendering
             RenderingResManager::GetInstance()->LoadPLY(path, positions);
             gaussians.Init(positions);
             gaussians.SortByDepth(splitMvp.view);
+
+            for (int i = 0; i < gaussians.pos.size(); ++i)
+            {
+                ENGINE::DrawIndirectIndexedCmd indirectCmd{};
+                indirectCmd.firstIndex = 0;
+                indirectCmd.firstInstance = i;
+                indirectCmd.indexCount = Vertex2D::GetQuadIndices().size();
+                indirectCmd.instanceCount = 1;
+                indirectCmd.vertexOffset = 0;
+                indexedCmds.emplace_back(indirectCmd);
+            }
+            indirectBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(
+                "gsIndirectDraw", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+                vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+                sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data());
+    		
         }
 
         void CreateBuffers()
@@ -62,6 +78,7 @@ namespace Rendering
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
             
+            
             auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
@@ -69,6 +86,11 @@ namespace Rendering
             renderNode->AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_ALPHA_BLEND);
             renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
             renderNode->BuildRenderGraphNode();
+            
+            renderNode->descCache->SetBuffer("GSMats", gaussians.covarianceMats);
+            renderNode->descCache->SetBuffer("GSPos", gaussians.pos);
+            renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
+            renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
             
         }
 
@@ -93,10 +115,6 @@ namespace Rendering
 
                     
                     auto& renderNode = renderGraph->renderNodes.at(passName);
-                    renderNode->descCache->SetBuffer("GSMats", gaussians.covarianceMats);
-                    renderNode->descCache->SetBuffer("GSPos", gaussians.pos);
-                    renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
-                    renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
                     
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
@@ -118,9 +136,16 @@ namespace Rendering
 
                     renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(
                         gsPointsIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
-                    renderGraph->currentFrameResources->commandBuffer->drawIndexed(
-                        Vertex2D::GetQuadIndices().size(), gaussians.pos.size(), 0, 0, 0);
-                    
+                    // renderGraph->currentFrameResources->commandBuffer->drawIndexed(
+                    //     Vertex2D::GetQuadIndices().size(), gaussians.pos.size(), 0, 0, 0);
+
+                    vk::DeviceSize sizeOffset = 0;
+                    uint32_t stride = sizeof(DrawIndirectIndexedCmd);
+                    renderGraph->currentFrameResources->commandBuffer->drawIndexedIndirect(
+                        indirectBuffer->bufferHandle.get(),
+                        sizeOffset,
+                        gaussians.pos.size(),
+                        stride);
                     
                 });
             renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
@@ -176,7 +201,9 @@ namespace Rendering
         SplitMVP splitMvp = {};
         Camera camera = {glm::vec3(5.0f), Camera::CameraMode::E_FREE};
 
+        Buffer* indirectBuffer; 
         ImageView* colAttachmentView;
+        std::vector<DrawIndirectIndexedCmd> indexedCmds;
     };
 }
 

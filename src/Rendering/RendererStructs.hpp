@@ -101,23 +101,23 @@ namespace Rendering
 	
 	};
 
-	struct GS_Vertex3D
+	struct GS_Vertex
 	{
-	    glm::vec3 gsPos;
+	    glm::vec2 pos;
+	    glm::vec2 uv;
 		int id;
         
-		bool operator==(const GS_Vertex3D& other) const {
-			return gsPos == other.gsPos;
-		}
-
     	static ENGINE::VertexInput GetVertexInput()
 		{
             ENGINE::VertexInput vertexInput;
-            vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC3, 0, offsetof(GS_Vertex3D, gsPos), 0);
-            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex3D));
+            vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(GS_Vertex, pos), 0);
+            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex));
+            
+            vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(GS_Vertex, uv), 0);
+            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex));
 			
-            vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(GS_Vertex3D, id), 1);
-            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex3D));
+            vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(GS_Vertex, id), 1);
+            vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex));
 			return vertexInput;
  		}
 	
