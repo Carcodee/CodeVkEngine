@@ -888,6 +888,9 @@ namespace UI
                 GraphNode node;
                 switch (nodeType)
                 {
+                default:
+                    assert(false);
+                    break;
                 case N_ROOT_NODE:
                     builder
                         .AddOutput(resManager->NextWidgetID(), {"out_root_node", N_ROOT_NODE})
@@ -1015,6 +1018,7 @@ namespace UI
                     MultiOption multiOptionInfo("Shader Options", options, textInputs, {}, scrollables, {});
                     builder.AddMultiOption(resManager->NextWidgetID(), multiOptionInfo);
                     break;
+                    
                 }
 
                 std::function<void(GraphNode&)>* outputOp = nodeRegistry.GetCallback(nodeType, "output_c");

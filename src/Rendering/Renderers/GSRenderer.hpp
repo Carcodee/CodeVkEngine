@@ -1,6 +1,7 @@
 ﻿//
 
 
+
 // Created by carlo on 2025-03-26.
 //
 
@@ -37,6 +38,7 @@ namespace Rendering
             std::vector<glm::vec3> positions;
             RenderingResManager::GetInstance()->LoadPLY(path, positions);
             gaussians.Init(positions);
+            gaussians.SortByDepth(splitMvp.view);
         }
 
         void CreateBuffers()
@@ -79,9 +81,9 @@ namespace Rendering
             auto taskOp = new std::function<void()>(
                 [this]
                 {
-
-                    splitMvp.model = glm::identity<glm::mat4>();
                     MoveCam();
+                    splitMvp.model = glm::identity<glm::mat4>();
+                    
                     auto renderNode = renderGraph->GetNode(passName);
                     renderNode->AddColorImageResource("DisplayAttachment", renderGraph->currentBackBuffer);
                 });

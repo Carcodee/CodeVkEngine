@@ -286,14 +286,28 @@ namespace Rendering
 
 			for (int i = 0; i < positions.size(); ++i)
 			{
-
-				std::uniform_real_distribution<> distributionCov(-1.0f, 1.0f);
-				covarianceMats[i][0].x = distributionCov(gen);
-				covarianceMats[i][1].y = distributionCov(gen);
-				covarianceMats[i][2].z = distributionCov(gen);
+				// std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
+				// covarianceMats[i][0].x = distributionCov(gen);
+				// covarianceMats[i][1].y = distributionCov(gen);
+				// covarianceMats[i][2].z = distributionCov(gen);
 				pos.emplace_back(positions[i]);
 			}
+
+
+			
 		}
+ 		void SortByDepth(glm::mat4 view)
+		{
+			
+			std::sort(pos.begin(), pos.end(), [view](const glm::vec3& a, const glm::vec3& b)
+			{
+				glm::vec4 aView = view * glm::vec4(a, 1.0);
+				glm::vec4 bView = view * glm::vec4(b, 1.0);
+				return aView.z < bView.z;
+			});
+			
+		}
+ 		
 
 		GaussianSplat GetGaussianAt(size_t idx) const
 		{
