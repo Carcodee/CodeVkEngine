@@ -82,7 +82,6 @@ namespace Rendering
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
             
-            
             auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
