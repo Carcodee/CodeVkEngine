@@ -75,7 +75,6 @@ namespace Rendering
 			    	rot0[i], rot1[i], rot2[i], rot3[i]
 			    });
 		    }
-
     	}
     	void LoadGLTF(std::string path,Model& model, bool compactIndices)
     	{

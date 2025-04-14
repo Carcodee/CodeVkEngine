@@ -13,6 +13,9 @@
 
 
 
+
+
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -38,17 +41,28 @@ namespace Rendering
         void CreateResources()
         {
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
-                "\\PointClouds\\train7000.ply";
+                "\\PointClouds\\Truck\\point_cloud.ply";
             std::vector<GaussianSplat> gaussianSplats;
+            // for (auto& file : std::filesystem::directory_iterator(path))
+            // {
+            // for (auto& value : std::filesystem::directory_iterator(file))
+            // {
+            //     RenderingResManager::GetInstance()->LoadGS(value.path().string(), gaussianSplats);
+            //     break;
+            // }
+            //      
+            // }
             RenderingResManager::GetInstance()->LoadGS(path, gaussianSplats);
-            gaussians.Init(gaussianSplats, camera.fov, 1024.0, 1024.0);
-            gaussians.SortByDepth(splitMvp.view);
+            
+            gaussians.Init(gaussianSplats, camera.cameraProperties.fov, 1024.0, 1024.0);
 
+
+            auto indicesSorted = gaussians.SortByDepth(splitMvp.view);
             for (int i = 0; i < gaussians.pos.size(); ++i)
             {
                 ENGINE::DrawIndirectIndexedCmd indirectCmd{};
                 indirectCmd.firstIndex = 0;
-                indirectCmd.firstInstance = i;
+                indirectCmd.firstInstance = indicesSorted[i];
                 indirectCmd.indexCount = Vertex2D::GetQuadIndices().size();
                 indirectCmd.instanceCount = 1;
                 indirectCmd.vertexOffset = 0;
@@ -57,8 +71,24 @@ namespace Rendering
             indirectBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(
                 "gsIndirectDraw", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
                 vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-                sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data());
-    		
+                sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data()); 
+        }
+        void ReSort()
+        {
+            auto indicesSorted = gaussians.SortByDepth(splitMvp.view);
+            indexedCmds.clear();
+            for (int i = 0; i < gaussians.pos.size(); ++i)
+            {
+                ENGINE::DrawIndirectIndexedCmd indirectCmd{};
+                indirectCmd.firstIndex = 0;
+                indirectCmd.firstInstance = indicesSorted[i];
+                indirectCmd.indexCount = Vertex2D::GetQuadIndices().size();
+                indirectCmd.instanceCount = 1;
+                indirectCmd.vertexOffset = 0;
+                indexedCmds.emplace_back(indirectCmd);
+            }
+            indirectBuffer = ENGINE::ResourcesManager::GetInstance()->SetBuffer(
+                "gsIndirectDraw", sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data()); 
         }
 
         void CreateBuffers()

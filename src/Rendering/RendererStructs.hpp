@@ -3,6 +3,8 @@
 //
 
 
+
+
 #ifndef RENDERINGSTRUCTS_HPP
 #define RENDERINGSTRUCTS_HPP
 
@@ -298,13 +300,12 @@ namespace Rendering
 				// scales[i].y = distributionCov(gen);
 				// scales[i].z = distributionCov(gen);
 				//
-				pos.emplace_back(glm::vec3(splats[i].x ,splats[i].y , splats[i].z));
-				scales.emplace_back(glm::vec3(splats[i].scale_0 ,splats[i].scale_1 , splats[i].scale_2));
-				rots.emplace_back(glm::vec4(splats[i].rot_0 ,splats[i].rot_1 , splats[i].rot_2, splats[i].rot_3));
-				rots[i] = UTIL::NormalizeRotation(rots[i]);
-				cols.emplace_back(glm::vec3(splats[i].f_dc_0 ,splats[i].f_dc_1 , splats[i].f_dc_2));
-				alphas.emplace_back(splats[i].opacity);
-				alphas[i] = UTIL::Sigmoid(alphas[i]);
+				pos.emplace_back(-glm::vec3(splats[i].x ,splats[i].y , splats[i].z));
+				scales.emplace_back(UTIL::M_Exp(glm::vec3(splats[i].scale_0,splats[i].scale_1 , splats[i].scale_2)));
+				rots.emplace_back(UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0 ,splats[i].rot_1 , splats[i].rot_2, splats[i].rot_3)));
+				glm::vec3 sh = glm::vec3(splats[i].f_dc_0 ,splats[i].f_dc_1 , splats[i].f_dc_2);
+				cols.emplace_back(UTIL::M_SH2RGB(sh));
+				alphas.emplace_back(UTIL::M_Sigmoid(splats[i].opacity));
 			}
 
 			float hTanY = tan(glm::radians(fov)/ 2.0);
@@ -313,16 +314,18 @@ namespace Rendering
 			hFovFocal = glm::vec3(hTanX, hTanY, focalZ);
 			
 		}
- 		void SortByDepth(glm::mat4 view)
+ 		std::vector<uint32_t> SortByDepth(glm::mat4 view)
 		{
-			
-			std::sort(pos.begin(), pos.end(), [view](const glm::vec3& a, const glm::vec3& b)
-			{
-				glm::vec4 aView = view * glm::vec4(a, 1.0);
-				glm::vec4 bView = view * glm::vec4(b, 1.0);
-				return aView.z < bView.z;
+			std::vector<uint32_t> indices(pos.size());
+			std::iota(indices.begin(), indices.end(), 0);
+
+			std::sort(indices.begin(), indices.end(), [&](uint32_t a, uint32_t b) {
+				float za = (view * glm::vec4(pos[a], 1.0f)).z;
+				float zb = (view * glm::vec4(pos[b], 1.0f)).z;
+				return za < zb;
 			});
-			
+
+			return indices;
 		}
 	};
 }

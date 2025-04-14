@@ -67,6 +67,10 @@ namespace Rendering
 		    {
 			    this->flatRenderer = dynamic_cast<FlatRenderer*>(renderers.at("FlatRenderer").get());
 		    }
+		    if (renderers.contains("GSRenderer"))
+		    {
+			    this->gsRenderer = dynamic_cast<GSRenderer*>(renderers.at("GSRenderer").get());
+		    }
             this->core =core;
             this->windowProvider= windowProvider;
 
@@ -161,6 +165,10 @@ namespace Rendering
 	    		RCascadesInfo();
 	    		AnimatorInfo();
 	    	}
+    		if (gsRenderer)
+    		{
+    			GSRendererInfo();
+    		}
 	    	
             RenderGraphProfiler();
             
@@ -596,6 +604,54 @@ namespace Rendering
 	    	
 			ImGui::End();	
 	    }
+
+	    void GSRendererInfo()
+        {
+            if (!gsRenderer) return; // Safety check
+
+            ImGui::Begin("GS Renderer Info");
+
+            ImGui::SeparatorText("Gaussian Info");
+            int gaussianCount = gsRenderer->gaussians.pos.size(); // Assuming one pos per gaussian
+            ImGui::Text("Gaussian Count: %d", gaussianCount);
+            int drawCount = gsRenderer->indexedCmds.size();
+            ImGui::Text("Indirect Draw Count: %d", drawCount);
+
+            ImGui::SeparatorText("Camera Info");
+            // Display camera position
+            std::string cameraPos = "Position: ("
+                + std::to_string(gsRenderer->camera.position.x) + ", "
+                + std::to_string(gsRenderer->camera.position.y) + ", "
+                + std::to_string(gsRenderer->camera.position.z) + ")";
+            ImGui::Text("%s", cameraPos.c_str());
+
+            // Display camera orientation vectors
+             std::string cameraForward = "Forward: ("
+                + std::to_string(gsRenderer->camera.forward.x) + ", "
+                + std::to_string(gsRenderer->camera.forward.y) + ", "
+                + std::to_string(gsRenderer->camera.forward.z) + ")";
+            ImGui::Text("%s", cameraForward.c_str());
+            // Add Right and Up vectors if needed
+
+            // Display camera speed
+            ImGui::Text("Movement Speed: %.2f", gsRenderer->camera.movementSpeed);
+    		if (ImGui::Button("Update Sort"))
+    		{
+    			gsRenderer->ReSort();
+    		}
+
+            // Add other controls as needed, e.g., FoV, sorting controls (if implemented)
+            // static float fov = gsRenderer->camera.fov;
+            // if(ImGui::SliderFloat("Camera FoV", &fov, 30.0f, 120.0f)) {
+
+            // If sorting is expensive, maybe add a button to trigger it manually?
+            // if (ImGui::Button("Sort Gaussians by Depth")) {
+            //      gsRenderer->gaussians.SortByDepth(gsRenderer->splitMvp.view);
+            // }
+
+            ImGui::End();
+        }
+	
     	void AddImage(std::string name, ImageView* imageView)
 	    {
 		    if (name == "default_storage" || name == "default_tex") { return; }
@@ -711,6 +767,7 @@ namespace Rendering
 	    std::map<std::string, std::unique_ptr<BaseRenderer>>* renderers = nullptr;
         ClusterRenderer* clusterRenderer = nullptr;
         FlatRenderer* flatRenderer = nullptr;
+        GSRenderer* gsRenderer = nullptr;
         ImGuiUtils::ProfilersWindow profilersWindow{};
 	    UI::RG_NodeEditor nodeEditor;
     	

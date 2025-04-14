@@ -119,5 +119,31 @@ mat3 u_GetCov3D(vec4 rots, vec3 scales, float scaleMod){
     mat3 sigma = transpose(mMatrix) * mMatrix;
     return sigma; 
 }
+vec3 u_GetCov2D(vec4 mean_view, float focal_x, float focal_y, float tan_fovx, float tan_fovy, mat3 cov3D, mat4 viewmatrix)
+{
+    vec4 t = mean_view;
+    // why need this? Try remove this later
+    float limx = 1.3f * tan_fovx;
+    float limy = 1.3f * tan_fovy;
+    float txtz = t.x / t.z;
+    float tytz = t.y / t.z;
+    t.x = min(limx, max(-limx, txtz)) * t.z;
+    t.y = min(limy, max(-limy, tytz)) * t.z;
+
+    mat3 J = mat3(
+    focal_x / t.z, 0.0f, -(focal_x * t.x) / (t.z * t.z),
+    0.0f, focal_y / t.z, -(focal_y * t.y) / (t.z * t.z),
+    0, 0, 0
+    );
+    mat3 W = transpose(mat3(viewmatrix));
+    mat3 T = W * J;
+
+    mat3 cov = transpose(T) * transpose(cov3D) * T;
+    // Apply low-pass filter: every Gaussian should be at least
+    // one pixel wide/high. Discard 3rd row and column.
+    cov[0][0] += 0.3f;
+    cov[1][1] += 0.3f;
+    return vec3(cov[0][0], cov[0][1], cov[1][1]);
+}
 
 #endif 
