@@ -16,6 +16,7 @@
 
 
 
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -41,7 +42,7 @@ namespace Rendering
         void CreateResources()
         {
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
-                "\\PointClouds\\Train\\train30000.ply";
+                "\\PointClouds\\Truck\\point_cloud.ply";
             std::vector<GaussianSplat> gaussianSplats;
             // for (auto& file : std::filesystem::directory_iterator(path))
             // {
@@ -106,6 +107,18 @@ namespace Rendering
 
         void CreatePipelines()
         {
+            // auto histogramNode = RenderingResManager::GetInstance()->GetTemplateComputeNode(
+            //     "histogramPass",
+            //     SYSTEMS::OS::GetInstance()->shadersPath.string() +
+            //     "\\glsl\\ThirdParty\\multi_radixsort_histograms.comp");
+            // histogramNode->SetPushConstantSize(sizeof(PcHistogram));
+            //
+            // auto radixSortNode = RenderingResManager::GetInstance()->GetTemplateComputeNode(
+            //     "radixSortPass",
+            //     SYSTEMS::OS::GetInstance()->shadersPath.string() +
+            //     "\\glsl\\ThirdParty\\multi_radixsort.comp");
+            // histogramNode->SetPushConstantSize(sizeof(PcRadixSort));
+            
             
             AttachmentInfo colInfo = GetColorAttachmentInfo(
                 glm::vec4(0.0f), core->swapchainRef->GetFormat());
@@ -135,6 +148,55 @@ namespace Rendering
 
         void SetRenderOperation() override
         {
+            // auto hTaskOp = new std::function<void()>(
+            //     [this]
+            //     {
+            //         MoveCam();
+            //     });
+            // auto hRenderOp = new std::function<void()>(
+            //     [this]()
+            //     {
+            //         auto& renderNode = renderGraph->renderNodes.at("histogramPass");
+            //
+            //         renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
+            //             renderNode->pipelineLayout.get(), 0,
+            //             1,
+            //             &renderNode->descCache->dstSet, 0, nullptr);
+            //         renderGraph->currentFrameResources->commandBuffer->bindPipeline(
+            //             renderNode->pipelineType, renderNode->pipeline.get());
+            //         vk::DeviceSize offset = 0;
+            //
+            //         renderGraph->currentFrameResources->commandBuffer->pushConstants(
+            //             renderGraph->GetNode(passName)->pipelineLayout.get(),
+            //             vk::ShaderStageFlagBits::eVertex |
+            //             vk::ShaderStageFlagBits::eFragment,
+            //             0, sizeof(PcHistogram), &pcHistogram);
+            //     });
+            //
+            // renderGraph->GetNode("histogramPass")->AddTask(hTaskOp);
+            // renderGraph->GetNode("histogramPass")->SetRenderOperation(hRenderOp);
+            //
+            // auto rRenderOp = new std::function<void()>(
+            //     [this]()
+            //     {
+            //         auto& renderNode = renderGraph->renderNodes.at("radixSortPass");
+            //         
+            //         renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
+            //                                          renderNode->pipelineLayout.get(), 0,
+            //                                          1,
+            //                                          &renderNode->descCache->dstSet, 0, nullptr);
+            //         renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+            //         vk::DeviceSize offset = 0;
+            //         
+            //         renderGraph->currentFrameResources->commandBuffer->pushConstants(
+            //             renderGraph->GetNode(passName)->pipelineLayout.get(),
+            //             vk::ShaderStageFlagBits::eVertex |
+            //             vk::ShaderStageFlagBits::eFragment,
+            //             0, sizeof(PcRadixSort), &pcRadixSort);
+            //     });
+            //
+            // renderGraph->GetNode("radixSortPass")->SetRenderOperation(rRenderOp);
+            
             auto taskOp = new std::function<void()>(
                 [this]
                 {
@@ -147,9 +209,11 @@ namespace Rendering
             auto renderOp = new std::function<void()>(
                 [this]()
                 {
-
                     
                     auto& renderNode = renderGraph->renderNodes.at(passName);
+
+
+                    renderNode->descCache->SetBuffer("GSConfigs", gsConfigsPc);
                     
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
                                                      renderNode->pipelineLayout.get(), 0,
@@ -217,7 +281,12 @@ namespace Rendering
             
             camera.UpdateCam();
             splitMvp.view = camera.matrices.view;
+
             splitMvp.proj = camera.matrices.perspective;
+            splitMvp.proj[0][1] *= -1.0f;
+            splitMvp.proj[2][1] *= -1.0f;
+            splitMvp.proj[3][1] *= -1.0f;
+            
         }
 
         void ReloadShaders() override
@@ -238,7 +307,13 @@ namespace Rendering
 
         Buffer* indirectBuffer; 
         ImageView* colAttachmentView;
+        std::vector<glm::vec3> posSorted;
         std::vector<DrawIndirectIndexedCmd> indexedCmds;
+
+        GSConfigsPc gsConfigsPc = {};
+        PcHistogram pcHistogram = {};
+        PcRadixSort pcRadixSort = {};
+        
     };
 }
 

@@ -302,7 +302,7 @@ namespace Rendering
 				//
 				pos.emplace_back(-glm::vec3(splats[i].x ,splats[i].y , splats[i].z));
 				scales.emplace_back(UTIL::M_Exp(glm::vec3(splats[i].scale_0,splats[i].scale_1 , splats[i].scale_2)));
-				rots.emplace_back(UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0 ,splats[i].rot_1 , splats[i].rot_2, splats[i].rot_3)));
+				rots.emplace_back(-UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0 ,splats[i].rot_1 , splats[i].rot_2, splats[i].rot_3)));
 				glm::vec3 sh = glm::vec3(splats[i].f_dc_0 ,splats[i].f_dc_1 , splats[i].f_dc_2);
 				cols.emplace_back(UTIL::M_SH2RGB(sh));
 				alphas.emplace_back(UTIL::M_Sigmoid(splats[i].opacity));
@@ -327,6 +327,24 @@ namespace Rendering
 
 			return indices;
 		}
+	};
+	struct GSConfigsPc
+	{
+		float scaleMod = 1.0;
+	};
+
+	struct PcHistogram {
+		uint32_t g_num_elements; // == NUM_ELEMENTS
+		uint32_t g_shift; // (*)
+		uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
+		uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
+	};
+
+	struct PcRadixSort {
+		uint32_t g_num_elements; // == NUM_ELEMENTS
+		uint32_t g_shift; // (*)
+		uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
+		uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
 	};
 }
 

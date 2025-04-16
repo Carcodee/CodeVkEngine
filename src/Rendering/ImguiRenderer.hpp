@@ -607,49 +607,36 @@ namespace Rendering
 
 	    void GSRendererInfo()
         {
-            if (!gsRenderer) return; // Safety check
+    		if (!gsRenderer) return;
 
-            ImGui::Begin("GS Renderer Info");
+    		ImGui::Begin("GS Renderer Info");
 
-            ImGui::SeparatorText("Gaussian Info");
-            int gaussianCount = gsRenderer->gaussians.pos.size(); // Assuming one pos per gaussian
-            ImGui::Text("Gaussian Count: %d", gaussianCount);
-            int drawCount = gsRenderer->indexedCmds.size();
-            ImGui::Text("Indirect Draw Count: %d", drawCount);
+    		ImGui::SeparatorText("Gaussian Info");
+    		int gaussianCount = gsRenderer->gaussians.pos.size();
+    		ImGui::Text("Gaussian Count: %d", gaussianCount);
+    		int drawCount = gsRenderer->indexedCmds.size();
+    		ImGui::Text("Indirect Draw Count: %d", drawCount);
 
-            ImGui::SeparatorText("Camera Info");
-            // Display camera position
-            std::string cameraPos = "Position: ("
-                + std::to_string(gsRenderer->camera.position.x) + ", "
-                + std::to_string(gsRenderer->camera.position.y) + ", "
-                + std::to_string(gsRenderer->camera.position.z) + ")";
-            ImGui::Text("%s", cameraPos.c_str());
+    		ImGui::SeparatorText("GS Configs");
 
-            // Display camera orientation vectors
-             std::string cameraForward = "Forward: ("
-                + std::to_string(gsRenderer->camera.forward.x) + ", "
-                + std::to_string(gsRenderer->camera.forward.y) + ", "
-                + std::to_string(gsRenderer->camera.forward.z) + ")";
-            ImGui::Text("%s", cameraForward.c_str());
-            // Add Right and Up vectors if needed
+    		// Bind to GSConfigsPc fields
+    		ImGui::SliderFloat("Global Scale", &gsRenderer->gsConfigsPc.scaleMod, 0.01f, 10.0f);
 
-            // Display camera speed
-            ImGui::Text("Movement Speed: %.2f", gsRenderer->camera.movementSpeed);
-    		if (ImGui::Button("Update Sort"))
-    		{
+    		// static const char* renderModes[] = {"Default", "Debug Ellipsoids", "BBox Only"};
+    		// ImGui::Combo("Render Mode", &gsRenderer->gsConfigsPc.renderMode, renderModes, IM_ARRAYSIZE(renderModes));
+
+    		ImGui::SeparatorText("Camera Info");
+
+    		const auto& cam = gsRenderer->camera;
+    		ImGui::Text("Position: (%.2f, %.2f, %.2f)", cam.position.x, cam.position.y, cam.position.z);
+    		ImGui::Text("Forward: (%.2f, %.2f, %.2f)", cam.forward.x, cam.forward.y, cam.forward.z);
+    		ImGui::Text("Movement Speed: %.2f", cam.movementSpeed);
+
+    		if (ImGui::Button("Update Sort")) {
     			gsRenderer->ReSort();
     		}
 
-            // Add other controls as needed, e.g., FoV, sorting controls (if implemented)
-            // static float fov = gsRenderer->camera.fov;
-            // if(ImGui::SliderFloat("Camera FoV", &fov, 30.0f, 120.0f)) {
-
-            // If sorting is expensive, maybe add a button to trigger it manually?
-            // if (ImGui::Button("Sort Gaussians by Depth")) {
-            //      gsRenderer->gaussians.SortByDepth(gsRenderer->splitMvp.view);
-            // }
-
-            ImGui::End();
+    		ImGui::End();
         }
 	
     	void AddImage(std::string name, ImageView* imageView)

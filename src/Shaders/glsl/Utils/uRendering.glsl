@@ -81,45 +81,48 @@ vec2 u_GetSpriteCoordInAtlas(int frameIndex, ivec2 spriteSizePx, int rows, int c
     
     return vec2(finalPos) / spriteSize;
 }
+mat3 u_RotationFromQuaternion(vec4 q) {
+    float qx = q.y;
+    float qy = q.z;
+    float qz = q.w;
+    float qw = q.x;
+
+    float qx2 = qx * qx;
+    float qy2 = qy * qy;
+    float qz2 = qz * qz;
+
+    mat3 rotationMatrix;
+    rotationMatrix[0][0] = 1 - 2 * qy2 - 2 * qz2;
+    rotationMatrix[0][1] = 2 * qx * qy - 2 * qz * qw;
+    rotationMatrix[0][2] = 2 * qx * qz + 2 * qy * qw;
+
+    rotationMatrix[1][0] = 2 * qx * qy + 2 * qz * qw;
+    rotationMatrix[1][1] = 1 - 2 * qx2 - 2 * qz2;
+    rotationMatrix[1][2] = 2 * qy * qz - 2 * qx * qw;
+
+    rotationMatrix[2][0] = 2 * qx * qz - 2 * qy * qw;
+    rotationMatrix[2][1] = 2 * qy * qz + 2 * qx * qw;
+    rotationMatrix[2][2] = 1 - 2 * qx2 - 2 * qy2;
+
+    return rotationMatrix;
+}
 mat3 u_GetCov3D(vec4 rots, vec3 scales, float scaleMod){
 
-    vec3 firstRow = vec3(
-    1.f - 2.f * (rots.z * rots.z + rots.w * rots.w),
-    2.f * (rots.y * rots.z - rots.x * rots.w),
-    2.f * (rots.y * rots.w + rots.x * rots.z)
-    );
-
-    vec3 secondRow = vec3(
-    2.f * (rots.y * rots.z + rots.x * rots.w),
-    1.f - 2.f * (rots.y * rots.y + rots.w * rots.w),
-    2.f * (rots.z * rots.w - rots.x * rots.y)
-    );
-
-    vec3 thirdRow = vec3(
-    2.f * (rots.y * rots.w - rots.x * rots.z),
-    2.f * (rots.z * rots.w + rots.x * rots.y),
-    1.f - 2.f * (rots.y * rots.y + rots.z * rots.z)
-    );
-
-
+    
     mat3 scaleMatrix = mat3(
     scaleMod * scales.x, 0, 0,
     0, scaleMod * scales.y, 0,
-    0, 0, scaleMod * scales.z
+    0, 0, scaleMod * scales.z 
     );
-
-    mat3 rotMatrix = mat3(
-    firstRow,
-    secondRow,
-    thirdRow
-    );
+    mat3 rotMatrix = u_RotationFromQuaternion(rots);
 
     mat3 mMatrix = scaleMatrix * rotMatrix;
 
     mat3 sigma = transpose(mMatrix) * mMatrix;
+    
     return sigma; 
 }
-vec3 u_GetCov2D(vec4 mean_view, float focal_x, float focal_y, float tan_fovx, float tan_fovy, mat3 cov3D, mat4 viewmatrix)
+mat2 u_GetCov2D(vec4 mean_view, float focal_x, float focal_y, float tan_fovx, float tan_fovy, mat3 cov3D, mat4 viewmatrix)
 {
     vec4 t = mean_view;
     // why need this? Try remove this later
@@ -143,7 +146,7 @@ vec3 u_GetCov2D(vec4 mean_view, float focal_x, float focal_y, float tan_fovx, fl
     // one pixel wide/high. Discard 3rd row and column.
     cov[0][0] += 0.3f;
     cov[1][1] += 0.3f;
-    return vec3(cov[0][0], cov[0][1], cov[1][1]);
+    return mat2(cov);
 }
 
 #endif 
