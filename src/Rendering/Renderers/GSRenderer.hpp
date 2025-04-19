@@ -139,6 +139,7 @@ namespace Rendering
             renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
             renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
             renderNode->descCache->SetBuffer("HFov", gaussians.hFovFocal);
+            renderNode->descCache->SetBuffer("GSShs", gaussians.shCoefs);
             
         }
 
@@ -260,11 +261,11 @@ namespace Rendering
             if (glfwGetKey(windowProvider->window, GLFW_KEY_A)) { input += glm::vec2(-1.0f, 0.0f); }
             if (glfwGetKey(windowProvider->window, GLFW_KEY_LEFT_SHIFT))
             {
-                camera.movementSpeed = 40;
+                // camera.movementSpeed = 40;
             }
             else
             {
-                camera.movementSpeed = 5;
+                // camera.movementSpeed = 5;
             }
             input = glm::clamp(input, glm::vec2(-1.0, -1.0), glm::vec2(1.0, 1.0));
             glm::vec2 mouseInput = glm::vec2(-ImGui::GetMousePos().x, ImGui::GetMousePos().y);

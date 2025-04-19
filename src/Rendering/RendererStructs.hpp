@@ -267,6 +267,8 @@ namespace Rendering
 		float opacity;
 		float scale_0, scale_1, scale_2;
 		float rot_0, rot_1, rot_2, rot_3;
+		
+		float f_rest[45];
 	};
  	struct ArraysOfGaussians
 	{
@@ -276,6 +278,7 @@ namespace Rendering
  		std::vector<glm::vec4> rots;
 		std::vector<glm::vec3> cols;
 		std::vector<float> alphas;
+		std::vector<glm::vec3> shCoefs;
  		std::vector<int> ids;
         glm::vec3 hFovFocal;
 
@@ -290,7 +293,7 @@ namespace Rendering
 
 			for (int i = 0; i < splats.size(); ++i)
 			{
-				std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
+				// std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
 				// rots[i].x = distributionCov(gen);
 				// rots[i].y = distributionCov(gen);
 				// rots[i].z = distributionCov(gen);
@@ -304,8 +307,13 @@ namespace Rendering
 				scales.emplace_back(UTIL::M_Exp(glm::vec3(splats[i].scale_0,splats[i].scale_1 , splats[i].scale_2)));
 				rots.emplace_back(-UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0 ,splats[i].rot_1 , splats[i].rot_2, splats[i].rot_3)));
 				glm::vec3 sh = glm::vec3(splats[i].f_dc_0 ,splats[i].f_dc_1 , splats[i].f_dc_2);
-				cols.emplace_back(UTIL::M_SH2RGB(sh));
+				cols.emplace_back(sh);
 				alphas.emplace_back(UTIL::M_Sigmoid(splats[i].opacity));
+				for (int j = 0; j < 15; j+=3)
+				{
+					glm::vec3 coeff = glm::vec3(splats[i].f_rest[j * 3 + 0], splats[i].f_rest[j * 3 + 1], splats[i].f_rest[j * 3 + 2]);
+					shCoefs.emplace_back(coeff);
+				}
 			}
 
 			float hTanY = tan(glm::radians(fov)/ 2.0);

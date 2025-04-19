@@ -4,6 +4,8 @@
 #extension GL_EXT_scalar_block_layout : enable 
 
 #include "../Utils/uRendering.glsl"
+#include "../Utils/uMath.glsl"
+
 
 layout(set = 0, binding = 0, scalar) buffer GSScale {
     vec3 gsScale[];
@@ -29,6 +31,10 @@ layout(set = 0, binding = 5, scalar) uniform HFov{
 layout(set = 0, binding = 6, scalar) uniform GSConfigs{
     float scaleMod;
 }gsConfigs;
+
+layout(set = 0, binding = 7, scalar) buffer GSShs {
+    vec3 gsShs[];
+};
 
 
 layout(push_constant) uniform PushConstants {
@@ -57,6 +63,7 @@ void main() {
 //    }
     textCoord = uv;
     
+    vec3 camPos = vec3(inverse(pc.view)[3]);
     vec3 pCloudPos = gsPos[id];
     vec3 scaleVal = abs(gsScale[id]);
     vec4 rotVal = gsRot[id];
@@ -110,9 +117,23 @@ void main() {
 
     gl_Position = screenPos;
     
-    alpha = gsAlphas[id];
-    col = gsCols[id];
     
-
+    
+    vec3 currShCoeffs[MAX_SH_COEFFS];
+    currShCoeffs[0] = gsCols[id];
+    vec3 newCol = currShCoeffs[0];
+    int idx = 1;
+    for(int i = id; i < id + 15; i++){
+        currShCoeffs[idx] = gsShs[i];
+        idx++;
+    }
+    vec3 rayDir = normalize(pCloudPos - camPos);
+    vec3 fullCol = u_compute_sh(rayDir,currShCoeffs, 3);    
+    
+    
+    alpha = gsAlphas[id];
+    
+    
+    col = fullCol;
     
 }

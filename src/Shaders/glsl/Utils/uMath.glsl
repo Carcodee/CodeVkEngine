@@ -3,7 +3,28 @@
 #define PI 3.1415
 #define INVERSE_PI 3.1415
 
+#define MAGIC 0x4d415449u
 
+#define MAX_SH_COEFFS 16
+
+const float SH_C0 = 0.28209479177387814f;
+const float SH_C1 = 0.4886025119029199f;
+const float SH_C2[] = {
+1.0925484305920792f,
+-1.0925484305920792f,
+0.31539156525252005f,
+-1.0925484305920792f,
+0.5462742152960396f
+};
+const float SH_C3[] = {
+-0.5900435899266435f,
+2.890611442640554f,
+-0.4570457994644658f,
+0.3731763325901154f,
+-0.4570457994644658f,
+1.445305721320277f,
+-0.5900435899266435f
+};
 
 float AbsCosThetaWs(vec3 v1, vec3 v2){
     return abs(dot(v1, v2));
@@ -193,4 +214,36 @@ float u_SDF_Sphere(vec3 spherePos, vec3 pos){
 }
 
 
+vec3 u_compute_sh(vec3 rayDir,in vec3 shCoef[MAX_SH_COEFFS], int bandSize) {
+    float x = rayDir.x, y = rayDir.y, z = rayDir.z;
+
+    vec3 c = SH_C0 * shCoef[0];
+
+    c -= SH_C1 * shCoef[1] * y;
+    c += SH_C1 * shCoef[2] * z;
+    c -= SH_C1 * shCoef[3] * x;
+    if (bandSize >= 2){
+        c += SH_C2[0] * shCoef[4] * x * y;
+        c += SH_C2[1] * shCoef[5] * y * z;
+        c += SH_C2[2] * shCoef[6] * (2.0 * z * z - x * x - y * y);
+        c += SH_C2[3] * shCoef[7] * z * x;
+        c += SH_C2[4] * shCoef[8] * (x * x - y * y);
+        if(bandSize >= 3){
+            c +=SH_C3[0] * shCoef[9] * (3.0 * x * x - y * y) * y;
+            c +=SH_C3[1] * shCoef[10] * x * y * z;
+            c +=SH_C3[2] * shCoef[11] * (4.0 * z * z - x * x - y * y) * y;
+            c +=SH_C3[3] * shCoef[12] * z * (2.0 * z * z - 3.0 * x * x - 3.0 * y * y);
+            c +=SH_C3[4] * shCoef[13] * x * (4.0 * z * z - x * x - y * y);
+            c +=SH_C3[5] * shCoef[14] * (x * x - y * y) * z;
+            c +=SH_C3[6] * shCoef[15] * x * (x * x - 3.0 * y * y);
+        }
+    }
+    c += 0.5;
+    if (c.x < 0.0) {
+        c.x = 0.0;
+    }
+
+    //    assert(all(lessThanEqual(c, vec3(159.0))), "invalid sh: %f %f %f\n", c);
+    return c;
+}
 #endif 

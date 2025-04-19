@@ -626,6 +626,7 @@ namespace Rendering
     		// ImGui::Combo("Render Mode", &gsRenderer->gsConfigsPc.renderMode, renderModes, IM_ARRAYSIZE(renderModes));
 
     		ImGui::SeparatorText("Camera Info");
+    		ImGui::SliderFloat("Camera Speed", &gsRenderer->camera.movementSpeed, 0.01f, 10.0f);
 
     		const auto& cam = gsRenderer->camera;
     		ImGui::Text("Position: (%.2f, %.2f, %.2f)", cam.position.x, cam.position.y, cam.position.z);

@@ -11,6 +11,9 @@
 
 
 
+
+
+
 #ifndef ENGINERESMANAGER_HPP
 #define ENGINERESMANAGER_HPP
 
@@ -64,16 +67,34 @@ namespace Rendering
 		    std::vector<float> rot2 = plyIn.getElement("vertex").getProperty<float>("rot_2");
 		    std::vector<float> rot3 = plyIn.getElement("vertex").getProperty<float>("rot_3");
 
+    		int f_Rest_idx = 0;
+    		std::string currCoef;
+    		std::vector<std::vector<float>> fRests;
+    		
+		    for (int i = 0; i < 45; ++i)
+		    {
+		    	currCoef = "f_rest_"+std::to_string(f_Rest_idx);
+		    	std::vector<float> coefArray = plyIn.getElement("vertex").getProperty<float>(currCoef.c_str());
+		    	fRests.emplace_back(coefArray);
+		    	f_Rest_idx++;
+		    }
+		    
 		    for (int i = 0; i < xPos.size(); ++i)
 		    {
 			    splats.emplace_back(GaussianSplat{
 				    xPos[i], yPos[i], zPos[i],
 			    	nx[i], ny[i], nz[i],
-			    	fdc0[i], fdc1[i], fdc2[i],
+			    	fdc0[i], fdc1[i], fdc2[i], 
 			    	opacity[i],
 				    scale0[i], scale1[i], scale2[i],
 			    	rot0[i], rot1[i], rot2[i], rot3[i]
 			    });
+			    for (int j = 0; j < 15; ++j)
+			    {
+				    splats.back().f_rest[j * 3 + 0]= fRests.at(j).at(i);
+				    splats.back().f_rest[j * 3 + 1]= fRests.at(j + 15).at(i);
+				    splats.back().f_rest[j * 3 + 2]= fRests.at(j + 30).at(i);
+			    }
 		    }
     	}
     	void LoadGLTF(std::string path,Model& model, bool compactIndices)
