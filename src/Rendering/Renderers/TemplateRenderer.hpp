@@ -37,12 +37,12 @@ namespace Rendering
         {
             
             AttachmentInfo colInfo = GetColorAttachmentInfo(
-                glm::vec4(0.0f), g_32bFormat);
+                glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
             Shader* vShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_VERT); 
             Shader* fShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_FRAG);
 
             auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
-            ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
+            ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("TemplateOutput", imageInfo, 0, 0);
             
             auto renderNode = renderGraph->AddPass(passName);
             renderNode->SetConfigs({true});
@@ -53,7 +53,8 @@ namespace Rendering
             //change this
             renderNode->SetPushConstantSize(4);
             renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
-            renderNode->AddColorImageResource("default_attachment", attachmentOutput);
+            //only if we want to use custom attachment
+            // renderNode->AddColorImageResource("default_attachment", attachmentOutput);
             renderNode->BuildRenderGraphNode();
         }
 

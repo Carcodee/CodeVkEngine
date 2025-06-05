@@ -24,6 +24,9 @@ namespace ENGINE
     {
         S_VERT,
         S_FRAG,
+        S_TESS_CONTROL,
+        S_TESS_EVAL,
+        S_GEO,
         S_COMP,
         S_UNKNOWN
     };
@@ -425,6 +428,12 @@ set "errorfound="
                 return vk::ShaderStageFlagBits::eVertex;
             case S_FRAG:
                 return vk::ShaderStageFlagBits::eFragment;
+            case S_TESS_CONTROL:
+                return vk::ShaderStageFlagBits::eTessellationControl;
+            case S_TESS_EVAL:
+                return vk::ShaderStageFlagBits::eTessellationEvaluation;
+            case S_GEO:
+                return vk::ShaderStageFlagBits::eGeometry;
             case S_COMP:
                 return vk::ShaderStageFlagBits::eCompute;
             case S_UNKNOWN:
