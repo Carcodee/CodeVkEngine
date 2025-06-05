@@ -23,13 +23,17 @@ namespace ENGINE
         switch (pattern)
         {
         case GRAPHICS_READ:
-            accessPattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader ;
+            accessPattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
+                | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
+                 | vk::PipelineStageFlagBits::eGeometryShader;
             accessPattern.accessMask = vk::AccessFlagBits::eShaderRead;
             accessPattern.layout = vk::ImageLayout::eShaderReadOnlyOptimal;
             accessPattern.queueFamilyType = QueueFamilyTypes::GRAPHICS;
             break;
         case GRAPHICS_WRITE:
-            accessPattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader ;
+            accessPattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
+                | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
+                 | vk::PipelineStageFlagBits::eGeometryShader;
             accessPattern.accessMask = vk::AccessFlagBits::eShaderWrite;
             accessPattern.layout = vk::ImageLayout::eGeneral;
             accessPattern.queueFamilyType = QueueFamilyTypes::GRAPHICS;
@@ -132,7 +136,9 @@ namespace ENGINE
             bufferAccessPattern.queueFamilyType = QueueFamilyTypes::GRAPHICS;
             break;
         case B_GRAPHICS_WRITE:
-            bufferAccessPattern.stage = vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader;
+            bufferAccessPattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
+                | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
+                 | vk::PipelineStageFlagBits::eGeometryShader;
             bufferAccessPattern.accessMask = vk::AccessFlagBits::eShaderWrite;
             bufferAccessPattern.queueFamilyType = QueueFamilyTypes::GRAPHICS;
             break;
@@ -181,7 +187,9 @@ namespace ENGINE
             bufferAccessPattern.queueFamilyType = QueueFamilyTypes::GRAPHICS;
             break;
         case B_GRAPHICS_WRITE:
-            bufferAccessPattern.stage = vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader;
+            bufferAccessPattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
+                | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
+                 | vk::PipelineStageFlagBits::eGeometryShader;
             bufferAccessPattern.accessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
             bufferAccessPattern.queueFamilyType = QueueFamilyTypes::GRAPHICS;
             break;
