@@ -36,6 +36,15 @@ namespace ENGINE
         C_GLSL,
         C_SLANG
     };
+    static bool IsGlslValidExtension(const std::string extension)
+    {
+        if (extension == ".comp" || extension == ".vert" || extension == ".frag" || extension == ".tesc" || extension ==
+            ".tese" || extension == ".geom" )
+        {
+            return true;
+        }
+        return false;
+    }
     
     static std::string ConvertShaderPathToSpirv(const std::filesystem::path& filePath, ShaderStage stage)
     {
@@ -72,6 +81,17 @@ namespace ENGINE
                 case S_FRAG:
                     extension += "_FS.spv";
                     break;
+                case S_TESS_CONTROL:
+                    assert(false && "Unsupported slang stage");
+                    extension += "_TESC.spv";
+                    break;
+                case S_TESS_EVAL:
+                    assert(false && "Unsupported slang stage");
+                    extension += "_TESE.spv";
+                    break;
+                case S_GEO:
+                    extension += "_GEOM.spv";
+                    break;
                 case S_COMP:
                     extension += "_CS.spv";
                     break;
@@ -81,7 +101,7 @@ namespace ENGINE
                 }
                 spirvPath /= fileNameNoExt + extension;
             }
-            else if (dirsParts.string() == filename && (dirsParts.extension() == ".comp" || dirsParts.extension() == ".vert" || dirsParts.extension() == ".frag"))
+            else if (dirsParts.string() == filename && IsGlslValidExtension(dirsParts.extension().string()))
             {
                 int firstDotPos = dirsParts.string().find_first_of('.');
                 std::string fileNameNoExt = dirsParts.string().substr(0, firstDotPos);
@@ -92,6 +112,15 @@ namespace ENGINE
                     extension += ".spv";
                     break;
                 case S_FRAG:
+                    extension += ".spv";
+                    break;
+                case S_TESS_CONTROL:
+                    extension += ".spv";
+                    break;
+                case S_TESS_EVAL:
+                    extension += ".spv";
+                    break;
+                case S_GEO:
                     extension += ".spv";
                     break;
                 case S_COMP:
@@ -144,6 +173,15 @@ namespace ENGINE
                         case S_FRAG:
                             extension = ".frag";
                             break;
+                        case S_TESS_CONTROL:
+                            extension = ".tesc";
+                            break;
+                        case S_TESS_EVAL:
+                            extension = ".tese";
+                            break;
+                        case S_GEO:
+                            extension = ".geom";
+                            break;
                         case S_COMP:
                             extension = ".comp";
                             break;
@@ -176,6 +214,12 @@ namespace ENGINE
         case S_FRAG:
             slangStage = SLANG_STAGE_FRAGMENT;
             break;
+        case S_TESS_CONTROL:
+            assert(false&& "unsuported stage");
+        case S_TESS_EVAL:
+            assert(false&& "unsuported stage");
+        case S_GEO:
+            slangStage = SLANG_STAGE_GEOMETRY;
         case S_COMP:
             slangStage = SLANG_STAGE_COMPUTE;
             break;
@@ -303,6 +347,15 @@ set "errorfound="
                     break;
                 case spv::ExecutionModelFragment:
                     stage = S_FRAG;
+                    break;
+                case spv::ExecutionModelTessellationControl:
+                    stage = S_TESS_CONTROL;
+                    break;
+                case spv::ExecutionModelTessellationEvaluation:
+                    stage = S_TESS_EVAL;
+                    break;
+                case spv::ExecutionModelGeometry:
+                    stage = S_GEO;
                     break;
                 case spv::ExecutionModelGLCompute:
                     stage = S_COMP;
