@@ -262,7 +262,9 @@ namespace ENGINE
                               .setVertexPipelineStoresAndAtomics(true)
                               .setMultiDrawIndirect(true)
                               .setWideLines(true)
-                              .setFillModeNonSolid(true);
+                              .setFillModeNonSolid(true)
+                              .setTessellationShader(true)
+                              .setGeometryShader(true);
 
         auto deviceCreateInfo = vk::DeviceCreateInfo()
                                 .setQueueCreateInfoCount(uint32_t(queueCreateInfos.size()))
