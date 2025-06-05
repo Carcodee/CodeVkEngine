@@ -33,9 +33,14 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     // core, windowProvider));
     // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
     // clusterRenderer->SetRenderOperation();
-    renderers.try_emplace("GSRenderer", std::make_unique<Rendering::GSRenderer>(core, windowProvider));
-    Rendering::GSRenderer* gsRenderer = dynamic_cast<Rendering::GSRenderer*>(renderers.at("GSRenderer").get());
-    gsRenderer->SetRenderOperation();
+    
+    renderers.try_emplace("HairRenderer", std::make_unique<Rendering::HairRenderer>(core, windowProvider));
+    Rendering::HairRenderer* hairRenderer = dynamic_cast<Rendering::HairRenderer*>(renderers.at("HairRenderer").get());
+    hairRenderer->SetRenderOperation();
+    
+    // renderers.try_emplace("GSRenderer", std::make_unique<Rendering::GSRenderer>(core, windowProvider));
+    // Rendering::GSRenderer* gsRenderer = dynamic_cast<Rendering::GSRenderer*>(renderers.at("GSRenderer").get());
+    // gsRenderer->SetRenderOperation();
     //
     // renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
     // Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());

@@ -28,6 +28,7 @@
 #include "Renderers/GIRenderer.hpp"
 #include "Renderers/GSRenderer.hpp"
 #include "Renderers/DebugRenderer.hpp"
+#include "Renderers/HairRenderer.hpp"
 #include "ImguiRenderer.hpp"
 
 

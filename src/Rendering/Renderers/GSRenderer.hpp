@@ -42,7 +42,7 @@ namespace Rendering
         void CreateResources()
         {
             std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
-                "\\PointClouds\\Woman\\pc.ply";
+                "\\PointClouds\\Woman\\pc2.ply";
             std::vector<GaussianSplat> gaussianSplats;
             // for (auto& file : std::filesystem::directory_iterator(path))
             // {

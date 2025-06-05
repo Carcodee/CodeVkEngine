@@ -130,9 +130,7 @@ void main() {
     vec3 rayDir = normalize(pCloudPos - camPos);
     vec3 fullCol = u_compute_sh(rayDir,currShCoeffs, 3);    
     
-    
     alpha = gsAlphas[id];
-    
     
     col = fullCol;
     
