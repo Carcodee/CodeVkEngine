@@ -156,6 +156,15 @@ namespace ENGINE
                         case S_COMP:
                             SetCompShader(shader);
                             break;
+                        case S_TESS_CONTROL:
+                            SetTesControlShader(shader);
+                            break;
+                        case S_TESS_EVAL:
+                            SetTesEvalShader(shader);
+                            break;
+                        case S_GEO:
+                            SetGeomShader(shader);
+                            break;
                         case S_UNKNOWN:
                             assert(false);
                             break;
