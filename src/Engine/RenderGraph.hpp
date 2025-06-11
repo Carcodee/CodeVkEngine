@@ -238,10 +238,12 @@ namespace ENGINE
                 }
                 dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
 
+                std::map<vk::ShaderStageFlagBits,vk::ShaderModule> stages;
+                stages.try_emplace(vk::ShaderStageFlagBits::eVertex, vertShader->sModule->shaderModuleHandle.get());
+                stages.try_emplace(vk::ShaderStageFlagBits::eFragment, fragShader->sModule->shaderModuleHandle.get());
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
-                    core->logicalDevice.get(), vertShader->sModule->shaderModuleHandle.get(),
-                    fragShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
+                    core->logicalDevice.get(),stages, pipelineLayout.get(),
                     dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
                     colorBlendConfigs, depthConfig,
                     vertexInput, pipelineCache.get()
@@ -338,9 +340,12 @@ namespace ENGINE
 
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
 
+                std::map<vk::ShaderStageFlagBits,vk::ShaderModule> stages;
+                stages.try_emplace(vk::ShaderStageFlagBits::eVertex, vertShader->sModule->shaderModuleHandle.get());
+                stages.try_emplace(vk::ShaderStageFlagBits::eFragment, fragShader->sModule->shaderModuleHandle.get());
+                
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
-                    core->logicalDevice.get(), vertShader->sModule->shaderModuleHandle.get(),
-                    fragShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
+                    core->logicalDevice.get(), stages, pipelineLayout.get(),
                     dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
                     colorBlendConfigs, depthConfig,
                     vertexInput, pipelineCache.get()
@@ -788,6 +793,10 @@ namespace ENGINE
         void SetConfigs(RenderNodeConfigs configs)
         {
             this->configs = configs;
+        }
+        std::map<vk::ShaderStageFlagBits,vk::ShaderModule> GetStages()
+        {
+            return std::map<vk::ShaderStageFlagBits,vk::ShaderModule>(); 
         }
         void Reset()
         {

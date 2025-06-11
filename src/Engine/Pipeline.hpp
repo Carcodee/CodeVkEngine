@@ -154,7 +154,7 @@ namespace ENGINE
             assert(!vertexInput.inputDescription.empty()&&"vertexInput is empty");
             assert((shaders.size() >= 2 ) &&"vertex shader module is empty");
             this->pipelineLayout = pipelineLayout;
-            std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+            std::vector<vk::PipelineShaderStageCreateInfo> shaderStages (shaders.size());
             vk::PipelineShaderStageCreateInfo vertShaderStage;
             vk::PipelineShaderStageCreateInfo fragShaderStage;
             vk::PipelineShaderStageCreateInfo tescShaderStage;
@@ -203,6 +203,7 @@ namespace ENGINE
                                       .setPName("main");
                     shaderStages[stageIndex] = geomShaderStage;
                 }
+                stageIndex++;
             }
 
             auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
