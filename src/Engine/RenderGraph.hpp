@@ -602,7 +602,22 @@ namespace ENGINE
         {
             shaders.at("comp") = shader;
         }
-
+        
+        void SetTesControlShader(Shader* shader)
+        {
+            shaders.at("tesc") = shader;
+        }
+        
+        void SetTesEvalShader(Shader* shader)
+        {
+            shaders.at("tese") = shader;
+        }
+        
+        void SetGeomShader(Shader* shader)
+        {
+            shaders.at("geom") = shader;
+        }
+        
         void SetVertShader_IMode(std::string path)
         {
             if (shadersProxyRef->contains(path))
@@ -610,7 +625,7 @@ namespace ENGINE
                 shaders.at("vert") = shadersProxyRef->at(path).get();
             }
         }
-
+        
         void SetFragShader_IMode(std::string path)
         {
             if (shadersProxyRef->contains(path))
@@ -618,12 +633,36 @@ namespace ENGINE
                 shaders.at("frag") = shadersProxyRef->at(path).get();
             }
         }
-
+        
         void SetCompShader_IMode(std::string path)
         {
             if (shadersProxyRef->contains(path))
             {
                 shaders.at("comp") = shadersProxyRef->at(path).get();
+            }
+        }
+        
+        void SetTesControlShader_IMode(std::string path)
+        {
+            if (shadersProxyRef->contains(path))
+            {
+                shaders.at("tesc") = shadersProxyRef->at(path).get();
+            }
+        }
+
+        void SetTesEvalShader_IMode(std::string path)
+        {
+            if (shadersProxyRef->contains(path))
+            {
+                shaders.at("tese") = shadersProxyRef->at(path).get();
+            }
+        }
+
+        void SetGeomShader_IMode(std::string path)
+        {
+            if (shadersProxyRef->contains(path))
+            {
+                shaders.at("geom") = shadersProxyRef->at(path).get();
             }
         }
 
@@ -821,7 +860,10 @@ namespace ENGINE
             colAttachments.clear();
             depthAttachment = {};
             depthImage = nullptr;
-            shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
+            shaders = {
+                {"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}, {"tesc", nullptr}, {"tese", nullptr},
+                {"geom", nullptr}
+            };
 
             imagesAttachmentOutputs.clear();
             storageImages.clear();
