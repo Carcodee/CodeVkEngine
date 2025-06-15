@@ -258,7 +258,7 @@ namespace ENGINE
                                               .setPAttachments(blendStates.data());
             
             auto graphicsPipeline = vk::GraphicsPipelineCreateInfo()
-                                    .setStageCount(2)
+                                    .setStageCount(shaderStages.size())
                                     .setPStages(shaderStages.data())
                                     .setPVertexInputState(&_vertexInput)
                                     .setPInputAssemblyState(&inputAssembly)
@@ -286,93 +286,6 @@ namespace ENGINE
                 graphicsPipeline.setPTessellationState(&tessellationStateCreateInfo);
                 
             }
-
-            pipelineHandle = logicalDevice.createGraphicsPipelineUnique(pipelineCache, graphicsPipeline).value;
-        }
-        GraphicsPipeline(vk::Device& logicalDevice, vk::ShaderModule vertexShader, vk::ShaderModule fragmentShader,
-                         vk::PipelineLayout pipelineLayout,
-                         vk::PipelineRenderingCreateInfo dynamicRenderPass, GraphicsPipelineConfigs pipelineDisplayInfo,
-                         std::vector<BlendConfigs>& blendConfigs, DepthConfigs depthConfigs, VertexInput& vertexInput,
-                         vk::PipelineCache pipelineCache = nullptr)
-        {
-            assert(!vertexInput.inputDescription.empty()&&"vertexInput is empty");
-            assert((vertexShader != nullptr) &&"vertex shader module is empty");
-            assert((fragmentShader != nullptr) &&"fragment shader module is empty");
-            this->pipelineLayout = pipelineLayout;
-            std::vector<vk::PipelineShaderStageCreateInfo> shaderStages(2);
-
-            auto vertShaderStage = vk::PipelineShaderStageCreateInfo()
-                                   .setModule(vertexShader)
-                                   .setStage(vk::ShaderStageFlagBits::eVertex)
-                                   .setPName("main");
-            auto fragShaderStage = vk::PipelineShaderStageCreateInfo()
-                                   .setModule(fragmentShader)
-                                   .setStage(vk::ShaderStageFlagBits::eFragment)
-                                   .setPName("main");
-
-            shaderStages[0] = vertShaderStage;
-            shaderStages[1] = fragShaderStage;
-
-
-            auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
-                                 .setTopology(GetTopology(pipelineDisplayInfo.topologyConfigs))
-                                 .setPrimitiveRestartEnable(VK_FALSE);
-
-            auto rasterization = GetRasterizationInfo(pipelineDisplayInfo.rasterizationConfigs);
-
-            vk::DynamicState dynamicStates[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-
-            auto dynamicStateInfo = vk::PipelineDynamicStateCreateInfo()
-                                    .setDynamicStateCount(2)
-                                    .setPDynamicStates(dynamicStates);
-
-            auto pipelineViewport = vk::PipelineViewportStateCreateInfo()
-                                    .setViewportCount(1)
-                                    .setScissorCount(1);
-
-            auto multiSample = vk::PipelineMultisampleStateCreateInfo()
-                .setRasterizationSamples(vk::SampleCountFlagBits::e1);
-
-            auto _vertexInput = vk::PipelineVertexInputStateCreateInfo()
-                                .setVertexBindingDescriptionCount(1)
-                                .setPVertexBindingDescriptions(vertexInput.bindingDescription.data())
-                                .setVertexAttributeDescriptionCount(static_cast<uint32_t>(vertexInput.inputDescription.size()))
-                                .setPVertexAttributeDescriptions(vertexInput.inputDescription.data());
-
-            vk::PipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo;
-            if (depthConfigs != D_NONE)
-            {
-                 depthStencilStateCreateInfo = GetDepthStencil(depthConfigs);
-            }
-
-            std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
-            for (auto blendConfig : blendConfigs)
-            {
-                vk::PipelineColorBlendAttachmentState blendState = GetBlendAttachmentState(blendConfig);
-                blendStates.push_back(blendState);
-                
-            }
-            auto pipelineColorBlendStateCreateInfo = vk::PipelineColorBlendStateCreateInfo()
-                                              .setLogicOpEnable(VK_FALSE)
-                                              .setAttachmentCount(static_cast<uint32_t>(blendStates.size()))
-                                              .setPAttachments(blendStates.data());
-            
-            auto graphicsPipeline = vk::GraphicsPipelineCreateInfo()
-                                    .setStageCount(2)
-                                    .setPStages(shaderStages.data())
-                                    .setPVertexInputState(&_vertexInput)
-                                    .setPInputAssemblyState(&inputAssembly)
-                                    .setPDynamicState(&dynamicStateInfo)
-                                    .setPViewportState(&pipelineViewport)
-                                    .setPRasterizationState(&rasterization)
-                                    .setPMultisampleState(&multiSample)
-                                    .setPColorBlendState(&pipelineColorBlendStateCreateInfo)
-                                    .setPDepthStencilState(&depthStencilStateCreateInfo)
-                                    .setLayout(pipelineLayout)
-                                    .setRenderPass(VK_NULL_HANDLE)
-                                    .setPNext(&dynamicRenderPass)
-                                    .setBasePipelineHandle(VK_NULL_HANDLE)
-                                    .setBasePipelineIndex(-1);
 
             pipelineHandle = logicalDevice.createGraphicsPipelineUnique(pipelineCache, graphicsPipeline).value;
         }
