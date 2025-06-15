@@ -40,7 +40,7 @@ namespace Rendering
                 glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
             Shader* vShader = renderGraph->resourcesManager->CreateDefaultShader("HairVert", ShaderStage::S_VERT, ShaderCompiler::C_GLSL); 
             Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL); 
-            // Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL); 
+            Shader* gShader = renderGraph->resourcesManager->CreateDefaultShader("HairGeo", ShaderStage::S_GEOM, ShaderCompiler::C_GLSL); 
 
             // auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
@@ -49,6 +49,7 @@ namespace Rendering
             renderNode->SetConfigs({true});
             renderNode->SetVertShader(vShader);
             renderNode->SetFragShader(fShader);
+            renderNode->SetGeomShader(gShader);
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
             //change this

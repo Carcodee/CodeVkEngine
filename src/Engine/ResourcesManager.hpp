@@ -509,6 +509,27 @@ namespace ENGINE
                     }
                     templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath / "tComp.comp";
                     break;
+                case S_TESS_CONTROL:
+                    if (std::filesystem::path(name).extension() != ".tesc")
+                    {
+                        name += ".tesc";
+                    }
+                    templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath / "tTesc.tesc";
+                    break;
+                case S_TESS_EVAL:
+                    if (std::filesystem::path(name).extension() != ".tese")
+                    {
+                        name += ".tese";
+                    }
+                    templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath / "tTese.tese";
+                    break;
+                case S_GEOM:
+                    if (std::filesystem::path(name).extension() != ".geom")
+                    {
+                        name += ".geom";
+                    }
+                    templatePath = SYSTEMS::OS::GetInstance()->glslShadersTemplatePath / "tGeom.geom";
+                    break;
                 case S_UNKNOWN:
                     break;
                 }

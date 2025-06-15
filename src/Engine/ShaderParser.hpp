@@ -48,7 +48,15 @@ namespace ENGINE
     
     static std::string ConvertShaderPathToSpirv(const std::filesystem::path& filePath, ShaderStage stage)
     {
-        assert((filePath.extension() == ".slang" || filePath.extension() == ".vert" || filePath.extension() == ".frag" || filePath.extension() == ".comp" || filePath.extension() == ".spv") && "Path is not a shader");
+        assert(
+            (filePath.extension() == ".slang" ||
+                filePath.extension() == ".vert" ||
+                filePath.extension() == ".frag" ||
+                filePath.extension() == ".comp" ||
+                filePath.extension() == ".tese" ||
+                filePath.extension() == ".tesc" ||
+                filePath.extension() == ".geom" ||
+                filePath.extension() == ".spv") && "Path is not a shader");
         if (filePath.extension().string() == ".spv")
         {
             SYSTEMS::Logger::GetInstance()->LogMessage("Shader is already spv no conversion needed");
@@ -546,7 +554,11 @@ set "errorfound="
                     byteCode = GetByteCode(spirvPath);
                 }
             }
-            else if (std::filesystem::path(path).extension() == ".frag" || std::filesystem::path(path).extension() == ".vert"
+            else if (std::filesystem::path(path).extension() == ".frag"
+                || std::filesystem::path(path).extension() == ".vert"
+                || std::filesystem::path(path).extension() == ".tesc"
+                || std::filesystem::path(path).extension() == ".tese"
+                || std::filesystem::path(path).extension() == ".geom"
                 || std::filesystem::path(path).extension() == ".comp")
             {
                 
@@ -581,7 +593,13 @@ set "errorfound="
                 this->path = shaderPath;
                 this->spirvPath = path;
             }
-            else if(filePath.extension() == ".slang" || filePath.extension() == ".frag" || filePath.extension() == ".vert" || filePath.extension() == ".comp")
+            else if (filePath.extension() == ".slang" ||
+                filePath.extension() == ".frag" ||
+                filePath.extension() ==".vert" ||
+                filePath.extension() ==".tesc" ||
+                filePath.extension() ==".tese" ||
+                filePath.extension() ==".geom" ||
+                filePath.extension() == ".comp")
             {
 
                 std::string spirvPath ="";

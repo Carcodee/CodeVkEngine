@@ -32,6 +32,33 @@ for /r glsl/ %%I in (*.frag) do (
    %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o "!outname!".spv || set "errorfound=1"
 )
 
+for /r glsl/ %%I in (*.tesc) do (
+    set outname=%%I
+    set outname=!outname:\glsl\=\spirvGlsl\!
+    @echo compiling %%I
+    @echo To !outname!
+    
+   %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o "!outname!".spv || set "errorfound=1"
+)
+
+for /r glsl/ %%I in (*.tese) do (
+    set outname=%%I
+    set outname=!outname:\glsl\=\spirvGlsl\!
+    @echo compiling %%I
+    @echo To !outname!
+    
+   %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o "!outname!".spv || set "errorfound=1"
+)
+
+for /r glsl/ %%I in (*.geom) do (
+    set outname=%%I
+    set outname=!outname:\glsl\=\spirvGlsl\!
+    @echo compiling %%I
+    @echo To !outname!
+    
+   %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o "!outname!".spv || set "errorfound=1"
+)
+
 for /r glsl/ %%I in (*.comp) do (
     set outname=%%I
     set outname=!outname:\glsl\=\spirvGlsl\!
