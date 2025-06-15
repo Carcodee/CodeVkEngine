@@ -1,4 +1,6 @@
 ﻿//
+
+
 // Created by carlo on 2024-10-02.
 //
 
@@ -40,11 +42,7 @@ namespace ENGINE
 
     struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
     {
-        RenderGraphNode()
-        {
-            
-        };
-        
+        RenderGraphNode() = default;
 
         nlohmann::json Serialize() override{
             nlohmann::json json;
@@ -162,7 +160,7 @@ namespace ENGINE
                         case S_TESS_EVAL:
                             SetTesEvalShader(shader);
                             break;
-                        case S_GEO:
+                        case S_GEOM:
                             SetGeomShader(shader);
                             break;
                         case S_UNKNOWN:
@@ -211,7 +209,12 @@ namespace ENGINE
             Shader* vertShader = shaders.at("vert");
             Shader* fragShader = shaders.at("frag");
             Shader* compShader = shaders.at("comp");
-
+            Shader* tescShader = shaders.at("tesc");
+            Shader* teseShader = shaders.at("tese");
+            Shader* geomShader = shaders.at("geom");
+            std::map<ShaderStage, Shader*> stages;
+            GetShaderStages(stages);
+            
             if (fragShader && vertShader)
             {
                 if (configs.automaticCache)
@@ -220,8 +223,27 @@ namespace ENGINE
                     descCache =std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(vertShader->sParser.get());
                     descCache->AddShaderInfo(fragShader->sParser.get());
-                    descCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eFragment |
-                        vk::ShaderStageFlagBits::eVertex);
+                    vk::ShaderStageFlags stageFlags = vk::ShaderStageFlagBits::eFragment |
+                        vk::ShaderStageFlagBits::eVertex;
+                    if (tescShader)
+                    {
+                        descCache->AddShaderInfo(tescShader->sParser.get());
+                        if (!teseShader)
+                        {
+                            assert(false && "Must have tese shader");
+                        }
+                        descCache->AddShaderInfo(teseShader->sParser.get());
+                        stageFlags |= vk::ShaderStageFlagBits::eTessellationControl |
+                            vk::ShaderStageFlagBits::eTessellationEvaluation;
+                    }
+                    if (geomShader)
+                    {
+                        descCache->AddShaderInfo(geomShader->sParser.get());
+                        stageFlags |= vk::ShaderStageFlagBits::eGeometry;
+                    }
+                    
+                    descCache->BuildDescriptorsCache(stageFlags);
+                    
                     if (pushConstantSize != 0)
                     {
                         auto paintingPushConstantRanges = vk::PushConstantRange()
@@ -247,12 +269,9 @@ namespace ENGINE
                 }
                 dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
 
-                std::map<vk::ShaderStageFlagBits,vk::ShaderModule> stages;
-                stages.try_emplace(vk::ShaderStageFlagBits::eVertex, vertShader->sModule->shaderModuleHandle.get());
-                stages.try_emplace(vk::ShaderStageFlagBits::eFragment, fragShader->sModule->shaderModuleHandle.get());
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
-                    core->logicalDevice.get(),stages, pipelineLayout.get(),
+                    core->logicalDevice.get(), stages, pipelineLayout.get(),
                     dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
                     colorBlendConfigs, depthConfig,
                     vertexInput, pipelineCache.get()
@@ -308,6 +327,10 @@ namespace ENGINE
             Shader* vertShader = shaders.at("vert");
             Shader* fragShader = shaders.at("frag");
             Shader* compShader = shaders.at("comp");
+            Shader* tescShader = shaders.at("tesc");
+            Shader* teseShader = shaders.at("tese");
+            Shader* geomShader = shaders.at("geom");
+            
 
             if (fragShader && vertShader)
             {
@@ -317,9 +340,26 @@ namespace ENGINE
                     descCache = std::make_unique<DescriptorCache>(core);
                     descCache->AddShaderInfo(vertShader->sParser.get());
                     descCache->AddShaderInfo(fragShader->sParser.get());
-                    descCache->BuildDescriptorsCache(
-                        vk::ShaderStageFlagBits::eFragment |
-                        vk::ShaderStageFlagBits::eVertex);
+                    vk::ShaderStageFlags stageFlags = vk::ShaderStageFlagBits::eFragment |
+                        vk::ShaderStageFlagBits::eVertex;
+                    if (tescShader)
+                    {
+                        descCache->AddShaderInfo(tescShader->sParser.get());
+                        if (!teseShader)
+                        {
+                            assert(false && "Must have tese shader");
+                        }
+                        descCache->AddShaderInfo(teseShader->sParser.get());
+                        stageFlags |= vk::ShaderStageFlagBits::eTessellationControl |
+                            vk::ShaderStageFlagBits::eTessellationEvaluation;
+                    }
+                    if (geomShader)
+                    {
+                        descCache->AddShaderInfo(geomShader->sParser.get());
+                        stageFlags |= vk::ShaderStageFlagBits::eGeometry;
+                    }
+                    
+                    descCache->BuildDescriptorsCache(stageFlags);
 
                     if (pushConstantSize != 0)
                     {
@@ -348,10 +388,9 @@ namespace ENGINE
                 dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
 
                 pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-
-                std::map<vk::ShaderStageFlagBits,vk::ShaderModule> stages;
-                stages.try_emplace(vk::ShaderStageFlagBits::eVertex, vertShader->sModule->shaderModuleHandle.get());
-                stages.try_emplace(vk::ShaderStageFlagBits::eFragment, fragShader->sModule->shaderModuleHandle.get());
+                
+                std::map<ShaderStage, Shader*> stages;
+                GetShaderStages(stages);
                 
                 std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
                     core->logicalDevice.get(), stages, pipelineLayout.get(),
@@ -464,15 +503,64 @@ namespace ENGINE
             Shader* vertShader = shaders.at("vert");
             Shader* fragShader = shaders.at("frag");
             Shader* compShader = shaders.at("comp");
+            Shader* tescShader = shaders.at("tesc");
+            Shader* teseShader = shaders.at("tese");
+            Shader* geomShader = shaders.at("geom");
             if (vertShader && fragShader)
             {
                 vertShader->Reload();
                 fragShader->Reload();
             }
-            else if (compShader)
+            if (tescShader)
+            {
+                tescShader->Reload();
+            }
+            if (teseShader)
+            {
+                teseShader->Reload();
+            }
+            if (geomShader)
+            {
+                geomShader->Reload();
+            }
+            if (compShader)
             {
                 compShader->Reload();
             }
+        }
+        void GetShaderStages(std::map<ShaderStage, Shader*>& stages)
+        {
+            Shader* vertShader = shaders.at("vert");
+            Shader* fragShader = shaders.at("frag");
+            Shader* compShader = shaders.at("comp");
+            Shader* tescShader = shaders.at("tesc");
+            Shader* teseShader = shaders.at("tese");
+            Shader* geomShader = shaders.at("geom");
+            if (vertShader)
+            {
+                stages.try_emplace(S_VERT, vertShader);
+            }
+            if (fragShader)
+            {
+                stages.try_emplace(S_FRAG, fragShader);
+            }
+            if (compShader)
+            {
+                stages.try_emplace(S_COMP, compShader);
+            }
+            if (tescShader)
+            {
+                stages.try_emplace(S_TESS_CONTROL, tescShader);
+            }
+            if (teseShader)
+            {
+                stages.try_emplace(S_TESS_EVAL, teseShader);
+            }
+            if (geomShader)
+            {
+                stages.try_emplace(S_GEOM, geomShader);
+            }
+            
         }
 
         void ExecutePass(vk::CommandBuffer commandBuffer)
@@ -842,10 +930,6 @@ namespace ENGINE
         {
             this->configs = configs;
         }
-        std::map<vk::ShaderStageFlagBits,vk::ShaderModule> GetStages()
-        {
-            return std::map<vk::ShaderStageFlagBits,vk::ShaderModule>(); 
-        }
         void Reset()
         {
             pipeline.release();
@@ -870,7 +954,11 @@ namespace ENGINE
             depthAttachment = {};
             depthImage = nullptr;
             shaders = {
-                {"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}, {"tesc", nullptr}, {"tese", nullptr},
+                {"frag", nullptr},
+                {"vert", nullptr},
+                {"comp", nullptr},
+                {"tesc", nullptr},
+                {"tese", nullptr},
                 {"geom", nullptr}
             };
 
@@ -905,12 +993,19 @@ namespace ENGINE
         DepthConfigs depthConfig = D_NONE;
         VertexInput vertexInput;
         glm::uvec2 frameBufferSize = {0, 0};
-        size_t pushConstantSize = 0;
+        size_t pushConstantSize = 4;
 
         std::vector<AttachmentInfo> colAttachments;
         AttachmentInfo depthAttachment = {};
         ImageView* depthImage = nullptr;
-        std::map<std::string, Shader*> shaders = {{"frag", nullptr}, {"vert", nullptr}, {"comp", nullptr}};
+        std::map<std::string, Shader*> shaders = {
+            {"frag", nullptr},
+            {"vert", nullptr},
+            {"comp", nullptr},
+            {"tesc", nullptr},
+            {"tese", nullptr},
+            {"geom", nullptr}
+        };
 
         std::unordered_map<std::string, int> imageAttachmentsNames;
         std::vector<ImageView*> imagesAttachmentOutputs;

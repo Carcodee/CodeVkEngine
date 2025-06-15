@@ -71,6 +71,7 @@ namespace ENGINE{
     {
        T_TRIANGLE,
        T_POINT_LIST,
+       T_PATCH_LIST,
     };
     ///
 

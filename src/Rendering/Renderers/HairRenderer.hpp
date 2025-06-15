@@ -40,6 +40,7 @@ namespace Rendering
                 glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
             Shader* vShader = renderGraph->resourcesManager->CreateDefaultShader("HairVert", ShaderStage::S_VERT, ShaderCompiler::C_GLSL); 
             Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL); 
+            // Shader* fShader = renderGraph->resourcesManager->CreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL); 
 
             // auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
             // ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
@@ -51,7 +52,7 @@ namespace Rendering
             renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
             renderNode->SetVertexInput(Vertex2D::GetVertexInput());
             //change this
-            renderNode->SetPushConstantSize(4);
+            // renderNode->SetPushConstantSize(4);
             renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
             renderNode->BuildRenderGraphNode();
         }

@@ -26,7 +26,7 @@ namespace ENGINE
         S_FRAG,
         S_TESS_CONTROL,
         S_TESS_EVAL,
-        S_GEO,
+        S_GEOM,
         S_COMP,
         S_UNKNOWN
     };
@@ -89,7 +89,7 @@ namespace ENGINE
                     assert(false && "Unsupported slang stage");
                     extension += "_TESE.spv";
                     break;
-                case S_GEO:
+                case S_GEOM:
                     extension += "_GEOM.spv";
                     break;
                 case S_COMP:
@@ -120,7 +120,7 @@ namespace ENGINE
                 case S_TESS_EVAL:
                     extension += ".spv";
                     break;
-                case S_GEO:
+                case S_GEOM:
                     extension += ".spv";
                     break;
                 case S_COMP:
@@ -179,7 +179,7 @@ namespace ENGINE
                         case S_TESS_EVAL:
                             extension = ".tese";
                             break;
-                        case S_GEO:
+                        case S_GEOM:
                             extension = ".geom";
                             break;
                         case S_COMP:
@@ -218,7 +218,7 @@ namespace ENGINE
             assert(false&& "unsuported stage");
         case S_TESS_EVAL:
             assert(false&& "unsuported stage");
-        case S_GEO:
+        case S_GEOM:
             slangStage = SLANG_STAGE_GEOMETRY;
         case S_COMP:
             slangStage = SLANG_STAGE_COMPUTE;
@@ -283,6 +283,15 @@ namespace ENGINE
             break;
         case S_COMP:
             entryPoint = "mainCS";
+            break;
+        case S_TESS_CONTROL:
+            assert(false && "uknown stage");
+            break;
+        case S_TESS_EVAL:
+            assert(false && "uknown stage");
+            break;
+        case S_GEOM:
+            entryPoint = "mainGS";
             break;
         case S_UNKNOWN:
             assert(false && "uknown stage");
@@ -355,7 +364,7 @@ set "errorfound="
                     stage = S_TESS_EVAL;
                     break;
                 case spv::ExecutionModelGeometry:
-                    stage = S_GEO;
+                    stage = S_GEOM;
                     break;
                 case spv::ExecutionModelGLCompute:
                     stage = S_COMP;
@@ -485,7 +494,7 @@ set "errorfound="
                 return vk::ShaderStageFlagBits::eTessellationControl;
             case S_TESS_EVAL:
                 return vk::ShaderStageFlagBits::eTessellationEvaluation;
-            case S_GEO:
+            case S_GEOM:
                 return vk::ShaderStageFlagBits::eGeometry;
             case S_COMP:
                 return vk::ShaderStageFlagBits::eCompute;

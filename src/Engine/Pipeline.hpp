@@ -5,6 +5,7 @@
 //
 
 
+
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
@@ -17,10 +18,10 @@ namespace ENGINE
         {
         case T_TRIANGLE:
             return vk::PrimitiveTopology::eTriangleList;
-            break;
         case T_POINT_LIST:
             return vk::PrimitiveTopology::ePointList;
-            break;
+        case T_PATCH_LIST:
+            return vk::PrimitiveTopology::ePatchList;
         default:
             assert(false);
             break;
@@ -145,10 +146,14 @@ namespace ENGINE
     class GraphicsPipeline
     {
     public:
-        GraphicsPipeline(vk::Device& logicalDevice, std::map<vk::ShaderStageFlagBits,vk::ShaderModule>& shaders,
+        GraphicsPipeline(vk::Device& logicalDevice,
+                         std::map<ShaderStage, Shader*>& shaders,
                          vk::PipelineLayout pipelineLayout,
-                         vk::PipelineRenderingCreateInfo dynamicRenderPass, GraphicsPipelineConfigs pipelineDisplayInfo,
-                         std::vector<BlendConfigs>& blendConfigs, DepthConfigs depthConfigs, VertexInput& vertexInput,
+                         vk::PipelineRenderingCreateInfo dynamicRenderPass,
+                         GraphicsPipelineConfigs pipelineDisplayInfo,
+                         std::vector<BlendConfigs>& blendConfigs,
+                         DepthConfigs depthConfigs,
+                         VertexInput& vertexInput,
                          vk::PipelineCache pipelineCache = nullptr)
         {
             assert(!vertexInput.inputDescription.empty()&&"vertexInput is empty");
@@ -163,42 +168,42 @@ namespace ENGINE
             int stageIndex = 0;
             for (auto& shader : shaders)
             {
-                if (shader.first == vk::ShaderStageFlagBits::eVertex)
+                if (shader.first == S_VERT)
                 {
                     vertShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second)
+                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
                                       .setStage(vk::ShaderStageFlagBits::eVertex)
                                       .setPName("main");
                     shaderStages[stageIndex] = vertShaderStage;
                 }
-                if (shader.first == vk::ShaderStageFlagBits::eFragment)
+                if (shader.first == S_FRAG)
                 {
                     fragShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second)
+                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
                                       .setStage(vk::ShaderStageFlagBits::eFragment)
                                       .setPName("main");
                     shaderStages[stageIndex] = fragShaderStage;
                 }
-                if (shader.first == vk::ShaderStageFlagBits::eTessellationControl)
+                if (shader.first == S_TESS_CONTROL)
                 {
                     tescShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second)
+                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
                                       .setStage(vk::ShaderStageFlagBits::eTessellationControl)
                                       .setPName("main");
                     shaderStages[stageIndex] = tescShaderStage;
                 }
-                if (shader.first == vk::ShaderStageFlagBits::eTessellationEvaluation)
+                if (shader.first == S_TESS_EVAL)
                 {
                     teseShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second)
+                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
                                       .setStage(vk::ShaderStageFlagBits::eTessellationEvaluation)
                                       .setPName("main");
                     shaderStages[stageIndex] = teseShaderStage;
                 }
-                if (shader.first == vk::ShaderStageFlagBits::eGeometry)
+                if (shader.first == S_GEOM)
                 {
                     geomShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second)
+                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
                                       .setStage(vk::ShaderStageFlagBits::eGeometry)
                                       .setPName("main");
                     shaderStages[stageIndex] = geomShaderStage;
@@ -206,6 +211,9 @@ namespace ENGINE
                 stageIndex++;
             }
 
+            vk::PipelineTessellationStateCreateInfo tessellationStateCreateInfo;
+            
+            
             auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
                                  .setTopology(GetTopology(pipelineDisplayInfo.topologyConfigs))
                                  .setPrimitiveRestartEnable(VK_FALSE);
@@ -265,6 +273,19 @@ namespace ENGINE
                                     .setPNext(&dynamicRenderPass)
                                     .setBasePipelineHandle(VK_NULL_HANDLE)
                                     .setBasePipelineIndex(-1);
+            
+            if (shaders.contains(S_TESS_CONTROL))
+            {
+                if (pipelineDisplayInfo.topologyConfigs != TopologyConfigs::T_PATCH_LIST)
+                {
+                    assert(false && "cant create tesselation shader without triangle patch list");
+                }
+
+                tessellationStateCreateInfo = vk::PipelineTessellationStateCreateInfo()
+                .setPatchControlPoints(3);
+                graphicsPipeline.setPTessellationState(&tessellationStateCreateInfo);
+                
+            }
 
             pipelineHandle = logicalDevice.createGraphicsPipelineUnique(pipelineCache, graphicsPipeline).value;
         }
