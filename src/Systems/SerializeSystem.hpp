@@ -7,12 +7,13 @@
 
 namespace SYSTEMS
 {
-    template <typename T>
-    struct ISerializable{
-        virtual ~ISerializable() = default;
-        virtual nlohmann::json Serialize() = 0;
-        virtual T* Deserialize(std::string filename) = 0;
-    };
-}
+template <typename T>
+struct ISerializable
+{
+	virtual ~ISerializable()                                 = default;
+	virtual nlohmann::json Serialize()                       = 0;
+	virtual T             *Deserialize(std::string filename) = 0;
+};
+}        // namespace SYSTEMS
 
-#endif //SERIALIZESYSTEM_HPP
+#endif        // SERIALIZESYSTEM_HPP
