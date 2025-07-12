@@ -13,8 +13,10 @@ namespace ENGINE
 
 class QueueWorkerManager
 {
-	std::unordered_map<std::string, WorkerQueue> workersQueues;
-	WorkerQueue                                 *GetOrCreateWorkerQueue(Core *core, const std::string &name)
+  public:
+	QueueWorkerManager()  = default;
+	~QueueWorkerManager() = default;
+	WorkerQueue *GetOrCreateWorkerQueue(Core *core, const std::string &name)
 	{
 		if (workersQueues.contains(name))
 		{
@@ -25,6 +27,7 @@ class QueueWorkerManager
 		workersQueues.at(name).workerCommandPool = core->CreateCommandPool(core->logicalDevice.get(), core->queueFamilyIndices.graphicsFamilyIndex);
 		return &workersQueues.at(name);
 	}
+	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
 };
 Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, WindowDesc *compatibleWindowDesc,
            bool enableDebugging)
@@ -59,11 +62,13 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	std::vector<const char *> deviceExtensions;
 	deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	deviceExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
-	this->logicalDevice = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
-	                                          validationLayers);
-	this->graphicsQueue = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
-	this->presentQueue  = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
-	this->commandPool   = CreateCommandPool(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
+	this->logicalDevice      = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
+	                                               validationLayers);
+	this->graphicsQueue      = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
+	this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
+	this->commandPool        = CreateCommandPool(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager = std::make_unique<QueueWorkerManager>();
+	this->queueWorkerManager->GetOrCreateWorkerQueue(this, "Resources Threat");
 
 	for (auto &property : properties)
 	{

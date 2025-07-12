@@ -9,8 +9,8 @@ namespace ENGINE
 // core
 struct WorkerQueue
 {
-	vk::Queue workerQueue;
-	vk::UniqueCommandPool workerCommandPool;
+	vk::Queue workerQueue = {};
+	vk::UniqueCommandPool workerCommandPool = {};
 };
 struct QueueFamilyIndices
 {
