@@ -3,15 +3,11 @@
 // Created by carlo on 2024-09-22.
 //
 
+
 #ifndef STRUCTS_HPP
 namespace ENGINE
 {
 // core
-struct WorkerQueue
-{
-	vk::Queue workerQueue = {};
-	vk::UniqueCommandPool workerCommandPool = {};
-};
 struct QueueFamilyIndices
 {
 	uint32_t graphicsFamilyIndex;
@@ -155,6 +151,21 @@ struct GraphicsPipelineConfigs
 {
 	RasterizationConfigs rasterizationConfigs = RasterizationConfigs::R_FILL;
 	TopologyConfigs      topologyConfigs      = TopologyConfigs::T_TRIANGLE;
+};
+
+struct WorkerQueue
+{
+	vk::Queue workerQueue = {};
+	vk::UniqueCommandPool workerCommandPool = {};
+	SYSTEMS::TaskThread taskThreat = {};
+	vk::UniqueSemaphore timelineSemaphore = {};
+
+	WorkerQueue() = default;
+	~WorkerQueue() = default;
+	WorkerQueue(const WorkerQueue&) = delete;
+	WorkerQueue& operator=(const WorkerQueue&) = delete;
+	WorkerQueue(WorkerQueue&&) = default;
+	WorkerQueue& operator=(WorkerQueue&&) = default;
 };
 
 }        // namespace ENGINE

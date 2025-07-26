@@ -7,13 +7,19 @@
 #define TASKTHREAT_HPP
 namespace SYSTEMS
 {
-class TaskThreat
+class TaskThread
 {
-	TaskThreat()
+  public:
+	TaskThread() = default;
+	~TaskThread()
 	{
-		running = true;
-		// assetThreat = std::thread(&Run, this);
-	}
+		Stop();
+	};
+
+	TaskThread(const TaskThread &)            = delete;
+	TaskThread &operator=(const TaskThread &) = delete;
+	TaskThread(TaskThread &&)                 = default;
+	TaskThread &operator=(TaskThread &&)      = default;
 
 	void Run()
 	{
@@ -23,7 +29,7 @@ class TaskThreat
 			std::function<void()> task;
 			{
 				std::unique_lock<std::mutex> lock(queueMutex);
-				conditionVariable.wait(lock, [this, task]() { return !taskQueue.empty() || !running; });
+				conditionVariable.wait(lock, [this]() { return !taskQueue.empty() || !running; });
 				if (taskQueue.empty() || !running)
 				{
 					std::cout << "TaskQueue was empty and it shouldn't be!\n";
@@ -35,7 +41,19 @@ class TaskThreat
 			task();
 		}
 	}
-
+	void Start()
+	{
+		assetThreat = std::thread(&TaskThread::Run, this);
+	}
+	void Stop()
+	{
+		running = false;
+		conditionVariable.notify_one();
+		if (assetThreat.joinable())
+		{
+			assetThreat.join();
+		}
+	}
 	void AddTask(std::function<void()> task)
 	{
 		{
@@ -44,11 +62,11 @@ class TaskThreat
 		}
 		conditionVariable.notify_one();
 	}
-	std::atomic<bool>                 running;
-	std::queue<std::function<void()>> taskQueue;
-	std::thread                       assetThreat;
-	std::mutex                        queueMutex;
-	std::condition_variable           conditionVariable;
+	std::atomic<bool>                 running           = true;
+	std::queue<std::function<void()>> taskQueue         = {};
+	std::thread                       assetThreat       = {};
+	std::mutex                        queueMutex        = {};
+	std::condition_variable           conditionVariable = {};
 };
 
 }        // namespace SYSTEMS

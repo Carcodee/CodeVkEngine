@@ -3,6 +3,9 @@
 // Created by carlo on 2024-09-22.
 //
 
+
+
+
 #ifndef COREIMPL_HPP
 #define COREIMPL_HPP
 
@@ -22,9 +25,10 @@ class QueueWorkerManager
 		{
 			return &workersQueues.at(name);
 		}
-		workersQueues.try_emplace(name, WorkerQueue());
+		workersQueues.try_emplace(name);
 		workersQueues.at(name).workerQueue       = core->GetDeviceQueue(core->logicalDevice.get(), core->queueFamilyIndices.graphicsFamilyIndex);
 		workersQueues.at(name).workerCommandPool = core->CreateCommandPool(core->logicalDevice.get(), core->queueFamilyIndices.graphicsFamilyIndex);
+		workersQueues.at(name).timelineSemaphore = core->CreateVulkanTimelineSemaphore(workersQueues.size() - 1);
 		return &workersQueues.at(name);
 	}
 	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
@@ -125,6 +129,15 @@ std::vector<vk::UniqueCommandBuffer> Core::AllocateCommandBuffers(size_t count)
 	return logicalDevice->allocateCommandBuffersUnique(commandBufferAllocInfo);
 }
 
+std::vector<vk::UniqueCommandBuffer> Core::AllocateCommandBuffersSecondary(vk::CommandPool commandPoolIn,size_t count)
+{
+	auto commandBufferAllocInfo = vk::CommandBufferAllocateInfo()
+	                                  .setCommandPool(commandPoolIn)
+	                                  .setLevel(vk::CommandBufferLevel::eSecondary)
+	                                  .setCommandBufferCount(uint32_t(count));
+
+	return logicalDevice->allocateCommandBuffersUnique(commandBufferAllocInfo);
+}
 vk::UniqueSemaphore Core::CreateVulkanSemaphore()
 {
 	auto semaphoreInfo = vk::SemaphoreCreateInfo();
@@ -286,7 +299,8 @@ vk::UniqueDevice Core::CreateLogicalDevice(vk::PhysicalDevice physicalDevice, Qu
 	                            .setScalarBlockLayout(true)
 	                            .setDescriptorIndexing(true)
 	                            .setRuntimeDescriptorArray(true)
-	                            .setDescriptorBindingPartiallyBound(true);
+	                            .setDescriptorBindingPartiallyBound(true)
+	                            .setTimelineSemaphore(true);
 
 	auto deviceFeatures13 = vk::PhysicalDeviceVulkan13Features()
 	                            .setDynamicRendering(true);
