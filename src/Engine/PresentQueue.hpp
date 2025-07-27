@@ -3,6 +3,7 @@
 // Created by carlo on 2024-09-24.
 //
 
+
 #ifndef PRESENTQUEUE_HPP
 #define PRESENTQUEUE_HPP
 
@@ -66,7 +67,7 @@ struct InFlightQueue
 			frame.inflightFence              = core->CreateFence(true);
 			frame.imageAcquiredSemaphore     = core->CreateVulkanSemaphore();
 			frame.renderingFinishedSemaphore = core->CreateVulkanSemaphore();
-			frame.commandBuffer              = std::move(core->AllocateCommandBuffers(1)[0]);
+			frame.commandBuffer              = std::move(core->AllocateCommandBuffers(core->commandPool.get(), 1)[0]);
 			frameResources.push_back(std::move(frame));
 		}
 		frameIndex = 0;
@@ -119,6 +120,32 @@ struct InFlightQueue
 		}
 		presentQueue->PresentImage(currFrame.renderingFinishedSemaphore.get());
 		frameIndex = (frameIndex + 1) % frameResources.size();
+	}
+	void BeginParallelThreads()
+	{
+		for (auto &worker : core->queueWorkerManager.get()->workersQueues)
+		{
+			std::function<void()> workerStartTask([&worker, this] {
+				vk::CommandBufferInheritanceInfo inheritanceInfo = {};
+				worker.second.commandBuffer = std::move(core->AllocateCommandBuffersSecondary(worker.second.workerCommandPool.get(), 1)[0]);
+				auto bufferBeginInfo        = vk::CommandBufferBeginInfo()
+				                           .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)
+				                           .setPInheritanceInfo(&inheritanceInfo);
+				worker.second.commandBuffer->begin(bufferBeginInfo);
+			});
+			worker.second.taskThreat.AddTask(workerStartTask);
+		}
+	}
+
+	void EndParallelThreads()
+	{
+		for (auto &worker : core->queueWorkerManager.get()->workersQueues)
+		{
+			std::function<void()> workerStartTask([&worker, this] {
+				worker.second.commandBuffer->end();
+			});
+			worker.second.taskThreat.AddTask(workerStartTask);
+		}
 	}
 
 	std::vector<FrameResources> frameResources;

@@ -38,13 +38,13 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     // Rendering::HairRenderer* hairRenderer = dynamic_cast<Rendering::HairRenderer*>(renderers.at("HairRenderer").get());
     // hairRenderer->SetRenderOperation();
     
-    renderers.try_emplace("GSRenderer", std::make_unique<Rendering::GSRenderer>(core, windowProvider));
-    Rendering::GSRenderer* gsRenderer = dynamic_cast<Rendering::GSRenderer*>(renderers.at("GSRenderer").get());
-    gsRenderer->SetRenderOperation();
+    // renderers.try_emplace("GSRenderer", std::make_unique<Rendering::GSRenderer>(core, windowProvider));
+    // Rendering::GSRenderer* gsRenderer = dynamic_cast<Rendering::GSRenderer*>(renderers.at("GSRenderer").get());
+    // gsRenderer->SetRenderOperation();
     //
-    // renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
-    // Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
-    // flatRenderer->SetRenderOperation();
+    renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
+    Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
+    flatRenderer->SetRenderOperation();
     //
     //
     // renderers.try_emplace("GIRenderer", std::make_unique<Rendering::GIRenderer>(core, windowProvider));
@@ -148,14 +148,14 @@ void run(WindowProvider* windowProvider)
                 renderingResManager->UpdateResources();
                 resourcesManager->UpdateBuffers();
                 resourcesManager->UpdateImages();
-
+            	inFlightQueue->BeginParallelThreads();
                 inFlightQueue->BeginFrame();
 
                 auto& currFrame = inFlightQueue->frameResources[inFlightQueue->frameIndex];
 
                 profiler->EndProfilerCpuSpot("Cpu");
 
-                core->renderGraphRef->ExecuteAll();
+                core->renderGraphRef->ExecuteRendering();
 
 
                 // profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
@@ -166,6 +166,8 @@ void run(WindowProvider* windowProvider)
                 profiler->AddProfilerGpuSpot(legit::Colors::carrot, "Gpu");
 
                 resourcesManager->EndFrameDynamicUpdates(currFrame.commandBuffer.get());
+            	
+            	inFlightQueue->EndParallelThreads();
                 inFlightQueue->EndFrame();
                 profiler->EndProfilerGpuSpot("Gpu");
             }

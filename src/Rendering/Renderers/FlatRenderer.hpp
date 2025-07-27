@@ -59,7 +59,7 @@ class FlatRenderer : public BaseRenderer
 		auto       storageImageInfo = ENGINE::Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
 		                                                          ENGINE::g_32bFormat,
 		                                                          vk::ImageUsageFlagBits::eStorage |
-		                                                              vk::ImageUsageFlagBits::eTransferDst);
+		                                                              vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 		ImageView *lightLayer       = ResourcesManager::GetInstance()->GetImage("PaintingLayer", storageImageInfo, 0, 0);
 		ImageView *occluderLayer    = ResourcesManager::GetInstance()->GetImage(
             "OccluderLayer", storageImageInfo, 0, 0);
@@ -156,8 +156,9 @@ class FlatRenderer : public BaseRenderer
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-		auto *paintingNode = renderGraph->AddPass(paintingPassName);
+		auto *paintingNode = renderGraph->AddPass(paintingPassName, &renderGraph->core->queueWorkerManager.get()->workersQueues.at("Compute"));
 		paintingNode->SetCompShader(paintCompShader);
+		paintingNode->SetConfigs({true});
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
 		paintingNode->SetPushConstantSize(sizeof(PaintingPc));
 		paintingNode->SetConfigs({true});

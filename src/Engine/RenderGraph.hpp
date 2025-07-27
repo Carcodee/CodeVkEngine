@@ -952,6 +952,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		vertexInput.inputDescription.clear();
 		frameBufferSize  = {0, 0};
 		pushConstantSize = 0;
+		workerQueueRef   = nullptr;
 
 		colAttachments.clear();
 		depthAttachment = {};
@@ -981,7 +982,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	DynamicRenderPass                dynamicRenderPass;
 	std::unique_ptr<DescriptorCache> descCache;
 	std::string                      passName;
-	bool                             active = false;
+	WorkerQueue                     *workerQueueRef = nullptr;
+	bool                             active         = false;
 	// unused
 	bool        waitForResourcesCreation = false;
 	std::string path;
@@ -1119,7 +1121,7 @@ class RenderGraph
 		}
 	}
 
-	RenderGraphNode *AddPass(std::string name)
+	RenderGraphNode *AddPass(std::string name, WorkerQueue *workerQueue = nullptr)
 	{
 		if (!renderNodes.contains(name))
 		{
@@ -1132,6 +1134,7 @@ class RenderGraph
 			renderGraphNode->shadersProxyRef            = &shadersProxy;
 			renderGraphNode->core                       = core;
 			renderGraphNode->resManagerRef              = resourcesManager;
+			renderGraphNode->workerQueueRef             = workerQueue;
 			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 
@@ -1410,7 +1413,53 @@ class RenderGraph
 		}
 	}
 
-	void ExecuteAll()
+	void ExecuteParallel()
+	{
+		assert(currentFrameResources && "Current frame reference is null");
+		ResolveNodesOrder();
+
+		std::vector<std::string> allPassesNames;
+		int                      idx = 0;
+		for (auto &renderNode : renderNodesSorted)
+		{
+			if (renderNode->workerQueueRef == nullptr)
+			{
+				return;
+			}
+			if (!renderNode->active)
+			{
+				continue;
+			}
+
+			RenderGraphNode *node      = renderNode;
+			bool             depenNeed = false;
+			std::string      depenName = "";
+			for (auto &passName : allPassesNames)
+			{
+				if (node->dependencies.contains(passName))
+				{
+					depenNeed = true;
+					depenName = passName;
+				}
+			}
+			if (depenNeed)
+			{
+				RenderGraphNode *depenNode = renderNodes.at(depenName).get();
+				if (!depenNode->active)
+				{
+				}
+				BufferUsageTypes    lastNodeType    = (depenNode->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    currNodeType    = (node->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
+				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
+				CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
+			}
+			node->Execute(currentFrameResources->commandBuffer.get());
+			allPassesNames.push_back(node->passName);
+			idx = (idx + 1) % 16;
+		}
+	}
+	void ExecuteRendering()
 	{
 		assert(currentFrameResources && "Current frame reference is null");
 		ResolveNodesOrder();

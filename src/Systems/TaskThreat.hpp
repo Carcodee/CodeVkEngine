@@ -25,7 +25,7 @@ class TaskThread
 	{
 		while (running)
 		{
-			std::cout << "Running\n";
+			// std::cout << "Running\n";
 			std::function<void()> task;
 			{
 				std::unique_lock<std::mutex> lock(queueMutex);

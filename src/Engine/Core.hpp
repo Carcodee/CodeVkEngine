@@ -22,8 +22,8 @@ class Core
 	std::unique_ptr<SwapChain>   CreateSwapchain(vk::PresentModeKHR presentModeKHR, uint32_t imageCount, WindowDesc windowDesc, glm::uvec2 windowSize);
 	std::unique_ptr<RenderGraph> CreateRenderGraph();
 
-	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffers(size_t count);
-	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffersSecondary(vk::CommandPool commandPool,size_t count);
+	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffers(vk::CommandPool commandPoolIn, size_t count);
+	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffersSecondary(vk::CommandPool commandPool, size_t count);
 	vk::UniqueSemaphore                  CreateVulkanSemaphore();
 	vk::UniqueSemaphore                  CreateVulkanTimelineSemaphore(uint32_t initialValue);
 	vk::UniqueFence                      CreateFence(bool state);
@@ -33,7 +33,7 @@ class Core
 	void WaitIdle();
 
 	static vk::Queue GetDeviceQueue(vk::Device logicalDevice, uint32_t familyIndex);
-	
+
 	static vk::UniqueCommandPool CreateCommandPool(vk::Device logicalDevice, uint32_t familyIndex);
 
 	vk::UniqueInstance                  instance;
@@ -80,7 +80,7 @@ class ExecuteOnceCommand
 	ExecuteOnceCommand(Core *core)
 	{
 		this->core          = core;
-		commandBufferHandle = std::move(core->AllocateCommandBuffers(1)[0]);
+		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->commandPool.get(), 1)[0]);
 	}
 
 	vk::CommandBuffer BeginCommandBuffer()

@@ -3,9 +3,6 @@
 // Created by carlo on 2024-09-22.
 //
 
-
-
-
 #ifndef COREIMPL_HPP
 #define COREIMPL_HPP
 
@@ -19,16 +16,17 @@ class QueueWorkerManager
   public:
 	QueueWorkerManager()  = default;
 	~QueueWorkerManager() = default;
-	WorkerQueue *GetOrCreateWorkerQueue(Core *core, const std::string &name)
+	WorkerQueue *GetOrCreateWorkerQueue(Core *core, const std::string &name, uint32_t familyIndex)
 	{
 		if (workersQueues.contains(name))
 		{
 			return &workersQueues.at(name);
 		}
 		workersQueues.try_emplace(name);
-		workersQueues.at(name).workerQueue       = core->GetDeviceQueue(core->logicalDevice.get(), core->queueFamilyIndices.graphicsFamilyIndex);
+		workersQueues.at(name).workerQueue       = core->GetDeviceQueue(core->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).workerCommandPool = core->CreateCommandPool(core->logicalDevice.get(), core->queueFamilyIndices.graphicsFamilyIndex);
 		workersQueues.at(name).timelineSemaphore = core->CreateVulkanTimelineSemaphore(workersQueues.size() - 1);
+		workersQueues.at(name).taskThreat.Start();
 		return &workersQueues.at(name);
 	}
 	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
@@ -72,7 +70,8 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
 	this->commandPool        = CreateCommandPool(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager = std::make_unique<QueueWorkerManager>();
-	this->queueWorkerManager->GetOrCreateWorkerQueue(this, "Resources Threat");
+	this->queueWorkerManager->GetOrCreateWorkerQueue(this, "Transfer", queueFamilyIndices.transferFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue(this, "Compute", queueFamilyIndices.graphicsFamilyIndex);
 
 	for (auto &property : properties)
 	{
@@ -119,17 +118,17 @@ std::unique_ptr<RenderGraph> Core::CreateRenderGraph()
 	return renderGraph;
 }
 
-std::vector<vk::UniqueCommandBuffer> Core::AllocateCommandBuffers(size_t count)
+std::vector<vk::UniqueCommandBuffer> Core::AllocateCommandBuffers(vk::CommandPool commandPoolIn, size_t count)
 {
 	auto commandBufferAllocInfo = vk::CommandBufferAllocateInfo()
-	                                  .setCommandPool(commandPool.get())
+	                                  .setCommandPool(commandPoolIn)
 	                                  .setLevel(vk::CommandBufferLevel::ePrimary)
 	                                  .setCommandBufferCount(uint32_t(count));
 
 	return logicalDevice->allocateCommandBuffersUnique(commandBufferAllocInfo);
 }
 
-std::vector<vk::UniqueCommandBuffer> Core::AllocateCommandBuffersSecondary(vk::CommandPool commandPoolIn,size_t count)
+std::vector<vk::UniqueCommandBuffer> Core::AllocateCommandBuffersSecondary(vk::CommandPool commandPoolIn, size_t count)
 {
 	auto commandBufferAllocInfo = vk::CommandBufferAllocateInfo()
 	                                  .setCommandPool(commandPoolIn)
@@ -241,10 +240,15 @@ QueueFamilyIndices Core::FindQueueFamilyIndices(vk::PhysicalDevice physicalDevic
 {
 	std::vector<vk::QueueFamilyProperties> queueFamilies = physicalDevice.getQueueFamilyProperties();
 	QueueFamilyIndices                     queueFamilyIndices;
+	queueFamilyIndices.transferFamilyIndex = uint32_t(-1);
 	queueFamilyIndices.graphicsFamilyIndex = uint32_t(-1);
 	queueFamilyIndices.presentFamilyIndex  = uint32_t(-1);
 	for (int familyIndex = 0; familyIndex < queueFamilies.size(); ++familyIndex)
 	{
+		if (queueFamilies[familyIndex].queueFlags & vk::QueueFlagBits::eTransfer && queueFamilies[familyIndex].queueCount > 0 && queueFamilyIndices.graphicsFamilyIndex == uint32_t(-1))
+		{
+			queueFamilyIndices.transferFamilyIndex = familyIndex;
+		}
 		if (queueFamilies[familyIndex].queueFlags & vk::QueueFlagBits::eGraphics && queueFamilies[familyIndex].queueCount > 0 && queueFamilyIndices.graphicsFamilyIndex == uint32_t(-1))
 		{
 			queueFamilyIndices.graphicsFamilyIndex = familyIndex;
@@ -254,6 +258,7 @@ QueueFamilyIndices Core::FindQueueFamilyIndices(vk::PhysicalDevice physicalDevic
 			queueFamilyIndices.presentFamilyIndex = familyIndex;
 		}
 	}
+	assert(queueFamilyIndices.transferFamilyIndex != uint32_t(-1) && "Failed to find appropiate queue families");
 	assert(queueFamilyIndices.graphicsFamilyIndex != uint32_t(-1) && "Failed to find appropiate queue families");
 	assert(queueFamilyIndices.presentFamilyIndex != uint32_t(-1) && "Failed to find appropiate queue families");
 
@@ -265,7 +270,7 @@ vk::UniqueDevice Core::CreateLogicalDevice(vk::PhysicalDevice physicalDevice, Qu
                                            std::vector<const char *> validationLayers)
 {
 	std::pmr::set<uint32_t> uniqueQueueFamilyIndices = {
-	    familyIndices.graphicsFamilyIndex, familyIndices.presentFamilyIndex};
+	    familyIndices.graphicsFamilyIndex, familyIndices.presentFamilyIndex, familyIndices.transferFamilyIndex};
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 	float                                  queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilyIndices)

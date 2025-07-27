@@ -4,12 +4,14 @@
 //
 
 
+
 #ifndef STRUCTS_HPP
 namespace ENGINE
 {
 // core
 struct QueueFamilyIndices
 {
+	uint32_t transferFamilyIndex;
 	uint32_t graphicsFamilyIndex;
 	uint32_t presentFamilyIndex;
 };
@@ -159,6 +161,8 @@ struct WorkerQueue
 	vk::UniqueCommandPool workerCommandPool = {};
 	SYSTEMS::TaskThread taskThreat = {};
 	vk::UniqueSemaphore timelineSemaphore = {};
+	vk::UniqueCommandBuffer commandBuffer;
+	FrameResources frameResources = {};
 
 	WorkerQueue() = default;
 	~WorkerQueue() = default;
