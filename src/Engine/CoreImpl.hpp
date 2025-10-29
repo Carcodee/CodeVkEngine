@@ -16,8 +16,9 @@ class QueueWorkerManager
   public:
 	QueueWorkerManager()  = default;
 	~QueueWorkerManager() = default;
-	WorkerQueue *GetOrCreateWorkerQueue(Core *core, const std::string &name, uint32_t familyIndex)
+	WorkerQueue *GetOrCreateWorkerQueue(const std::string &name, uint32_t familyIndex)
 	{
+		assert(core != nullptr);
 		if (workersQueues.contains(name))
 		{
 			return &workersQueues.at(name);
@@ -29,6 +30,13 @@ class QueueWorkerManager
 		workersQueues.at(name).taskThreat.Start();
 		return &workersQueues.at(name);
 	}
+
+	WorkerQueue *GetOrCreateWorkerQueue(const std::string &name)
+	{
+		GetOrCreateWorkerQueue(name, core->queueFamilyIndices.graphicsFamilyIndex);
+		return &workersQueues.at(name);
+	}
+	Core                                        *core;
 	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
 };
 Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, WindowDesc *compatibleWindowDesc,
@@ -64,14 +72,15 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	std::vector<const char *> deviceExtensions;
 	deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	deviceExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
-	this->logicalDevice      = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
-	                                               validationLayers);
-	this->graphicsQueue      = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
-	this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
-	this->commandPool        = CreateCommandPool(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
-	this->queueWorkerManager = std::make_unique<QueueWorkerManager>();
-	this->queueWorkerManager->GetOrCreateWorkerQueue(this, "Transfer", queueFamilyIndices.transferFamilyIndex);
-	this->queueWorkerManager->GetOrCreateWorkerQueue(this, "Compute", queueFamilyIndices.graphicsFamilyIndex);
+	this->logicalDevice            = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
+	                                                     validationLayers);
+	this->graphicsQueue            = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
+	this->presentQueue             = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
+	this->commandPool              = CreateCommandPool(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager       = std::make_unique<QueueWorkerManager>();
+	this->queueWorkerManager->core = this;
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Transfer", queueFamilyIndices.transferFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.graphicsFamilyIndex);
 
 	for (auto &property : properties)
 	{

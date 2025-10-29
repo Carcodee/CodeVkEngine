@@ -3,6 +3,8 @@
 // Created by carlo on 2024-12-02.
 //
 
+
+
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
 
@@ -156,7 +158,8 @@ class FlatRenderer : public BaseRenderer
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-		auto *paintingNode = renderGraph->AddPass(paintingPassName, &renderGraph->core->queueWorkerManager.get()->workersQueues.at("Compute"));
+		// auto *paintingNode = renderGraph->AddPass(paintingPassName, renderGraph->core->queueWorkerManager.get()->GetOrCreateWorkerQueue("Compute"));
+		auto *paintingNode = renderGraph->AddPass(paintingPassName);
 		paintingNode->SetCompShader(paintCompShader);
 		paintingNode->SetConfigs({true});
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);

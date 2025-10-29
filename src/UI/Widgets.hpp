@@ -393,7 +393,7 @@ struct GraphNodeRegistry
 		callbacksRegistry.try_emplace(N_VERTEX_INPUT, CallbackInfo{});
 
 		callbacksRegistry.at(N_ROOT_NODE).AddCallback("output_c", [](GraphNode &selfNode) {
-			auto lastNodeName = selfNode.renderGraph->renderNodesSorted.back();
+			auto lastNodeName = selfNode.renderGraph->sequentialRenderNodes.back();
 			selfNode.SetOuputData("out_root_node", lastNodeName->passName);
 			SYSTEMS::Logger::GetInstance()->LogMessage(lastNodeName->passName);
 		});

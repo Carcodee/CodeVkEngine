@@ -416,7 +416,7 @@ class ImguiRenderer
 		};
 		static std::vector<NodeInfo> nodeInfos;
 
-		for (auto &node : core->renderGraphRef->renderNodesSorted)
+		for (auto &node : core->renderGraphRef->sequentialRenderNodes)
 		{
 			nodeInfos.emplace_back(NodeInfo{&node->active, node->passName});
 		}

@@ -653,6 +653,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	void SetRenderOperation(std::function<void()> *renderOperations)
 	{
+		if (this->renderOperations)
+		{
+			delete (this->renderOperations);
+		}
 		this->renderOperations = renderOperations;
 	}
 
@@ -928,6 +932,12 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			bufferProxyRef->at(name) = buffer;
 		}
 	}
+	void CreateInternalTexture()
+	{
+	}
+	void RegisterExternalTexture()
+	{
+	}
 
 	void SetConfigs(RenderNodeConfigs configs)
 	{
@@ -990,14 +1000,14 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
   private:
 	friend class RenderGraph;
-
-	RenderNodeConfigs         configs                 = {false};
-	GraphicsPipelineConfigs   graphicsPipelineConfigs = {};
-	std::vector<BlendConfigs> colorBlendConfigs;
-	DepthConfigs              depthConfig = D_NONE;
-	VertexInput               vertexInput;
-	glm::uvec2                frameBufferSize  = {0, 0};
-	size_t                    pushConstantSize = 4;
+	std::unique_ptr<ResourcesManager> localResManager;
+	RenderNodeConfigs                 configs                 = {false};
+	GraphicsPipelineConfigs           graphicsPipelineConfigs = {};
+	std::vector<BlendConfigs>         colorBlendConfigs;
+	DepthConfigs                      depthConfig = D_NONE;
+	VertexInput                       vertexInput;
+	glm::uvec2                        frameBufferSize  = {0, 0};
+	size_t                            pushConstantSize = 4;
 
 	std::vector<AttachmentInfo>     colAttachments;
 	AttachmentInfo                  depthAttachment = {};
@@ -1044,7 +1054,8 @@ class RenderGraph
 	size_t          frameIndex;
 
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
-	std::vector<RenderGraphNode *>                                    renderNodesSorted;
+	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
+	std::vector<RenderGraphNode *>                                    sortedByDepNodes;
 
 	std::unordered_map<std::string, ImageView *>                      imagesProxy;
 	std::unordered_map<std::string, BufferKey>                        buffersProxy;
@@ -1052,6 +1063,8 @@ class RenderGraph
 	std::unordered_map<std::string, AttachmentInfo>                   outDepthAttachmentProxy;
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
+	std::unordered_map<std::string, int>                              queueOrder;
+	std::vector<std::string>                                          OrderedQueuesNames;
 
 	RenderGraph(Core *core)
 	{
@@ -1060,7 +1073,7 @@ class RenderGraph
 
 	void SerializeAll()
 	{
-		for (auto node : renderNodesSorted)
+		for (auto node : sequentialRenderNodes)
 		{
 			node->Serialize();
 		}
@@ -1092,7 +1105,7 @@ class RenderGraph
 	}
 	void UpdateAllFromMetaData()
 	{
-		for (auto &node : renderNodesSorted)
+		for (auto &node : sequentialRenderNodes)
 		{
 			node->Deserialize(node->path);
 			SYSTEMS::Logger::GetInstance()->LogMessage("Render Node: (" + node->passName + ") updated");
@@ -1137,9 +1150,9 @@ class RenderGraph
 			renderGraphNode->workerQueueRef             = workerQueue;
 			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
-
+			renderGraphNode->localResManager = std::make_unique<ResourcesManager>(core);
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
-			renderNodesSorted.push_back(renderNodes.at(name).get());
+			sequentialRenderNodes.push_back(renderNodes.at(name).get());
 			return renderNodes.at(name).get();
 		}
 		return renderNodes.at(name).get();
@@ -1362,15 +1375,80 @@ class RenderGraph
 			assert(false && "reload shaders failed");
 		}
 	}
-	void ResolveNodesOrder()
+	void SortNodesByDep()
 	{
-		std::vector<RenderGraphNode> nodes;
-		for (int i = renderNodesSorted.size() - 1; i >= 0; i--)
+		std::vector<std::string> solvedNodesOrdered;
+		std::set<std::string>    solvedNodesNames;
+		solvedNodesOrdered.reserve(sequentialRenderNodes.size());
+		for (auto &node : sequentialRenderNodes)
 		{
-			RenderGraphNode *node = renderNodesSorted[i];
+			if (node->dependencies.empty())
+			{
+				solvedNodesOrdered.emplace_back(node->passName);
+				if (!solvedNodesNames.contains(node->passName))
+				{
+					solvedNodesNames.insert(node->passName);
+				}
+			}
+		}
+
+		int idx = 0;
+		int currSearch = 0;
+		int maxSearch = 10000;
+		while (solvedNodesOrdered.size() < sequentialRenderNodes.size() || currSearch <= maxSearch)
+		{
+			auto& node = sequentialRenderNodes[idx];
+			if (solvedNodesNames.contains(node->passName))
+			{
+				currSearch++;
+				idx = (idx + 1) % sequentialRenderNodes.size();
+				continue;
+			}
+			int toSolveDep = node->dependencies.size();
+			int solvedDep  = 0;
+			for (auto &depName : node->dependencies)
+			{
+				if (solvedNodesNames.contains(depName))
+				{
+					solvedDep++;
+				}
+			}
+			if (toSolveDep == solvedDep)
+			{
+				if (!solvedNodesNames.contains(node->passName))
+				{
+					solvedNodesOrdered.emplace_back(node->passName);
+					solvedNodesNames.insert(node->passName);
+				}
+			}
+			currSearch++;
+			idx = (idx + 1) % sequentialRenderNodes.size();
+		}
+		bool reorderDone = solvedNodesOrdered.size() == sequentialRenderNodes.size();
+		sortedByDepNodes.clear();
+		sortedByDepNodes.reserve(solvedNodesOrdered.size());
+		for (int i = 0; i < solvedNodesOrdered.size(); ++i)
+		{
+			sortedByDepNodes.emplace_back(GetNode(solvedNodesOrdered[i]));
+		}
+		
+	}
+	void SortQueueSubmition(std::vector<RenderGraphNode> &renderGraphNodes)
+	{
+		for (int i = 0; i < sequentialRenderNodes.size(); ++i)
+		{
+			// return a queue order based on the dependancies
+		}
+	}
+
+	void ResolveNodesDependancies()
+	{
+		for (int i = sequentialRenderNodes.size() - 1; i >= 0; i--)
+		{
+			RenderGraphNode *node = sequentialRenderNodes[i];
 			for (int j = i - 1; j >= 0; j--)
 			{
-				RenderGraphNode *toCheckNode = renderNodesSorted[j];
+				RenderGraphNode *toCheckNode = sequentialRenderNodes[j];
 
 				for (auto &image : toCheckNode->imageAttachmentsNames)
 				{
@@ -1413,60 +1491,15 @@ class RenderGraph
 		}
 	}
 
-	void ExecuteParallel()
-	{
-		assert(currentFrameResources && "Current frame reference is null");
-		ResolveNodesOrder();
-
-		std::vector<std::string> allPassesNames;
-		int                      idx = 0;
-		for (auto &renderNode : renderNodesSorted)
-		{
-			if (renderNode->workerQueueRef == nullptr)
-			{
-				return;
-			}
-			if (!renderNode->active)
-			{
-				continue;
-			}
-
-			RenderGraphNode *node      = renderNode;
-			bool             depenNeed = false;
-			std::string      depenName = "";
-			for (auto &passName : allPassesNames)
-			{
-				if (node->dependencies.contains(passName))
-				{
-					depenNeed = true;
-					depenName = passName;
-				}
-			}
-			if (depenNeed)
-			{
-				RenderGraphNode *depenNode = renderNodes.at(depenName).get();
-				if (!depenNode->active)
-				{
-				}
-				BufferUsageTypes    lastNodeType    = (depenNode->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
-				BufferUsageTypes    currNodeType    = (node->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
-				BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
-				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
-				CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
-			}
-			node->Execute(currentFrameResources->commandBuffer.get());
-			allPassesNames.push_back(node->passName);
-			idx = (idx + 1) % 16;
-		}
-	}
 	void ExecuteRendering()
 	{
 		assert(currentFrameResources && "Current frame reference is null");
-		ResolveNodesOrder();
+		ResolveNodesDependancies();
+		SortNodesByDep();
 
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;
-		for (auto &renderNode : renderNodesSorted)
+		for (auto &renderNode : sortedByDepNodes)
 		{
 			// Profiler::GetInstance()->
 			// AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
@@ -1492,6 +1525,8 @@ class RenderGraph
 				RenderGraphNode *depenNode = renderNodes.at(depenName).get();
 				if (!depenNode->active)
 				{
+					// if a dependency is not active we skip the node
+					continue;
 				}
 				BufferUsageTypes    lastNodeType    = (depenNode->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
 				BufferUsageTypes    currNodeType    = (node->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
@@ -1499,7 +1534,18 @@ class RenderGraph
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
 			}
-			node->Execute(currentFrameResources->commandBuffer.get());
+			if (node->workerQueueRef == nullptr)
+			{
+				node->Execute(currentFrameResources->commandBuffer.get());
+			}
+			else
+			{
+				std::string           name = node->passName;
+				std::function<void()> nodeTask([name, this] {
+					renderNodes.at(name)->Execute(renderNodes.at(name)->workerQueueRef->commandBuffer.get());
+				});
+				node->workerQueueRef->taskThreat.AddTask(nodeTask);
+			}
 			// Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
 			allPassesNames.push_back(node->passName);
 			idx = (idx + 1) % 16;
