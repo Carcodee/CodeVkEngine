@@ -17,7 +17,7 @@ struct BufferKey
 
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 {
-	bool automaticCache = false;
+	bool automaticCache = true;
 
 	RenderNodeConfigs(bool automaticCache)
 	{
@@ -501,7 +501,44 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			CreateMemBarrier(srcPattern, dstPattern, commandBuffer);
 		}
 	}
-
+	void SetSampler(std::string name, ImageView* imageView, Sampler* sampler = nullptr)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetSampler(name, imageView, sampler);
+	}
+	void SetSamplerArray(std::string name, std::vector<ImageView*>& imageViews, std::vector<Sampler*>* samplers = nullptr)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetSamplerArray(name, imageViews, samplers);
+	}
+	void SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetStorageImage(name, imageView, sampler);
+	}
+	void SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
+	                          std::vector<Sampler *> *samplers = nullptr)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetStorageImageArray(name, imageViews, samplers);
+	}
+	template <typename T>
+	void SetBuffer(std::string name, T& bufferData)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetBuffer<T>(name, bufferData);
+	}
+	template<typename T>
+	void SetBuffer(std::string name, std::vector<T>& bufferData)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetBuffer<T>(name, bufferData);
+	}
+	void SetBuffer(std::string name, Buffer* bufferData)
+	{
+		assert(descCache && " Is not possible to set a shader value before building the node");
+		descCache->SetBuffer(name, bufferData);
+	}
 	void ReloadShaders()
 	{
 		Shader *vertShader = shaders.at("vert");
@@ -1001,7 +1038,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
   private:
 	friend class RenderGraph;
 	std::unique_ptr<ResourcesManager> localResManager;
-	RenderNodeConfigs                 configs                 = {false};
+	RenderNodeConfigs                 configs                 = {true};
 	GraphicsPipelineConfigs           graphicsPipelineConfigs = {};
 	std::vector<BlendConfigs>         colorBlendConfigs;
 	DepthConfigs                      depthConfig = D_NONE;
@@ -1495,11 +1532,11 @@ class RenderGraph
 	{
 		assert(currentFrameResources && "Current frame reference is null");
 		ResolveNodesDependancies();
-		SortNodesByDep();
+		// SortNodesByDep();
 
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;
-		for (auto &renderNode : sortedByDepNodes)
+		for (auto &renderNode : sequentialRenderNodes)
 		{
 			// Profiler::GetInstance()->
 			// AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);

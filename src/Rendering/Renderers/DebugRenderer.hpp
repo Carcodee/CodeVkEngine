@@ -18,7 +18,6 @@ class DebugRenderer : public BaseRenderer
 		this->core           = core;
 		this->renderGraph    = core->renderGraphRef;
 		this->windowProvider = windowProvider;
-		this->mDebuggerCache = std::make_unique<DescriptorCache>(core);
 		if (renderers.contains("ClusterRenderer"))
 		{
 			this->clusterRenderer = dynamic_cast<ClusterRenderer *>(renderers.at("ClusterRenderer").get());
@@ -56,21 +55,6 @@ class DebugRenderer : public BaseRenderer
 			                                                     shaderPath + "\\spirvGlsl\\DebugRendering\\debug.vert.spv", S_VERT);
 			modelFShader              = std::make_unique<Shader>(logicalDevice,
 			                                                     shaderPath + "\\spirvGlsl\\DebugRendering\\debug.frag.spv", S_FRAG);
-			mDebuggerCache->AddShaderInfo(modelVShader->sParser.get());
-			mDebuggerCache->AddShaderInfo(modelFShader->sParser.get());
-			mDebuggerCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex |
-			                                      vk::ShaderStageFlagBits::eFragment);
-
-			auto pushConstantRange = vk::PushConstantRange()
-			                             .setOffset(0)
-			                             .setStageFlags(
-			                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-			                             .setSize(sizeof(MvpPc));
-
-			auto layoutCreateInfo = vk::PipelineLayoutCreateInfo()
-			                            .setSetLayoutCount(1)
-			                            .setPushConstantRanges(pushConstantRange)
-			                            .setPSetLayouts(&mDebuggerCache->dstLayout.get());
 
 			VertexInput    vertexInput = D_Vertex3D::GetVertexInput();
 			AttachmentInfo colInfo     = GetColorAttachmentInfo(
@@ -81,7 +65,7 @@ class DebugRenderer : public BaseRenderer
 			renderNode->SetVertShader(modelVShader.get());
 			renderNode->SetFragShader(modelFShader.get());
 			renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-			renderNode->SetPipelineLayoutCI(layoutCreateInfo);
+			renderNode->SetPushConstantSize(sizeof(MvpPc));
 			renderNode->SetVertexInput(vertexInput);
 			renderNode->AddColorAttachmentOutput("modelCol", colInfo, BlendConfigs::B_OPAQUE);
 			renderNode->SetGraphicsPipelineConfigs({RasterizationConfigs::R_LINE, TopologyConfigs::T_TRIANGLE});
@@ -114,7 +98,7 @@ class DebugRenderer : public BaseRenderer
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(node->pipelineType,
 				                                                                           node->pipelineLayout.get(), 0,
 				                                                                           1,
-				                                                                           &mDebuggerCache->dstSet, 0, nullptr);
+				                                                                           &node->descCache->dstSet, 0, nullptr);
 
                     renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
 
@@ -199,7 +183,6 @@ class DebugRenderer : public BaseRenderer
 	Core                            *core;
 	RenderGraph                     *renderGraph;
 	WindowProvider                  *windowProvider;
-	std::unique_ptr<DescriptorCache> mDebuggerCache;
 
 	ImageView *colAttachmentView;
 	Buffer    *rawVerticesBuff;

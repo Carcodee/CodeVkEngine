@@ -5,6 +5,7 @@
 
 
 
+
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
 
@@ -20,11 +21,6 @@ class FlatRenderer : public BaseRenderer
 		this->core           = core;
 		this->renderGraph    = core->renderGraphRef;
 		this->windowProvider = windowProvider;
-		outputCache          = std::make_unique<DescriptorCache>(core);
-		// probesGenCache = std::make_unique<DescriptorCache>(core);
-		paintingCache       = std::make_unique<DescriptorCache>(core);
-		mergeCascadesCache  = std::make_unique<DescriptorCache>(core);
-		cascadesResultCache = std::make_unique<DescriptorCache>(core);
 		CreateResources();
 		CreateBuffers();
 		CreatePipelines();
@@ -161,10 +157,8 @@ class FlatRenderer : public BaseRenderer
 		// auto *paintingNode = renderGraph->AddPass(paintingPassName, renderGraph->core->queueWorkerManager.get()->GetOrCreateWorkerQueue("Compute"));
 		auto *paintingNode = renderGraph->AddPass(paintingPassName);
 		paintingNode->SetCompShader(paintCompShader);
-		paintingNode->SetConfigs({true});
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
 		paintingNode->SetPushConstantSize(sizeof(PaintingPc));
-		paintingNode->SetConfigs({true});
 		paintingNode->AddStorageResource("PaintingStorage", paintingLayers[0]);
 		paintingNode->AddStorageResource("OcluddersStorage", paintingLayers[1]);
 		paintingNode->AddStorageResource("DebugLayer", paintingLayers[2]);
@@ -202,30 +196,15 @@ class FlatRenderer : public BaseRenderer
 		fragShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv",
 		    S_FRAG);
-		outputCache->AddShaderInfo(vertShader->sParser.get());
-		outputCache->AddShaderInfo(fragShader->sParser.get());
-		outputCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
 		AttachmentInfo outputColInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 
-		auto pushConstantRange = vk::PushConstantRange()
-		                             .setOffset(0)
-		                             .setStageFlags(
-		                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-		                             .setSize(sizeof(RcPc));
-
-		auto layoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		                            .setSetLayoutCount(1)
-		                            .setPushConstantRanges(pushConstantRange)
-		                            .setPSetLayouts(&outputCache->dstLayout.get());
-
 		auto renderNode = renderGraph->AddPass(rCascadesPassName);
-
 		renderNode->SetVertShader(vertShader);
 		renderNode->SetFragShader(fragShader);
 		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->SetPipelineLayoutCI(layoutCreateInfo);
+		renderNode->SetPushConstantSize(sizeof(RcPc));
 		renderNode->SetVertexInput(vertexInput);
 		renderNode->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
 		renderNode->BuildRenderGraphNode();
@@ -239,15 +218,6 @@ class FlatRenderer : public BaseRenderer
 
 		mergeVertShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
 		mergeFragShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
-		mergeCascadesCache->AddShaderInfo(mergeVertShader->sParser.get());
-		mergeCascadesCache->AddShaderInfo(mergeFragShader->sParser.get());
-		mergeCascadesCache->BuildDescriptorsCache(
-		    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-
-		auto mergeLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		                                 .setSetLayoutCount(1)
-		                                 .setPushConstantRanges(pushConstantRange)
-		                                 .setPSetLayouts(&mergeCascadesCache->dstLayout.get());
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
@@ -255,8 +225,8 @@ class FlatRenderer : public BaseRenderer
 			auto        mergeRenderNode = renderGraph->AddPass(name);
 			mergeRenderNode->SetVertShader(mergeVertShader);
 			mergeRenderNode->SetFragShader(mergeFragShader);
+			mergeRenderNode->SetPushConstantSize(sizeof(RcPc));
 			mergeRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-			mergeRenderNode->SetPipelineLayoutCI(mergeLayoutCreateInfo);
 			mergeRenderNode->SetVertexInput(vertexInput);
 			mergeRenderNode->AddColorAttachmentOutput("mergeColor_" + std::to_string(i), mergeColInfo, BlendConfigs::B_OPAQUE);
 			std::string name1 = "radianceStorage_" + std::to_string(i);
@@ -277,22 +247,11 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath +
 		        "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv",
 		    S_FRAG);
-		cascadesResultCache->AddShaderInfo(resultVertShader->sParser.get());
-		cascadesResultCache->AddShaderInfo(resultFragShader->sParser.get());
-		cascadesResultCache->BuildDescriptorsCache(
-		    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-
-		auto resultLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		                                  .setSetLayoutCount(1)
-		                                  .setPushConstantRanges(pushConstantRange)
-		                                  .setPSetLayouts(&cascadesResultCache->dstLayout.get());
-
 		auto resultNode = renderGraph->AddPass(resultPassName);
-
 		resultNode->SetVertShader(resultVertShader);
 		resultNode->SetFragShader(resultFragShader);
 		resultNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		resultNode->SetPipelineLayoutCI(resultLayoutCreateInfo);
+		resultNode->SetPushConstantSize(sizeof(RcPc));
 		resultNode->SetVertexInput(vertexInput);
 		resultNode->AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
 		resultNode->BuildRenderGraphNode();
@@ -381,20 +340,20 @@ class FlatRenderer : public BaseRenderer
 		});
 		auto radianceOutputOp   = new std::function<void()>(
             [this]() {
-                outputCache->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
-                outputCache->SetStorageImageArray("PaintingLayers", paintingLayers);
-                outputCache->SetStorageImageArray("Radiances", radiancesImages);
-                outputCache->SetSampler("TestImage", testImage->imageView.get());
-                outputCache->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
-                outputCache->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
-                outputCache->SetSamplerArray("MatTextures",
+                auto &renderNode = renderGraph->renderNodes.at(rCascadesPassName);
+                renderNode->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
+                renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
+                renderNode->SetStorageImageArray("Radiances", radiancesImages);
+                renderNode->SetSampler("TestImage", testImage->imageView.get());
+                renderNode->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
+                renderNode->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
+                renderNode->SetSamplerArray("MatTextures",
 			                                   backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 
-                auto &renderNode = renderGraph->renderNodes.at(rCascadesPassName);
                 renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
 			                                                                            renderNode->pipelineLayout.get(), 0,
 			                                                                            1,
-			                                                                            &outputCache->dstSet, 0, nullptr);
+			                                                                            &renderNode->descCache->dstSet, 0, nullptr);
                 vk::DeviceSize offset = 0;
                 renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                 renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
@@ -425,16 +384,16 @@ class FlatRenderer : public BaseRenderer
                 [this, i]() {
                     int         idx       = i;
                     std::string mergeName = rMergePassName + "_" + std::to_string(idx);
-                    mergeCascadesCache->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
-                    mergeCascadesCache->SetStorageImageArray("Radiances", radiancesImages);
+                    auto &renderNode = renderGraph->renderNodes.at(mergeName);
+                    renderNode->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
+                    renderNode->SetStorageImageArray("Radiances", radiancesImages);
 
                     rcPc.cascadeIndex = idx;
 
-                    auto &renderNode = renderGraph->renderNodes.at(mergeName);
                     renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
 				                                                                                     renderNode->pipelineLayout.get(), 0,
 				                                                                                     1,
-				                                                                                     &mergeCascadesCache->dstSet, 0, nullptr);
+				                                                                                     &renderNode->descCache->dstSet, 0, nullptr);
                     vk::DeviceSize offset = 0;
                     renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                     renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
@@ -460,21 +419,21 @@ class FlatRenderer : public BaseRenderer
         });
 		auto resultRenderOp = new std::function<void()>(
 		    [this]() {
-			    cascadesResultCache->SetStorageImageArray("PaintingLayers", paintingLayers);
-			    cascadesResultCache->SetStorageImageArray("Radiances", radiancesImages);
-			    cascadesResultCache->SetSampler("TestImage", testImage->imageView.get());
-			    cascadesResultCache->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
-			    cascadesResultCache->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
-			    cascadesResultCache->SetSamplerArray("MatTextures",
-			                                         backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
-			    cascadesResultCache->SetBuffer("LightInfo", light);
-			    cascadesResultCache->SetBuffer("RConfigs", rConfigs);
-
 			    auto &renderNode = renderGraph->renderNodes.at(resultPassName);
+			    renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
+			    renderNode->SetStorageImageArray("Radiances", radiancesImages);
+			    renderNode->SetSampler("TestImage", testImage->imageView.get());
+			    renderNode->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
+			    renderNode->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
+			    renderNode->SetSamplerArray("MatTextures",
+			                                         backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
+			    renderNode->SetBuffer("LightInfo", light);
+			    renderNode->SetBuffer("RConfigs", rConfigs);
+
 			    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
 			                                                                          renderNode->pipelineLayout.get(), 0,
 			                                                                          1,
-			                                                                          &cascadesResultCache->dstSet, 0, nullptr);
+			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
 			    vk::DeviceSize offset = 0;
 			    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
 			    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
@@ -522,26 +481,21 @@ class FlatRenderer : public BaseRenderer
 	std::string rMergePassName    = "rMergePass";
 	std::string resultPassName    = "resultPass";
 
-	std::unique_ptr<DescriptorCache> cascadesResultCache;
 	Shader                          *resultVertShader;
 	Shader                          *resultFragShader;
 
-	std::unique_ptr<DescriptorCache> mergeCascadesCache;
 	Shader                          *mergeVertShader;
 	Shader                          *mergeFragShader;
 	std::vector<ImageView *>         radiancesImages;
 
-	std::unique_ptr<DescriptorCache> outputCache;
 	Shader                          *vertShader;
 	Shader                          *fragShader;
 
 	std::vector<std::string> probesGenPassNames;
-	// std::unique_ptr<DescriptorCache> probesGenCache;
 	Shader                  *probesVertShader;
 	Shader                  *probesFragShader;
 	std::vector<ImageView *> cascadesAttachmentsImagesViews;
 
-	std::unique_ptr<DescriptorCache> paintingCache;
 	Shader                          *paintCompShader;
 	std::vector<ImageView *>         paintingLayers;
 	std::vector<Material *>          backgroundMaterials;

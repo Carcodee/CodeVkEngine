@@ -553,6 +553,18 @@ namespace ENGINE
             }
             UpdateDescriptor();
         }
+    	bool HasAnyData()
+        {
+        	if (!bufferBindingsKeys.empty())
+        	{
+			    return true;
+        	}
+        	if (!imageBindingsKeys.empty())
+        	{
+			    return true;
+        	}
+        	return false;
+        }
 
         ResourcesManager* resourcesManagerRef;
         std::unordered_map<std::string, ShaderResource> bufferBindingsKeys;

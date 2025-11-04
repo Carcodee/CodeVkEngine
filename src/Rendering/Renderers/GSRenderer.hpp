@@ -3,6 +3,9 @@
 // Created by carlo on 2025-03-26.
 //
 
+
+
+
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -118,13 +121,13 @@ class GSRenderer : public BaseRenderer
 		renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
 		renderNode->BuildRenderGraphNode();
 
-		renderNode->descCache->SetBuffer("GSScale", gaussians.scales);
-		renderNode->descCache->SetBuffer("GSRot", gaussians.rots);
-		renderNode->descCache->SetBuffer("GSPos", gaussians.pos);
-		renderNode->descCache->SetBuffer("GSCols", gaussians.cols);
-		renderNode->descCache->SetBuffer("GSAlphas", gaussians.alphas);
-		renderNode->descCache->SetBuffer("HFov", gaussians.hFovFocal);
-		renderNode->descCache->SetBuffer("GSShs", gaussians.shCoefs);
+		renderNode->SetBuffer("GSScale", gaussians.scales);
+		renderNode->SetBuffer("GSRot", gaussians.rots);
+		renderNode->SetBuffer("GSPos", gaussians.pos);
+		renderNode->SetBuffer("GSCols", gaussians.cols);
+		renderNode->SetBuffer("GSAlphas", gaussians.alphas);
+		renderNode->SetBuffer("HFov", gaussians.hFovFocal);
+		renderNode->SetBuffer("GSShs", gaussians.shCoefs);
 	}
 
 	void RecreateSwapChainResources() override
@@ -194,7 +197,7 @@ class GSRenderer : public BaseRenderer
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(passName);
 
-			    renderNode->descCache->SetBuffer("GSConfigs", gsConfigsPc);
+			    renderNode->SetBuffer("GSConfigs", gsConfigsPc);
 
 			    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
 			                                                                          renderNode->pipelineLayout.get(), 0,
