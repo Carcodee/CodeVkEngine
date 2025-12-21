@@ -5,6 +5,7 @@
 
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
+#define DUMMY_PC_SIZE 4
 
 namespace ENGINE
 {
@@ -252,21 +253,21 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				}
 
 				descCache->BuildDescriptorsCache(stageFlags);
-
-				if (pushConstantSize != 0)
+				if (pushConstantSize <= 0)
 				{
-					auto paintingPushConstantRanges = vk::PushConstantRange()
-					                                      .setOffset(0)
-					                                      .setStageFlags(
-					                                          vk::ShaderStageFlagBits::eVertex |
-					                                          vk::ShaderStageFlagBits::eFragment)
-					                                      .setSize(pushConstantSize);
-					auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-					                                    .setSetLayoutCount(1)
-					                                    .setPushConstantRanges(paintingPushConstantRanges)
-					                                    .setPSetLayouts(&descCache->dstLayout.get());
-					SetPipelineLayoutCI(paintingLayoutCreateInfo);
+					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
+				auto paintingPushConstantRanges = vk::PushConstantRange()
+				                                      .setOffset(0)
+				                                      .setStageFlags(
+				                                          vk::ShaderStageFlagBits::eVertex |
+				                                          vk::ShaderStageFlagBits::eFragment)
+				                                      .setSize(pushConstantSize);
+				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+				                                    .setSetLayoutCount(1)
+				                                    .setPushConstantRanges(paintingPushConstantRanges)
+				                                    .setPSetLayouts(&descCache->dstLayout.get());
+				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 			std::vector<vk::Format> colorFormats;
 			colorFormats.reserve(colAttachments.size());
@@ -296,19 +297,21 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				descCache->AddShaderInfo(compShader->sParser.get());
 				descCache->BuildDescriptorsCache(
 				    vk::ShaderStageFlagBits::eCompute);
-				if (pushConstantSize != 0)
+
+				if (pushConstantSize <= 0)
 				{
-					auto paintingPushConstantRanges = vk::PushConstantRange()
-					                                      .setOffset(0)
-					                                      .setStageFlags(
-					                                          vk::ShaderStageFlagBits::eCompute)
-					                                      .setSize(pushConstantSize);
-					auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-					                                    .setSetLayoutCount(1)
-					                                    .setPushConstantRanges(paintingPushConstantRanges)
-					                                    .setPSetLayouts(&descCache->dstLayout.get());
-					SetPipelineLayoutCI(paintingLayoutCreateInfo);
+					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
+				auto paintingPushConstantRanges = vk::PushConstantRange()
+				                                      .setOffset(0)
+				                                      .setStageFlags(
+				                                          vk::ShaderStageFlagBits::eCompute)
+				                                      .setSize(pushConstantSize);
+				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+				                                    .setSetLayoutCount(1)
+				                                    .setPushConstantRanges(paintingPushConstantRanges)
+				                                    .setPSetLayouts(&descCache->dstLayout.get());
+				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
 			pipelineLayout                                   = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
@@ -367,21 +370,22 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 				descCache->BuildDescriptorsCache(stageFlags);
 
-				if (pushConstantSize != 0)
+				if (pushConstantSize <= 0)
 				{
-					auto paintingPushConstantRanges = vk::PushConstantRange()
-					                                      .setOffset(0)
-					                                      .setStageFlags(
-					                                          vk::ShaderStageFlagBits::eFragment |
-					                                          vk::ShaderStageFlagBits::eVertex)
-					                                      .setSize(pushConstantSize);
-					auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-					                                    .setSetLayoutCount(1)
-					                                    .setPushConstantRanges(paintingPushConstantRanges)
-					                                    .setPSetLayouts(&descCache->dstLayout.get());
-
-					SetPipelineLayoutCI(paintingLayoutCreateInfo);
+					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
+				auto paintingPushConstantRanges = vk::PushConstantRange()
+				                                      .setOffset(0)
+				                                      .setStageFlags(
+				                                          vk::ShaderStageFlagBits::eFragment |
+				                                          vk::ShaderStageFlagBits::eVertex)
+				                                      .setSize(pushConstantSize);
+				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+				                                    .setSetLayoutCount(1)
+				                                    .setPushConstantRanges(paintingPushConstantRanges)
+				                                    .setPSetLayouts(&descCache->dstLayout.get());
+
+				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 			std::vector<vk::Format> colorFormats;
 			colorFormats.reserve(colAttachments.size());
@@ -417,19 +421,20 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				descCache->AddShaderInfo(compShader->sParser.get());
 				descCache->BuildDescriptorsCache(
 				    vk::ShaderStageFlagBits::eCompute);
-				if (pushConstantSize != 0)
+				if (pushConstantSize <= 0)
 				{
-					auto paintingPushConstantRanges = vk::PushConstantRange()
-					                                      .setOffset(0)
-					                                      .setStageFlags(
-					                                          vk::ShaderStageFlagBits::eCompute)
-					                                      .setSize(pushConstantSize);
-					auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-					                                    .setSetLayoutCount(1)
-					                                    .setPushConstantRanges(paintingPushConstantRanges)
-					                                    .setPSetLayouts(&descCache->dstLayout.get());
-					SetPipelineLayoutCI(paintingLayoutCreateInfo);
+					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
+				auto paintingPushConstantRanges = vk::PushConstantRange()
+				                                      .setOffset(0)
+				                                      .setStageFlags(
+				                                          vk::ShaderStageFlagBits::eCompute)
+				                                      .setSize(pushConstantSize);
+				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
+				                                    .setSetLayoutCount(1)
+				                                    .setPushConstantRanges(paintingPushConstantRanges)
+				                                    .setPSetLayouts(&descCache->dstLayout.get());
+				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 			pipelineLayout                                   = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
 			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
@@ -642,8 +647,13 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			depthAttachment.attachmentInfo.imageView = depthImage->imageView.get();
 		}
 		dynamicRenderPass.SetRenderInfo(attachmentInfos, frameBufferSize, &depthAttachment.attachmentInfo);
+
 		commandBuffer.bindPipeline(pipelineType, pipeline.get());
 		commandBuffer.beginRendering(dynamicRenderPass.renderInfo);
+		commandBuffer.bindDescriptorSets(pipelineType,
+		                                 pipelineLayout.get(), 0,
+		                                 1,
+		                                 &descCache->dstSet, 0, nullptr);
 		(*renderOperations)();
 		commandBuffer.endRendering();
 	}
@@ -653,6 +663,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		TransitionImages(commandBuffer);
 		SyncBuffers(commandBuffer);
 		commandBuffer.bindPipeline(pipelineType, pipeline.get());
+		commandBuffer.bindDescriptorSets(pipelineType,
+		                                 pipelineLayout.get(), 0,
+		                                 1,
+		                                 &descCache->dstSet, 0, nullptr);
 		(*renderOperations)();
 	}
 

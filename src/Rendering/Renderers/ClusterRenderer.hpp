@@ -17,10 +17,6 @@ class ClusterRenderer : public BaseRenderer
 		this->core           = core;
 		this->renderGraphRef = core->renderGraphRef;
 		this->windowProvider = windowProvider;
-		computeDescCache     = std::make_unique<DescriptorCache>(this->core);
-		gBuffDescCache       = std::make_unique<DescriptorCache>(this->core);
-		cullMeshesCache      = std::make_unique<DescriptorCache>(this->core);
-
 		CreateResources();
 		CreateBuffers();
 		CreatePipelines();
@@ -32,7 +28,18 @@ class ClusterRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		auto meshCullTask = new std::function<void()>([this]() {
+		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation( new std::function<void()>(
+		    [this]() {
+
+			    auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
+			    renderNode->SetBuffer("IndirectCmds",
+			                               RenderingResManager::GetInstance()->indirectDrawBuffer);
+			    renderNode->SetBuffer("MeshesSpheres", meshesSpheresCompact);
+			    renderNode->SetBuffer("CamProps", cPropsUbo);
+			    renderNode->SetBuffer("CullInfo", camFrustum);
+			    renderGraphRef->currentFrameResources->commandBuffer->dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
+		    }));
+		renderGraphRef->GetNode(meshCullPassName)->AddTask(new std::function<void()>([this]() {
 			MoveCam();
 			cPropsUbo.invProj = glm::inverse(currCamera->matrices.perspective);
 			cPropsUbo.invView = glm::inverse(currCamera->matrices.view);
@@ -51,27 +58,7 @@ class ClusterRenderer : public BaseRenderer
 					meshesSpheresCompact2.emplace_back(sphere);
 				}
 			}
-		});
-
-		auto meshCullRenderOp = new std::function<void()>(
-		    [this]() {
-			    cullMeshesCache->SetBuffer("IndirectCmds",
-			                               RenderingResManager::GetInstance()->indirectDrawBuffer);
-			    cullMeshesCache->SetBuffer("MeshesSpheres", meshesSpheresCompact);
-			    cullMeshesCache->SetBuffer("CamProps", cPropsUbo);
-			    cullMeshesCache->SetBuffer("CullInfo", camFrustum);
-
-			    auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-			                                                                             renderNode->pipelineLayout.get(), 0,
-			                                                                             1,
-			                                                                             &cullMeshesCache->dstSet, 0, nullptr);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-			    renderGraphRef->currentFrameResources->commandBuffer->dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
-		    });
-
-		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation(meshCullRenderOp);
-		renderGraphRef->GetNode(meshCullPassName)->AddTask(meshCullTask);
+		}));
 
 		auto cullTask = new std::function<void()>([this]() {
 			cullDataPc.sWidth           = (int) windowProvider->GetWindowSize().x;
@@ -100,20 +87,15 @@ class ClusterRenderer : public BaseRenderer
 
 		auto cullRenderOp = new std::function<void()>(
 		    [this]() {
-			    computeDescCache->SetBuffer("PointLights", pointLights);
-			    computeDescCache->SetBuffer("LightMap", lightsMap);
-			    computeDescCache->SetBuffer("LightIndices", lightsIndices);
-			    computeDescCache->SetBuffer("CameraProperties", cPropsUbo);
 
 			    auto &renderNode = renderGraphRef->renderNodes.at(computePassName);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-			                                                                             renderNode->pipelineLayout.get(), 0,
-			                                                                             1,
-			                                                                             &computeDescCache->dstSet, 0, nullptr);
+			    renderNode->SetBuffer("PointLights", pointLights);
+			    renderNode->SetBuffer("LightMap", lightsMap);
+			    renderNode->SetBuffer("LightIndices", lightsIndices);
+			    renderNode->SetBuffer("CameraProperties", cPropsUbo);
 			    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
 			                                                                        vk::ShaderStageFlagBits::eCompute,
 			                                                                        0, sizeof(ScreenDataPc), &cullDataPc);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    renderGraphRef->currentFrameResources->commandBuffer->dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
 			                                                                   zSlicesSize);
 		    });
@@ -153,15 +135,11 @@ class ClusterRenderer : public BaseRenderer
 				    }
 			    }
 
-			    gBuffDescCache->SetSamplerArray("textures", textures);
-			    gBuffDescCache->SetBuffer("MaterialsPacked", materials);
-			    gBuffDescCache->SetBuffer("MeshMaterialsIds", meshMatIds);
-			    gBuffDescCache->SetBuffer("MeshesModelMatrices", modelMats);
+			    renderGraphRef->GetNode(gBufferPassName)->SetSamplerArray("textures", textures);
+			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MaterialsPacked", materials);
+			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshMaterialsIds", meshMatIds);
+			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshesModelMatrices", modelMats);
 
-			    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(gBufferPassName)->pipelineType,
-			                                                                             renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(), 0,
-			                                                                             1,
-			                                                                             &gBuffDescCache->dstSet, 0, nullptr);
 
 			    pc.projView = camera.matrices.perspective * camera.matrices.view;
 			    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
@@ -219,10 +197,6 @@ class ClusterRenderer : public BaseRenderer
                 renderNode->descCache->SetBuffer("LightMap", lightsMap);
                 renderNode->descCache->SetBuffer("LightIndices", lightsIndices);
                 vk::DeviceSize offset = 0;
-                renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(lightPassName)->pipelineType,
-			                                                                                renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
-			                                                                                0, 1,
-			                                                                                &renderNode->descCache->dstSet, 0, nullptr);
                 renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
                 renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
@@ -379,58 +353,23 @@ class ClusterRenderer : public BaseRenderer
 
 		cullMeshesCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\meshCull.comp.spv", S_COMP);
 
-		cullMeshesCache->AddShaderInfo(cullMeshesCompShader->sParser.get());
-		cullMeshesCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
-
-		auto meshCullLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		                                    .setSetLayoutCount(1)
-		                                    .setPSetLayouts(&cullMeshesCache->dstLayout.get());
-
 		auto *meshCullRenderNode = renderGraphRef->AddPass(meshCullPassName);
 		meshCullRenderNode->SetCompShader(cullMeshesCompShader);
-		meshCullRenderNode->SetPipelineLayoutCI(meshCullLayoutCreateInfo);
 		meshCullRenderNode->BuildRenderGraphNode();
 
 		// Cull pass//
 
 		cullCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\lightCulling.comp.spv", S_COMP);
 
-		computeDescCache->AddShaderInfo(cullCompShader->sParser.get());
-		computeDescCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment);
-
-		auto cullPushConstantRange = vk::PushConstantRange()
-		                                 .setOffset(0)
-		                                 .setStageFlags(vk::ShaderStageFlagBits::eCompute)
-		                                 .setSize(sizeof(ScreenDataPc));
-
-		auto cullLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		                                .setSetLayoutCount(1)
-		                                .setPushConstantRanges(cullPushConstantRange)
-		                                .setPSetLayouts(&computeDescCache->dstLayout.get());
-
 		auto *cullRenderNode = renderGraphRef->AddPass(computePassName);
 		cullRenderNode->SetCompShader(cullCompShader);
-		cullRenderNode->SetPipelineLayoutCI(cullLayoutCreateInfo);
+		cullRenderNode->SetPushConstantSize(sizeof(ScreenDataPc));
 		cullRenderNode->BuildRenderGraphNode();
 
 		// gbuffer
 
 		gVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv", S_VERT);
 		gFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
-		gBuffDescCache->AddShaderInfo(gVertShader->sParser.get());
-		gBuffDescCache->AddShaderInfo(gFragShader->sParser.get());
-		gBuffDescCache->BuildDescriptorsCache(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-
-		auto pushConstantRange = vk::PushConstantRange()
-		                             .setOffset(0)
-		                             .setStageFlags(
-		                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-		                             .setSize(sizeof(MvpPc));
-
-		auto layoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		                            .setSetLayoutCount(1)
-		                            .setPushConstantRanges(pushConstantRange)
-		                            .setPSetLayouts(&gBuffDescCache->dstLayout.get());
 
 		VertexInput    vertexInput = M_Vertex3D::GetVertexInput();
 		AttachmentInfo colInfo     = GetColorAttachmentInfo(
@@ -441,8 +380,8 @@ class ClusterRenderer : public BaseRenderer
 		renderNode->SetVertShader(gVertShader);
 		renderNode->SetFragShader(gFragShader);
 		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->SetPipelineLayoutCI(layoutCreateInfo);
 		renderNode->SetVertexInput(vertexInput);
+		renderNode->SetPushConstantSize(sizeof(MvpPc));
 		renderNode->AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
 		renderNode->AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
 		renderNode->AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
@@ -474,7 +413,6 @@ class ClusterRenderer : public BaseRenderer
 		auto lRenderNode = renderGraphRef->AddPass(lightPassName);
 		lRenderNode->SetVertShader(lVertShader);
 		lRenderNode->SetFragShader(lFragShader);
-		lRenderNode->SetConfigs(true);
 		lRenderNode->SetPushConstantSize(sizeof(LightPc));
 		lRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
 		lRenderNode->SetVertexInput(lVertexInput);
@@ -618,10 +556,6 @@ class ClusterRenderer : public BaseRenderer
 
 	Buffer *lVertexBuffer;
 	Buffer *lIndexBuffer;
-
-	std::unique_ptr<DescriptorCache> computeDescCache;
-	std::unique_ptr<DescriptorCache> gBuffDescCache;
-	std::unique_ptr<DescriptorCache> cullMeshesCache;
 
 	std::string gBufferPassName  = "gBuffer";
 	std::string computePassName  = "cullLight";

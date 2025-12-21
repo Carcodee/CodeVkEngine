@@ -282,11 +282,6 @@ class FlatRenderer : public BaseRenderer
 			    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
 			                                                                     vk::ShaderStageFlagBits::eCompute,
 			                                                                     0, sizeof(PaintingPc), &paintingPc);
-			    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-			                                                                          renderNode->pipelineLayout.get(), 0,
-			                                                                          1,
-			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
-			    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    renderGraph->currentFrameResources->commandBuffer->dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
 		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
@@ -307,16 +302,11 @@ class FlatRenderer : public BaseRenderer
 				    probesGenPc.intervalSize = intervalSizePc;
 				    probesGenPc.probeSizePx  = gridSizePc;
 				    auto &renderNode         = renderGraph->renderNodes.at(probesGenPassNames[idx]);
-				    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-				                                                                          renderNode->pipelineLayout.get(), 0,
-				                                                                          1,
-				                                                                          &renderNode->descCache->dstSet, 0, nullptr);
 
 				    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
 				                                                                     vk::ShaderStageFlagBits::eVertex |
 				                                                                         vk::ShaderStageFlagBits::eFragment,
 				                                                                     0, sizeof(ProbesGenPc), &probesGenPc);
-				    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 				    vk::DeviceSize offset = 0;
 				    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
 				    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
@@ -350,10 +340,6 @@ class FlatRenderer : public BaseRenderer
                 renderNode->SetSamplerArray("MatTextures",
 			                                  backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 
-                renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-			                                                                            renderNode->pipelineLayout.get(), 0,
-			                                                                            1,
-			                                                                            &renderNode->descCache->dstSet, 0, nullptr);
                 vk::DeviceSize offset = 0;
                 renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                 renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
@@ -361,7 +347,6 @@ class FlatRenderer : public BaseRenderer
                 renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
 			                                                                       vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                                                       0, sizeof(RcPc), &rcPc);
-                renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 
                 renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 			                                                                     0, 0);
@@ -390,10 +375,6 @@ class FlatRenderer : public BaseRenderer
 
                     rcPc.cascadeIndex = idx;
 
-                    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-				                                                                                     renderNode->pipelineLayout.get(), 0,
-				                                                                                     1,
-				                                                                                     &renderNode->descCache->dstSet, 0, nullptr);
                     vk::DeviceSize offset = 0;
                     renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                     renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
@@ -403,7 +384,6 @@ class FlatRenderer : public BaseRenderer
 				                                                                                vk::ShaderStageFlagBits::eVertex |
 				                                                                                    vk::ShaderStageFlagBits::eFragment,
 				                                                                                0, sizeof(RcPc), &rcPc);
-                    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 
                     renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 				                                                                              0, 0);
@@ -430,10 +410,6 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->SetBuffer("LightInfo", light);
 			    renderNode->SetBuffer("RConfigs", rConfigs);
 
-			    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
-			                                                                          renderNode->pipelineLayout.get(), 0,
-			                                                                          1,
-			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
 			    vk::DeviceSize offset = 0;
 			    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
 			    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
@@ -441,7 +417,6 @@ class FlatRenderer : public BaseRenderer
 			    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
 			                                                                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                                                     0, sizeof(RcPc), &rcPc);
-			    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 
 			    renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 			                                                                   0, 0);
