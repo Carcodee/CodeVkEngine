@@ -1472,7 +1472,7 @@ class RenderGraph
 	void DebugShadersCompilation()
 	{
 		int result = std::system(
-		    "C:\\Users\\carlo\\CLionProjects\\Vulkan_Engine_Template\\src\\shaders\\compile.bat");
+		    "C:\\Users\\carlo\\CLionProjects\\CodeVkEngine\\src\\Shaders\\compile.bat");
 		if (result == 0)
 		{
 			std::cout << "Shaders compiled\n";
