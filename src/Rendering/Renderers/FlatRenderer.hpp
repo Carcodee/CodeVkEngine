@@ -3,9 +3,6 @@
 // Created by carlo on 2024-12-02.
 //
 
-
-
-
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
 
@@ -188,6 +185,7 @@ class FlatRenderer : public BaseRenderer
 			renderNode->SetVertexInput(vertexInput);
 			renderNode->AddColorAttachmentOutput("CascadeAttachment_" + std::to_string(i), colInfo, BlendConfigs::B_OPAQUE);
 			renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i), cascadesAttachmentsImagesViews[i]);
+			renderNode->DependsOn(paintingPassName);
 			renderNode->BuildRenderGraphNode();
 		}
 
@@ -207,10 +205,11 @@ class FlatRenderer : public BaseRenderer
 		renderNode->SetPushConstantSize(sizeof(RcPc));
 		renderNode->SetVertexInput(vertexInput);
 		renderNode->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
-		renderNode->BuildRenderGraphNode();
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
+			renderNode->DependsOn("ProbesGen_" + std::to_string(i));
 		}
+		renderNode->BuildRenderGraphNode();
 
 		AttachmentInfo mergeColInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad,
@@ -233,7 +232,7 @@ class FlatRenderer : public BaseRenderer
 			mergeRenderNode->AddStorageResource(name1, radiancesImages[i]);
 			std::string name2 = "radianceStorage_" + std::to_string(i + 1);
 			mergeRenderNode->AddStorageResource(name2, radiancesImages[i + 1]);
-
+			mergeRenderNode->DependsOn(rCascadesPassName);
 			mergeRenderNode->BuildRenderGraphNode();
 			if (i < cascadesInfo.cascadeCount - 2)
 			{
@@ -253,6 +252,7 @@ class FlatRenderer : public BaseRenderer
 		resultNode->SetFramebufferSize(windowProvider->GetWindowSize());
 		resultNode->SetPushConstantSize(sizeof(RcPc));
 		resultNode->SetVertexInput(vertexInput);
+		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
 		resultNode->AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
 		resultNode->BuildRenderGraphNode();
 	}
@@ -348,7 +348,7 @@ class FlatRenderer : public BaseRenderer
                 renderNode->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
                 renderNode->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
                 renderNode->SetSamplerArray("MatTextures",
-			                                   backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
+			                                  backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 
                 renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
 			                                                                            renderNode->pipelineLayout.get(), 0,
@@ -382,9 +382,9 @@ class FlatRenderer : public BaseRenderer
             });
 			auto        mergeRenderOp     = new std::function<void()>(
                 [this, i]() {
-                    int         idx       = i;
-                    std::string mergeName = rMergePassName + "_" + std::to_string(idx);
-                    auto &renderNode = renderGraph->renderNodes.at(mergeName);
+                    int         idx        = i;
+                    std::string mergeName  = rMergePassName + "_" + std::to_string(idx);
+                    auto       &renderNode = renderGraph->renderNodes.at(mergeName);
                     renderNode->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
                     renderNode->SetStorageImageArray("Radiances", radiancesImages);
 
@@ -426,7 +426,7 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
 			    renderNode->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
 			    renderNode->SetSamplerArray("MatTextures",
-			                                         backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
+			                                backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 			    renderNode->SetBuffer("LightInfo", light);
 			    renderNode->SetBuffer("RConfigs", rConfigs);
 
@@ -481,26 +481,26 @@ class FlatRenderer : public BaseRenderer
 	std::string rMergePassName    = "rMergePass";
 	std::string resultPassName    = "resultPass";
 
-	Shader                          *resultVertShader;
-	Shader                          *resultFragShader;
+	Shader *resultVertShader;
+	Shader *resultFragShader;
 
-	Shader                          *mergeVertShader;
-	Shader                          *mergeFragShader;
-	std::vector<ImageView *>         radiancesImages;
+	Shader                  *mergeVertShader;
+	Shader                  *mergeFragShader;
+	std::vector<ImageView *> radiancesImages;
 
-	Shader                          *vertShader;
-	Shader                          *fragShader;
+	Shader *vertShader;
+	Shader *fragShader;
 
 	std::vector<std::string> probesGenPassNames;
 	Shader                  *probesVertShader;
 	Shader                  *probesFragShader;
 	std::vector<ImageView *> cascadesAttachmentsImagesViews;
 
-	Shader                          *paintCompShader;
-	std::vector<ImageView *>         paintingLayers;
-	std::vector<Material *>          backgroundMaterials;
-	int                              materialIndexSelected = 0;
-	ImageShipper                    *testImage;
+	Shader                  *paintCompShader;
+	std::vector<ImageView *> paintingLayers;
+	std::vector<Material *>  backgroundMaterials;
+	int                      materialIndexSelected = 0;
+	ImageShipper            *testImage;
 
 	Buffer *quadVertBufferRef;
 	Buffer *quadIndexBufferRef;

@@ -13,6 +13,7 @@ struct BufferKey
 	BufferUsageTypes srcUsage;
 	BufferUsageTypes dstUsage;
 	Buffer          *buffer;
+	std::string      name;
 };
 
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
@@ -501,12 +502,12 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			CreateMemBarrier(srcPattern, dstPattern, commandBuffer);
 		}
 	}
-	void SetSampler(std::string name, ImageView* imageView, Sampler* sampler = nullptr)
+	void SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetSampler(name, imageView, sampler);
 	}
-	void SetSamplerArray(std::string name, std::vector<ImageView*>& imageViews, std::vector<Sampler*>* samplers = nullptr)
+	void SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetSamplerArray(name, imageViews, samplers);
@@ -523,18 +524,18 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		descCache->SetStorageImageArray(name, imageViews, samplers);
 	}
 	template <typename T>
-	void SetBuffer(std::string name, T& bufferData)
+	void SetBuffer(std::string name, T &bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer<T>(name, bufferData);
 	}
-	template<typename T>
-	void SetBuffer(std::string name, std::vector<T>& bufferData)
+	template <typename T>
+	void SetBuffer(std::string name, std::vector<T> &bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer<T>(name, bufferData);
 	}
-	void SetBuffer(std::string name, Buffer* bufferData)
+	void SetBuffer(std::string name, Buffer *bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer(name, bufferData);
@@ -869,6 +870,61 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		this->active = value;
 	}
 
+	void AddColorImageResource(ImageView *imageView)
+	{
+		assert(imageView && "Name does not exist or image view is null");
+		if (!imageAttachmentsNames.contains(imageView->name))
+		{
+			imageAttachmentsNames.try_emplace(imageView->name, imagesAttachmentOutputs.size());
+			imagesAttachmentOutputs.emplace_back(imageView);
+		}
+		else
+		{
+			imagesAttachmentOutputs.at(imageAttachmentsNames.at(imageView->name)) = imageView;
+		}
+		AddImageToProxy(imageView->name, imageView);
+	}
+
+	void AddSamplerResource(ImageView *imageView)
+	{
+		assert(imageView && "Name does not exist or image view is null");
+		if (!sampledImages.contains(imageView->name))
+		{
+			sampledImages.try_emplace(imageView->name, imageView);
+		}
+		else
+		{
+			sampledImages.at(imageView->name) = imageView;
+		}
+		AddImageToProxy(imageView->name, imageView);
+	}
+
+	void AddStorageResource(ImageView *imageView)
+	{
+		assert(imageView && "Name does not exist or image view is null");
+		if (!storageImages.contains(imageView->name))
+		{
+			storageImages.try_emplace(imageView->name, imageView);
+		}
+		else
+		{
+			storageImages.at(imageView->name) = imageView;
+		}
+		AddImageToProxy(imageView->name, imageView);
+	}
+
+	void AddBufferSync(BufferKey buffer)
+	{
+		if (!buffers.contains(buffer.name))
+		{
+			buffers.try_emplace(buffer.name, buffer);
+		}
+		else
+		{
+			buffers.at(buffer.name) = buffer;
+		}
+		AddBufferToProxy(buffer.name, buffer);
+	}
 	// We change the image view if the name already exist when using resources
 	void AddColorImageResource(std::string name, ImageView *imageView)
 	{
@@ -1429,12 +1485,12 @@ class RenderGraph
 			}
 		}
 
-		int idx = 0;
+		int idx        = 0;
 		int currSearch = 0;
-		int maxSearch = 10000;
-		while (solvedNodesOrdered.size() < sequentialRenderNodes.size() || currSearch <= maxSearch)
+		int maxSearch  = 10000;
+		while (solvedNodesOrdered.size() < sequentialRenderNodes.size() && currSearch <= maxSearch)
 		{
-			auto& node = sequentialRenderNodes[idx];
+			auto &node = sequentialRenderNodes[idx];
 			if (solvedNodesNames.contains(node->passName))
 			{
 				currSearch++;
@@ -1468,7 +1524,6 @@ class RenderGraph
 		{
 			sortedByDepNodes.emplace_back(GetNode(solvedNodesOrdered[i]));
 		}
-		
 	}
 	void SortQueueSubmition(std::vector<RenderGraphNode> &renderGraphNodes)
 	{
@@ -1532,11 +1587,11 @@ class RenderGraph
 	{
 		assert(currentFrameResources && "Current frame reference is null");
 		ResolveNodesDependancies();
-		// SortNodesByDep();
+		SortNodesByDep();
 
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;
-		for (auto &renderNode : sequentialRenderNodes)
+		for (auto &renderNode : sortedByDepNodes)
 		{
 			// Profiler::GetInstance()->
 			// AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
