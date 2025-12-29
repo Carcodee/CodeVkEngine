@@ -151,7 +151,6 @@ class FlatRenderer : public BaseRenderer
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-		// auto *paintingNode = renderGraph->AddPass(paintingPassName, renderGraph->core->queueWorkerManager.get()->GetOrCreateWorkerQueue("Compute"));
 		auto *paintingNode = renderGraph->AddPass(paintingPassName);
 		paintingNode->SetCompShader(paintCompShader);
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
@@ -181,7 +180,6 @@ class FlatRenderer : public BaseRenderer
 			renderNode->SetVertShader(probesVertShader);
 			renderNode->SetFragShader(probesFragShader);
 			renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-			// renderNode->SetPipelineLayoutCI(genLayoutCreateInfo);
 			renderNode->SetVertexInput(vertexInput);
 			renderNode->AddColorAttachmentOutput("CascadeAttachment_" + std::to_string(i), colInfo, BlendConfigs::B_OPAQUE);
 			renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i), cascadesAttachmentsImagesViews[i]);
@@ -246,7 +244,7 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath +
 		        "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv",
 		    S_FRAG);
-		auto resultNode = renderGraph->AddPass(resultPassName);
+		auto resultNode = renderGraph->AddPass(resultPassName, "Graphics_test");
 		resultNode->SetVertShader(resultVertShader);
 		resultNode->SetFragShader(resultFragShader);
 		resultNode->SetFramebufferSize(windowProvider->GetWindowSize());

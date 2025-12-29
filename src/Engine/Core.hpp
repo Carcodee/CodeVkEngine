@@ -78,6 +78,7 @@ class QueueWorkerManager
   public:
 	QueueWorkerManager(Core* core)
 	{
+		assert(core != nullptr);
 		this->coreRef = core;
 	}
 	~QueueWorkerManager() = default;
@@ -92,7 +93,6 @@ class QueueWorkerManager
 		workersQueues.at(name).name              = name;
 		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), coreRef->queueFamilyIndices.graphicsFamilyIndex);
-		workersQueues.at(name).timelineSemaphore = coreRef->CreateVulkanTimelineSemaphore(workersQueues.size() - 1);
 		if (name != "Graphics")
 		{
 			workersQueues.at(name).isMainThreat = false;

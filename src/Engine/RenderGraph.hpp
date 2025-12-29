@@ -1171,7 +1171,8 @@ class RenderGraph
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 	std::unordered_map<std::string, int>                              queueOrder;
-	std::vector<std::string>                                          OrderedQueuesNames;
+	std::vector<std::string> orderedQueueNames;
+	std::vector<int>         queueOffsets;
 
 	RenderGraph(Core *core)
 	{
@@ -1615,11 +1616,10 @@ class RenderGraph
 		assert(currentFrameResources && "Current frame reference is null");
 		ResolveNodesDependancies();
 		SortNodesByDep();
-		
-		std::vector<std::string> queueNames;
-		std::vector<int> queueOffsets;
-		SortQueueSubmition(sortedByDepNodes, queueNames, queueOffsets);
-		
+
+		orderedQueueNames.clear();
+		queueOffsets.clear();
+		SortQueueSubmition(sortedByDepNodes, orderedQueueNames, queueOffsets);
 
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;

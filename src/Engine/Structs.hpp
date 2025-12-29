@@ -160,7 +160,6 @@ struct WorkerQueue
 	vk::Queue workerQueue = {};
 	vk::UniqueCommandPool workerCommandPool = {};
 	SYSTEMS::TaskThread taskThreat = {};
-	vk::UniqueSemaphore timelineSemaphore = {};
 	vk::UniqueCommandBuffer commandBuffer;
 	FrameResources frameResources = {};
 	std::string name = "";

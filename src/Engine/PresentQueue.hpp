@@ -95,6 +95,8 @@ struct InFlightQueue
 	{
 		auto &currFrame = frameResources[frameIndex];
 
+		std::vector<std::string> queueNames;
+		
 		TransitionImage(currentSwapchainImageView->imageData, PRESENT, currentSwapchainImageView->GetSubresourceRange(),
 		                currFrame.commandBuffer.get());
 

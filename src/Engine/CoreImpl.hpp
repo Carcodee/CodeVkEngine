@@ -51,6 +51,7 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	this->presentQueue             = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
 	this->queueWorkerManager       = std::make_unique<QueueWorkerManager>(this);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics", queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics_test", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Transfer", queueFamilyIndices.transferFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.graphicsFamilyIndex);
 
