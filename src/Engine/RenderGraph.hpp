@@ -1625,11 +1625,8 @@ class RenderGraph
 		int                      idx = 0;
 		for (auto &renderNode : sortedByDepNodes)
 		{
-			// Profiler::GetInstance()->
-			// AddProfilerCpuSpot(legit::Colors::getColor(idx), "Rp: " + renderNode->passName);
 			if (!renderNode->active)
 			{
-				// Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
 				continue;
 			}
 
@@ -1670,7 +1667,6 @@ class RenderGraph
 				});
 				node->workerQueueRef->taskThreat.AddTask(nodeTask);
 			}
-			// Profiler::GetInstance()->EndProfilerCpuSpot("Rp: " + renderNode->passName);
 			allPassesNames.push_back(node->passName);
 			idx = (idx + 1) % 16;
 		}

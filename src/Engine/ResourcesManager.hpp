@@ -286,18 +286,15 @@ namespace ENGINE
             else
             {
                 //pending to handle this if is a staged resource
-                Buffer* bufferRef = GetBuffFromName(name);
-                if (bufferRef->mappedMem == nullptr)
+                Buffer* bufferRefToChange = GetBuffFromName(name);
+                if (bufferRefToChange->mappedMem == nullptr)
                 {
-                    bufferRef->Map();
+                    bufferRefToChange->Map();
                 }
-                Profiler::GetInstance()->
-                    AddProfilerCpuSpot(legit::Colors::getColor(bufferNames.at(name)), "Buffer: " + name);
-                memcpy(bufferRef->mappedMem, data, deviceSize);
-                Profiler::GetInstance()->EndProfilerCpuSpot("Buffer: " + name);
-                if (bufferRef->usageFlags == vk::BufferUsageFlagBits::eStorageBuffer)
+                memcpy(bufferRefToChange->mappedMem, data, deviceSize);
+                if (bufferRefToChange->usageFlags == vk::BufferUsageFlagBits::eStorageBuffer)
                 {
-                    bufferRef->Unmap();
+                    bufferRefToChange->Unmap();
                 }
             }
 
