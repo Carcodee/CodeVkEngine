@@ -2,6 +2,7 @@
 // Created by carlo on 2024-09-22.
 //
 
+
 #ifndef CORE_HPP
 
 namespace ENGINE
@@ -92,7 +93,11 @@ class QueueWorkerManager
 		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), coreRef->queueFamilyIndices.graphicsFamilyIndex);
 		workersQueues.at(name).timelineSemaphore = coreRef->CreateVulkanTimelineSemaphore(workersQueues.size() - 1);
-//		workersQueues.at(name).taskThreat.Start();
+		if (name != "Graphics")
+		{
+			workersQueues.at(name).isMainThreat = false;
+			workersQueues.at(name).taskThreat.Start();
+		}
 		return &workersQueues.at(name);
 	}
 	WorkerQueue *GetOrCreateWorkerQueue(std::string name)

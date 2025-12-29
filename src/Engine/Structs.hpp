@@ -164,6 +164,7 @@ struct WorkerQueue
 	vk::UniqueCommandBuffer commandBuffer;
 	FrameResources frameResources = {};
 	std::string name = "";
+	bool isMainThreat = true;
 	
 
 	WorkerQueue() = default;
