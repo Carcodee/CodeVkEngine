@@ -93,7 +93,7 @@ class ImguiRenderer
 		initInfo.Instance                  = core->instance.get();
 		initInfo.PhysicalDevice            = core->physicalDevice;
 		initInfo.Device                    = core->logicalDevice.get();
-		initInfo.Queue                     = core->graphicsQueue;
+		initInfo.Queue                     = core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->workerQueue;
 		initInfo.DescriptorPool            = descriptorAllocator.pool.get();
 		initInfo.MinImageCount             = 3;
 		initInfo.ImageCount                = 3;

@@ -163,6 +163,8 @@ struct WorkerQueue
 	vk::UniqueSemaphore timelineSemaphore = {};
 	vk::UniqueCommandBuffer commandBuffer;
 	FrameResources frameResources = {};
+	std::string name = "";
+	
 
 	WorkerQueue() = default;
 	~WorkerQueue() = default;

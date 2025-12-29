@@ -39,8 +39,6 @@ class Core
 	vk::UniqueInstance                  instance;
 	vk::PhysicalDevice                  physicalDevice;
 	vk::UniqueDevice                    logicalDevice;
-	vk::UniqueCommandPool               commandPool;
-	vk::Queue                           graphicsQueue;
 	vk::Queue                           presentQueue;
 	bool                                resizeRequested = false;
 	RenderGraph                        *renderGraphRef;
@@ -74,13 +72,46 @@ class Core
 	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> debugUtilsMessenger;
 };
 
+class QueueWorkerManager
+{
+  public:
+	QueueWorkerManager(Core* core)
+	{
+		this->coreRef = core;
+	}
+	~QueueWorkerManager() = default;
+	WorkerQueue *GetOrCreateWorkerQueue(std::string name, uint32_t familyIndex)
+	{
+		assert(coreRef != nullptr);
+		if (workersQueues.contains(name))
+		{
+			return &workersQueues.at(name);
+		}
+		workersQueues.try_emplace(name);
+		workersQueues.at(name).name              = name;
+		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
+		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), coreRef->queueFamilyIndices.graphicsFamilyIndex);
+		workersQueues.at(name).timelineSemaphore = coreRef->CreateVulkanTimelineSemaphore(workersQueues.size() - 1);
+//		workersQueues.at(name).taskThreat.Start();
+		return &workersQueues.at(name);
+	}
+	WorkerQueue *GetOrCreateWorkerQueue(std::string name)
+	{
+		GetOrCreateWorkerQueue(name, coreRef->queueFamilyIndices.graphicsFamilyIndex);
+		return &workersQueues.at(name);
+	}
+	Core                                        *coreRef;
+	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
+};
+
 class ExecuteOnceCommand
 {
   public:
-	ExecuteOnceCommand(Core *core)
+	ExecuteOnceCommand(Core *core, std::string queueName = "Graphics")
 	{
 		this->core          = core;
-		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->commandPool.get(), 1)[0]);
+		this->queueName = queueName;
+		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetOrCreateWorkerQueue(queueName)->workerCommandPool.get(), 1)[0]);
 	}
 
 	vk::CommandBuffer BeginCommandBuffer()
@@ -102,13 +133,14 @@ class ExecuteOnceCommand
 		                      .setCommandBufferCount(1)
 		                      .setPCommandBuffers(&commandBufferHandle.get())
 		                      .setSignalSemaphoreCount(0);
-
-		core->graphicsQueue.submit({submitInfo}, nullptr);
-		core->graphicsQueue.waitIdle();
+		
+		core->queueWorkerManager->GetOrCreateWorkerQueue(this->queueName)->workerQueue.submit({submitInfo}, nullptr);
+		core->queueWorkerManager->GetOrCreateWorkerQueue(this->queueName)->workerQueue.waitIdle();
 	}
 
 	Core                   *core;
 	vk::UniqueCommandBuffer commandBufferHandle;
+	std::string queueName = "Graphics";
 };
 
 }        // namespace ENGINE

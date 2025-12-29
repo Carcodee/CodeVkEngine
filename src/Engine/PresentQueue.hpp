@@ -3,7 +3,6 @@
 // Created by carlo on 2024-09-24.
 //
 
-
 #ifndef PRESENTQUEUE_HPP
 #define PRESENTQUEUE_HPP
 
@@ -67,7 +66,7 @@ struct InFlightQueue
 			frame.inflightFence              = core->CreateFence(true);
 			frame.imageAcquiredSemaphore     = core->CreateVulkanSemaphore();
 			frame.renderingFinishedSemaphore = core->CreateVulkanSemaphore();
-			frame.commandBuffer              = std::move(core->AllocateCommandBuffers(core->commandPool.get(), 1)[0]);
+			frame.commandBuffer              = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->workerCommandPool.get(), 1)[0]);
 			frameResources.push_back(std::move(frame));
 		}
 		frameIndex = 0;
@@ -79,7 +78,6 @@ struct InFlightQueue
 			core->WaitForFence(currFrame.inflightFence.get());
 			core->ResetFence(currFrame.inflightFence.get());
 		}
-
 		{
 			currentSwapchainImageView = presentQueue->AcquireImage(currFrame.imageAcquiredSemaphore.get());
 		}
@@ -127,8 +125,8 @@ struct InFlightQueue
 		{
 			std::function<void()> workerStartTask([&worker, this] {
 				vk::CommandBufferInheritanceInfo inheritanceInfo = {};
-				worker.second.commandBuffer = std::move(core->AllocateCommandBuffersSecondary(worker.second.workerCommandPool.get(), 1)[0]);
-				auto bufferBeginInfo        = vk::CommandBufferBeginInfo()
+				worker.second.commandBuffer                      = std::move(core->AllocateCommandBuffersSecondary(worker.second.workerCommandPool.get(), 1)[0]);
+				auto bufferBeginInfo                             = vk::CommandBufferBeginInfo()
 				                           .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)
 				                           .setPInheritanceInfo(&inheritanceInfo);
 				worker.second.commandBuffer->begin(bufferBeginInfo);

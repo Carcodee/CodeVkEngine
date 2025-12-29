@@ -3,6 +3,9 @@
 // Created by carlo on 2024-09-22.
 //
 
+
+
+
 #ifndef COREIMPL_HPP
 #define COREIMPL_HPP
 
@@ -10,35 +13,6 @@
 
 namespace ENGINE
 {
-
-class QueueWorkerManager
-{
-  public:
-	QueueWorkerManager()  = default;
-	~QueueWorkerManager() = default;
-	WorkerQueue *GetOrCreateWorkerQueue(const std::string &name, uint32_t familyIndex)
-	{
-		assert(core != nullptr);
-		if (workersQueues.contains(name))
-		{
-			return &workersQueues.at(name);
-		}
-		workersQueues.try_emplace(name);
-		workersQueues.at(name).workerQueue       = core->GetDeviceQueue(core->logicalDevice.get(), familyIndex);
-		workersQueues.at(name).workerCommandPool = core->CreateCommandPool(core->logicalDevice.get(), core->queueFamilyIndices.graphicsFamilyIndex);
-		workersQueues.at(name).timelineSemaphore = core->CreateVulkanTimelineSemaphore(workersQueues.size() - 1);
-		workersQueues.at(name).taskThreat.Start();
-		return &workersQueues.at(name);
-	}
-
-	WorkerQueue *GetOrCreateWorkerQueue(const std::string &name)
-	{
-		GetOrCreateWorkerQueue(name, core->queueFamilyIndices.graphicsFamilyIndex);
-		return &workersQueues.at(name);
-	}
-	Core                                        *core;
-	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
-};
 Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, WindowDesc *compatibleWindowDesc,
            bool enableDebugging)
 {
@@ -74,11 +48,9 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	deviceExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
 	this->logicalDevice            = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
 	                                                     validationLayers);
-	this->graphicsQueue            = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
 	this->presentQueue             = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
-	this->commandPool              = CreateCommandPool(this->logicalDevice.get(), queueFamilyIndices.graphicsFamilyIndex);
-	this->queueWorkerManager       = std::make_unique<QueueWorkerManager>();
-	this->queueWorkerManager->core = this;
+	this->queueWorkerManager       = std::make_unique<QueueWorkerManager>(this);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Transfer", queueFamilyIndices.transferFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.graphicsFamilyIndex);
 
@@ -360,5 +332,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Core::DebugMessageCallback(
 	return VK_FALSE;
 }
 }        // namespace ENGINE
-
 #endif        // COREIMPL_HPP

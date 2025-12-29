@@ -1241,7 +1241,7 @@ class RenderGraph
 		}
 	}
 
-	RenderGraphNode *AddPass(std::string name, WorkerQueue *workerQueue = nullptr)
+	RenderGraphNode *AddPass(std::string name, std::string workerQueueName = "Graphics")
 	{
 		if (!renderNodes.contains(name))
 		{
@@ -1254,7 +1254,7 @@ class RenderGraph
 			renderGraphNode->shadersProxyRef            = &shadersProxy;
 			renderGraphNode->core                       = core;
 			renderGraphNode->resManagerRef              = resourcesManager;
-			renderGraphNode->workerQueueRef             = workerQueue;
+			renderGraphNode->workerQueueRef             = core->queueWorkerManager->GetOrCreateWorkerQueue(workerQueueName);
 			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 			renderGraphNode->localResManager = std::make_unique<ResourcesManager>(core);
@@ -1539,11 +1539,24 @@ class RenderGraph
 			sortedByDepNodes.emplace_back(GetNode(solvedNodesOrdered[i]));
 		}
 	}
-	void SortQueueSubmition(std::vector<RenderGraphNode> &renderGraphNodes)
+	void SortQueueSubmition(std::vector<RenderGraphNode*> &renderGraphNodes, std::vector<std::string>& queueNamesOut, std::vector<int>& queueOffsetsOut)
 	{
-		for (int i = 0; i < sequentialRenderNodes.size(); ++i)
+		if (renderGraphNodes.empty())
 		{
-			// return a queue order based on the dependancies
+			return;
+		}
+		int passesCounter = 0;
+		std::string lastQueue = renderGraphNodes[0]->workerQueueRef->name;
+		for (int i = 0; i < renderGraphNodes.size(); ++i)
+		{
+			passesCounter++;
+			if (lastQueue != renderGraphNodes[i]->workerQueueRef->name || i == renderGraphNodes.size() - 1)
+			{
+				queueNamesOut.push_back(lastQueue);
+				queueOffsetsOut.push_back(passesCounter);
+				passesCounter = 0;
+				lastQueue = renderGraphNodes[i]->workerQueueRef->name;
+			}
 		}
 	}
 
@@ -1602,6 +1615,11 @@ class RenderGraph
 		assert(currentFrameResources && "Current frame reference is null");
 		ResolveNodesDependancies();
 		SortNodesByDep();
+		
+		std::vector<std::string> queueNames;
+		std::vector<int> queueOffsets;
+		SortQueueSubmition(sortedByDepNodes, queueNames, queueOffsets);
+		
 
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;
@@ -1640,7 +1658,7 @@ class RenderGraph
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
 			}
-			if (node->workerQueueRef == nullptr)
+			if (node->workerQueueRef->name == "Graphics")
 			{
 				node->Execute(currentFrameResources->commandBuffer.get());
 			}
