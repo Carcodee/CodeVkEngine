@@ -1156,6 +1156,7 @@ class RenderGraph
 	ResourcesManager *resourcesManager;
 
 	ImageView      *currentBackBuffer;
+	//TODO: Remove this to use queue context resources
 	FrameResources *currentFrameResources;
 	size_t          frameIndex;
 
