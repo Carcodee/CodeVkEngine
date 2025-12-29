@@ -1107,14 +1107,13 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
   private:
 	friend class RenderGraph;
-	std::unique_ptr<ResourcesManager> localResManager;
-	RenderNodeConfigs                 configs                 = {true};
-	GraphicsPipelineConfigs           graphicsPipelineConfigs = {};
-	std::vector<BlendConfigs>         colorBlendConfigs;
-	DepthConfigs                      depthConfig = D_NONE;
-	VertexInput                       vertexInput;
-	glm::uvec2                        frameBufferSize  = {0, 0};
-	size_t                            pushConstantSize = 4;
+	RenderNodeConfigs         configs                 = {true};
+	GraphicsPipelineConfigs   graphicsPipelineConfigs = {};
+	std::vector<BlendConfigs> colorBlendConfigs;
+	DepthConfigs              depthConfig = D_NONE;
+	VertexInput               vertexInput;
+	glm::uvec2                frameBufferSize  = {0, 0};
+	size_t                    pushConstantSize = 4;
 
 	std::vector<AttachmentInfo>     colAttachments;
 	AttachmentInfo                  depthAttachment = {};
@@ -1171,8 +1170,8 @@ class RenderGraph
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 	std::unordered_map<std::string, int>                              queueOrder;
-	std::vector<std::string> orderedQueueNames;
-	std::vector<int>         queueOffsets;
+	std::vector<std::string>                                          orderedQueueNames;
+	std::vector<int>                                                  queueOffsets;
 
 	RenderGraph(Core *core)
 	{
@@ -1258,7 +1257,6 @@ class RenderGraph
 			renderGraphNode->workerQueueRef             = core->queueWorkerManager->GetOrCreateWorkerQueue(workerQueueName);
 			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
-			renderGraphNode->localResManager = std::make_unique<ResourcesManager>(core);
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
 			sequentialRenderNodes.push_back(renderNodes.at(name).get());
 			return renderNodes.at(name).get();
@@ -1540,14 +1538,14 @@ class RenderGraph
 			sortedByDepNodes.emplace_back(GetNode(solvedNodesOrdered[i]));
 		}
 	}
-	void SortQueueSubmition(std::vector<RenderGraphNode*> &renderGraphNodes, std::vector<std::string>& queueNamesOut, std::vector<int>& queueOffsetsOut)
+	void SortQueueSubmition(std::vector<RenderGraphNode *> &renderGraphNodes, std::vector<std::string> &queueNamesOut, std::vector<int> &queueOffsetsOut)
 	{
 		if (renderGraphNodes.empty())
 		{
 			return;
 		}
-		int passesCounter = 0;
-		std::string lastQueue = renderGraphNodes[0]->workerQueueRef->name;
+		int         passesCounter = 0;
+		std::string lastQueue     = renderGraphNodes[0]->workerQueueRef->name;
 		for (int i = 0; i < renderGraphNodes.size(); ++i)
 		{
 			passesCounter++;
@@ -1556,7 +1554,7 @@ class RenderGraph
 				queueNamesOut.push_back(lastQueue);
 				queueOffsetsOut.push_back(passesCounter);
 				passesCounter = 0;
-				lastQueue = renderGraphNodes[i]->workerQueueRef->name;
+				lastQueue     = renderGraphNodes[i]->workerQueueRef->name;
 			}
 		}
 	}

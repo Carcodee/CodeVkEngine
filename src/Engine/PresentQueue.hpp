@@ -96,7 +96,7 @@ struct InFlightQueue
 		auto &currFrame = frameResources[frameIndex];
 
 		std::vector<std::string> queueNames;
-		
+
 		TransitionImage(currentSwapchainImageView->imageData, PRESENT, currentSwapchainImageView->GetSubresourceRange(),
 		                currFrame.commandBuffer.get());
 
@@ -125,12 +125,14 @@ struct InFlightQueue
 	{
 		for (auto &worker : core->queueWorkerManager.get()->workersQueues)
 		{
+			if (worker.second.isMainThreat)
+			{
+				continue;
+			}
 			std::function<void()> workerStartTask([&worker, this] {
-				vk::CommandBufferInheritanceInfo inheritanceInfo = {};
-				worker.second.commandBuffer                      = std::move(core->AllocateCommandBuffersSecondary(worker.second.workerCommandPool.get(), 1)[0]);
+				worker.second.commandBuffer                      = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1)[0]);
 				auto bufferBeginInfo                             = vk::CommandBufferBeginInfo()
-				                           .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)
-				                           .setPInheritanceInfo(&inheritanceInfo);
+				                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 				worker.second.commandBuffer->begin(bufferBeginInfo);
 			});
 			worker.second.taskThreat.AddTask(workerStartTask);
@@ -141,6 +143,10 @@ struct InFlightQueue
 	{
 		for (auto &worker : core->queueWorkerManager.get()->workersQueues)
 		{
+			if (worker.second.isMainThreat)
+			{
+				continue;
+			}
 			std::function<void()> workerStartTask([&worker, this] {
 				worker.second.commandBuffer->end();
 			});

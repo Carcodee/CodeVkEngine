@@ -409,14 +409,14 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->SetBuffer("RConfigs", rConfigs);
 
 			    vk::DeviceSize offset = 0;
-			    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
-			    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
+			    renderNode->workerQueueRef->commandBuffer->bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
+			    renderNode->workerQueueRef->commandBuffer->bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-			    renderGraph->currentFrameResources->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
+			    renderNode->workerQueueRef->commandBuffer->pushConstants(renderNode->pipelineLayout.get(),
 			                                                                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                                                     0, sizeof(RcPc), &rcPc);
 
-			    renderGraph->currentFrameResources->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
+			    renderNode->workerQueueRef->commandBuffer->drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 			                                                                   0, 0);
 			    testSpriteAnim->UseFrame();
 		    });

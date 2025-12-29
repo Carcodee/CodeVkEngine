@@ -29,12 +29,11 @@ namespace ENGINE
             this->size =size;
         }
 
-        void BuildImage(Core* core, Sampler* sampler, uint32_t arrayLayersCount, uint32_t mipsCount, vk::Format format, LayoutPatterns dstPattern, std::string name, int32_t id)
+        void BuildImage(Core* core, Sampler* sampler, uint32_t arrayLayersCount, uint32_t mipsCount, vk::Format format, LayoutPatterns dstPattern, std::string name, int32_t id, std::string queueName = "Graphics")
         {
             assert(this->data && "variable \"data\" is not set or is invalid");
             vk::ImageUsageFlags usage = GetGeneralUsageFlags(format);
             vk::ImageCreateInfo createInfo = Image::CreateInfo2d(imageSize, mipsCount, arrayLayersCount, format, usage);
-
             
 
             image = std::make_unique<Image>(core->physicalDevice, core->logicalDevice.get(), createInfo);
@@ -43,7 +42,7 @@ namespace ENGINE
                                                     0, mipsCount, 0, arrayLayersCount, name, id);
 
             
-            auto commandExecutor = std::make_unique<ExecuteOnceCommand>(core);
+            auto commandExecutor = std::make_unique<ExecuteOnceCommand>(core, queueName);
             auto commandBuffer = commandExecutor->BeginCommandBuffer();
             std::unique_ptr<Buffer> stagedBuffer = std::make_unique<Buffer>(core->physicalDevice, core->logicalDevice.get(), vk::BufferUsageFlagBits::eTransferSrc,
                                                     vk::MemoryPropertyFlagBits::eHostVisible |
