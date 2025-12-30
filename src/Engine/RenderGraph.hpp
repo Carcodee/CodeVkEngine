@@ -3,6 +3,8 @@
 // Created by carlo on 2024-10-02.
 //
 
+
+
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 #define DUMMY_PC_SIZE 4
@@ -1039,13 +1041,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			bufferProxyRef->at(name) = buffer;
 		}
 	}
-	void CreateInternalTexture()
+	vk::CommandBuffer& GetCurrCmd()
 	{
+		return workerQueueRef->GetCurrentCmd();
 	}
-	void RegisterExternalTexture()
-	{
-	}
-
 	void SetConfigs(RenderNodeConfigs configs)
 	{
 		this->configs = configs;
@@ -1156,9 +1155,6 @@ class RenderGraph
 	ResourcesManager *resourcesManager;
 
 	ImageView      *currentBackBuffer;
-	//TODO: Remove this to use queue context resources
-	
-	FrameResources *currentFrameResources;
 	size_t          frameIndex;
 
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
@@ -1613,7 +1609,6 @@ class RenderGraph
 
 	void ExecuteRendering()
 	{
-		assert(currentFrameResources && "Current frame reference is null");
 		ResolveNodesDependancies();
 		SortNodesByDep();
 
@@ -1653,17 +1648,17 @@ class RenderGraph
 				BufferUsageTypes    currNodeType    = (node->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
 				BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
-				CreateMemBarrier(lastNodePattern, currNodePattern, currentFrameResources->commandBuffer.get());
+				CreateMemBarrier(lastNodePattern, currNodePattern, node->GetCurrCmd());
 			}
 			if (node->workerQueueRef->name == "Graphics")
 			{
-				node->Execute(currentFrameResources->commandBuffer.get());
+				node->Execute(node->GetCurrCmd());
 			}
 			else
 			{
 				std::string           name = node->passName;
 				std::function<void()> nodeTask([name, this] {
-					renderNodes.at(name)->Execute(renderNodes.at(name)->workerQueueRef->commandBuffer.get());
+					renderNodes.at(name)->Execute(renderNodes.at(name)->workerQueueRef->GetCurrentCmd());
 				});
 				node->workerQueueRef->taskThreat.AddTask(nodeTask);
 			}

@@ -118,6 +118,7 @@ class ForwardRenderer : BaseRenderer
 		auto renderOp = new std::function<void()>(
 		    [this]() {
 			    // ssbo sample
+				auto renderNode = renderGraphRef->GetNode(forwardPassName);
 			    ssbo.clear();
 			    ssbo.push_back(pc);
 			    ssbo.push_back(pc);
@@ -134,12 +135,13 @@ class ForwardRenderer : BaseRenderer
 			    descriptorCache->SetStorageImage("storageImg", computeStorage);
 
 			    vk::DeviceSize offset = 0;
-			    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderGraphRef->GetNode(forwardPassName)->pipelineType,
+		    	
+			    renderNode->GetCurrCmd().bindDescriptorSets(renderGraphRef->GetNode(forwardPassName)->pipelineType,
 			                                                                             renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(), 0, 1,
 			                                                                             &descriptorCache->dstSet, 0, nullptr);
 
-			    renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(indexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+			    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
+			    renderNode->GetCurrCmd().bindIndexBuffer(indexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 			    for (int i = 0; i < model->meshCount; ++i)
 			    {
 				    camera.SetPerspective(
@@ -149,11 +151,11 @@ class ForwardRenderer : BaseRenderer
 				    pc.model    = model->modelsMat[i];
 				    // pc.model = glm::scale(pc.model, glm::vec3(0.01f));
 
-				    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(),
+				    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(),
 				                                                                        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 				                                                                        0, sizeof(MvpPc), &pc);
 
-				    renderGraphRef->currentFrameResources->commandBuffer->drawIndexed(model->indicesCount[i], 1, model->firstIndices[i],
+				    renderNode->GetCurrCmd().drawIndexed(model->indicesCount[i], 1, model->firstIndices[i],
 				                                                                      static_cast<int32_t>(model->firstVertices[i]), 0);
 			    }
 		    });

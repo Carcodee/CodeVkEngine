@@ -37,7 +37,7 @@ class ClusterRenderer : public BaseRenderer
 			    renderNode->SetBuffer("MeshesSpheres", meshesSpheresCompact);
 			    renderNode->SetBuffer("CamProps", cPropsUbo);
 			    renderNode->SetBuffer("CullInfo", camFrustum);
-			    renderGraphRef->currentFrameResources->commandBuffer->dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
+			    renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
 		    }));
 		renderGraphRef->GetNode(meshCullPassName)->AddTask(new std::function<void()>([this]() {
 			MoveCam();
@@ -93,10 +93,10 @@ class ClusterRenderer : public BaseRenderer
 			    renderNode->SetBuffer("LightMap", lightsMap);
 			    renderNode->SetBuffer("LightIndices", lightsIndices);
 			    renderNode->SetBuffer("CameraProperties", cPropsUbo);
-			    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
 			                                                                        vk::ShaderStageFlagBits::eCompute,
 			                                                                        0, sizeof(ScreenDataPc), &cullDataPc);
-			    renderGraphRef->currentFrameResources->commandBuffer->dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
+			    renderNode->GetCurrCmd().dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
 			                                                                   zSlicesSize);
 		    });
 
@@ -134,6 +134,7 @@ class ClusterRenderer : public BaseRenderer
 					    meshMatIds.push_back(model->materials[i]);
 				    }
 			    }
+		    	auto renderNode = renderGraphRef->GetNode(gBufferPassName);
 
 			    renderGraphRef->GetNode(gBufferPassName)->SetSamplerArray("textures", textures);
 			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MaterialsPacked", materials);
@@ -142,7 +143,7 @@ class ClusterRenderer : public BaseRenderer
 
 
 			    pc.projView = camera.matrices.perspective * camera.matrices.view;
-			    renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
 			                                                                        vk::ShaderStageFlagBits::eVertex |
 			                                                                            vk::ShaderStageFlagBits::eFragment,
 			                                                                        0, sizeof(MvpPc), &pc);
@@ -152,13 +153,13 @@ class ClusterRenderer : public BaseRenderer
 			    for (auto &modelPair : RenderingResManager::GetInstance()->indirectModelsToDraw)
 			    {
 				    Model *modelRef = modelPair.second;
-				    renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &modelRef->vertBuffer->deviceBuffer->bufferHandle.get(),
+				    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &modelRef->vertBuffer->deviceBuffer->bufferHandle.get(),
 				                                                                            &offset);
-				    renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(modelRef->indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
+				    renderNode->GetCurrCmd().bindIndexBuffer(modelRef->indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
 
 				    vk::DeviceSize sizeOffset = (meshOffset) * sizeof(DrawIndirectIndexedCmd);
 				    uint32_t       stride     = sizeof(DrawIndirectIndexedCmd);
-				    renderGraphRef->currentFrameResources->commandBuffer->drawIndexedIndirect(
+				    renderNode->GetCurrCmd().drawIndexedIndirect(
 				        RenderingResManager::GetInstance()->indirectDrawBuffer->bufferHandle.get(),
 				        sizeOffset,
 				        modelRef->meshCount,
@@ -197,13 +198,13 @@ class ClusterRenderer : public BaseRenderer
                 renderNode->descCache->SetBuffer("LightMap", lightsMap);
                 renderNode->descCache->SetBuffer("LightIndices", lightsIndices);
                 vk::DeviceSize offset = 0;
-                renderGraphRef->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
-                renderGraphRef->currentFrameResources->commandBuffer->bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
+                renderNode->GetCurrCmd().bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                renderGraphRef->currentFrameResources->commandBuffer->pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
+                renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
 			                                                                           vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
 			                                                                           0, sizeof(LightPc), &lightPc);
-                renderGraphRef->currentFrameResources->commandBuffer->drawIndexed(quadIndices.size(), 1, 0,
+                renderNode->GetCurrCmd().drawIndexed(quadIndices.size(), 1, 0,
 			                                                                         0, 0);
             });
 

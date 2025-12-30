@@ -3,6 +3,8 @@
 // Created by carlo on 2024-09-24.
 //
 
+
+
 #ifndef PRESENTQUEUE_HPP
 #define PRESENTQUEUE_HPP
 
@@ -60,13 +62,14 @@ struct InFlightQueue
 		presentQueue.reset(new PresentQueue(this->core, windowDesc, inflightCount, preferredMode, windowSize));
 		this->renderGraph = renderGraph;
 
+		core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->commandBuffers = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->workerCommandPool.get(), inflightCount));
 		for (int frameIndex = 0; frameIndex < inflightCount; frameIndex++)
 		{
 			FrameResources frame;
 			frame.inflightFence              = core->CreateFence(true);
 			frame.imageAcquiredSemaphore     = core->CreateVulkanSemaphore();
 			frame.renderingFinishedSemaphore = core->CreateVulkanSemaphore();
-			frame.commandBuffer              = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->workerCommandPool.get(), 1)[0]);
+			frame.commandBuffer = core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->commandBuffers[frameIndex].get();
 			frameResources.push_back(std::move(frame));
 		}
 		frameIndex = 0;
@@ -84,10 +87,9 @@ struct InFlightQueue
 		auto bufferBeginInfo = vk::CommandBufferBeginInfo()
 		                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
-		currFrame.commandBuffer->begin(bufferBeginInfo);
+		currFrame.commandBuffer.begin(bufferBeginInfo);
 
 		renderGraph->currentBackBuffer     = currentSwapchainImageView;
-		renderGraph->currentFrameResources = &frameResources[frameIndex];
 		renderGraph->frameIndex            = frameIndex;
 		// add pass info from my data
 	}
@@ -98,9 +100,9 @@ struct InFlightQueue
 		std::vector<std::string> queueNames;
 
 		TransitionImage(currentSwapchainImageView->imageData, PRESENT, currentSwapchainImageView->GetSubresourceRange(),
-		                currFrame.commandBuffer.get());
+		                currFrame.commandBuffer);
 
-		currFrame.commandBuffer->end();
+		currFrame.commandBuffer.end();
 
 		{
 			vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
@@ -112,7 +114,7 @@ struct InFlightQueue
 			                      .setPWaitSemaphores(waitSemaphores)
 			                      .setPWaitDstStageMask(waitStages)
 			                      .setCommandBufferCount(1)
-			                      .setPCommandBuffers(&currFrame.commandBuffer.get())
+			                      .setPCommandBuffers(&currFrame.commandBuffer)
 			                      .setSignalSemaphoreCount(1)
 			                      .setPSignalSemaphores(signalSemaphores);
 
@@ -120,6 +122,7 @@ struct InFlightQueue
 		}
 		presentQueue->PresentImage(currFrame.renderingFinishedSemaphore.get());
 		frameIndex = (frameIndex + 1) % frameResources.size();
+		core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->activeCmdIdx = frameIndex;
 	}
 	void BeginParallelThreads()
 	{
@@ -130,10 +133,10 @@ struct InFlightQueue
 				continue;
 			}
 			std::function<void()> workerStartTask([&worker, this] {
-				worker.second.commandBuffer                      = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1)[0]);
+				worker.second.commandBuffers                      = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1));
 				auto bufferBeginInfo                             = vk::CommandBufferBeginInfo()
 				                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-				worker.second.commandBuffer->begin(bufferBeginInfo);
+				worker.second.commandBuffers[0]->begin(bufferBeginInfo);
 			});
 			worker.second.taskThreat.AddTask(workerStartTask);
 		}
@@ -148,7 +151,7 @@ struct InFlightQueue
 				continue;
 			}
 			std::function<void()> workerStartTask([&worker, this] {
-				worker.second.commandBuffer->end();
+				worker.second.commandBuffers[0]->end();
 			});
 			worker.second.taskThreat.AddTask(workerStartTask);
 		}

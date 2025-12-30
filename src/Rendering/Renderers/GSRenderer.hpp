@@ -146,15 +146,15 @@ class GSRenderer : public BaseRenderer
 		//     {
 		//         auto& renderNode = renderGraph->renderNodes.at("histogramPass");
 		//
-		//         renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
+		//         renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
 		//             renderNode->pipelineLayout.get(), 0,
 		//             1,
 		//             &renderNode->descCache->dstSet, 0, nullptr);
-		//         renderGraph->currentFrameResources->commandBuffer->bindPipeline(
+		//         renderNode->GetCurrCmd().bindPipeline(
 		//             renderNode->pipelineType, renderNode->pipeline.get());
 		//         vk::DeviceSize offset = 0;
 		//
-		//         renderGraph->currentFrameResources->commandBuffer->pushConstants(
+		//         renderNode->GetCurrCmd().pushConstants(
 		//             renderGraph->GetNode(passName)->pipelineLayout.get(),
 		//             vk::ShaderStageFlagBits::eVertex |
 		//             vk::ShaderStageFlagBits::eFragment,
@@ -169,14 +169,14 @@ class GSRenderer : public BaseRenderer
 		//     {
 		//         auto& renderNode = renderGraph->renderNodes.at("radixSortPass");
 		//
-		//         renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
+		//         renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
 		//                                          renderNode->pipelineLayout.get(), 0,
 		//                                          1,
 		//                                          &renderNode->descCache->dstSet, 0, nullptr);
-		//         renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+		//         renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 		//         vk::DeviceSize offset = 0;
 		//
-		//         renderGraph->currentFrameResources->commandBuffer->pushConstants(
+		//         renderNode->GetCurrCmd().pushConstants(
 		//             renderGraph->GetNode(passName)->pipelineLayout.get(),
 		//             vk::ShaderStageFlagBits::eVertex |
 		//             vk::ShaderStageFlagBits::eFragment,
@@ -199,32 +199,32 @@ class GSRenderer : public BaseRenderer
 
 			    renderNode->SetBuffer("GSConfigs", gsConfigsPc);
 
-			    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
+			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
 			                                                                          renderNode->pipelineLayout.get(), 0,
 			                                                                          1,
 			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
-			    renderGraph->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    vk::DeviceSize offset = 0;
 
-			    renderGraph->currentFrameResources->commandBuffer->pushConstants(
+			    renderNode->GetCurrCmd().pushConstants(
 			        renderGraph->GetNode(passName)->pipelineLayout.get(),
 			        vk::ShaderStageFlagBits::eVertex |
 			            vk::ShaderStageFlagBits::eFragment,
 			        0, sizeof(SplitMVP), &splitMvp);
 
-			    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(
+			    renderNode->GetCurrCmd().bindVertexBuffers(
 			        0, 1,
 			        &gsPointsVertexBuffer->bufferHandle.get(),
 			        &offset);
 
-			    renderGraph->currentFrameResources->commandBuffer->bindIndexBuffer(
+			    renderNode->GetCurrCmd().bindIndexBuffer(
 			        gsPointsIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
-			    // renderGraph->currentFrameResources->commandBuffer->drawIndexed(
+			    // renderNode->GetCurrCmd().drawIndexed(
 			    //     Vertex2D::GetQuadIndices().size(), gaussians.pos.size(), 0, 0, 0);
 
 			    vk::DeviceSize sizeOffset = 0;
 			    uint32_t       stride     = sizeof(DrawIndirectIndexedCmd);
-			    renderGraph->currentFrameResources->commandBuffer->drawIndexedIndirect(
+			    renderNode->GetCurrCmd().drawIndexedIndirect(
 			        indirectBuffer->bufferHandle.get(),
 			        sizeOffset,
 			        gaussians.pos.size(),

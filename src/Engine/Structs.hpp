@@ -47,7 +47,7 @@ struct FrameResources
 	vk::UniqueSemaphore     imageAcquiredSemaphore;
 	vk::UniqueSemaphore     renderingFinishedSemaphore;
 	vk::UniqueFence         inflightFence;
-	vk::UniqueCommandBuffer commandBuffer;
+	vk::CommandBuffer commandBuffer;
 };
 
 struct AttachmentInfo : SYSTEMS::ISerializable<AttachmentInfo>
@@ -160,12 +160,16 @@ struct WorkerQueue
 	vk::Queue workerQueue = {};
 	vk::UniqueCommandPool workerCommandPool = {};
 	SYSTEMS::TaskThread taskThreat = {};
-	vk::UniqueCommandBuffer commandBuffer;
-	FrameResources frameResources = {};
+	std::vector<vk::UniqueCommandBuffer> commandBuffers;
 	std::string name = "";
 	bool isMainThreat = true;
+	int activeCmdIdx = 0;
 	
 
+	vk::CommandBuffer& GetCurrentCmd()
+	{
+		return commandBuffers[activeCmdIdx].get();
+	};
 	WorkerQueue() = default;
 	~WorkerQueue() = default;
 	WorkerQueue(const WorkerQueue&) = delete;

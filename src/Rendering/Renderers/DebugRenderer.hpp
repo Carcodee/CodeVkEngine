@@ -95,21 +95,21 @@ class DebugRenderer : public BaseRenderer
                 [this]() {
                     vk::DeviceSize offset = 0;
                     auto           node   = renderGraph->GetNode(mDebuggerPassName);
-                    renderGraph->currentFrameResources->commandBuffer->bindDescriptorSets(node->pipelineType,
+                    node->GetCurrCmd().bindDescriptorSets(node->pipelineType,
 				                                                                           node->pipelineLayout.get(), 0,
 				                                                                           1,
 				                                                                           &node->descCache->dstSet, 0, nullptr);
 
-                    renderGraph->currentFrameResources->commandBuffer->bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
+                    node->GetCurrCmd().bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
 
                     pc.projView = currentViewCam->matrices.perspective * currentViewCam->matrices.view;
                     pc.model    = glm::mat4(1.0);
 
-                    renderGraph->currentFrameResources->commandBuffer->pushConstants(node->pipelineLayout.get(),
+                    node->GetCurrCmd().pushConstants(node->pipelineLayout.get(),
 				                                                                      vk::ShaderStageFlagBits::eVertex |
 				                                                                          vk::ShaderStageFlagBits::eFragment,
 				                                                                      0, sizeof(MvpPc), &pc);
-                    renderGraph->currentFrameResources->commandBuffer->draw(raw3DVertices.size(), 1, 0, 0);
+                    node->GetCurrCmd().draw(raw3DVertices.size(), 1, 0, 0);
                 });
 
 			renderGraph->GetNode(mDebuggerPassName)->AddTask(debugTask);

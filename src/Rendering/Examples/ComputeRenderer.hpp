@@ -73,12 +73,12 @@ class ComputeRenderer : BaseRenderer
 		auto renderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraphRef->renderNodes.at(computeNodeName);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindDescriptorSets(renderNode->pipelineType,
+			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
 			                                                                             renderNode->pipelineLayout.get(), 0,
 			                                                                             1,
 			                                                                             &dstSet.get(), 0, nullptr);
-			    renderGraphRef->currentFrameResources->commandBuffer->bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
-			    renderGraphRef->currentFrameResources->commandBuffer->dispatch(windowProvider->GetWindowSize().x, windowProvider->GetWindowSize().y, 1);
+			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+			    renderNode->GetCurrCmd().dispatch(windowProvider->GetWindowSize().x, windowProvider->GetWindowSize().y, 1);
 		    });
 
 		renderGraphRef->GetNode(computeNodeName)->SetRenderOperation(renderOp);

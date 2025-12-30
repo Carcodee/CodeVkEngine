@@ -156,12 +156,12 @@ void run(WindowProvider* windowProvider)
 
 
                 profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
-                imguiRenderer->RenderFrame(currFrame.commandBuffer.get(),
+                imguiRenderer->RenderFrame(currFrame.commandBuffer,
                                            inFlightQueue->currentSwapchainImageView->imageView.get());
 
                 profiler->EndProfilerCpuSpot("Imgui");
 
-                resourcesManager->EndFrameDynamicUpdates(currFrame.commandBuffer.get());
+                resourcesManager->EndFrameDynamicUpdates(currFrame.commandBuffer);
             	
             	inFlightQueue->EndParallelThreads();
                 inFlightQueue->EndFrame();
