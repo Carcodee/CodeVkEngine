@@ -3,8 +3,6 @@
 // Created by carlo on 2024-09-22.
 //
 
-
-
 #ifndef STRUCTS_HPP
 namespace ENGINE
 {
@@ -44,10 +42,12 @@ struct SurfaceDetails
 // presentQueue
 struct FrameResources
 {
-	vk::UniqueSemaphore     imageAcquiredSemaphore;
-	vk::UniqueSemaphore     renderingFinishedSemaphore;
-	vk::UniqueFence         inflightFence;
-	vk::CommandBuffer commandBuffer;
+	vk::UniqueSemaphore imageAcquiredSemaphore;
+	vk::UniqueSemaphore renderingFinishedSemaphore;
+	vk::UniqueFence     inflightFence;
+	vk::UniqueSemaphore timelineSemaphore;
+	uint64_t            timelineValue = 0;
+	vk::CommandBuffer   commandBuffer;
 };
 
 struct AttachmentInfo : SYSTEMS::ISerializable<AttachmentInfo>
@@ -157,25 +157,25 @@ struct GraphicsPipelineConfigs
 
 struct WorkerQueue
 {
-	vk::Queue workerQueue = {};
-	vk::UniqueCommandPool workerCommandPool = {};
-	SYSTEMS::TaskThread taskThreat = {};
+	vk::Queue                            workerQueue       = {};
+	int32_t                              familyIndex       = -1;
+	vk::UniqueCommandPool                workerCommandPool = {};
+	SYSTEMS::TaskThread                  taskThreat        = {};
 	std::vector<vk::UniqueCommandBuffer> commandBuffers;
-	std::string name = "";
-	bool isMainThreat = true;
-	int activeCmdIdx = 0;
-	
+	std::string                          name         = "";
+	bool                                 isMainThreat = true;
+	int                                  activeCmdIdx = 0;
 
-	vk::CommandBuffer& GetCurrentCmd()
+	vk::CommandBuffer &GetCurrentCmd()
 	{
 		return commandBuffers[activeCmdIdx].get();
 	};
-	WorkerQueue() = default;
-	~WorkerQueue() = default;
-	WorkerQueue(const WorkerQueue&) = delete;
-	WorkerQueue& operator=(const WorkerQueue&) = delete;
-	WorkerQueue(WorkerQueue&&) = default;
-	WorkerQueue& operator=(WorkerQueue&&) = default;
+	WorkerQueue()                               = default;
+	~WorkerQueue()                              = default;
+	WorkerQueue(const WorkerQueue &)            = delete;
+	WorkerQueue &operator=(const WorkerQueue &) = delete;
+	WorkerQueue(WorkerQueue &&)                 = default;
+	WorkerQueue &operator=(WorkerQueue &&)      = default;
 };
 
 }        // namespace ENGINE

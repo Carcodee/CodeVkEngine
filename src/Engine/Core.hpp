@@ -2,7 +2,6 @@
 // Created by carlo on 2024-09-22.
 //
 
-
 #ifndef CORE_HPP
 
 namespace ENGINE
@@ -76,7 +75,7 @@ class Core
 class QueueWorkerManager
 {
   public:
-	QueueWorkerManager(Core* core)
+	QueueWorkerManager(Core *core)
 	{
 		assert(core != nullptr);
 		this->coreRef = core;
@@ -92,6 +91,7 @@ class QueueWorkerManager
 		workersQueues.try_emplace(name);
 		workersQueues.at(name).name              = name;
 		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
+		workersQueues.at(name).familyIndex       = static_cast<int32_t>(familyIndex);
 		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), coreRef->queueFamilyIndices.graphicsFamilyIndex);
 		if (name != "Graphics")
 		{
@@ -115,7 +115,7 @@ class ExecuteOnceCommand
 	ExecuteOnceCommand(Core *core, std::string queueName = "Graphics")
 	{
 		this->core          = core;
-		this->queueName = queueName;
+		this->queueName     = queueName;
 		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetOrCreateWorkerQueue(queueName)->workerCommandPool.get(), 1)[0]);
 	}
 
@@ -138,14 +138,14 @@ class ExecuteOnceCommand
 		                      .setCommandBufferCount(1)
 		                      .setPCommandBuffers(&commandBufferHandle.get())
 		                      .setSignalSemaphoreCount(0);
-		
+
 		core->queueWorkerManager->GetOrCreateWorkerQueue(this->queueName)->workerQueue.submit({submitInfo}, nullptr);
 		core->queueWorkerManager->GetOrCreateWorkerQueue(this->queueName)->workerQueue.waitIdle();
 	}
 
 	Core                   *core;
 	vk::UniqueCommandBuffer commandBufferHandle;
-	std::string queueName = "Graphics";
+	std::string             queueName = "Graphics";
 };
 
 }        // namespace ENGINE
