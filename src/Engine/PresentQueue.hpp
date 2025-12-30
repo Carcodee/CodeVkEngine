@@ -3,8 +3,6 @@
 // Created by carlo on 2024-09-24.
 //
 
-
-
 #ifndef PRESENTQUEUE_HPP
 #define PRESENTQUEUE_HPP
 
@@ -69,7 +67,8 @@ struct InFlightQueue
 			frame.inflightFence              = core->CreateFence(true);
 			frame.imageAcquiredSemaphore     = core->CreateVulkanSemaphore();
 			frame.renderingFinishedSemaphore = core->CreateVulkanSemaphore();
-			frame.commandBuffer = core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->commandBuffers[frameIndex].get();
+			frame.timelineSemaphore          = core->CreateVulkanTimelineSemaphore(0);
+			frame.commandBuffer              = core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->commandBuffers[frameIndex].get();
 			frameResources.push_back(std::move(frame));
 		}
 		frameIndex = 0;
@@ -89,8 +88,8 @@ struct InFlightQueue
 
 		currFrame.commandBuffer.begin(bufferBeginInfo);
 
-		renderGraph->currentBackBuffer     = currentSwapchainImageView;
-		renderGraph->frameIndex            = frameIndex;
+		renderGraph->currentBackBuffer = currentSwapchainImageView;
+		renderGraph->frameIndex        = frameIndex;
 		// add pass info from my data
 	}
 	void EndFrame()
@@ -105,6 +104,15 @@ struct InFlightQueue
 		currFrame.commandBuffer.end();
 
 		{
+			uint64_t                        value        = 2;
+			vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
+			timelineInfo.setWaitSemaphoreValueCount(1)
+			    .setPWaitSemaphoreValues(&value)
+			    .setSignalSemaphoreValueCount(1)
+			    .setPSignalSemaphoreValues(&value);
+
+			
+
 			vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
 			vk::Semaphore          signalSemaphores[] = {currFrame.renderingFinishedSemaphore.get()};
 			vk::PipelineStageFlags waitStages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
@@ -121,7 +129,7 @@ struct InFlightQueue
 			core->presentQueue.submit({submitInfo}, currFrame.inflightFence.get());
 		}
 		presentQueue->PresentImage(currFrame.renderingFinishedSemaphore.get());
-		frameIndex = (frameIndex + 1) % frameResources.size();
+		frameIndex                                                                 = (frameIndex + 1) % frameResources.size();
 		core->queueWorkerManager->GetOrCreateWorkerQueue("Graphics")->activeCmdIdx = frameIndex;
 	}
 	void BeginParallelThreads()
@@ -133,8 +141,8 @@ struct InFlightQueue
 				continue;
 			}
 			std::function<void()> workerStartTask([&worker, this] {
-				worker.second.commandBuffers                      = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1));
-				auto bufferBeginInfo                             = vk::CommandBufferBeginInfo()
+				worker.second.commandBuffers = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1));
+				auto bufferBeginInfo         = vk::CommandBufferBeginInfo()
 				                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 				worker.second.commandBuffers[0]->begin(bufferBeginInfo);
 			});
