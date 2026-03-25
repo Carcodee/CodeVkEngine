@@ -55,13 +55,13 @@ class GIRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		auto taskOp = new std::function<void()>([this] {
+		auto taskOp = std::make_unique<std::function<void()>>([this] {
 			auto renderNode     = renderGraph->GetNode(shPassName);
 			auto currBackBuffer = renderGraph->currentBackBuffer;
 			renderNode->AddColorImageResource("shAttachment", currBackBuffer);
 		});
 
-		auto shRenderOp = new std::function<void()>(
+		auto shRenderOp = std::make_unique<std::function<void()>>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(shPassName);
 			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
@@ -79,8 +79,8 @@ class GIRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().drawIndexed(
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(shPassName)->AddTask(taskOp);
-		renderGraph->GetNode(shPassName)->SetRenderOperation(shRenderOp);
+		renderGraph->GetNode(shPassName)->AddTask(std::move(taskOp));
+		renderGraph->GetNode(shPassName)->SetRenderOperation(std::move(shRenderOp));
 	}
 
 	void ReloadShaders() override

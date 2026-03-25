@@ -136,12 +136,12 @@ class GSRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		// auto hTaskOp = new std::function<void()>(
+		// auto hTaskOp = std::make_unique<std::function<void()>>(
 		//     [this]
 		//     {
 		//         MoveCam();
 		//     });
-		// auto hRenderOp = new std::function<void()>(
+		// auto hRenderOp = std::make_unique<std::function<void()>>(
 		//     [this]()
 		//     {
 		//         auto& renderNode = renderGraph->renderNodes.at("histogramPass");
@@ -161,10 +161,10 @@ class GSRenderer : public BaseRenderer
 		//             0, sizeof(PcHistogram), &pcHistogram);
 		//     });
 		//
-		// renderGraph->GetNode("histogramPass")->AddTask(hTaskOp);
-		// renderGraph->GetNode("histogramPass")->SetRenderOperation(hRenderOp);
+		// renderGraph->GetNode("histogramPass")->AddTask(std::move(hTaskOp));
+		// renderGraph->GetNode("histogramPass")->SetRenderOperation(std::move(hRenderOp));
 		//
-		// auto rRenderOp = new std::function<void()>(
+		// auto rRenderOp = std::make_unique<std::function<void()>>(
 		//     [this]()
 		//     {
 		//         auto& renderNode = renderGraph->renderNodes.at("radixSortPass");
@@ -183,9 +183,9 @@ class GSRenderer : public BaseRenderer
 		//             0, sizeof(PcRadixSort), &pcRadixSort);
 		//     });
 		//
-		// renderGraph->GetNode("radixSortPass")->SetRenderOperation(rRenderOp);
+		// renderGraph->GetNode("radixSortPass")->SetRenderOperation(std::move(rRenderOp));
 
-		auto taskOp = new std::function<void()>(
+		auto taskOp = std::make_unique<std::function<void()>>(
 		    [this] {
 			    MoveCam();
 			    splitMvp.model = glm::identity<glm::mat4>();
@@ -193,7 +193,7 @@ class GSRenderer : public BaseRenderer
 			    auto renderNode = renderGraph->GetNode(passName);
 			    renderNode->AddColorImageResource("DisplayAttachment", renderGraph->currentBackBuffer);
 		    });
-		auto renderOp = new std::function<void()>(
+		auto renderOp = std::make_unique<std::function<void()>>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(passName);
 
@@ -230,8 +230,8 @@ class GSRenderer : public BaseRenderer
 			        gaussians.pos.size(),
 			        stride);
 		    });
-		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
-		renderGraph->GetNode(passName)->AddTask(taskOp);
+		renderGraph->GetNode(passName)->SetRenderOperation(std::move(renderOp));
+		renderGraph->GetNode(passName)->AddTask(std::move(taskOp));
 	}
 
 	void MoveCam()

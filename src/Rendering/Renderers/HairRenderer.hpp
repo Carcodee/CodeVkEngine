@@ -68,12 +68,12 @@ class HairRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		auto taskOp = new std::function<void()>(
+		auto taskOp = std::make_unique<std::function<void()>>(
 		    [this] {
 			    auto renderNode = renderGraph->GetNode(passName);
 			    renderNode->AddColorImageResource("default_attachment", renderGraph->currentBackBuffer);
 		    });
-		auto renderOp = new std::function<void()>(
+		auto renderOp = std::make_unique<std::function<void()>>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(passName);
 			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
@@ -91,8 +91,8 @@ class HairRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().drawIndexed(
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
-		renderGraph->GetNode(passName)->AddTask(taskOp);
+		renderGraph->GetNode(passName)->SetRenderOperation(std::move(renderOp));
+		renderGraph->GetNode(passName)->AddTask(std::move(taskOp));
 	}
 
 	void ReloadShaders() override

@@ -8,8 +8,6 @@
 
 
 
-double deltaTime;
-double previousTime;
 
 
 #include "WindowAPI/WindowInclude.hpp"
@@ -44,7 +42,10 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     //
     renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
     Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
-    flatRenderer->SetRenderOperation();
+    if (flatRenderer)
+    {
+        flatRenderer->SetRenderOperation();
+    }
     //
     //
     // renderers.try_emplace("GIRenderer", std::make_unique<Rendering::GIRenderer>(core, windowProvider));
@@ -94,6 +95,8 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation();
 
+    double deltaTime = 0.0;
+    double previousTime = 0.0;
     //todo: error here
     while (!windowProvider->WindowShouldClose())
     {

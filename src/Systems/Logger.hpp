@@ -41,7 +41,7 @@ class Logger
 			logFile.open(logFileName);
 			if (!logFile.good())
 			{
-				std::cerr << "Can't Open Log File" << std::endl;
+				std::cerr << "Can't Open Log File: " << logFileName << std::endl;
 				logOutput = LogOutput::CONSOLE;
 			}
 		}
@@ -50,7 +50,7 @@ class Logger
 	{
 		if (loggerInstance == nullptr)
 		{
-			loggerInstance = std::shared_ptr<Logger>(new Logger());
+			loggerInstance = std::make_shared<Logger>();
 		}
 
 		return loggerInstance;
@@ -81,13 +81,13 @@ class Logger
 					logType = "WARN: ";
 					break;
 				case LogLevel::L_ERROR:
-					logType = "L_ERROR: ";
+					logType = "ERROR: ";
 					break;
 				default:
 					logType = "NONE: ";
 					break;
 			}
-			if (codeLine == -1)
+			if (codeFile.empty())
 			{
 				message = logType + message;
 			}
@@ -112,7 +112,7 @@ class Logger
 		}
 		else if (logLevel == "WARN")
 		{
-			return LogLevel::L_ERROR;
+			return LogLevel::L_WARN;
 		}
 		else if (logLevel == "L_ERROR")
 		{

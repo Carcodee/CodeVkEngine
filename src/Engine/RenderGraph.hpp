@@ -705,18 +705,14 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		this->frameBufferSize = size;
 	}
 
-	void SetRenderOperation(std::function<void()> *renderOperations)
+	void SetRenderOperation(std::unique_ptr<std::function<void()>> renderOperations)
 	{
-		if (this->renderOperations)
-		{
-			delete (this->renderOperations);
-		}
-		this->renderOperations = renderOperations;
+		this->renderOperations = std::move(renderOperations);
 	}
 
-	void AddTask(std::function<void()> *task)
+	void AddTask(std::unique_ptr<std::function<void()>> task)
 	{
-		this->tasks.push_back(task);
+		this->tasks.push_back(std::move(task));
 	}
 
 	void SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
@@ -1009,12 +1005,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	void ClearOperations()
 	{
-		delete renderOperations;
-		for (auto &task : tasks)
-		{
-			delete task;
-		}
-		renderOperations = nullptr;
+		renderOperations.reset();
 		tasks.clear();
 	}
 
@@ -1132,8 +1123,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	std::unordered_map<std::string, ImageView *> sampledImages;
 	std::unordered_map<std::string, BufferKey>   buffers;
 
-	std::function<void()>               *renderOperations = nullptr;
-	std::vector<std::function<void()> *> tasks;
+	std::unique_ptr<std::function<void()>>               renderOperations;
+	std::vector<std::unique_ptr<std::function<void()>>> tasks;
 
 	std::set<std::string> dependencies;
 

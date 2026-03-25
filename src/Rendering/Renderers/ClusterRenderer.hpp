@@ -28,7 +28,7 @@ class ClusterRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation( new std::function<void()>(
+		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation( std::make_unique<std::function<void()>>(
 		    [this]() {
 
 			    auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
@@ -39,7 +39,7 @@ class ClusterRenderer : public BaseRenderer
 			    renderNode->SetBuffer("CullInfo", camFrustum);
 			    renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
 		    }));
-		renderGraphRef->GetNode(meshCullPassName)->AddTask(new std::function<void()>([this]() {
+		renderGraphRef->GetNode(meshCullPassName)->AddTask(std::make_unique<std::function<void()>>([this]() {
 			MoveCam();
 			cPropsUbo.invProj = glm::inverse(currCamera->matrices.perspective);
 			cPropsUbo.invView = glm::inverse(currCamera->matrices.view);
@@ -60,7 +60,7 @@ class ClusterRenderer : public BaseRenderer
 			}
 		}));
 
-		auto cullTask = new std::function<void()>([this]() {
+		auto cullTask = std::make_unique<std::function<void()>>([this]() {
 			cullDataPc.sWidth           = (int) windowProvider->GetWindowSize().x;
 			cullDataPc.sHeight          = (int) windowProvider->GetWindowSize().y;
 			cullDataPc.pointLightsCount = pointLights.size();
@@ -85,7 +85,7 @@ class ClusterRenderer : public BaseRenderer
 			cPropsUbo.zFar    = camera.cameraProperties.zFar;
 		});
 
-		auto cullRenderOp = new std::function<void()>(
+		auto cullRenderOp = std::make_unique<std::function<void()>>(
 		    [this]() {
 
 			    auto &renderNode = renderGraphRef->renderNodes.at(computePassName);
@@ -100,10 +100,10 @@ class ClusterRenderer : public BaseRenderer
 			                                                                   zSlicesSize);
 		    });
 
-		renderGraphRef->GetNode(computePassName)->AddTask(cullTask);
-		renderGraphRef->GetNode(computePassName)->SetRenderOperation(cullRenderOp);
+		renderGraphRef->GetNode(computePassName)->AddTask(std::move(cullTask));
+		renderGraphRef->GetNode(computePassName)->SetRenderOperation(std::move(cullRenderOp));
 
-		auto renderOp = new std::function<void()>(
+		auto renderOp = std::make_unique<std::function<void()>>(
 		    [this]() {
 			    vk::DeviceSize           offset = 0;
 			    std::vector<ImageView *> textures;
@@ -168,9 +168,9 @@ class ClusterRenderer : public BaseRenderer
 			    }
 		    });
 
-		renderGraphRef->GetNode(gBufferPassName)->SetRenderOperation(renderOp);
+		renderGraphRef->GetNode(gBufferPassName)->SetRenderOperation(std::move(renderOp));
 
-		auto lSetViewTask = new std::function<void()>([this]() {
+		auto lSetViewTask = std::make_unique<std::function<void()>>([this]() {
 			lightPc.xTileCount  = cullDataPc.xTileCount;
 			lightPc.yTileCount  = cullDataPc.yTileCount;
 			lightPc.xTileSizePx = xTileSizePx;
@@ -181,7 +181,7 @@ class ClusterRenderer : public BaseRenderer
 			renderGraphRef->AddColorImageResource(lightPassName, "lColor", currImage);
 			renderGraphRef->GetNode(lightPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
 		});
-		auto lRenderOp    = new std::function<void()>(
+		auto lRenderOp    = std::make_unique<std::function<void()>>(
             [this]() {
                 auto renderNode = renderGraphRef->GetNode(lightPassName);
                 renderGraphRef->resourcesManager->RequestStorageImageClear("specularHolderStorage");
@@ -208,8 +208,8 @@ class ClusterRenderer : public BaseRenderer
 			                                                                         0, 0);
             });
 
-		renderGraphRef->GetNode(lightPassName)->AddTask(lSetViewTask);
-		renderGraphRef->GetNode(lightPassName)->SetRenderOperation(lRenderOp);
+		renderGraphRef->GetNode(lightPassName)->AddTask(std::move(lSetViewTask));
+		renderGraphRef->GetNode(lightPassName)->SetRenderOperation(std::move(lRenderOp));
 	}
 
 	void ReloadShaders() override
