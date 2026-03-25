@@ -94,11 +94,11 @@ namespace ENGINE
 
         static Profiler* GetInstance()
         {
-            if (instance==nullptr)
+            if (!instance)
             {
-                instance = new Profiler();
+                instance = std::make_unique<Profiler>();
             }
-            return instance;
+            return instance.get();
         }
 
         double startFrameTime;
@@ -109,9 +109,9 @@ namespace ENGINE
         std::vector<legit::ProfilerTask> gpuUpdateInfo;
         std::map<std::string, int> cpuNames;
         std::map<std::string, int> gpuNames;
-        static Profiler* instance;
+        static std::unique_ptr<Profiler> instance;
     };
-    Profiler* Profiler::instance = nullptr;
+    std::unique_ptr<Profiler> Profiler::instance = nullptr;
     
 }
 

@@ -263,7 +263,7 @@ class FlatRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		auto paintingRenderOP = new std::function<void()>(
+		auto paintingRenderOP = std::make_unique<std::function<void()>>(
 		    [this]() {
 			    glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 			    paintingPc.xMousePos = mouseInput.x;
@@ -284,11 +284,11 @@ class FlatRenderer : public BaseRenderer
 			                                                                     0, sizeof(PaintingPc), &paintingPc);
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
-		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
+		renderGraph->GetNode(paintingPassName)->SetRenderOperation(std::move(paintingRenderOP));
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
-			auto probesGenOp = new std::function<void()>(
+			auto probesGenOp = std::make_unique<std::function<void()>>(
 			    [this, i]() {
 				    int idx            = i;
 				    int intervalSizePc = cascadesInfo.intervalCount;
@@ -313,10 +313,10 @@ class FlatRenderer : public BaseRenderer
 				                                                                       vk::IndexType::eUint32);
 				    renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 			    });
-			renderGraph->GetNode(probesGenPassNames[i])->SetRenderOperation(probesGenOp);
+			renderGraph->GetNode(probesGenPassNames[i])->SetRenderOperation(std::move(probesGenOp));
 		}
 
-		auto radianceOutputTask = new std::function<void()>([this]() {
+		auto radianceOutputTask = std::make_unique<std::function<void()>>([this]() {
 			rcPc.cascadesCount      = cascadesInfo.cascadeCount;
 			rcPc.probeSizePx        = cascadesInfo.probeSizePx;
 			rcPc.intervalCount      = cascadesInfo.intervalCount;
@@ -328,7 +328,7 @@ class FlatRenderer : public BaseRenderer
 			renderGraph->AddColorImageResource(rCascadesPassName, "rColor", currImage);
 			renderGraph->GetNode(rCascadesPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
 		});
-		auto radianceOutputOp   = new std::function<void()>(
+		auto radianceOutputOp   = std::make_unique<std::function<void()>>(
             [this]() {
                 auto &renderNode = renderGraph->renderNodes.at(rCascadesPassName);
                 renderNode->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
@@ -351,13 +351,13 @@ class FlatRenderer : public BaseRenderer
                 renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 			                                                                     0, 0);
             });
-		renderGraph->GetNode(rCascadesPassName)->SetRenderOperation(radianceOutputOp);
-		renderGraph->GetNode(rCascadesPassName)->AddTask(radianceOutputTask);
+		renderGraph->GetNode(rCascadesPassName)->SetRenderOperation(std::move(radianceOutputOp));
+		renderGraph->GetNode(rCascadesPassName)->AddTask(std::move(radianceOutputTask));
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
 			std::string mergeNameCascades = rMergePassName + "_" + std::to_string(i);
-			auto        mergeTask         = new std::function<void()>([this, i]() {
+			auto        mergeTask         = std::make_unique<std::function<void()>>([this, i]() {
                 int         idx       = i;
                 std::string mergeName = rMergePassName + "_" + std::to_string(idx);
                 auto       *currImage = renderGraph->currentBackBuffer;
@@ -365,7 +365,7 @@ class FlatRenderer : public BaseRenderer
                     "mergeColor_" + std::to_string(idx), currImage);
                 renderGraph->GetNode(mergeName)->SetFramebufferSize(windowProvider->GetWindowSize());
             });
-			auto        mergeRenderOp     = new std::function<void()>(
+			auto        mergeRenderOp     = std::make_unique<std::function<void()>>(
                 [this, i]() {
                     int         idx        = i;
                     std::string mergeName  = rMergePassName + "_" + std::to_string(idx);
@@ -387,16 +387,16 @@ class FlatRenderer : public BaseRenderer
                     renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 				                                                                              0, 0);
                 });
-			renderGraph->GetNode(mergeNameCascades)->SetRenderOperation(mergeRenderOp);
-			renderGraph->GetNode(mergeNameCascades)->AddTask(mergeTask);
+			renderGraph->GetNode(mergeNameCascades)->SetRenderOperation(std::move(mergeRenderOp));
+			renderGraph->GetNode(mergeNameCascades)->AddTask(std::move(mergeTask));
 		}
 
-		auto resultTask     = new std::function<void()>([this]() {
+		auto resultTask     = std::make_unique<std::function<void()>>([this]() {
             auto *currImage = renderGraph->currentBackBuffer;
             renderGraph->GetNode(resultPassName)->AddColorImageResource("resultColor", currImage);
             renderGraph->GetNode(resultPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
         });
-		auto resultRenderOp = new std::function<void()>(
+		auto resultRenderOp = std::make_unique<std::function<void()>>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(resultPassName);
 			    renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
@@ -421,8 +421,8 @@ class FlatRenderer : public BaseRenderer
 			                                                                   0, 0);
 			    testSpriteAnim->UseFrame();
 		    });
-		renderGraph->GetNode(resultPassName)->SetRenderOperation(resultRenderOp);
-		renderGraph->GetNode(resultPassName)->AddTask(resultTask);
+		renderGraph->GetNode(resultPassName)->SetRenderOperation(std::move(resultRenderOp));
+		renderGraph->GetNode(resultPassName)->AddTask(std::move(resultTask));
 	}
 
 	void ReloadShaders() override

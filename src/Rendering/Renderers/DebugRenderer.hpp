@@ -82,7 +82,7 @@ class DebugRenderer : public BaseRenderer
 	{
 		if (clusterRenderer)
 		{
-			auto debugTask = new std::function<void()>([this]() {
+			auto debugTask = std::make_unique<std::function<void()>>([this]() {
 				SetViewCamera();
 				CreateFrustumVertices();
 				rawVerticesBuff = ResourcesManager::GetInstance()->SetBuffer(
@@ -91,7 +91,7 @@ class DebugRenderer : public BaseRenderer
 				renderGraph->AddColorImageResource(mDebuggerPassName, "modelCol", currImage);
 				renderGraph->GetNode(mDebuggerPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
 			});
-			auto renderOp  = new std::function<void()>(
+			auto renderOp  = std::make_unique<std::function<void()>>(
                 [this]() {
                     vk::DeviceSize offset = 0;
                     auto           node   = renderGraph->GetNode(mDebuggerPassName);
@@ -112,8 +112,8 @@ class DebugRenderer : public BaseRenderer
                     node->GetCurrCmd().draw(raw3DVertices.size(), 1, 0, 0);
                 });
 
-			renderGraph->GetNode(mDebuggerPassName)->AddTask(debugTask);
-			renderGraph->GetNode(mDebuggerPassName)->SetRenderOperation(renderOp);
+			renderGraph->GetNode(mDebuggerPassName)->AddTask(std::move(debugTask));
+			renderGraph->GetNode(mDebuggerPassName)->SetRenderOperation(std::move(renderOp));
 		}
 	}
 	void ReloadShaders() override
