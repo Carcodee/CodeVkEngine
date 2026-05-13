@@ -104,12 +104,12 @@ struct InFlightQueue
 		currFrame.commandBuffer.end();
 
 		{
-			uint64_t                        value        = 2;
-			vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
-			timelineInfo.setWaitSemaphoreValueCount(1)
-			    .setPWaitSemaphoreValues(&value)
-			    .setSignalSemaphoreValueCount(1)
-			    .setPSignalSemaphoreValues(&value);
+			// uint64_t                        value        = 2;
+			// vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
+			// timelineInfo.setWaitSemaphoreValueCount(1)
+			//     .setPWaitSemaphoreValues(&value)
+			//     .setSignalSemaphoreValueCount(1)
+			//     .setPSignalSemaphoreValues(&value);
 
 			
 

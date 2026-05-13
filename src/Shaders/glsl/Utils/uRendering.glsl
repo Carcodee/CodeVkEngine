@@ -44,6 +44,7 @@ vec3 u_ScreenToView(mat4 invProj, float depth, vec2 screenPos, vec2 screenSize){
     viewPos = viewPos / viewPos.w;
 
     return vec3(viewPos.xyz);
+    
 }
 
 vec4 u_ScreenToViewNDC(mat4 invProj, float depth, vec2 ndcCoords){
