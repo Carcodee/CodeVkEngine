@@ -26,6 +26,12 @@ CodeVkEngine Is my personal graphics engine that I extend from this [**public te
 
 
 - **Renderers**:
+
+  - [**Gaussian Splats Renderer**](https://github.com/Carcodee/CodeVk_Renderer/blob/main/src/Rendering/Renderers/GSRenderer.hpp): Basic gaussian splats renderer. The splats sorting is not implemented so it needs to be updated via UI everytime the perspective change (I'm too busy to add the gpu radix sort)<img width="1021" height="1054" alt="image" src="https://github.com/user-attachments/assets/9ba7596f-0c5f-46e8-8bf7-9a9ddc7857c2" />
+
+
+    
+     
   - [**Cluster Renderer**](https://github.com/Carcodee/CodeVk_Renderer/blob/main/src/Rendering/Renderers/ClusterRenderer.hpp): Implements GPU occlusion culling for point lights (supporting up to 1000) and meshes, leveraging GPU-driven rendering and position reconstruction from a depth map for optimized performance.
 ![Cluster Renderer Demo](https://github.com/user-attachments/assets/261a7f85-a560-4fb4-be84-d3ef6517899c)
 
