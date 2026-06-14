@@ -146,6 +146,7 @@ class FlatRenderer : public BaseRenderer
 		auto cudaBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
 		                                                                 "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ResourcesManager::BufferType::EXTERNAL})
 		                      ->bufferHandle.get();
+		
 	}
 
 	void CreatePipelines()

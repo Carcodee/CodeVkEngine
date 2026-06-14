@@ -1618,13 +1618,17 @@ class RenderGraph
 
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;
+		
+        auto profiler = ENGINE::Profiler::GetInstance();
 		for (auto &renderNode : sortedByDepNodes)
 		{
+			
 			if (!renderNode->active)
 			{
 				continue;
 			}
 
+			profiler->AddProfilerCpuSpot(legit::Colors::getColor(idx), "Pass: " + renderNode->passName);
 			RenderGraphNode *node      = renderNode;
 			bool             depenNeed = false;
 			std::string      depenName = "";
@@ -1641,6 +1645,9 @@ class RenderGraph
 				RenderGraphNode *depenNode = renderNodes.at(depenName).get();
 				if (!depenNode->active)
 				{
+					profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
+					SYSTEMS::Logger::GetInstance()->LogMessage(
+						"Pass with name: (" + renderNode->passName + ") needs ("+ depenName+") and is not active");
 					// if a dependency is not active we skip the node
 					continue;
 				}
@@ -1664,6 +1671,7 @@ class RenderGraph
 			}
 			allPassesNames.push_back(node->passName);
 			idx = (idx + 1) % 16;
+			profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
 		}
 	}
 

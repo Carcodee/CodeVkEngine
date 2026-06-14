@@ -33,7 +33,7 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     // core, windowProvider));
     // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
     // clusterRenderer->SetRenderOperation();
-    
+    //
     // renderers.try_emplace("HairRenderer", std::make_unique<Rendering::HairRenderer>(core, windowProvider));
     // Rendering::HairRenderer* hairRenderer = dynamic_cast<Rendering::HairRenderer*>(renderers.at("HairRenderer").get());
     // hairRenderer->SetRenderOperation();
@@ -45,7 +45,7 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
     Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
     flatRenderer->SetRenderOperation();
-    //
+    
     //
     // renderers.try_emplace("GIRenderer", std::make_unique<Rendering::GIRenderer>(core, windowProvider));
     // Rendering::GIRenderer* giRenderer = dynamic_cast<Rendering::GIRenderer*>(renderers.at("GIRenderer").get());
@@ -152,7 +152,9 @@ void run(WindowProvider* windowProvider)
 
                 auto& currFrame = inFlightQueue->frameResources[inFlightQueue->frameIndex];
 
+                profiler->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph cpu");
                 core->renderGraphRef->ExecuteRendering();
+            	profiler->EndProfilerCpuSpot("Rendergraph cpu");
 
 
                 profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
@@ -165,7 +167,6 @@ void run(WindowProvider* windowProvider)
             	
             	inFlightQueue->EndParallelThreads();
                 inFlightQueue->EndFrame();
-                // profiler->EndProfilerGpuSpot("Gpu");
             }
             catch (vk::OutOfDateKHRError err)
             {
