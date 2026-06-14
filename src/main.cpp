@@ -20,6 +20,7 @@ double previousTime;
 
 
 #include "Rendering/RenderingInclude.hpp"
+#include <CodeInclude.h>
 
 CONST int WINDOWS_WIDTH = 1024;
 CONST int WINDOWS_HEIGHT = 1024;
@@ -58,6 +59,7 @@ void run(WindowProvider* windowProvider)
     ENGINE::WindowDesc windowDesc = {};
     windowDesc.hInstance = GetModuleHandle(NULL);
     windowDesc.hWnd = glfwGetWin32Window(windowProvider->window);
+	CodeCuda::C_Init();
 
     bool enableDebugging = false;
 #if defined ENGINE_ENABLE_DEBUGGING

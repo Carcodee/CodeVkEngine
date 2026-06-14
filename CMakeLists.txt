@@ -12,15 +12,18 @@ message("Solution Dir is: ${SOLUTION_DIR}")
 
 find_package(Vulkan)
 
+list(APPEND CMAKE_PREFIX_PATH "${SOLUTION_DIR}/dependencies/CodeCudaEngine")
+find_package(CodeCudaEngine REQUIRED)
+
 message(STATUS "Found Vulkan in ${Vulkan_INCLUDE_DIRS}")
 message(STATUS "Found Vulkan libs in ${Vulkan_LIBRARIES}")
 
 get_filename_component(Vulkan_Base_Path ${Vulkan_INCLUDE_DIRS} DIRECTORY)
 message(STATUS "Found Vulkan path in ${Vulkan_Base_Path}")
 
-set(GLFW3_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/glfw/include")
 set(GLFW3_LIBRARIES "${SOLUTION_DIR}/dependencies/glfw/lib-vc2022/glfw3.lib")
 
+set(GLFW3_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/glfw/include")
 set(GLM_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/glm-master/glm")
 set(STB_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/stb-master")
 set(SPIRVCROSS_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/spirv-cross")
@@ -74,6 +77,7 @@ target_link_libraries(Engine
         ${SLANG_LIBRARIES}
         ${Vulkan_LIBRARIES}
         ${GLFW3_LIBRARIES}
+        CodeCudaEngine::codeCudaLib
 )
 
 set_target_properties(Engine PROPERTIES
@@ -81,6 +85,8 @@ set_target_properties(Engine PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+
 add_custom_command(
         TARGET Engine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
