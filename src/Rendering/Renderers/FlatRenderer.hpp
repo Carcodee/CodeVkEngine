@@ -1,9 +1,7 @@
 //
 
-
 // Created by carlo on 2024-12-02.
 //
-
 
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
@@ -144,6 +142,10 @@ class FlatRenderer : public BaseRenderer
 		                                                        sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
 		                                                        Vertex2D::GetQuadIndices().data())
 		                         ->deviceBuffer.get();
+
+		auto cudaBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
+		                                                                 "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ResourcesManager::BufferType::EXTERNAL})
+		                      ->bufferHandle.get();
 	}
 
 	void CreatePipelines()
@@ -280,8 +282,8 @@ class FlatRenderer : public BaseRenderer
 			    auto &renderNode = renderGraph->renderNodes.at(paintingPassName);
 			    renderNode->descCache->SetStorageImageArray("PaintingLayers", paintingLayers);
 			    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
-			                                                                     vk::ShaderStageFlagBits::eCompute,
-			                                                                     0, sizeof(PaintingPc), &paintingPc);
+			                                           vk::ShaderStageFlagBits::eCompute,
+			                                           0, sizeof(PaintingPc), &paintingPc);
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
 		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
@@ -304,13 +306,13 @@ class FlatRenderer : public BaseRenderer
 				    auto &renderNode         = renderGraph->renderNodes.at(probesGenPassNames[idx]);
 
 				    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
-				                                                                     vk::ShaderStageFlagBits::eVertex |
-				                                                                         vk::ShaderStageFlagBits::eFragment,
-				                                                                     0, sizeof(ProbesGenPc), &probesGenPc);
+				                                           vk::ShaderStageFlagBits::eVertex |
+				                                               vk::ShaderStageFlagBits::eFragment,
+				                                           0, sizeof(ProbesGenPc), &probesGenPc);
 				    vk::DeviceSize offset = 0;
 				    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
 				    renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
-				                                                                       vk::IndexType::eUint32);
+				                                             vk::IndexType::eUint32);
 				    renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 			    });
 			renderGraph->GetNode(probesGenPassNames[i])->SetRenderOperation(probesGenOp);
@@ -345,11 +347,11 @@ class FlatRenderer : public BaseRenderer
                 renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
                 renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
-			                                                                       vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-			                                                                       0, sizeof(RcPc), &rcPc);
+			                                             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+			                                             0, sizeof(RcPc), &rcPc);
 
                 renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
-			                                                                     0, 0);
+			                                           0, 0);
             });
 		renderGraph->GetNode(rCascadesPassName)->SetRenderOperation(radianceOutputOp);
 		renderGraph->GetNode(rCascadesPassName)->AddTask(radianceOutputTask);
@@ -378,14 +380,14 @@ class FlatRenderer : public BaseRenderer
                     vk::DeviceSize offset = 0;
                     renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                     renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
-				                                                                                  vk::IndexType::eUint32);
+				                                                        vk::IndexType::eUint32);
 
                     renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
-				                                                                                vk::ShaderStageFlagBits::eVertex |
-				                                                                                    vk::ShaderStageFlagBits::eFragment,
-				                                                                                0, sizeof(RcPc), &rcPc);
+				                                                      vk::ShaderStageFlagBits::eVertex |
+				                                                          vk::ShaderStageFlagBits::eFragment,
+				                                                      0, sizeof(RcPc), &rcPc);
                     renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
-				                                                                              0, 0);
+				                                                    0, 0);
                 });
 			renderGraph->GetNode(mergeNameCascades)->SetRenderOperation(mergeRenderOp);
 			renderGraph->GetNode(mergeNameCascades)->AddTask(mergeTask);
@@ -414,11 +416,11 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
 			    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
-			                                                                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-			                                                                     0, sizeof(RcPc), &rcPc);
+			                                           vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+			                                           0, sizeof(RcPc), &rcPc);
 
 			    renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
-			                                                                   0, 0);
+			                                         0, 0);
 			    testSpriteAnim->UseFrame();
 		    });
 		renderGraph->GetNode(resultPassName)->SetRenderOperation(resultRenderOp);

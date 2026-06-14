@@ -57,10 +57,10 @@ class GSRenderer : public BaseRenderer
 			indirectCmd.vertexOffset  = 0;
 			indexedCmds.emplace_back(indirectCmd);
 		}
-		indirectBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(
+		indirectBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(ENGINE::ResourcesManager::BufferParams{
 		    "gsIndirectDraw", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
 		    vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data());
+		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data()});
 	}
 	void ReSort()
 	{

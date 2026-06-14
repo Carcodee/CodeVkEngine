@@ -58,6 +58,7 @@ class Core
 	static vk::UniqueDevice CreateLogicalDevice(vk::PhysicalDevice physicalDevice, QueueFamilyIndices familyIndices, std::vector<const char *> deviceExtensions, std::vector<const char *> validationLayers);
 
 	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, vk::DispatchLoaderDynamic &loader);
+	
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessageCallback(
 	    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,

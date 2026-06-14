@@ -42,8 +42,9 @@ class DebugRenderer : public BaseRenderer
 	void CreateBuffers()
 	{
 		rawVerticesBuff = ResourcesManager::GetInstance()->GetBuffer(
-		    "debugRawVertices", vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-		    1);
+		    ResourcesManager::BufferParams{
+		        "debugRawVertices", vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+		        1});
 	}
 	void CreatePipelines()
 	{

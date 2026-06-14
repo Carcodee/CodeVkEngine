@@ -18,12 +18,16 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 {
 	std::vector<const char *> resInstanceExtensions(instanceExtensions, instanceExtensions + instanceExtensionsCount);
 	std::vector<const char *> validationLayers;
+	resInstanceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+	resInstanceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+	
 	if (enableDebugging)
 	{
 		validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 		// validationLayers.push_back("VK_LAYER_LUNARG_api_dump");
 		resInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
+	
 	this->instance = CreateInstance(resInstanceExtensions, validationLayers);
 
 	loader = vk::DispatchLoaderDynamic(instance.get(), vkGetInstanceProcAddr);
@@ -46,12 +50,18 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	std::vector<const char *> deviceExtensions;
 	deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	deviceExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+
+	deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+	deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
+
+	deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+	deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
+	
 	this->logicalDevice            = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
 	                                                     validationLayers);
 	this->presentQueue             = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
 	this->queueWorkerManager       = std::make_unique<QueueWorkerManager>(this);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics", queueFamilyIndices.graphicsFamilyIndex);
-	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics_test", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Transfer", queueFamilyIndices.transferFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.graphicsFamilyIndex);
 

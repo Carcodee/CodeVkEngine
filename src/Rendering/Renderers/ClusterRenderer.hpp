@@ -28,17 +28,15 @@ class ClusterRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation( new std::function<void()>(
-		    [this]() {
-
-			    auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
-			    renderNode->SetBuffer("IndirectCmds",
-			                               RenderingResManager::GetInstance()->indirectDrawBuffer);
-			    renderNode->SetBuffer("MeshesSpheres", meshesSpheresCompact);
-			    renderNode->SetBuffer("CamProps", cPropsUbo);
-			    renderNode->SetBuffer("CullInfo", camFrustum);
-			    renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
-		    }));
+		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation(new std::function<void()>([this]() {
+			auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
+			renderNode->SetBuffer("IndirectCmds",
+			                      RenderingResManager::GetInstance()->indirectDrawBuffer);
+			renderNode->SetBuffer("MeshesSpheres", meshesSpheresCompact);
+			renderNode->SetBuffer("CamProps", cPropsUbo);
+			renderNode->SetBuffer("CullInfo", camFrustum);
+			renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
+		}));
 		renderGraphRef->GetNode(meshCullPassName)->AddTask(new std::function<void()>([this]() {
 			MoveCam();
 			cPropsUbo.invProj = glm::inverse(currCamera->matrices.perspective);
@@ -87,17 +85,16 @@ class ClusterRenderer : public BaseRenderer
 
 		auto cullRenderOp = new std::function<void()>(
 		    [this]() {
-
 			    auto &renderNode = renderGraphRef->renderNodes.at(computePassName);
 			    renderNode->SetBuffer("PointLights", pointLights);
 			    renderNode->SetBuffer("LightMap", lightsMap);
 			    renderNode->SetBuffer("LightIndices", lightsIndices);
 			    renderNode->SetBuffer("CameraProperties", cPropsUbo);
 			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
-			                                                                        vk::ShaderStageFlagBits::eCompute,
-			                                                                        0, sizeof(ScreenDataPc), &cullDataPc);
+			                                           vk::ShaderStageFlagBits::eCompute,
+			                                           0, sizeof(ScreenDataPc), &cullDataPc);
 			    renderNode->GetCurrCmd().dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
-			                                                                   zSlicesSize);
+			                                      zSlicesSize);
 		    });
 
 		renderGraphRef->GetNode(computePassName)->AddTask(cullTask);
@@ -134,19 +131,18 @@ class ClusterRenderer : public BaseRenderer
 					    meshMatIds.push_back(model->materials[i]);
 				    }
 			    }
-		    	auto renderNode = renderGraphRef->GetNode(gBufferPassName);
+			    auto renderNode = renderGraphRef->GetNode(gBufferPassName);
 
 			    renderGraphRef->GetNode(gBufferPassName)->SetSamplerArray("textures", textures);
 			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MaterialsPacked", materials);
 			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshMaterialsIds", meshMatIds);
 			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshesModelMatrices", modelMats);
 
-
 			    pc.projView = camera.matrices.perspective * camera.matrices.view;
 			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
-			                                                                        vk::ShaderStageFlagBits::eVertex |
-			                                                                            vk::ShaderStageFlagBits::eFragment,
-			                                                                        0, sizeof(MvpPc), &pc);
+			                                           vk::ShaderStageFlagBits::eVertex |
+			                                               vk::ShaderStageFlagBits::eFragment,
+			                                           0, sizeof(MvpPc), &pc);
 
 			    int meshOffset = 0;
 
@@ -154,7 +150,7 @@ class ClusterRenderer : public BaseRenderer
 			    {
 				    Model *modelRef = modelPair.second;
 				    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &modelRef->vertBuffer->deviceBuffer->bufferHandle.get(),
-				                                                                            &offset);
+				                                               &offset);
 				    renderNode->GetCurrCmd().bindIndexBuffer(modelRef->indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
 
 				    vk::DeviceSize sizeOffset = (meshOffset) * sizeof(DrawIndirectIndexedCmd);
@@ -202,10 +198,10 @@ class ClusterRenderer : public BaseRenderer
                 renderNode->GetCurrCmd().bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
                 renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
-			                                                                           vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
-			                                                                           0, sizeof(LightPc), &lightPc);
+			                                              vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
+			                                              0, sizeof(LightPc), &lightPc);
                 renderNode->GetCurrCmd().drawIndexed(quadIndices.size(), 1, 0,
-			                                                                         0, 0);
+			                                            0, 0);
             });
 
 		renderGraphRef->GetNode(lightPassName)->AddTask(lSetViewTask);
@@ -336,13 +332,15 @@ class ClusterRenderer : public BaseRenderer
 	{
 		RenderingResManager::GetInstance()->BuildIndirectBuffers();
 
-		lVertexBuffer = ResourcesManager::GetInstance()->GetBuffer("lVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
-		                                                           vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		                                                           sizeof(Vertex2D) * quadVert.size(), quadVert.data());
+		lVertexBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
+		    "lVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
+		    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+		    sizeof(Vertex2D) * quadVert.size(), quadVert.data()});
 
-		lIndexBuffer = ResourcesManager::GetInstance()->GetBuffer("lIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                          vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		                                                          sizeof(uint32_t) * quadIndices.size(), quadIndices.data());
+		lIndexBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
+		    "lIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
+		    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+		    sizeof(uint32_t) * quadIndices.size(), quadIndices.data()});
 	}
 
 	void CreatePipelines()

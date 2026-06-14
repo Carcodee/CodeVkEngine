@@ -103,17 +103,17 @@ namespace ENGINE
                 case vk::DescriptorType::eUniformBuffer:
                     bufferBindingsKeys.try_emplace(resource.name, resource);
                     // ubo = resourcesManagerRef->GetStageBuffer(resource.name, vk::BufferUsageFlagBits::eUniformBuffer, 1)->deviceBuffer.get();
-                    ubo = resourcesManagerRef->GetBuffer(resource.name, vk::BufferUsageFlagBits::eUniformBuffer,
+                    ubo = resourcesManagerRef->GetBuffer(ResourcesManager::BufferParams{resource.name, vk::BufferUsageFlagBits::eUniformBuffer,
                                                          vk::MemoryPropertyFlagBits::eHostVisible |
-                                                         vk::MemoryPropertyFlagBits::eHostCoherent, 1);
+                                                         vk::MemoryPropertyFlagBits::eHostCoherent, 1});
                     buffersResources.try_emplace(resource.binding, ubo);
                     break;
                 case vk::DescriptorType::eStorageBuffer:
                     bufferBindingsKeys.try_emplace(resource.name, resource);
                     // ssbo = resourcesManagerRef->GetStageBuffer(resource.name ,vk::BufferUsageFlagBits::eStorageBuffer, 1)->deviceBuffer.get();
-                    ssbo = resourcesManagerRef->GetBuffer(resource.name, vk::BufferUsageFlagBits::eStorageBuffer,
+                    ssbo = resourcesManagerRef->GetBuffer(ResourcesManager::BufferParams{resource.name, vk::BufferUsageFlagBits::eStorageBuffer,
                                                          vk::MemoryPropertyFlagBits::eHostVisible |
-                                                         vk::MemoryPropertyFlagBits::eHostCoherent, 1);
+                                                         vk::MemoryPropertyFlagBits::eHostCoherent, 1});
                     buffersResources.try_emplace(resource.binding,ssbo);
                     break;
                 }

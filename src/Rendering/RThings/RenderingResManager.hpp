@@ -663,9 +663,10 @@ class RenderingResManager
 				indirectDrawsCmdInfos.emplace_back(indirectCmd);
 			}
 		}
-		indirectDrawBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer("IndirectCmds", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
-		                                                                        vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-		                                                                        sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(), indirectDrawsCmdInfos.data());
+		indirectDrawBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+		    "IndirectCmds", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+		    vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(), indirectDrawsCmdInfos.data()});
 	}
 
 	void UpdateResources()
