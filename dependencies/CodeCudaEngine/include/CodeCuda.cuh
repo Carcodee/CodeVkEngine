@@ -6,7 +6,6 @@
 #ifndef CODECUDA_CUH
 #define CODECUDA_CUH
 
-#include <cstdint>
 
 namespace CodeCuda
 {
@@ -17,15 +16,16 @@ namespace CodeCuda
         ERR
     };
 
-     C_Res C_Init();
-     C_Res C_InitFromExternalDevice(uint8_t *vkDeviceUUID, size_t UUID_SIZE);
-     C_Res C_Matmul(const int M, const int N, const int K, const float *a, const float *b, float *c);
+    C_Res C_Init();
+    C_Res C_InitFromExternalDevice(uint8_t *vkDeviceUUID, size_t UUID_SIZE);
+    C_Res C_Matmul(int M, int N, int K, const float *a, const float *b, float *c);
+    C_Res C_ImportExternalBuffer(HANDLE win_handle, size_t buffer_size);
 
-     C_Res C_Shutdown();
+    C_Res C_Shutdown();
 
     namespace CodeBenchmarking
     {
-        void C_Matmul_Test(const int M, const int N, const int K, const float *a, const float *b, float *c, int runs);
+        void C_Matmul_Test(int M, int N, int K, const float *a, const float *b, float *c, int runs);
     }
 
 } // namespace CodeCuda

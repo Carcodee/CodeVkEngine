@@ -143,9 +143,6 @@ class FlatRenderer : public BaseRenderer
 		                                                        Vertex2D::GetQuadIndices().data())
 		                         ->deviceBuffer.get();
 
-		auto cudaBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
-		                                                                 "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ResourcesManager::BufferType::EXTERNAL})
-		                      ->bufferHandle.get();
 		
 	}
 

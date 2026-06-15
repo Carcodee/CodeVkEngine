@@ -2,6 +2,7 @@
 
 
 
+
 // Created by carlo on 2024-09-21.
 //
 
@@ -71,7 +72,6 @@ void run(WindowProvider* windowProvider)
     std::unique_ptr<ENGINE::Core> core = std::make_unique<ENGINE::Core>(
         glfwExtensions, glfwExtensionCount, &windowDesc, enableDebugging);
 	
-	CodeCuda::C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
 
     std::unique_ptr<ENGINE::RenderGraph> renderGraph = core->CreateRenderGraph();
 
@@ -82,8 +82,15 @@ void run(WindowProvider* windowProvider)
     ENGINE::ResourcesManager* resourcesManager = ENGINE::ResourcesManager::GetInstance(core.get());
     
     renderGraph->CreateResManager();
+	
+	auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+																   "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+	
+	CodeCuda::C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
+	CodeCuda::C_ImportExternalBuffer(cudaBuffer->GetBufferHandle(), cudaBuffer->deviceSize);
+	
     
-    Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance(renderGraph.get());
+	Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance(renderGraph.get());
     // Rendering::ModelLoader::GetInstance(core.get());
 
     
