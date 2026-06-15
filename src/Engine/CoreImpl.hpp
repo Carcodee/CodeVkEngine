@@ -3,9 +3,6 @@
 // Created by carlo on 2024-09-22.
 //
 
-
-
-
 #ifndef COREIMPL_HPP
 #define COREIMPL_HPP
 
@@ -20,14 +17,14 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	std::vector<const char *> validationLayers;
 	resInstanceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
 	resInstanceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
-	
+
 	if (enableDebugging)
 	{
 		validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 		// validationLayers.push_back("VK_LAYER_LUNARG_api_dump");
 		resInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
-	
+
 	this->instance = CreateInstance(resInstanceExtensions, validationLayers);
 
 	loader = vk::DispatchLoaderDynamic(instance.get(), vkGetInstanceProcAddr);
@@ -40,6 +37,7 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 		this->debugUtilsMessenger = CreateDebugUtilsMessenger(instance.get(), DebugMessageCallback, loader);
 	}
 	this->physicalDevice = FindPhysicalDevice(instance.get());
+	this->deviceUUID     = FindPhysicalDeviceUUID(this->physicalDevice);
 
 	if (compatibleWindowDesc)
 	{
@@ -56,11 +54,11 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 
 	deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
 	deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
-	
-	this->logicalDevice            = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
-	                                                     validationLayers);
-	this->presentQueue             = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
-	this->queueWorkerManager       = std::make_unique<QueueWorkerManager>(this);
+
+	this->logicalDevice      = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
+	                                               validationLayers);
+	this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
+	this->queueWorkerManager = std::make_unique<QueueWorkerManager>(this);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Transfer", queueFamilyIndices.transferFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.graphicsFamilyIndex);
@@ -202,6 +200,21 @@ vk::UniqueInstance Core::CreateInstance(const std::vector<const char *> &instanc
 	return vk::createInstanceUnique(instanceCreateInfo);
 }
 
+std::array<uint8_t, VK_UUID_SIZE> Core::FindPhysicalDeviceUUID(vk::PhysicalDevice physicalDeviceIn)
+{
+	vk::PhysicalDeviceIDProperties physical_device_id_properties{};
+
+	vk::PhysicalDeviceProperties2 physical_device_properties2 = {};
+
+	physical_device_properties2.pNext = &physical_device_id_properties;
+
+	physicalDeviceIn.getProperties2(&physical_device_properties2);
+	
+	std::array<uint8_t, VK_UUID_SIZE> uuid {};
+
+	std::memcpy(uuid.data(), physical_device_id_properties.deviceUUID.data(), VK_UUID_SIZE);
+	return uuid;
+}
 vk::PhysicalDevice Core::FindPhysicalDevice(vk::Instance instance)
 {
 	std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();

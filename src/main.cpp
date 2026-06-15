@@ -59,8 +59,7 @@ void run(WindowProvider* windowProvider)
     ENGINE::WindowDesc windowDesc = {};
     windowDesc.hInstance = GetModuleHandle(NULL);
     windowDesc.hWnd = glfwGetWin32Window(windowProvider->window);
-	CodeCuda::C_Init();
-
+	
     bool enableDebugging = false;
 #if defined ENGINE_ENABLE_DEBUGGING
     enableDebugging = true;
@@ -71,6 +70,8 @@ void run(WindowProvider* windowProvider)
 
     std::unique_ptr<ENGINE::Core> core = std::make_unique<ENGINE::Core>(
         glfwExtensions, glfwExtensionCount, &windowDesc, enableDebugging);
+	
+	CodeCuda::C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
 
     std::unique_ptr<ENGINE::RenderGraph> renderGraph = core->CreateRenderGraph();
 
@@ -95,6 +96,7 @@ void run(WindowProvider* windowProvider)
     std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation();
+	
 
     //todo: error here
     while (!windowProvider->WindowShouldClose())

@@ -46,6 +46,7 @@ class Core
 	std::deque<std::function<void()> *> deletionQueue;
 	std::unique_ptr<QueueWorkerManager> queueWorkerManager;
 	QueueFamilyIndices                  queueFamilyIndices;
+	std::array<uint8_t, VK_UUID_SIZE>   deviceUUID;
 
   private:
 	static vk::UniqueInstance CreateInstance(const std::vector<const char *> &instanceExtensions,
@@ -53,12 +54,13 @@ class Core
 
 	static vk::PhysicalDevice FindPhysicalDevice(vk::Instance instance);
 
+	static std::array<uint8_t, VK_UUID_SIZE> FindPhysicalDeviceUUID(vk::PhysicalDevice physicalDeviceIn);
+
 	static QueueFamilyIndices FindQueueFamilyIndices(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
 
 	static vk::UniqueDevice CreateLogicalDevice(vk::PhysicalDevice physicalDevice, QueueFamilyIndices familyIndices, std::vector<const char *> deviceExtensions, std::vector<const char *> validationLayers);
 
 	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, vk::DispatchLoaderDynamic &loader);
-	
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessageCallback(
 	    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
