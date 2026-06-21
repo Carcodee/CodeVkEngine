@@ -743,7 +743,7 @@ struct GraphNodeRegistry
 					break;
 				case 1:
 					shaderSelected = multiOption->inputTexts.at(1).content;
-					selfNode.renderGraph->resourcesManager->CreateDefaultShader(shaderSelected, stage, ENGINE::C_GLSL);
+					selfNode.renderGraph->resourcesManager->GetOrCreateDefaultShader(shaderSelected, stage, ENGINE::C_GLSL);
 					break;
 			}
 			int shaderIdx = -1;
@@ -766,7 +766,7 @@ struct GraphNodeRegistry
 					break;
 				case 1:
 					shaderSelected = multiOption->inputTexts.at(1).content;
-					selfNode.renderGraph->resourcesManager->CreateDefaultShader(shaderSelected, stage, ENGINE::C_GLSL);
+					selfNode.renderGraph->resourcesManager->GetOrCreateDefaultShader(shaderSelected, stage, ENGINE::C_GLSL);
 					break;
 			}
 			int shaderIdx = -1;
@@ -789,7 +789,7 @@ struct GraphNodeRegistry
 					break;
 				case 1:
 					shaderSelected = multiOption->inputTexts.at(1).content;
-					selfNode.renderGraph->resourcesManager->CreateDefaultShader(shaderSelected, stage, ENGINE::C_GLSL);
+					selfNode.renderGraph->resourcesManager->GetOrCreateDefaultShader(shaderSelected, stage, ENGINE::C_GLSL);
 					break;
 			}
 			int shaderIdx = -1;

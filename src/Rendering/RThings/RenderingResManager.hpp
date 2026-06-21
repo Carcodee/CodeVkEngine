@@ -208,7 +208,7 @@ class RenderingResManager
 					glm::vec3 max         = glm::vec3();
 					for (int i = 0; i < vertexCount; ++i)
 					{
-						M_Vertex3D vertex{};
+						ENGINE::M_Vertex3D vertex{};
 						glm::vec3  pos = glm::make_vec3(&posBuff[i * 3]);
 						vertex.pos     = pos;
 						vertex.normal  = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
@@ -361,7 +361,7 @@ class RenderingResManager
 					model.vertices.reserve(vertexCount);
 					for (int i = 0; i < vertexCount; ++i)
 					{
-						M_Vertex3D vertex{};
+						ENGINE::M_Vertex3D vertex{};
 						glm::vec3  pos = glm::make_vec3(&posBuff[i * 3]);
 						vertex.pos     = pos;
 						vertex.normal  = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
@@ -549,11 +549,11 @@ class RenderingResManager
 		return material;
 	}
 
-	static RenderingResManager *GetInstance(ENGINE::RenderGraph *renderGraph = nullptr)
+	static RenderingResManager *GetInstance()
 	{
-		if (instance == nullptr && renderGraph)
+		if (instance == nullptr)
 		{
-			instance = new RenderingResManager(renderGraph);
+			instance = new RenderingResManager();
 		}
 		return instance;
 	}
@@ -605,7 +605,7 @@ class RenderingResManager
 		std::string indexBuffName = "IndexBuff_" + std::to_string(model->id);
 		model->vertBuffer         = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
             vertBuffName, vk::BufferUsageFlagBits::eVertexBuffer,
-            sizeof(M_Vertex3D) * model->vertices.size(),
+            sizeof(ENGINE::M_Vertex3D) * model->vertices.size(),
             model->vertices.data());
 		model->indexBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
 		    indexBuffName, vk::BufferUsageFlagBits::eIndexBuffer,
@@ -727,58 +727,6 @@ class RenderingResManager
 		return model;
 	}
 
-	ENGINE::RenderGraphNode *GetTemplateNode_DF(std::string name, std::string shaderName, ENGINE::ShaderCompiler compiler)
-	{
-		ENGINE::AttachmentInfo colInfo = ENGINE::GetColorAttachmentInfo(
-		    glm::vec4(0.0f), ENGINE::g_32bFormat);
-		ENGINE::Shader *vShader    = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_VERT, compiler);
-		ENGINE::Shader *fShader    = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_FRAG, compiler);
-		auto            renderNode = renderGraph->AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetVertShader(vShader);
-		renderNode->SetFragShader(fShader);
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
-		// change this
-		renderNode->SetPushConstantSize(4);
-		return renderNode;
-	}
-
-	ENGINE::RenderGraphNode *GetTemplateComputeNode_DF(std::string name, std::string shaderName, ENGINE::ShaderCompiler compiler)
-	{
-		ENGINE::Shader *shader     = renderGraph->resourcesManager->CreateDefaultShader(shaderName, ENGINE::ShaderStage::S_COMP, compiler);
-		auto            renderNode = renderGraph->AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetCompShader(shader);
-		// change this
-		renderNode->SetPushConstantSize(4);
-		return renderNode;
-	}
-	ENGINE::RenderGraphNode *GetTemplateNode(std::string name, std::string vPath, std::string fPath)
-	{
-		ENGINE::AttachmentInfo colInfo = ENGINE::GetColorAttachmentInfo(
-		    glm::vec4(0.0f), ENGINE::g_32bFormat);
-		ENGINE::Shader *vShader    = renderGraph->resourcesManager->GetShader(vPath, ENGINE::ShaderStage::S_VERT);
-		ENGINE::Shader *fShader    = renderGraph->resourcesManager->GetShader(fPath, ENGINE::ShaderStage::S_FRAG);
-		auto            renderNode = renderGraph->AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetVertShader(vShader);
-		renderNode->SetFragShader(fShader);
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
-		// change this
-		renderNode->SetPushConstantSize(4);
-		return renderNode;
-	}
-
-	ENGINE::RenderGraphNode *GetTemplateComputeNode(std::string name, std::string path)
-	{
-		ENGINE::Shader *shader     = renderGraph->resourcesManager->GetShader(path, ENGINE::ShaderStage::S_COMP);
-		auto            renderNode = renderGraph->AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetCompShader(shader);
-		// change this
-		renderNode->SetPushConstantSize(4);
-		return renderNode;
-	}
 
 	std::map<std::string, int> materialsNames;
 	std::map<std::string, int> modelsNames;
@@ -795,26 +743,13 @@ class RenderingResManager
 	std::vector<ENGINE::DrawIndirectIndexedCmd> indirectDrawsCmdInfos;
 	int                                         cullCount = 0;
 
-	RenderingResManager(ENGINE::RenderGraph *renderGraph)
+	RenderingResManager()
 	{
-		this->renderGraph              = renderGraph;
-		ENGINE::Buffer *quadVertBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
-		                                                                        "quad_default", vk::BufferUsageFlagBits::eVertexBuffer,
-		                                                                        sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
-		                                                                        Vertex2D::GetQuadVertices().data())
-		                                     ->deviceBuffer.get();
-
-		ENGINE::Buffer *quadIndexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
-		                                                                         "quad_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                                         sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
-		                                                                         Vertex2D::GetQuadIndices().data())
-		                                      ->deviceBuffer.get();
 	};
 	~RenderingResManager() = default;
 
   private:
 	static RenderingResManager *instance;
-	ENGINE::RenderGraph        *renderGraph;
 };
 
 RenderingResManager *RenderingResManager::instance = nullptr;

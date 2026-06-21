@@ -90,7 +90,7 @@ void run(WindowProvider* windowProvider)
 	CodeCuda::C_ImportExternalBuffer(cudaBuffer->GetBufferHandle(), cudaBuffer->deviceSize);
 	
     
-	Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance(renderGraph.get());
+	Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());
 
     
@@ -104,6 +104,7 @@ void run(WindowProvider* windowProvider)
         core.get(), windowProvider, renderers);
     debugRenderer->SetRenderOperation();
 	
+	renderGraph->CreateUtilityPasses();
 
     //todo: error here
     while (!windowProvider->WindowShouldClose())
@@ -131,10 +132,12 @@ void run(WindowProvider* windowProvider)
                 //unused for now
                 // renderGraph->UpdateAllFromMetaData();
                 renderGraph->RecreateFrameResources();
+            	renderGraph->BuildRenderOperations();
                 for (auto& renderer : renderers)
                 {
                     renderer.second->SetRenderOperation();
                 }
+            	
                 debugRenderer->SetRenderOperation();
             }
             try
@@ -169,12 +172,12 @@ void run(WindowProvider* windowProvider)
 
 
                 profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
-                imguiRenderer->RenderFrame(currFrame.commandBuffer,
+                imguiRenderer->RenderFrame(core->queueWorkerManager->GetWorkerQueue("UI")->GetCurrentCmd(),
                                            inFlightQueue->currentSwapchainImageView->imageView.get());
 
                 profiler->EndProfilerCpuSpot("Imgui");
 
-                resourcesManager->EndFrameDynamicUpdates(currFrame.commandBuffer);
+                resourcesManager->EndFrameDynamicUpdates(renderGraph->sortedQueueBatches.back().queueRef->GetCurrentCmd());
             	
             	inFlightQueue->EndParallelThreads();
                 inFlightQueue->EndFrame();

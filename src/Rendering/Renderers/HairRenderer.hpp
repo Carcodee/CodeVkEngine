@@ -36,11 +36,11 @@ class HairRenderer : public BaseRenderer
 	{
 		AttachmentInfo colInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
-		Shader *vShader    = renderGraph->resourcesManager->CreateDefaultShader("HairVert", ShaderStage::S_VERT, ShaderCompiler::C_GLSL);
-		Shader *fShader    = renderGraph->resourcesManager->CreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL);
-		Shader *gShader    = renderGraph->resourcesManager->CreateDefaultShader("HairGeo", ShaderStage::S_GEOM, ShaderCompiler::C_GLSL);
-		Shader *tescShader = renderGraph->resourcesManager->CreateDefaultShader("HairTesc", ShaderStage::S_TESS_CONTROL, ShaderCompiler::C_GLSL);
-		Shader *teseShader = renderGraph->resourcesManager->CreateDefaultShader("HairTese", ShaderStage::S_TESS_EVAL, ShaderCompiler::C_GLSL);
+		Shader *vShader    = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairVert", ShaderStage::S_VERT, ShaderCompiler::C_GLSL);
+		Shader *fShader    = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL);
+		Shader *gShader    = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairGeo", ShaderStage::S_GEOM, ShaderCompiler::C_GLSL);
+		Shader *tescShader = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairTesc", ShaderStage::S_TESS_CONTROL, ShaderCompiler::C_GLSL);
+		Shader *teseShader = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairTese", ShaderStage::S_TESS_EVAL, ShaderCompiler::C_GLSL);
 
 		// auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
 		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);

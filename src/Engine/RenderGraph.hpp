@@ -3,8 +3,6 @@
 // Created by carlo on 2024-10-02.
 //
 
-
-
 #ifndef RENDERGRAPH_HPP
 #define RENDERGRAPH_HPP
 #define DUMMY_PC_SIZE 4
@@ -22,16 +20,19 @@ struct BufferKey
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 {
 	bool automaticCache = true;
+	bool manualAdd      = false;
 
-	RenderNodeConfigs(bool automaticCache)
+	RenderNodeConfigs(bool automaticCache, bool manualAdd = false)
 	{
 		this->automaticCache = automaticCache;
+		this->manualAdd      = manualAdd;
 	}
 
 	nlohmann::json Serialize() override
 	{
 		nlohmann::json json;
-		json["automaticCache"] = false;
+		json["automaticCache"] = automaticCache;
+		json["manualAdd"]      = manualAdd;
 
 		return json;
 	}
@@ -282,7 +283,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
 
 			pipelineLayout                                     = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-			std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
+			std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<GraphicsPipeline>(
 			    core->logicalDevice.get(), stages, pipelineLayout.get(),
 			    dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
 			    colorBlendConfigs, depthConfig,
@@ -317,7 +318,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			}
 
 			pipelineLayout                                   = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
+			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ComputePipeline>(
 			    core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
 			    pipelineCache.get());
 			pipeline     = std::move(computePipeline->pipelineHandle);
@@ -404,7 +405,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			std::map<ShaderStage, Shader *> stages;
 			GetShaderStages(stages);
 
-			std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<ENGINE::GraphicsPipeline>(
+			std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<GraphicsPipeline>(
 			    core->logicalDevice.get(), stages, pipelineLayout.get(),
 			    dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
 			    colorBlendConfigs, depthConfig,
@@ -439,7 +440,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 			pipelineLayout                                   = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ENGINE::ComputePipeline>(
+			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ComputePipeline>(
 			    core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
 			    pipelineCache.get());
 			pipeline     = std::move(computePipeline->pipelineHandle);
@@ -613,11 +614,13 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	void ExecutePass(vk::CommandBuffer commandBuffer)
 	{
+		assert(imagesAttachmentOutputs.size() == colAttachments.size() && "Not all color attachments were set");
+		
 		dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
 		commandBuffer.setViewport(0, 1, &dynamicRenderPass.viewport);
 		commandBuffer.setScissor(0, 1, &dynamicRenderPass.scissor);
 
-		assert(imagesAttachmentOutputs.size() == colAttachments.size() && "Not all color attachments were set");
+		
 		int                                      index = 0;
 		std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
 		attachmentInfos.reserve(colAttachments.size());
@@ -850,6 +853,12 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 	}
 
+	void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig, ImageView *imageView)
+	{
+		AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
+		AddColorImageResource(name, imageView);
+	}
+
 	void SetDepthAttachmentInput(std::string name)
 	{
 		if (outDepthAttachmentProxyRef->contains(name))
@@ -1041,7 +1050,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			bufferProxyRef->at(name) = buffer;
 		}
 	}
-	vk::CommandBuffer& GetCurrCmd()
+	vk::CommandBuffer &GetCurrCmd()
 	{
 		return workerQueueRef->GetCurrentCmd();
 	}
@@ -1106,7 +1115,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
   private:
 	friend class RenderGraph;
-	RenderNodeConfigs         configs                 = {true};
+	RenderNodeConfigs         configs                 = {true, false};
 	GraphicsPipelineConfigs   graphicsPipelineConfigs = {};
 	std::vector<BlendConfigs> colorBlendConfigs;
 	DepthConfigs              depthConfig = D_NONE;
@@ -1147,15 +1156,24 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	// unused
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descriptorsCachesRef;
 };
+struct QueueNodesBatch
+{
+	std::vector<RenderGraphNode *> sortedNodes;
+	WorkerQueue                   *queueRef;
+	int                            id;
+};
 
 class RenderGraph
 {
-  public:
+	
+public:
 	Core             *core;
 	ResourcesManager *resourcesManager;
 
-	ImageView      *currentBackBuffer;
-	size_t          frameIndex;
+	ImageView *currentBackBufferSwapchain;
+	//this is the backbuffer that will be blitted to the swapchain
+	ImageView *currentBackBuffer;
+	size_t     frameIndex;
 
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
@@ -1167,9 +1185,7 @@ class RenderGraph
 	std::unordered_map<std::string, AttachmentInfo>                   outDepthAttachmentProxy;
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
-	std::unordered_map<std::string, int>                              queueOrder;
-	std::vector<std::string>                                          orderedQueueNames;
-	std::vector<int>                                                  queueOffsets;
+	std::vector<QueueNodesBatch>                                      sortedQueueBatches;
 
 	RenderGraph(Core *core)
 	{
@@ -1183,6 +1199,103 @@ class RenderGraph
 			node->Serialize();
 		}
 	}
+
+	RenderGraphNode *GetTemplateNode_DF(std::string name, std::string shaderName, ShaderCompiler compiler)
+	{
+		Shader *vShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_VERT, compiler);
+		Shader *fShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_FRAG, compiler);
+		auto    renderNode = AddPass(name);
+		renderNode->SetConfigs({true});
+		renderNode->SetVertShader(vShader);
+		renderNode->SetFragShader(fShader);
+		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		// change this
+		renderNode->SetPushConstantSize(4);
+		return renderNode;
+	}
+
+	RenderGraphNode *GetTemplateComputeNode_DF(std::string name, std::string shaderName, ShaderCompiler compiler)
+	{
+		Shader *shader     = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_COMP, compiler);
+		auto    renderNode = AddPass(name);
+		renderNode->SetConfigs({true});
+		renderNode->SetCompShader(shader);
+		// change this
+		renderNode->SetPushConstantSize(4);
+		return renderNode;
+	}
+	RenderGraphNode *GetTemplateNode(std::string name, std::string vPath, std::string fPath)
+	{
+		AttachmentInfo colInfo = GetColorAttachmentInfo(
+		    glm::vec4(0.0f), g_32bFormat);
+		Shader *vShader    = resourcesManager->GetShader(vPath, ShaderStage::S_VERT);
+		Shader *fShader    = resourcesManager->GetShader(fPath, ShaderStage::S_FRAG);
+		auto    renderNode = AddPass(name);
+		renderNode->SetConfigs({true});
+		renderNode->SetVertShader(vShader);
+		renderNode->SetFragShader(fShader);
+		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		// change this
+		renderNode->SetPushConstantSize(4);
+		return renderNode;
+	}
+
+	RenderGraphNode *GetTemplateComputeNode(std::string name, std::string path)
+	{
+		Shader *shader     = resourcesManager->GetShader(path, ShaderStage::S_COMP);
+		auto    renderNode = AddPass(name);
+		renderNode->SetConfigs({true});
+		renderNode->SetCompShader(shader);
+		// change this
+		renderNode->SetPushConstantSize(4);
+		return renderNode;
+	}
+	RenderGraphNode *GetBlitterNode()
+	{
+		auto *blitterNode = GetTemplateNode_DF("BlitterNode", "Blitter", ShaderCompiler::C_GLSL);
+
+		return blitterNode;
+	}
+	RenderGraphNode *BlitToBackbuffer()
+	{
+		auto* blitterNode = GetBlitterNode();
+		
+		AttachmentInfo colInfo = GetColorAttachmentInfo(
+			glm::vec4(0.0f), core->swapchainRef->GetFormat());
+		blitterNode->AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
+		blitterNode->BuildRenderGraphNode();
+		
+		blitterNode->SetSampler("MainTex", currentBackBuffer);
+		
+		return blitterNode;
+	}
+	void BuildRenderOperations()
+	{
+		auto blitterTask = new std::function<void()>([this]() {
+			GetNode("BlitterNode")->AddColorImageResource("BF_SwapChain", currentBackBufferSwapchain);
+			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
+		});
+		
+		auto blitterRenderOp = new std::function<void()>(
+			[this]() {
+				auto renderNode = GetNode("BlitterNode");
+				vk::DeviceSize offset = 0;
+				renderNode->GetCurrCmd().bindVertexBuffers(
+					0, 1,
+					&resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
+					&offset);
+				renderNode->GetCurrCmd().bindIndexBuffer(
+					resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+
+				renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
+													 0, 0);
+			});
+		
+		GetNode("BlitterNode")->AddTask(blitterTask);
+		GetNode("BlitterNode")->SetRenderOperation(blitterRenderOp);
+	}
+	
+
 	void LoadExternalPasses()
 	{
 		std::string              nodesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes";
@@ -1223,7 +1336,8 @@ class RenderGraph
 
 	void CreateResManager()
 	{
-		resourcesManager = ResourcesManager::GetInstance();
+		resourcesManager  = ResourcesManager::GetInstance();
+		currentBackBuffer = resourcesManager->GetImageViewFromName("bf");
 	}
 
 	RenderGraphNode *GetNode(std::string name)
@@ -1252,7 +1366,7 @@ class RenderGraph
 			renderGraphNode->shadersProxyRef            = &shadersProxy;
 			renderGraphNode->core                       = core;
 			renderGraphNode->resManagerRef              = resourcesManager;
-			renderGraphNode->workerQueueRef             = core->queueWorkerManager->GetOrCreateWorkerQueue(workerQueueName);
+			renderGraphNode->workerQueueRef             = core->queueWorkerManager->GetWorkerQueue(workerQueueName);
 			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
@@ -1479,6 +1593,11 @@ class RenderGraph
 			assert(false && "reload shaders failed");
 		}
 	}
+	void CreateUtilityPasses()
+	{
+		BlitToBackbuffer();
+		BuildRenderOperations();
+	}
 	void SortNodesByDep()
 	{
 		std::vector<std::string> solvedNodesOrdered;
@@ -1536,25 +1655,27 @@ class RenderGraph
 			sortedByDepNodes.emplace_back(GetNode(solvedNodesOrdered[i]));
 		}
 	}
-	void SortQueueSubmition(std::vector<RenderGraphNode *> &renderGraphNodes, std::vector<std::string> &queueNamesOut, std::vector<int> &queueOffsetsOut)
+	void BuildQueuePassesBatches(std::vector<RenderGraphNode *> &sortedNodes, std::vector<QueueNodesBatch> &batches)
 	{
-		if (renderGraphNodes.empty())
+		assert(batches.empty() && "Queue batches should be empty before building a new queue batch");
+		if (sortedNodes.empty())
 		{
 			return;
 		}
-		int         passesCounter = 0;
-		std::string lastQueue     = renderGraphNodes[0]->workerQueueRef->name;
-		for (int i = 0; i < renderGraphNodes.size(); ++i)
+		int batchIdx = -1;
+		for (int i = 0; i < sortedNodes.size(); ++i)
 		{
-			passesCounter++;
-			if (lastQueue != renderGraphNodes[i]->workerQueueRef->name || i == renderGraphNodes.size() - 1)
+			if (batches.empty() || batches.back().queueRef->name != sortedNodes[i]->workerQueueRef->name)
 			{
-				queueNamesOut.push_back(lastQueue);
-				queueOffsetsOut.push_back(passesCounter);
-				passesCounter = 0;
-				lastQueue     = renderGraphNodes[i]->workerQueueRef->name;
+				batchIdx++;
+				batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{sortedNodes[i]}, sortedNodes[i]->workerQueueRef, batchIdx});
+			}
+			else
+			{
+				batches.back().sortedNodes.emplace_back(sortedNodes[i]);
 			}
 		}
+		batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode*>{},core->queueWorkerManager->GetWorkerQueue("UI"), batchIdx + 1});
 	}
 
 	void ResolveNodesDependancies()
@@ -1607,22 +1728,14 @@ class RenderGraph
 		}
 	}
 
-	void ExecuteRendering()
+	void ExecuteQueueBatch(QueueNodesBatch &queueNodesBatch)
 	{
-		ResolveNodesDependancies();
-		SortNodesByDep();
-
-		orderedQueueNames.clear();
-		queueOffsets.clear();
-		SortQueueSubmition(sortedByDepNodes, orderedQueueNames, queueOffsets);
-
 		std::vector<std::string> allPassesNames;
 		int                      idx = 0;
-		
-        auto profiler = ENGINE::Profiler::GetInstance();
-		for (auto &renderNode : sortedByDepNodes)
+
+		auto profiler = Profiler::GetInstance();
+		for (auto &renderNode : queueNodesBatch.sortedNodes)
 		{
-			
 			if (!renderNode->active)
 			{
 				continue;
@@ -1647,7 +1760,7 @@ class RenderGraph
 				{
 					profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
 					SYSTEMS::Logger::GetInstance()->LogMessage(
-						"Pass with name: (" + renderNode->passName + ") needs ("+ depenName+") and is not active");
+					    "Pass with name: (" + renderNode->passName + ") needs (" + depenName + ") and is not active");
 					// if a dependency is not active we skip the node
 					continue;
 				}
@@ -1657,7 +1770,7 @@ class RenderGraph
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, node->GetCurrCmd());
 			}
-			if (node->workerQueueRef->name == "Graphics")
+			if (node->workerQueueRef->isMainThreat)
 			{
 				node->Execute(node->GetCurrCmd());
 			}
@@ -1670,8 +1783,22 @@ class RenderGraph
 				node->workerQueueRef->taskThreat.AddTask(nodeTask);
 			}
 			allPassesNames.push_back(node->passName);
-			idx = (idx + 1) % 16;
 			profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
+		}
+	}
+	void ExecuteRendering()
+	{
+		ResolveNodesDependancies();
+		if (sequentialRenderNodes.size() > 1)
+		{
+			GetNode("BlitterNode")->DependsOn(sequentialRenderNodes[sequentialRenderNodes.size() - 2]->passName);
+		}
+		SortNodesByDep();
+		sortedQueueBatches.clear();
+		BuildQueuePassesBatches(sortedByDepNodes, sortedQueueBatches);
+		for (auto &queueBatch : sortedQueueBatches)
+		{
+			ExecuteQueueBatch(queueBatch);
 		}
 	}
 

@@ -43,6 +43,11 @@ namespace ENGINE
         {
             return mipInfos[mipLevel].size;
         }
+    	
+    	glm::uvec2 GetImageSize()
+        {
+        	return glm::uvec2(baseSize.x, baseSize.y);
+        }
 
         ImageData(vk::Image imageHandle, vk::ImageType imageType, glm::uvec3 size, uint32_t mipCount,
                   uint32_t arrayLayersCount, vk::Format format, vk::ImageLayout layout)
@@ -59,12 +64,12 @@ namespace ENGINE
             currentPattern.layout = vk::ImageLayout::eUndefined;
             currentPattern.queueFamilyType = QueueFamilyTypes::UNDEFINED;
 
-            glm::vec3 currSize = size;
+            this->baseSize= size;
 
             for (size_t mipLevel = 0; mipLevel < mipsCount; mipLevel++)
             {
                 MipInfo mipInfo;
-                mipInfo.size = currSize;
+                mipInfo.size = this->baseSize;
                 mipInfo.size.x /= 2;
                 if (imageType == vk::ImageType::e2D)
                 {
@@ -95,6 +100,7 @@ namespace ENGINE
         vk::ImageAspectFlags aspectFlags;
         vk::Image imageHandle;
         vk::Format format;
+    	glm::uvec3 baseSize;
         vk::ImageType imageType;
         uint32_t mipsCount;
         uint32_t arrayLayersCount;

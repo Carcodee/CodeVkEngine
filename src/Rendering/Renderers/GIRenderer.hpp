@@ -41,7 +41,7 @@ class GIRenderer : public BaseRenderer
 		// auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
 		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
 
-		auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(
+		auto renderNode = renderGraph->GetTemplateNode_DF(
 		    shPassName, "shView.slang", C_GLSL);
 		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
 		renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);

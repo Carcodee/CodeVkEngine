@@ -3,9 +3,6 @@
 // Created by carlo on 2025-03-26.
 //
 
-
-
-
 #ifndef GSRENDERER_HPP
 #define GSRENDERER_HPP
 
@@ -113,7 +110,7 @@ class GSRenderer : public BaseRenderer
 		auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat, ENGINE::colorImageUsage);
 		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
 
-		auto renderNode = RenderingResManager::GetInstance()->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
+		auto renderNode = renderGraph->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
 		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
 		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
 		renderNode->SetPushConstantSize(sizeof(SplitMVP));
@@ -200,9 +197,9 @@ class GSRenderer : public BaseRenderer
 			    renderNode->SetBuffer("GSConfigs", gsConfigsPc);
 
 			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-			                                                                          renderNode->pipelineLayout.get(), 0,
-			                                                                          1,
-			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
+			                                                renderNode->pipelineLayout.get(), 0,
+			                                                1,
+			                                                &renderNode->descCache->dstSet, 0, nullptr);
 			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    vk::DeviceSize offset = 0;
 

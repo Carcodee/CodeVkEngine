@@ -27,7 +27,7 @@ struct NodeMat
 struct Model
 {
 	int                     id;
-	std::vector<M_Vertex3D> vertices;
+	std::vector<ENGINE::M_Vertex3D> vertices;
 	std::vector<uint32_t>   indices;
 
 	// map with mesh number

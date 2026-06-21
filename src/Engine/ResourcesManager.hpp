@@ -467,7 +467,7 @@ class ResourcesManager : SYSTEMS::Subject
 		assert(false && "invalid shader id");
 		return nullptr;
 	}
-	Shader *CreateDefaultShader(std::string name, ShaderStage stage, ShaderCompiler compiler)
+	Shader *GetOrCreateDefaultShader(std::string name, ShaderStage stage, ShaderCompiler compiler)
 	{
 		std::filesystem::path targetPath;
 		std::filesystem::path templatePath;
@@ -745,6 +745,24 @@ class ResourcesManager : SYSTEMS::Subject
 		    vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
 
 		ImageView *defaultStorage = GetImage("default_storage", imageInfo, 0, 0);
+
+		auto       imageInfoBf = Image::CreateInfo2d(glm::uvec2(core->swapchainRef->extent.width, core->swapchainRef->extent.height), 1, 1,
+		                                             core->swapchainRef->GetFormat(),
+		                                             vk::ImageUsageFlagBits::eColorAttachment |
+		                                                 vk::ImageUsageFlagBits::eSampled);
+		ImageView *imageView   = GetImage("bf", imageInfoBf, 0, 0);
+
+		ENGINE::Buffer *quadVertBuffer = GetStageBuffer(
+		                                     "quad_default", vk::BufferUsageFlagBits::eVertexBuffer,
+		                                     sizeof(ENGINE::Vertex2D) * ENGINE::Vertex2D::GetQuadVertices().size(),
+		                                     ENGINE::Vertex2D::GetQuadVertices().data())
+		                                     ->deviceBuffer.get();
+
+		ENGINE::Buffer *quadIndexBuffer = GetStageBuffer(
+		                                      "quad_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
+		                                      sizeof(uint32_t) * ENGINE::Vertex2D::GetQuadIndices().size(),
+		                                      ENGINE::Vertex2D::GetQuadIndices().data())
+		                                      ->deviceBuffer.get();
 	}
 
 	~ResourcesManager() = default;

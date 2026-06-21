@@ -57,11 +57,13 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 
 	this->logicalDevice      = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
 	                                               validationLayers);
-	this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
+	// this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
 	this->queueWorkerManager = std::make_unique<QueueWorkerManager>(this);
+	
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Present", queueFamilyIndices.presentFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics", queueFamilyIndices.graphicsFamilyIndex);
-	this->queueWorkerManager->GetOrCreateWorkerQueue("Transfer", queueFamilyIndices.transferFamilyIndex);
-	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics_Test", queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("UI", queueFamilyIndices.graphicsFamilyIndex);
 
 	for (auto &property : properties)
 	{

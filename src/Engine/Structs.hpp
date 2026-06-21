@@ -45,8 +45,6 @@ struct FrameResources
 	vk::UniqueSemaphore imageAcquiredSemaphore;
 	vk::UniqueSemaphore renderingFinishedSemaphore;
 	vk::UniqueFence     inflightFence;
-	vk::UniqueSemaphore timelineSemaphore;
-	uint64_t            timelineValue = 0;
 	vk::CommandBuffer   commandBuffer;
 };
 
@@ -168,6 +166,7 @@ struct WorkerQueue
 
 	vk::CommandBuffer &GetCurrentCmd()
 	{
+		assert(commandBuffers.size() != 0 && "There is no cmds allocated");
 		return commandBuffers[activeCmdIdx].get();
 	};
 	WorkerQueue()                               = default;
@@ -177,6 +176,7 @@ struct WorkerQueue
 	WorkerQueue(WorkerQueue &&)                 = default;
 	WorkerQueue &operator=(WorkerQueue &&)      = default;
 };
+
 
 }        // namespace ENGINE
 #	define STRUCTS_HPP

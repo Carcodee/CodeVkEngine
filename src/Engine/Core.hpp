@@ -39,7 +39,6 @@ class Core
 	vk::UniqueInstance                  instance;
 	vk::PhysicalDevice                  physicalDevice;
 	vk::UniqueDevice                    logicalDevice;
-	vk::Queue                           presentQueue;
 	bool                                resizeRequested = false;
 	RenderGraph                        *renderGraphRef;
 	SwapChain                          *swapchainRef;
@@ -84,29 +83,80 @@ class QueueWorkerManager
 		this->coreRef = core;
 	}
 	~QueueWorkerManager() = default;
-	WorkerQueue *GetOrCreateWorkerQueue(std::string name, uint32_t familyIndex)
+	WorkerQueue *GetOrCreateWorkerQueue(std::string name, uint32_t familyIndex, bool mainThread = true)
 	{
 		assert(coreRef != nullptr);
 		if (workersQueues.contains(name))
 		{
-			return &workersQueues.at(name);
+			return GetWorkerQueue(name);
 		}
 		workersQueues.try_emplace(name);
 		workersQueues.at(name).name              = name;
 		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).familyIndex       = static_cast<int32_t>(familyIndex);
-		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), coreRef->queueFamilyIndices.graphicsFamilyIndex);
-		if (name != "Graphics")
+		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
+		workersQueues.at(name).isMainThreat = mainThread;
+		if (mainThread == false)
 		{
-			workersQueues.at(name).isMainThreat = false;
 			workersQueues.at(name).taskThreat.Start();
 		}
 		return &workersQueues.at(name);
 	}
-	WorkerQueue *GetOrCreateWorkerQueue(std::string name)
+	WorkerQueue *GetWorkerQueue(std::string name)
 	{
-		GetOrCreateWorkerQueue(name, coreRef->queueFamilyIndices.graphicsFamilyIndex);
+		if (!workersQueues.contains(name))
+		{
+			return nullptr;
+		}
 		return &workersQueues.at(name);
+	}
+	
+	void SetFrameIndex(int frameIdx)
+	{
+		for (auto& queue : workersQueues)
+		{
+			queue.second.activeCmdIdx = frameIdx;
+		}
+	}
+	void AllocateCmds(int count)
+	{
+		for (auto& queue: workersQueues)
+		{
+			if (queue.first == "Present")
+			{
+				continue;
+			}
+			queue.second.commandBuffers = std::move(coreRef->AllocateCommandBuffers(queue.second.workerCommandPool.get(), count));
+		}
+		
+	}
+	void BeginCmds()
+	{
+		
+		for (auto& queue : workersQueues)
+		{
+			if (queue.first == "Present")
+			{
+				continue;
+			}
+			auto bufferBeginInfo = vk::CommandBufferBeginInfo()
+									   .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+		
+			queue.second.GetCurrentCmd().begin(bufferBeginInfo);
+		}
+	}
+	
+	void EndCmds()
+	{
+		
+		for (auto& queue : workersQueues)
+		{
+			if (queue.first == "Present")
+			{
+				continue;
+			}
+			queue.second.GetCurrentCmd().end();
+		}
 	}
 	Core                                        *coreRef;
 	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
@@ -119,7 +169,7 @@ class ExecuteOnceCommand
 	{
 		this->core          = core;
 		this->queueName     = queueName;
-		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetOrCreateWorkerQueue(queueName)->workerCommandPool.get(), 1)[0]);
+		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetWorkerQueue(queueName)->workerCommandPool.get(), 1)[0]);
 	}
 
 	vk::CommandBuffer BeginCommandBuffer()
@@ -142,8 +192,8 @@ class ExecuteOnceCommand
 		                      .setPCommandBuffers(&commandBufferHandle.get())
 		                      .setSignalSemaphoreCount(0);
 
-		core->queueWorkerManager->GetOrCreateWorkerQueue(this->queueName)->workerQueue.submit({submitInfo}, nullptr);
-		core->queueWorkerManager->GetOrCreateWorkerQueue(this->queueName)->workerQueue.waitIdle();
+		core->queueWorkerManager->GetWorkerQueue(this->queueName)->workerQueue.submit({submitInfo}, nullptr);
+		core->queueWorkerManager->GetWorkerQueue(this->queueName)->workerQueue.waitIdle();
 	}
 
 	Core                   *core;

@@ -142,8 +142,6 @@ class FlatRenderer : public BaseRenderer
 		                                                        sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
 		                                                        Vertex2D::GetQuadIndices().data())
 		                         ->deviceBuffer.get();
-
-		
 	}
 
 	void CreatePipelines()
@@ -153,7 +151,7 @@ class FlatRenderer : public BaseRenderer
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-		auto *paintingNode = renderGraph->AddPass(paintingPassName);
+		auto *paintingNode = renderGraph->AddPass(paintingPassName, "Graphics");
 		paintingNode->SetCompShader(paintCompShader);
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
 		paintingNode->SetPushConstantSize(sizeof(PaintingPc));
@@ -221,7 +219,7 @@ class FlatRenderer : public BaseRenderer
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
 			std::string name            = rMergePassName + "_" + std::to_string(i);
-			auto        mergeRenderNode = renderGraph->AddPass(name);
+			auto        mergeRenderNode = renderGraph->AddPass(name, "Graphics");
 			mergeRenderNode->SetVertShader(mergeVertShader);
 			mergeRenderNode->SetFragShader(mergeFragShader);
 			mergeRenderNode->SetPushConstantSize(sizeof(RcPc));
