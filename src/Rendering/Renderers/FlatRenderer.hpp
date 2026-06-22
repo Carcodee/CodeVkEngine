@@ -29,7 +29,7 @@ class FlatRenderer : public BaseRenderer
 		cascadesInfo.probeSizePx        = 2;
 		cascadesInfo.intervalCount      = 2;
 		cascadesInfo.baseIntervalLength = 1;
-		auto imageInfo                  = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+		auto imageInfo                  = Image::CreateInfo2d(renderGraph->currentBackBuffer->imageData->GetImageSize(), 1, 1,
 		                                                      ENGINE::g_32bFormat,
 		                                                      vk::ImageUsageFlagBits::eColorAttachment |
 		                                                          vk::ImageUsageFlagBits::eSampled);
@@ -51,7 +51,7 @@ class FlatRenderer : public BaseRenderer
 
 		paintingPc.radius = 20;
 
-		auto       storageImageInfo = ENGINE::Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+		auto       storageImageInfo = ENGINE::Image::CreateInfo2d(renderGraph->currentBackBuffer->imageData->GetImageSize(), 1, 1,
 		                                                          ENGINE::g_32bFormat,
 		                                                          vk::ImageUsageFlagBits::eStorage |
 		                                                              vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
@@ -179,7 +179,7 @@ class FlatRenderer : public BaseRenderer
 			renderNode->SetPushConstantSize(sizeof(PaintingPc));
 			renderNode->SetVertShader(probesVertShader);
 			renderNode->SetFragShader(probesFragShader);
-			renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
+			renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 			renderNode->SetVertexInput(vertexInput);
 			renderNode->AddColorAttachmentOutput("CascadeAttachment_" + std::to_string(i), colInfo, BlendConfigs::B_OPAQUE);
 			renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i), cascadesAttachmentsImagesViews[i]);
@@ -199,7 +199,7 @@ class FlatRenderer : public BaseRenderer
 		auto renderNode = renderGraph->AddPass(rCascadesPassName);
 		renderNode->SetVertShader(vertShader);
 		renderNode->SetFragShader(fragShader);
-		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
+		renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		renderNode->SetPushConstantSize(sizeof(RcPc));
 		renderNode->SetVertexInput(vertexInput);
 		renderNode->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
@@ -223,7 +223,7 @@ class FlatRenderer : public BaseRenderer
 			mergeRenderNode->SetVertShader(mergeVertShader);
 			mergeRenderNode->SetFragShader(mergeFragShader);
 			mergeRenderNode->SetPushConstantSize(sizeof(RcPc));
-			mergeRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
+			mergeRenderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 			mergeRenderNode->SetVertexInput(vertexInput);
 			mergeRenderNode->AddColorAttachmentOutput("mergeColor_" + std::to_string(i), mergeColInfo, BlendConfigs::B_OPAQUE);
 			std::string name1 = "radianceStorage_" + std::to_string(i);
@@ -247,7 +247,7 @@ class FlatRenderer : public BaseRenderer
 		auto resultNode = renderGraph->AddPass(resultPassName);
 		resultNode->SetVertShader(resultVertShader);
 		resultNode->SetFragShader(resultFragShader);
-		resultNode->SetFramebufferSize(windowProvider->GetWindowSize());
+		resultNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		resultNode->SetPushConstantSize(sizeof(RcPc));
 		resultNode->SetVertexInput(vertexInput);
 		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
@@ -319,12 +319,12 @@ class FlatRenderer : public BaseRenderer
 			rcPc.probeSizePx        = cascadesInfo.probeSizePx;
 			rcPc.intervalCount      = cascadesInfo.intervalCount;
 			rcPc.baseIntervalLength = cascadesInfo.baseIntervalLength;
-			rcPc.fWidth             = windowProvider->GetWindowSize().x;
-			rcPc.fHeight            = windowProvider->GetWindowSize().y;
+			rcPc.fWidth             = renderGraph->currentBackBuffer->imageData->GetImageSize().x;
+			rcPc.fHeight            = renderGraph->currentBackBuffer->imageData->GetImageSize().y;
 
 			auto *currImage = renderGraph->currentBackBuffer;
 			renderGraph->AddColorImageResource(rCascadesPassName, "rColor", currImage);
-			renderGraph->GetNode(rCascadesPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
+			renderGraph->GetNode(rCascadesPassName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		});
 		auto radianceOutputOp   = new std::function<void()>(
             [this]() {
@@ -361,7 +361,7 @@ class FlatRenderer : public BaseRenderer
                 auto       *currImage = renderGraph->currentBackBuffer;
                 renderGraph->GetNode(mergeName)->AddColorImageResource(
                     "mergeColor_" + std::to_string(idx), currImage);
-                renderGraph->GetNode(mergeName)->SetFramebufferSize(windowProvider->GetWindowSize());
+                renderGraph->GetNode(mergeName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
             });
 			auto        mergeRenderOp     = new std::function<void()>(
                 [this, i]() {
@@ -392,7 +392,7 @@ class FlatRenderer : public BaseRenderer
 		auto resultTask     = new std::function<void()>([this]() {
             auto *currImage = renderGraph->currentBackBuffer;
             renderGraph->GetNode(resultPassName)->AddColorImageResource("resultColor", currImage);
-            renderGraph->GetNode(resultPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
+            renderGraph->GetNode(resultPassName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
         });
 		auto resultRenderOp = new std::function<void()>(
 		    [this]() {

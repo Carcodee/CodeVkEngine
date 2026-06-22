@@ -615,7 +615,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	void ExecutePass(vk::CommandBuffer commandBuffer)
 	{
 		assert(imagesAttachmentOutputs.size() == colAttachments.size() && "Not all color attachments were set");
+		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
 		
+		
+		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
 		dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
 		commandBuffer.setViewport(0, 1, &dynamicRenderPass.viewport);
 		commandBuffer.setScissor(0, 1, &dynamicRenderPass.scissor);
@@ -1174,6 +1177,7 @@ public:
 	//this is the backbuffer that will be blitted to the swapchain
 	ImageView *currentBackBuffer;
 	size_t     frameIndex;
+	bool debugUI = true;
 
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
@@ -1566,10 +1570,12 @@ public:
 
 	void RecreateFrameResources()
 	{
-		for (auto &renderNode : renderNodes)
-		{
-			renderNode.second->ClearOperations();
-		}
+		// auto imageInfoBf = Image::CreateInfo2d(glm::uvec2(core->swapchainRef->extent.width, core->swapchainRef->extent.height), 1, 1,
+		// 											 core->swapchainRef->GetFormat(),
+		// 											 vk::ImageUsageFlagBits::eColorAttachment |
+		// 												 vk::ImageUsageFlagBits::eSampled);
+		// currentBackBuffer = resourcesManager->SetOrCreateImage("bf", imageInfoBf, 0, 0);
+		
 	}
 	void RecreateNodePipelines()
 	{
@@ -1675,7 +1681,10 @@ public:
 				batches.back().sortedNodes.emplace_back(sortedNodes[i]);
 			}
 		}
-		batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode*>{},core->queueWorkerManager->GetWorkerQueue("UI"), batchIdx + 1});
+		if (debugUI)
+		{
+			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode*>{},core->queueWorkerManager->GetWorkerQueue("UI"), batchIdx + 1});
+		}
 	}
 
 	void ResolveNodesDependancies()

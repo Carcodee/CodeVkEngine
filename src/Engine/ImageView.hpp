@@ -22,6 +22,7 @@ namespace ENGINE
             this->mipLevelCount = mipLevelCount;
             this->baseArrayLayer = baseArrayLayer;
             this->arrayLayersCount = arrayLayersCount;
+        	this->logicalDevice = logicalDevice;
 
             auto subResourceRange = vk::ImageSubresourceRange()
                                     .setLayerCount(arrayLayersCount)
@@ -67,6 +68,7 @@ namespace ENGINE
             this->arrayLayersCount = arrayLayersCount;
             this->name = name;
             this->id = id;
+        	this->logicalDevice = logicalDevice;
 
             auto subResourceRange = vk::ImageSubresourceRange()
                                     .setLayerCount(arrayLayersCount)
@@ -110,6 +112,7 @@ namespace ENGINE
             this->baseMipLevel = baseMipLevel;
             this->baseArrayLayer = 0;
             this->arrayLayersCount = 0;
+        	this->logicalDevice = logicalDevice;
 
             auto subResourceRange = vk::ImageSubresourceRange()
                                     .setLayerCount(this->arrayLayersCount)
@@ -132,20 +135,55 @@ namespace ENGINE
 
             this->imageView = logicalDevice.createImageViewUnique(imageViewCreateInfo);
         }
-
-
-        vk::ImageSubresourceRange GetSubresourceRange()
+    	void Recreate(ImageData* newImageData)
         {
-            auto subResourceRange = vk::ImageSubresourceRange()
-                                    .setLayerCount(this->arrayLayersCount)
-                                    .setLevelCount(this->mipLevelCount)
-                                    .setBaseArrayLayer(this->baseArrayLayer)
-                                    .setBaseMipLevel(this->baseMipLevel)
-                                    .setAspectMask(imageData->aspectFlags);
-            return subResourceRange;
+        	imageData = newImageData;
+        	Recreate();
+        }
+    	vk::ImageSubresourceRange GetSubresourceRange()
+        {
+        	auto subResourceRange = vk::ImageSubresourceRange()
+									.setLayerCount(this->arrayLayersCount)
+									.setLevelCount(this->mipLevelCount)
+									.setBaseArrayLayer(this->baseArrayLayer)
+									.setBaseMipLevel(this->baseMipLevel)
+									.setAspectMask(imageData->aspectFlags);
+        	return subResourceRange;
 
         }
+    	
+    private:
+    	vk::ImageViewType GetViewType() const
+    	{
+    		switch (imageData->imageType)
+    		{
+    			case vk::ImageType::e1D:
+    				return vk::ImageViewType::e1D;
 
+    			case vk::ImageType::e2D:
+    				return vk::ImageViewType::e2D;
+
+    			case vk::ImageType::e3D:
+    				return vk::ImageViewType::e3D;
+
+    			default:
+    				assert(false && "Unsupported image type");
+    				return vk::ImageViewType::e2D;
+    		}
+    	}
+    	void Recreate()
+        {
+        	vk::ImageViewCreateInfo createInfo{};
+        	createInfo.setImage(imageData->imageHandle)
+					  .setFormat(imageData->format)
+					  .setViewType(GetViewType())
+					  .setSubresourceRange(GetSubresourceRange());
+
+        	imageView = logicalDevice.createImageViewUnique(createInfo);
+        }
+    	
+    public:
+    	vk::Device logicalDevice;
         uint32_t mipLevelCount;
         uint32_t baseMipLevel;
         uint32_t baseArrayLayer;

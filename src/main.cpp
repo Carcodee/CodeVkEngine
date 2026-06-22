@@ -35,7 +35,7 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     // core, windowProvider));
     // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
     // clusterRenderer->SetRenderOperation();
-    //
+    
     // renderers.try_emplace("HairRenderer", std::make_unique<Rendering::HairRenderer>(core, windowProvider));
     // Rendering::HairRenderer* hairRenderer = dynamic_cast<Rendering::HairRenderer*>(renderers.at("HairRenderer").get());
     // hairRenderer->SetRenderOperation();
@@ -88,21 +88,23 @@ void run(WindowProvider* windowProvider)
 	
 	CodeCuda::C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
 	CodeCuda::C_ImportExternalBuffer(cudaBuffer->GetBufferHandle(), cudaBuffer->deviceSize);
-	
     
 	Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());
-
     
     std::map<std::string, std::unique_ptr<Rendering::BaseRenderer>> renderers;
     CreateRenderers(core.get(), windowProvider, renderers);
 
-    std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(
-        renderGraph.get(), windowProvider, renderers);
-
-    std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
-        core.get(), windowProvider, renderers);
-    debugRenderer->SetRenderOperation();
+    std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer =nullptr;
+	if (renderGraph->debugUI)
+	{
+		imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(renderGraph.get(), windowProvider, renderers);
+	}
+	
+    // std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
+    //     core.get(), windowProvider, renderers);
+	
+    // debugRenderer->SetRenderOperation();
 	
 	renderGraph->CreateUtilityPasses();
 
@@ -130,15 +132,15 @@ void run(WindowProvider* windowProvider)
                 windowProvider->framebufferResized = false;
                 core->resizeRequested = false;
                 //unused for now
-                // renderGraph->UpdateAllFromMetaData();
-                renderGraph->RecreateFrameResources();
-            	renderGraph->BuildRenderOperations();
-                for (auto& renderer : renderers)
-                {
-                    renderer.second->SetRenderOperation();
-                }
-            	
-                debugRenderer->SetRenderOperation();
+             // renderGraph->UpdateAllFromMetaData();
+            	//this is problematic because recreating the image right now modify the pointer location
+             renderGraph->RecreateFrameResources();
+            	// renderGraph->BuildRenderOperations();
+             //    for (auto& renderer : renderers)
+             //    {
+             //        renderer.second->SetRenderOperation();
+             //    }
+             //    debugRenderer->SetRenderOperation();
             }
             try
             {
@@ -164,16 +166,17 @@ void run(WindowProvider* windowProvider)
             	inFlightQueue->BeginParallelThreads();
                 inFlightQueue->BeginFrame();
 
-                auto& currFrame = inFlightQueue->frameResources[inFlightQueue->frameIndex];
-
                 profiler->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph cpu");
                 core->renderGraphRef->ExecuteRendering();
             	profiler->EndProfilerCpuSpot("Rendergraph cpu");
 
 
                 profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
-                imguiRenderer->RenderFrame(core->queueWorkerManager->GetWorkerQueue("UI")->GetCurrentCmd(),
-                                           inFlightQueue->currentSwapchainImageView->imageView.get());
+            	if (imguiRenderer != nullptr)
+            	{
+            		imguiRenderer->RenderFrame(core->queueWorkerManager->GetWorkerQueue("UI")->GetCurrentCmd(),
+											   inFlightQueue->currentSwapchainImageView->imageView.get());
+            	}
 
                 profiler->EndProfilerCpuSpot("Imgui");
 
@@ -193,7 +196,10 @@ void run(WindowProvider* windowProvider)
         profiler->EndProfilerGpuSpot("WaitIdle");
         profiler->UpdateProfiler();
     }
-    imguiRenderer->Destroy();
+	if (imguiRenderer != nullptr)
+	{
+		imguiRenderer->Destroy();
+	}
     renderGraph->SerializeAll();
     ENGINE::ResourcesManager::GetInstance()->DestroyResources();
     windowProvider->DestroyWindow();

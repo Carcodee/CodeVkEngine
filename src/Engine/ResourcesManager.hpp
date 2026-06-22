@@ -181,6 +181,32 @@ class ResourcesManager : SYSTEMS::Subject
 		bufferNames.try_emplace(name, id);
 		return id;
 	}
+	
+	ImageView *SetOrCreateImage(std::string name, vk::ImageCreateInfo imageInfo, int baseMipLevel, int baseArrayLayer)
+	{
+		assert(core != nullptr && "core must be set");
+		if (!imagesNames.contains(name) && !storageImgsNames.contains(name))
+		{
+			return GetImage(name, imageInfo, baseMipLevel, baseArrayLayer);
+		}
+
+		auto image = std::make_unique<Image>(core->physicalDevice, core->logicalDevice.get(), imageInfo);
+		if (imageInfo.usage & vk::ImageUsageFlagBits::eStorage)
+		{
+			assert(storageImgsNames.contains(name) && "Img name dont exist");
+			int32_t id = (int32_t) storageImgsNames.at(name);
+			storageImgsViews[id]->Recreate(image->imageData.get());
+			return storageImgsViews[id].get();
+		}
+		else
+		{
+			assert(imagesNames.contains(name) && "Img name dont exist");
+			int32_t id = (int32_t) imagesNames.at(name);
+			imageViews[id]->Recreate(image->imageData.get());
+			return imageViews[id].get();
+		}
+	}
+	
 
 	ImageView *GetImage(std::string name, vk::ImageCreateInfo imageInfo, int baseMipLevel, int baseArrayLayer)
 	{
@@ -606,6 +632,7 @@ class ResourcesManager : SYSTEMS::Subject
 			return DsetsInfo{dsets.back().get(), id};
 		}
 	}
+	
 
 	void DeallocateDset(int id)
 	{

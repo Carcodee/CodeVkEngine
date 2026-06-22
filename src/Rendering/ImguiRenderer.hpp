@@ -66,7 +66,6 @@ class ImguiRenderer
 		{
 			this->gsRenderer = dynamic_cast<GSRenderer *>(renderers.at("GSRenderer").get());
 		}
-		this->core           = core;
 		this->windowProvider = windowProvider;
 
 		std::vector<ENGINE::DescriptorAllocator::PoolSizeRatio> poolSizeRatios = {
