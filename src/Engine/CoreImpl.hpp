@@ -58,10 +58,11 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	this->logicalDevice      = CreateLogicalDevice(this->physicalDevice, this->queueFamilyIndices, deviceExtensions,
 	                                               validationLayers);
 	// this->presentQueue       = GetDeviceQueue(this->logicalDevice.get(), queueFamilyIndices.presentFamilyIndex);
-	this->queueWorkerManager = std::make_unique<QueueWorkerManager>(this);
 	
+	this->queueWorkerManager = std::make_unique<QueueWorkerManager>(this);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Present", queueFamilyIndices.presentFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics", queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.computeFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics_Test", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("UI", queueFamilyIndices.graphicsFamilyIndex);
 
@@ -250,6 +251,7 @@ QueueFamilyIndices Core::FindQueueFamilyIndices(vk::PhysicalDevice physicalDevic
 	queueFamilyIndices.transferFamilyIndex = uint32_t(-1);
 	queueFamilyIndices.graphicsFamilyIndex = uint32_t(-1);
 	queueFamilyIndices.presentFamilyIndex  = uint32_t(-1);
+	queueFamilyIndices.computeFamilyIndex  = uint32_t(-1);
 	for (int familyIndex = 0; familyIndex < queueFamilies.size(); ++familyIndex)
 	{
 		if (queueFamilies[familyIndex].queueFlags & vk::QueueFlagBits::eTransfer && queueFamilies[familyIndex].queueCount > 0 && queueFamilyIndices.graphicsFamilyIndex == uint32_t(-1))
@@ -259,6 +261,10 @@ QueueFamilyIndices Core::FindQueueFamilyIndices(vk::PhysicalDevice physicalDevic
 		if (queueFamilies[familyIndex].queueFlags & vk::QueueFlagBits::eGraphics && queueFamilies[familyIndex].queueCount > 0 && queueFamilyIndices.graphicsFamilyIndex == uint32_t(-1))
 		{
 			queueFamilyIndices.graphicsFamilyIndex = familyIndex;
+		}
+		if (queueFamilies[familyIndex].queueFlags & vk::QueueFlagBits::eCompute && queueFamilies[familyIndex].queueCount > 0 && queueFamilyIndices.computeFamilyIndex == uint32_t(-1))
+		{
+			queueFamilyIndices.computeFamilyIndex = familyIndex;
 		}
 		if (physicalDevice.getSurfaceSupportKHR(familyIndex, surface) && queueFamilies[familyIndex].queueCount > 0 && queueFamilyIndices.presentFamilyIndex == uint32_t(-1))
 		{

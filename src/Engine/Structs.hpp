@@ -10,6 +10,7 @@ namespace ENGINE
 struct QueueFamilyIndices
 {
 	uint32_t transferFamilyIndex;
+	uint32_t computeFamilyIndex;
 	uint32_t graphicsFamilyIndex;
 	uint32_t presentFamilyIndex;
 };
@@ -164,6 +165,14 @@ struct WorkerQueue
 	bool                                 isMainThreat = true;
 	int                                  activeCmdIdx = 0;
 
+	void SetCmdIdx(int idx)
+	{
+		if (commandBuffers.empty())
+		{
+			return;
+		}
+		activeCmdIdx = idx % commandBuffers.size();
+	}
 	vk::CommandBuffer &GetCurrentCmd()
 	{
 		assert(commandBuffers.size() != 0 && "There is no cmds allocated");

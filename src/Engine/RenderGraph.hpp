@@ -616,14 +616,12 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	{
 		assert(imagesAttachmentOutputs.size() == colAttachments.size() && "Not all color attachments were set");
 		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
-		
-		
+
 		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
 		dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
 		commandBuffer.setViewport(0, 1, &dynamicRenderPass.viewport);
 		commandBuffer.setScissor(0, 1, &dynamicRenderPass.scissor);
 
-		
 		int                                      index = 0;
 		std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
 		attachmentInfos.reserve(colAttachments.size());
@@ -1053,9 +1051,14 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			bufferProxyRef->at(name) = buffer;
 		}
 	}
+	void SetCurrCmd(vk::CommandBuffer cmd)
+	{
+		currCmd = cmd;
+	}
 	vk::CommandBuffer &GetCurrCmd()
 	{
-		return workerQueueRef->GetCurrentCmd();
+		assert(currCmd != nullptr && "Cmd must be valid");
+		return currCmd;
 	}
 	void SetConfigs(RenderNodeConfigs configs)
 	{
@@ -1080,8 +1083,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		vertexInput.inputDescription.clear();
 		frameBufferSize  = {0, 0};
 		pushConstantSize = 0;
-		workerQueueRef   = nullptr;
-
+		workerQueueName   = "Graphics";
+		currCmd          = nullptr;
 		colAttachments.clear();
 		depthAttachment = {};
 		depthImage      = nullptr;
@@ -1110,7 +1113,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	DynamicRenderPass                dynamicRenderPass;
 	std::unique_ptr<DescriptorCache> descCache;
 	std::string                      passName;
-	WorkerQueue                     *workerQueueRef = nullptr;
+	std::string                     workerQueueName = "Graphics";
 	bool                             active         = false;
 	// unused
 	bool        waitForResourcesCreation = false;
@@ -1118,6 +1121,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
   private:
 	friend class RenderGraph;
+	vk::CommandBuffer         currCmd;
 	RenderNodeConfigs         configs                 = {true, false};
 	GraphicsPipelineConfigs   graphicsPipelineConfigs = {};
 	std::vector<BlendConfigs> colorBlendConfigs;
@@ -1162,22 +1166,22 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 struct QueueNodesBatch
 {
 	std::vector<RenderGraphNode *> sortedNodes;
-	WorkerQueue                   *queueRef;
+	std::string                    queueName;
+	vk::CommandBuffer              commandBuffer;
 	int                            id;
 };
 
 class RenderGraph
 {
-	
-public:
+  public:
 	Core             *core;
 	ResourcesManager *resourcesManager;
 
 	ImageView *currentBackBufferSwapchain;
-	//this is the backbuffer that will be blitted to the swapchain
+	// this is the backbuffer that will be blitted to the swapchain
 	ImageView *currentBackBuffer;
 	size_t     frameIndex;
-	bool debugUI = true;
+	bool       debugUI = true;
 
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
@@ -1262,15 +1266,15 @@ public:
 	}
 	RenderGraphNode *BlitToBackbuffer()
 	{
-		auto* blitterNode = GetBlitterNode();
-		
+		auto *blitterNode = GetBlitterNode();
+
 		AttachmentInfo colInfo = GetColorAttachmentInfo(
-			glm::vec4(0.0f), core->swapchainRef->GetFormat());
+		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 		blitterNode->AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
 		blitterNode->BuildRenderGraphNode();
-		
+
 		blitterNode->SetSampler("MainTex", currentBackBuffer);
-		
+
 		return blitterNode;
 	}
 	void BuildRenderOperations()
@@ -1279,26 +1283,25 @@ public:
 			GetNode("BlitterNode")->AddColorImageResource("BF_SwapChain", currentBackBufferSwapchain);
 			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});
-		
-		auto blitterRenderOp = new std::function<void()>(
-			[this]() {
-				auto renderNode = GetNode("BlitterNode");
-				vk::DeviceSize offset = 0;
-				renderNode->GetCurrCmd().bindVertexBuffers(
-					0, 1,
-					&resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
-					&offset);
-				renderNode->GetCurrCmd().bindIndexBuffer(
-					resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-				renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
-													 0, 0);
-			});
-		
+		auto blitterRenderOp = new std::function<void()>(
+		    [this]() {
+			    auto           renderNode = GetNode("BlitterNode");
+			    vk::DeviceSize offset     = 0;
+			    renderNode->GetCurrCmd().bindVertexBuffers(
+			        0, 1,
+			        &resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
+			        &offset);
+			    renderNode->GetCurrCmd().bindIndexBuffer(
+			        resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+
+			    renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
+			                                         0, 0);
+		    });
+
 		GetNode("BlitterNode")->AddTask(blitterTask);
 		GetNode("BlitterNode")->SetRenderOperation(blitterRenderOp);
 	}
-	
 
 	void LoadExternalPasses()
 	{
@@ -1370,7 +1373,7 @@ public:
 			renderGraphNode->shadersProxyRef            = &shadersProxy;
 			renderGraphNode->core                       = core;
 			renderGraphNode->resManagerRef              = resourcesManager;
-			renderGraphNode->workerQueueRef             = core->queueWorkerManager->GetWorkerQueue(workerQueueName);
+			renderGraphNode->workerQueueName            = workerQueueName;
 			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
@@ -1575,7 +1578,6 @@ public:
 		// 											 vk::ImageUsageFlagBits::eColorAttachment |
 		// 												 vk::ImageUsageFlagBits::eSampled);
 		// currentBackBuffer = resourcesManager->SetOrCreateImage("bf", imageInfoBf, 0, 0);
-		
 	}
 	void RecreateNodePipelines()
 	{
@@ -1671,10 +1673,11 @@ public:
 		int batchIdx = -1;
 		for (int i = 0; i < sortedNodes.size(); ++i)
 		{
-			if (batches.empty() || batches.back().queueRef->name != sortedNodes[i]->workerQueueRef->name)
+			if (batches.empty() || batches.back().queueName != sortedNodes[i]->workerQueueName)
 			{
 				batchIdx++;
-				batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{sortedNodes[i]}, sortedNodes[i]->workerQueueRef, batchIdx});
+				auto* queueRef = core->queueWorkerManager->GetWorkerQueue(sortedNodes[i]->workerQueueName);
+				batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{sortedNodes[i]}, queueRef->name, queueRef->GetCurrentCmd(), batchIdx});
 			}
 			else
 			{
@@ -1683,7 +1686,8 @@ public:
 		}
 		if (debugUI)
 		{
-			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode*>{},core->queueWorkerManager->GetWorkerQueue("UI"), batchIdx + 1});
+			auto* queueRef = core->queueWorkerManager->GetWorkerQueue("UI");
+			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{}, "UI", queueRef->GetCurrentCmd(), batchIdx + 1});
 		}
 	}
 
@@ -1751,9 +1755,11 @@ public:
 			}
 
 			profiler->AddProfilerCpuSpot(legit::Colors::getColor(idx), "Pass: " + renderNode->passName);
-			RenderGraphNode *node      = renderNode;
-			bool             depenNeed = false;
-			std::string      depenName = "";
+			RenderGraphNode *node = renderNode;
+			node->SetCurrCmd(queueNodesBatch.commandBuffer);
+			auto* queueRef = core->queueWorkerManager->GetWorkerQueue(node->workerQueueName);
+			bool        depenNeed = false;
+			std::string depenName = "";
 			for (auto &passName : allPassesNames)
 			{
 				if (node->dependencies.contains(passName))
@@ -1779,24 +1785,27 @@ public:
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, node->GetCurrCmd());
 			}
-			if (node->workerQueueRef->isMainThreat)
+			if (queueRef->isMainThreat)
 			{
 				node->Execute(node->GetCurrCmd());
 			}
-			else
-			{
-				std::string           name = node->passName;
-				std::function<void()> nodeTask([name, this] {
-					renderNodes.at(name)->Execute(renderNodes.at(name)->workerQueueRef->GetCurrentCmd());
-				});
-				node->workerQueueRef->taskThreat.AddTask(nodeTask);
-			}
+			// else
+			// {
+			// 	std::string           name = node->passName;
+			// 	std::function<void()> nodeTask([name, queueNodesBatch, this] {
+			// 		renderNodes.at(name)->Execute(queueNodesBatch.commandBuffer);
+			// 	});
+			// 	queueRef->taskThreat.AddTask(nodeTask);
+			// }
 			allPassesNames.push_back(node->passName);
 			profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
 		}
 	}
-	void ExecuteRendering()
+	void PrepareRendering()
 	{
+		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph prepare cpu");
+		resourcesManager->UpdateBuffers();
+		resourcesManager->UpdateImages();
 		ResolveNodesDependancies();
 		if (sequentialRenderNodes.size() > 1)
 		{
@@ -1805,10 +1814,19 @@ public:
 		SortNodesByDep();
 		sortedQueueBatches.clear();
 		BuildQueuePassesBatches(sortedByDepNodes, sortedQueueBatches);
+		Profiler::GetInstance()->EndProfilerCpuSpot("Rendergraph prepare cpu");
+	}
+	void ExecuteRendering()
+	{
+		
+		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph execute cpu");
+		assert(!sortedQueueBatches.empty() && "There must queues");
 		for (auto &queueBatch : sortedQueueBatches)
 		{
 			ExecuteQueueBatch(queueBatch);
 		}
+		
+		Profiler::GetInstance()->EndProfilerCpuSpot("Rendergraph execute cpu");
 	}
 
 	void BuildDeserializedPasses()

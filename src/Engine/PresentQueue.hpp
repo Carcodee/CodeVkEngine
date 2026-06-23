@@ -106,6 +106,7 @@ struct InFlightQueue
 
 			for (int i = 0; i < renderGraph->sortedQueueBatches.size(); ++i)
 			{
+				auto* queueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i].queueName);
 				if (renderGraph->sortedQueueBatches.size() == 1)
 				{
 					vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
@@ -117,11 +118,11 @@ struct InFlightQueue
 					                      .setPWaitSemaphores(waitSemaphores)
 					                      .setPWaitDstStageMask(waitStages)
 					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].queueRef->GetCurrentCmd())
+					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalSemaphores);
 
-					renderGraph->sortedQueueBatches[i].queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
+					queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
 					break;
 				}
 				if (i == 0)
@@ -142,10 +143,10 @@ struct InFlightQueue
 					                      .setPWaitSemaphores(waitSemaphores)
 					                      .setPWaitDstStageMask(waitStages)
 					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].queueRef->GetCurrentCmd())
+					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalTimeline);
-					renderGraph->sortedQueueBatches[i].queueRef->workerQueue.submit(submitInfo);
+					queueRef->workerQueue.submit(submitInfo);
 				}
 				else if (i > 0 && i != renderGraph->sortedQueueBatches.size() - 1)
 				{
@@ -168,10 +169,10 @@ struct InFlightQueue
 					                      .setPWaitSemaphores(waitSemaphores)
 					                      .setPWaitDstStageMask(waitStages)
 					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].queueRef->GetCurrentCmd())
+					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalTimeline);
-					renderGraph->sortedQueueBatches[i].queueRef->workerQueue.submit(submitInfo);
+					queueRef->workerQueue.submit(submitInfo);
 				}
 				else if (i == renderGraph->sortedQueueBatches.size() - 1)
 				{
@@ -191,10 +192,10 @@ struct InFlightQueue
 					                      .setPWaitSemaphores(waitSemaphores)
 					                      .setPWaitDstStageMask(waitStages)
 					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].queueRef->GetCurrentCmd())
+					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalTimeline);
-					renderGraph->sortedQueueBatches[i].queueRef->workerQueue.submit(submitInfo, currFrame.inflightFence.get());
+					queueRef->workerQueue.submit(submitInfo, currFrame.inflightFence.get());
 				}
 			}
 		}

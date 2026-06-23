@@ -96,6 +96,7 @@ void run(WindowProvider* windowProvider)
     CreateRenderers(core.get(), windowProvider, renderers);
 
     std::unique_ptr<Rendering::ImguiRenderer> imguiRenderer =nullptr;
+	
 	if (renderGraph->debugUI)
 	{
 		imguiRenderer = std::make_unique<Rendering::ImguiRenderer>(renderGraph.get(), windowProvider, renderers);
@@ -103,7 +104,7 @@ void run(WindowProvider* windowProvider)
 	
     // std::unique_ptr<Rendering::DebugRenderer> debugRenderer = std::make_unique<Rendering::DebugRenderer>(
     //     core.get(), windowProvider, renderers);
-	
+	   //
     // debugRenderer->SetRenderOperation();
 	
 	renderGraph->CreateUtilityPasses();
@@ -161,27 +162,20 @@ void run(WindowProvider* windowProvider)
                 }
 
                 renderingResManager->UpdateResources();
-                resourcesManager->UpdateBuffers();
-                resourcesManager->UpdateImages();
+            	core->renderGraphRef->PrepareRendering();
+            	
             	inFlightQueue->BeginParallelThreads();
                 inFlightQueue->BeginFrame();
-
-                profiler->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph cpu");
+            	
                 core->renderGraphRef->ExecuteRendering();
-            	profiler->EndProfilerCpuSpot("Rendergraph cpu");
-
-
-                profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
             	if (imguiRenderer != nullptr)
             	{
+					profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
             		imguiRenderer->RenderFrame(core->queueWorkerManager->GetWorkerQueue("UI")->GetCurrentCmd(),
 											   inFlightQueue->currentSwapchainImageView->imageView.get());
+					profiler->EndProfilerCpuSpot("Imgui");
             	}
-
-                profiler->EndProfilerCpuSpot("Imgui");
-
-                resourcesManager->EndFrameDynamicUpdates(renderGraph->sortedQueueBatches.back().queueRef->GetCurrentCmd());
-            	
+                resourcesManager->EndFrameDynamicUpdates(renderGraph->sortedQueueBatches.back().commandBuffer);
             	inFlightQueue->EndParallelThreads();
                 inFlightQueue->EndFrame();
             }

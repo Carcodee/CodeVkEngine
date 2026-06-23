@@ -115,7 +115,7 @@ class QueueWorkerManager
 	{
 		for (auto& queue : workersQueues)
 		{
-			queue.second.activeCmdIdx = frameIdx;
+			queue.second.SetCmdIdx(frameIdx);
 		}
 	}
 	void AllocateCmds(int count)

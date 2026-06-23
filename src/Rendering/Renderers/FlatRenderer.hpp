@@ -151,7 +151,7 @@ class FlatRenderer : public BaseRenderer
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-		auto *paintingNode = renderGraph->AddPass(paintingPassName, "Graphics");
+		auto *paintingNode = renderGraph->AddPass(paintingPassName, "Compute");
 		paintingNode->SetCompShader(paintCompShader);
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
 		paintingNode->SetPushConstantSize(sizeof(PaintingPc));
@@ -174,7 +174,7 @@ class FlatRenderer : public BaseRenderer
 		{
 			std::string name = "ProbesGen_" + std::to_string(i);
 			probesGenPassNames.push_back(name);
-			auto renderNode = renderGraph->AddPass(name);
+			auto renderNode = renderGraph->AddPass(name, "Graphics_Test");
 			renderNode->SetConfigs({true});
 			renderNode->SetPushConstantSize(sizeof(PaintingPc));
 			renderNode->SetVertShader(probesVertShader);
