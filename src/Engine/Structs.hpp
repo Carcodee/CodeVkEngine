@@ -154,38 +154,6 @@ struct GraphicsPipelineConfigs
 	TopologyConfigs      topologyConfigs      = TopologyConfigs::T_TRIANGLE;
 };
 
-struct WorkerQueue
-{
-	vk::Queue                            workerQueue       = {};
-	int32_t                              familyIndex       = -1;
-	vk::UniqueCommandPool                workerCommandPool = {};
-	SYSTEMS::TaskThread                  taskThreat        = {};
-	std::vector<vk::UniqueCommandBuffer> commandBuffers;
-	std::string                          name         = "";
-	bool                                 isMainThreat = true;
-	int                                  activeCmdIdx = 0;
-
-	void SetCmdIdx(int idx)
-	{
-		if (commandBuffers.empty())
-		{
-			return;
-		}
-		activeCmdIdx = idx % commandBuffers.size();
-	}
-	vk::CommandBuffer &GetCurrentCmd()
-	{
-		assert(commandBuffers.size() != 0 && "There is no cmds allocated");
-		return commandBuffers[activeCmdIdx].get();
-	};
-	WorkerQueue()                               = default;
-	~WorkerQueue()                              = default;
-	WorkerQueue(const WorkerQueue &)            = delete;
-	WorkerQueue &operator=(const WorkerQueue &) = delete;
-	WorkerQueue(WorkerQueue &&)                 = default;
-	WorkerQueue &operator=(WorkerQueue &&)      = default;
-};
-
 
 }        // namespace ENGINE
 #	define STRUCTS_HPP

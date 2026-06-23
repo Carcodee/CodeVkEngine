@@ -74,6 +74,47 @@ class Core
 	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> debugUtilsMessenger;
 };
 
+struct WorkerQueue
+{
+	Core                                *coreRef              = nullptr;
+	vk::Queue                            workerQueue       = {};
+	int32_t                              familyIndex       = -1;
+	vk::UniqueCommandPool                workerCommandPool = {};
+	SYSTEMS::TaskThread                  taskThreat        = {};
+	std::vector<vk::UniqueCommandBuffer> commandBuffers;
+	std::string                          name         = "";
+	bool                                 isMainThreat = true;
+	int                                  activeCmdIdx = 0;
+	int                                  usageIdx     = 0;
+
+	void AllocateCmds(int count)
+	{
+		assert(coreRef != nullptr && "Core is null");
+		commandBuffers = std::move(coreRef->AllocateCommandBuffers(workerCommandPool.get(), count));
+	}
+	void SetCmdIdx(int idx)
+	{
+		assert(coreRef != nullptr && "Core is null");
+		if (commandBuffers.empty())
+		{
+			return;
+		}
+		activeCmdIdx = idx % commandBuffers.size();
+	}
+	vk::CommandBuffer &GetCurrentCmd()
+	{
+		assert(coreRef != nullptr && "Core is null");
+		assert(commandBuffers.size() != 0 && "There is no cmds allocated");
+		return commandBuffers[activeCmdIdx].get();
+	};
+	WorkerQueue()                               = default;
+	~WorkerQueue()                              = default;
+	WorkerQueue(const WorkerQueue &)            = delete;
+	WorkerQueue &operator=(const WorkerQueue &) = delete;
+	WorkerQueue(WorkerQueue &&)                 = default;
+	WorkerQueue &operator=(WorkerQueue &&)      = default;
+};
+
 class QueueWorkerManager
 {
   public:
@@ -91,11 +132,13 @@ class QueueWorkerManager
 			return GetWorkerQueue(name);
 		}
 		workersQueues.try_emplace(name);
+		workersQueues.at(name).coreRef              = coreRef;
 		workersQueues.at(name).name              = name;
 		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).familyIndex       = static_cast<int32_t>(familyIndex);
 		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
-		workersQueues.at(name).isMainThreat = mainThread;
+		workersQueues.at(name).isMainThreat      = mainThread;
+
 		if (mainThread == false)
 		{
 			workersQueues.at(name).taskThreat.Start();
@@ -110,46 +153,52 @@ class QueueWorkerManager
 		}
 		return &workersQueues.at(name);
 	}
-	
+
+	WorkerQueue *UseQueue(std::string name)
+	{
+		if (!workersQueues.contains(name))
+		{
+			return nullptr;
+		}
+		return &workersQueues.at(name);
+	}
+
 	void SetFrameIndex(int frameIdx)
 	{
-		for (auto& queue : workersQueues)
+		for (auto &queue : workersQueues)
 		{
 			queue.second.SetCmdIdx(frameIdx);
 		}
 	}
 	void AllocateCmds(int count)
 	{
-		for (auto& queue: workersQueues)
+		for (auto &queue : workersQueues)
 		{
 			if (queue.first == "Present")
 			{
 				continue;
 			}
-			queue.second.commandBuffers = std::move(coreRef->AllocateCommandBuffers(queue.second.workerCommandPool.get(), count));
+			queue.second.AllocateCmds(count);
 		}
-		
 	}
 	void BeginCmds()
 	{
-		
-		for (auto& queue : workersQueues)
+		for (auto &queue : workersQueues)
 		{
 			if (queue.first == "Present")
 			{
 				continue;
 			}
 			auto bufferBeginInfo = vk::CommandBufferBeginInfo()
-									   .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-		
+			                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+
 			queue.second.GetCurrentCmd().begin(bufferBeginInfo);
 		}
 	}
-	
+
 	void EndCmds()
 	{
-		
-		for (auto& queue : workersQueues)
+		for (auto &queue : workersQueues)
 		{
 			if (queue.first == "Present")
 			{
