@@ -164,20 +164,21 @@ void run(WindowProvider* windowProvider)
                 renderingResManager->UpdateResources();
             	core->renderGraphRef->PrepareRendering();
             	
-            	inFlightQueue->BeginParallelThreads();
+            	// inFlightQueue->BeginParallelThreads();
                 inFlightQueue->BeginFrame();
             	
                 core->renderGraphRef->ExecuteRendering();
             	if (imguiRenderer != nullptr)
             	{
 					profiler->AddProfilerCpuSpot(legit::Colors::alizarin, "Imgui");
-            		imguiRenderer->RenderFrame(core->queueWorkerManager->GetWorkerQueue("UI")->GetCurrentCmd(),
+            		imguiRenderer->RenderFrame(core->queueWorkerManager->GetWorkerQueue("UI")->GetCurrentCmd(0),
 											   inFlightQueue->currentSwapchainImageView->imageView.get());
 					profiler->EndProfilerCpuSpot("Imgui");
             	}
                 resourcesManager->EndFrameDynamicUpdates(renderGraph->sortedQueueBatches.back().commandBuffer);
-            	inFlightQueue->EndParallelThreads();
+            	// inFlightQueue->EndParallelThreads();
                 inFlightQueue->EndFrame();
+            	renderGraph->EndRendering();
             }
             catch (vk::OutOfDateKHRError err)
             {

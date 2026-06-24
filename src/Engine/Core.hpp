@@ -76,22 +76,56 @@ class Core
 
 struct WorkerQueue
 {
-	Core                                *coreRef              = nullptr;
-	vk::Queue                            workerQueue       = {};
-	int32_t                              familyIndex       = -1;
-	vk::UniqueCommandPool                workerCommandPool = {};
-	SYSTEMS::TaskThread                  taskThreat        = {};
-	std::vector<vk::UniqueCommandBuffer> commandBuffers;
-	std::string                          name         = "";
-	bool                                 isMainThreat = true;
-	int                                  activeCmdIdx = 0;
-	int                                  usageIdx     = 0;
+	Core                                             *coreRef           = nullptr;
+	vk::Queue                                         workerQueue       = {};
+	int32_t                                           familyIndex       = -1;
+	vk::UniqueCommandPool                             workerCommandPool = {};
+	SYSTEMS::TaskThread                               taskThreat        = {};
+	std::vector<std::vector<vk::UniqueCommandBuffer>> commandBuffers;
+	std::string                                       name              = "";
+	int                                               perCmdPoolSize    = 0;
+	bool                                              isMainThreat      = true;
+	int                                               activeCmdIdx      = 0;
+	int                                               cmdsPoolSize      = 0;
+	int                                               currentPoolCmdIdx = 0;
 
-	void AllocateCmds(int count)
+	vk::CommandBuffer &RequestQueueCmd(int &poolIdxOut)
 	{
-		assert(coreRef != nullptr && "Core is null");
-		commandBuffers = std::move(coreRef->AllocateCommandBuffers(workerCommandPool.get(), count));
+		assert(currentPoolCmdIdx < 10 && "never should be that many pools");
+		assert(cmdsPoolSize < 10 && "never should be that many pools");
+		if (currentPoolCmdIdx >= cmdsPoolSize)
+		{
+			IncreasePool();
+			AllocatePoolCmds(perCmdPoolSize, currentPoolCmdIdx);
+		}
+		poolIdxOut = currentPoolCmdIdx;
+		vk::CommandBuffer cmd = GetCurrentCmd(currentPoolCmdIdx);
+		currentPoolCmdIdx++;
+
+		return cmd;
 	}
+	
+	void ResetPoolUsage()
+	{
+		currentPoolCmdIdx = 0;
+	}
+	void IncreasePool()
+	{
+		assert(cmdsPoolSize < 10 && "never should be that many pools");
+		cmdsPoolSize++;
+		commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
+	}
+	
+	void InitPools(int count)
+	{
+		cmdsPoolSize = count;
+		commandBuffers.reserve(10);
+		for (int i = 0; i < count; ++i)
+		{
+			commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
+		}
+	}
+	
 	void SetCmdIdx(int idx)
 	{
 		assert(coreRef != nullptr && "Core is null");
@@ -99,14 +133,49 @@ struct WorkerQueue
 		{
 			return;
 		}
-		activeCmdIdx = idx % commandBuffers.size();
+		activeCmdIdx = idx;
 	}
-	vk::CommandBuffer &GetCurrentCmd()
+	vk::CommandBuffer &GetCurrentCmd(int cmdPoolIdx)
 	{
 		assert(coreRef != nullptr && "Core is null");
 		assert(commandBuffers.size() != 0 && "There is no cmds allocated");
-		return commandBuffers[activeCmdIdx].get();
+		return commandBuffers[cmdPoolIdx][activeCmdIdx].get();
 	};
+
+	void AllocatePoolCmds(int count, int cmdPoolIdx)
+	{
+		assert(coreRef != nullptr && "Core is null");
+		assert(!commandBuffers.empty() && "command buffers must be non empty");
+		assert(cmdPoolIdx < commandBuffers.size() && "pool idx is bigger than the command buffer pools");
+		assert(count > 0 && "there must be more than 0 cmds to allocate");
+		commandBuffers[cmdPoolIdx] = std::move(coreRef->AllocateCommandBuffers(workerCommandPool.get(), count));
+	}
+	
+	void AllocateAllCmds(int count)
+	{
+		assert(coreRef != nullptr && "Core is null");
+		assert(!commandBuffers.empty() && "command buffers must be non empty");
+		perCmdPoolSize = count;
+		for (int i = 0; i < commandBuffers.size(); ++i)
+		{
+			AllocatePoolCmds(perCmdPoolSize, i);
+		}
+	}
+	
+	void BeginCurrentCmds(vk::CommandBufferBeginInfo beginInfo)
+	{
+		for (int i = 0; i < commandBuffers.size(); ++i)
+		{
+			commandBuffers[i][activeCmdIdx]->begin(beginInfo);
+		}
+	}
+	void EndCurrentCmds()
+	{
+		for (int i = 0; i < commandBuffers.size(); ++i)
+		{
+			commandBuffers[i][activeCmdIdx]->end();
+		}
+	}
 	WorkerQueue()                               = default;
 	~WorkerQueue()                              = default;
 	WorkerQueue(const WorkerQueue &)            = delete;
@@ -132,12 +201,14 @@ class QueueWorkerManager
 			return GetWorkerQueue(name);
 		}
 		workersQueues.try_emplace(name);
-		workersQueues.at(name).coreRef              = coreRef;
+		workersQueues.at(name).coreRef           = coreRef;
 		workersQueues.at(name).name              = name;
 		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).familyIndex       = static_cast<int32_t>(familyIndex);
 		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
 		workersQueues.at(name).isMainThreat      = mainThread;
+		workersQueues.at(name).cmdsPoolSize      = 1;
+		workersQueues.at(name).InitPools(workersQueues.at(name).cmdsPoolSize);
 
 		if (mainThread == false)
 		{
@@ -152,6 +223,16 @@ class QueueWorkerManager
 			return nullptr;
 		}
 		return &workersQueues.at(name);
+	}
+
+	vk::CommandBuffer RequestWorkerQueueCmd(std::string name, int& cmdPoolIdxUsedOut)
+	{
+		if (!workersQueues.contains(name))
+		{
+			return nullptr;
+		}
+		;
+		return workersQueues.at(name).RequestQueueCmd(cmdPoolIdxUsedOut);
 	}
 
 	WorkerQueue *UseQueue(std::string name)
@@ -178,7 +259,7 @@ class QueueWorkerManager
 			{
 				continue;
 			}
-			queue.second.AllocateCmds(count);
+			queue.second.AllocateAllCmds(count);
 		}
 	}
 	void BeginCmds()
@@ -192,7 +273,7 @@ class QueueWorkerManager
 			auto bufferBeginInfo = vk::CommandBufferBeginInfo()
 			                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
-			queue.second.GetCurrentCmd().begin(bufferBeginInfo);
+			queue.second.BeginCurrentCmds(bufferBeginInfo);
 		}
 	}
 
@@ -204,7 +285,22 @@ class QueueWorkerManager
 			{
 				continue;
 			}
-			queue.second.GetCurrentCmd().end();
+			// for (auto cmdsPool : queue.second.commandBuffers)
+			// {
+			// }
+			queue.second.EndCurrentCmds();
+		}
+	}
+	void ResetPoolUsage()
+	{
+		
+		for (auto &queue : workersQueues)
+		{
+			if (queue.first == "Present")
+			{
+				continue;
+			}
+			queue.second.ResetPoolUsage();
 		}
 	}
 	Core                                        *coreRef;

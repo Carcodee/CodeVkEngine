@@ -69,7 +69,6 @@ struct InFlightQueue
 			frame.inflightFence              = core->CreateFence(true);
 			frame.imageAcquiredSemaphore     = core->CreateVulkanSemaphore();
 			frame.renderingFinishedSemaphore = core->CreateVulkanSemaphore();
-			frame.commandBuffer              = core->queueWorkerManager->GetWorkerQueue("Graphics")->commandBuffers[frameIndex].get();
 			frameResources.push_back(std::move(frame));
 		}
 		frameIndex = 0;
@@ -97,7 +96,7 @@ struct InFlightQueue
 		std::vector<std::string> queueNames;
 
 		TransitionImage(currentSwapchainImageView->imageData, PRESENT, currentSwapchainImageView->GetSubresourceRange(),
-		                currFrame.commandBuffer);
+		                renderGraph->sortedQueueBatches.back().commandBuffer);
 
 		core->queueWorkerManager->EndCmds();
 
@@ -212,10 +211,9 @@ struct InFlightQueue
 				continue;
 			}
 			std::function<void()> workerStartTask([&worker, this] {
-				worker.second.commandBuffers = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1));
-				auto bufferBeginInfo         = vk::CommandBufferBeginInfo()
-				                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-				worker.second.commandBuffers[0]->begin(bufferBeginInfo);
+				// worker.second.commandBuffers = std::move(core->AllocateCommandBuffers(worker.second.workerCommandPool.get(), 1));
+				// auto bufferBeginInfo         = vk::CommandBufferBeginInfo()
+				//                            .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 			});
 			worker.second.taskThreat.AddTask(workerStartTask);
 		}
@@ -230,7 +228,6 @@ struct InFlightQueue
 				continue;
 			}
 			std::function<void()> workerStartTask([&worker, this] {
-				worker.second.commandBuffers[0]->end();
 			});
 			worker.second.taskThreat.AddTask(workerStartTask);
 		}

@@ -46,7 +46,6 @@ struct FrameResources
 	vk::UniqueSemaphore imageAcquiredSemaphore;
 	vk::UniqueSemaphore renderingFinishedSemaphore;
 	vk::UniqueFence     inflightFence;
-	vk::CommandBuffer   commandBuffer;
 };
 
 struct AttachmentInfo : SYSTEMS::ISerializable<AttachmentInfo>

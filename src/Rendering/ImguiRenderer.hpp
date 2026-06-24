@@ -152,9 +152,7 @@ class ImguiRenderer
 		}
 		if (flatRenderer)
 		{
-			PaintingInfo();
 			RCascadesInfo();
-			AnimatorInfo();
 		}
 		if (gsRenderer)
 		{
@@ -266,7 +264,87 @@ class ImguiRenderer
 	}
 	void DisplayGeneralEngineInfo()
 	{
+		DisplayEngineInfo();
 		DisplayAllTextures();
+	}
+
+	void DisplayEngineInfo()
+	{
+		ImGui::Begin("engine info");
+
+		auto *queueWorkerManager = core->queueWorkerManager.get();
+		const int engineQueueCount = static_cast<int>(queueWorkerManager->workersQueues.size());
+		ImGui::Text("Engine queues: %d", engineQueueCount);
+
+		ImGui::SeparatorText("Queue Members");
+		if (ImGui::BeginTable("engine_queue_members", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Name");
+			ImGui::TableSetupColumn("Family");
+			ImGui::TableSetupColumn("Main Thread");
+			ImGui::TableSetupColumn("Cmd Pools");
+			ImGui::TableSetupColumn("Cmds/Pool");
+			ImGui::TableSetupColumn("Active Cmd");
+			ImGui::TableSetupColumn("Current Pool");
+			ImGui::TableSetupColumn("Queue Handle");
+			ImGui::TableHeadersRow();
+
+			for (auto &queuePair : queueWorkerManager->workersQueues)
+			{
+				const auto &queue = queuePair.second;
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("%s", queue.name.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Text("%d", queue.familyIndex);
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text("%s", queue.isMainThreat ? "true" : "false");
+				ImGui::TableSetColumnIndex(3);
+				ImGui::Text("%d", queue.cmdsPoolSize);
+				ImGui::TableSetColumnIndex(4);
+				ImGui::Text("%d", queue.perCmdPoolSize);
+				ImGui::TableSetColumnIndex(5);
+				ImGui::Text("%d", queue.activeCmdIdx);
+				ImGui::TableSetColumnIndex(6);
+				ImGui::Text("%d", queue.currentPoolCmdIdx);
+				ImGui::TableSetColumnIndex(7);
+				ImGui::Text("%p", static_cast<VkQueue>(queue.workerQueue));
+			}
+			ImGui::EndTable();
+		}
+
+		ImGui::SeparatorText("Sorted Node Order");
+		for (int i = 0; i < renderGraph->sortedByDepNodes.size(); ++i)
+		{
+			auto *node = renderGraph->sortedByDepNodes[i];
+			ImGui::Text("%02d. %s | queue: %s | active: %s", i, node->passName.c_str(), node->workerQueueName.c_str(), node->active ? "true" : "false");
+		}
+
+		ImGui::SeparatorText("Sorted Queue Order");
+		ImGui::Text("Queue batches: %d", static_cast<int>(renderGraph->sortedQueueBatches.size()));
+		for (int i = 0; i < renderGraph->sortedQueueBatches.size(); ++i)
+		{
+			auto       &batch = renderGraph->sortedQueueBatches[i];
+			std::string label = std::to_string(i) + ": " + batch.queueName + "##engine_queue_batch_" + std::to_string(i);
+			if (ImGui::TreeNode(label.c_str()))
+			{
+				ImGui::Text("Batch id: %d", batch.id);
+				ImGui::Text("Pool id used: %d", batch.poolIdUsed);
+				ImGui::Text("Members: %d", static_cast<int>(batch.sortedNodes.size()));
+				for (int nodeIdx = 0; nodeIdx < batch.sortedNodes.size(); ++nodeIdx)
+				{
+					auto *node = batch.sortedNodes[nodeIdx];
+					ImGui::BulletText("%02d. %s", nodeIdx, node->passName.c_str());
+				}
+				if (batch.sortedNodes.empty())
+				{
+					ImGui::Text("No render nodes in this queue batch");
+				}
+				ImGui::TreePop();
+			}
+		}
+
+		ImGui::End();
 	}
 
 	void ClusterRendererInfo()
@@ -432,7 +510,6 @@ class ImguiRenderer
 	}
 	void PaintingInfo()
 	{
-		ImGui::Begin("Painting Info");
 
 		ImGui::SliderInt("Brush Radius", &flatRenderer->paintingPc.radius, 1, 100);
 
@@ -455,11 +532,9 @@ class ImguiRenderer
 			ResourcesManager::GetInstance()->RequestStorageImageClear(name);
 		}
 
-		ImGui::End();
 	}
 	void AnimatorInfo()
 	{
-		ImGui::Begin("Animator Info");
 
 		int i = 0;
 		for (const auto &animatorPair : RenderingResManager::GetInstance()->animatorsNames)
@@ -487,7 +562,6 @@ class ImguiRenderer
 			}
 		}
 
-		ImGui::End();
 	}
 
 	void RCascadesInfo()
@@ -572,6 +646,10 @@ class ImguiRenderer
 			flatRenderer->materialIndexSelected = materialSelected;
 		}
 		DisplayMaterial(flatRenderer->backgroundMaterials.at(flatRenderer->materialIndexSelected));
+		
+		PaintingInfo();
+		
+		AnimatorInfo();
 
 		ImGui::End();
 	}

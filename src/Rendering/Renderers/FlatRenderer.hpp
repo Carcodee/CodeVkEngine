@@ -151,7 +151,7 @@ class FlatRenderer : public BaseRenderer
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
-		auto *paintingNode = renderGraph->AddPass(paintingPassName, "Compute");
+		auto *paintingNode = renderGraph->AddPass(paintingPassName, "Graphics");
 		paintingNode->SetCompShader(paintCompShader);
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
 		paintingNode->SetPushConstantSize(sizeof(PaintingPc));
@@ -244,7 +244,7 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath +
 		        "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv",
 		    S_FRAG);
-		auto resultNode = renderGraph->AddPass(resultPassName);
+		auto resultNode = renderGraph->AddPass(resultPassName, "Graphics");
 		resultNode->SetVertShader(resultVertShader);
 		resultNode->SetFragShader(resultFragShader);
 		resultNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());

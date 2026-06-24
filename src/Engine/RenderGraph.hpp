@@ -1083,7 +1083,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		vertexInput.inputDescription.clear();
 		frameBufferSize  = {0, 0};
 		pushConstantSize = 0;
-		workerQueueName   = "Graphics";
+		workerQueueName  = "Graphics";
 		currCmd          = nullptr;
 		colAttachments.clear();
 		depthAttachment = {};
@@ -1113,8 +1113,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	DynamicRenderPass                dynamicRenderPass;
 	std::unique_ptr<DescriptorCache> descCache;
 	std::string                      passName;
-	std::string                     workerQueueName = "Graphics";
-	bool                             active         = false;
+	std::string                      workerQueueName = "Graphics";
+	bool                             active          = false;
 	// unused
 	bool        waitForResourcesCreation = false;
 	std::string path;
@@ -1169,6 +1169,7 @@ struct QueueNodesBatch
 	std::string                    queueName;
 	vk::CommandBuffer              commandBuffer;
 	int                            id;
+	int                            poolIdUsed;
 };
 
 class RenderGraph
@@ -1186,6 +1187,7 @@ class RenderGraph
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
 	std::vector<RenderGraphNode *>                                    sortedByDepNodes;
+	std::vector<std::string>                                          addedToRenderingNodes;
 
 	std::unordered_map<std::string, ImageView *>                      imagesProxy;
 	std::unordered_map<std::string, BufferKey>                        buffersProxy;
@@ -1676,8 +1678,11 @@ class RenderGraph
 			if (batches.empty() || batches.back().queueName != sortedNodes[i]->workerQueueName)
 			{
 				batchIdx++;
-				auto* queueRef = core->queueWorkerManager->GetWorkerQueue(sortedNodes[i]->workerQueueName);
-				batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{sortedNodes[i]}, queueRef->name, queueRef->GetCurrentCmd(), batchIdx});
+				auto *queueRef  = core->queueWorkerManager->GetWorkerQueue(sortedNodes[i]->workerQueueName);
+				int   poolCmdId = -1;
+				vk::CommandBuffer cmd = queueRef->RequestQueueCmd(poolCmdId);
+				batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{sortedNodes[i]}, queueRef->name, cmd, batchIdx});
+				batches.back().poolIdUsed = poolCmdId;
 			}
 			else
 			{
@@ -1686,8 +1691,10 @@ class RenderGraph
 		}
 		if (debugUI)
 		{
-			auto* queueRef = core->queueWorkerManager->GetWorkerQueue("UI");
-			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{}, "UI", queueRef->GetCurrentCmd(), batchIdx + 1});
+			auto *queueRef = core->queueWorkerManager->GetWorkerQueue("UI");
+			int   poolCmdId = -1;
+			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{}, "UI", queueRef->RequestQueueCmd(poolCmdId), batchIdx + 1});
+			batches.back().poolIdUsed = poolCmdId;
 		}
 	}
 
@@ -1757,7 +1764,7 @@ class RenderGraph
 			profiler->AddProfilerCpuSpot(legit::Colors::getColor(idx), "Pass: " + renderNode->passName);
 			RenderGraphNode *node = renderNode;
 			node->SetCurrCmd(queueNodesBatch.commandBuffer);
-			auto* queueRef = core->queueWorkerManager->GetWorkerQueue(node->workerQueueName);
+			auto       *queueRef  = core->queueWorkerManager->GetWorkerQueue(node->workerQueueName);
 			bool        depenNeed = false;
 			std::string depenName = "";
 			for (auto &passName : allPassesNames)
@@ -1818,15 +1825,18 @@ class RenderGraph
 	}
 	void ExecuteRendering()
 	{
-		
 		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph execute cpu");
 		assert(!sortedQueueBatches.empty() && "There must queues");
 		for (auto &queueBatch : sortedQueueBatches)
 		{
 			ExecuteQueueBatch(queueBatch);
 		}
-		
+
 		Profiler::GetInstance()->EndProfilerCpuSpot("Rendergraph execute cpu");
+	}
+	void EndRendering()
+	{
+		core->queueWorkerManager->ResetPoolUsage();
 	}
 
 	void BuildDeserializedPasses()
