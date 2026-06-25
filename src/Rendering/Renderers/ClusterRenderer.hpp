@@ -90,7 +90,7 @@ class ClusterRenderer : public BaseRenderer
 			    renderNode->SetBuffer("LightMap", lightsMap);
 			    renderNode->SetBuffer("LightIndices", lightsIndices);
 			    renderNode->SetBuffer("CameraProperties", cPropsUbo);
-			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->shaderNodeRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
 			                                           0, sizeof(ScreenDataPc), &cullDataPc);
 			    renderNode->GetCurrCmd().dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
@@ -139,7 +139,7 @@ class ClusterRenderer : public BaseRenderer
 			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshesModelMatrices", modelMats);
 
 			    pc.projView = camera.matrices.perspective * camera.matrices.view;
-			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->shaderNodeRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eVertex |
 			                                               vk::ShaderStageFlagBits::eFragment,
 			                                           0, sizeof(MvpPc), &pc);
@@ -174,30 +174,30 @@ class ClusterRenderer : public BaseRenderer
 			lightPc.zSlices     = zSlicesSize;
 
 			auto *currImage = renderGraphRef->currentBackBuffer;
-			renderGraphRef->AddColorImageResource(lightPassName, "lColor", currImage);
+			renderGraphRef->AddColorImageResource(lightPassName, currImage);
 			renderGraphRef->GetNode(lightPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
 		});
 		auto lRenderOp    = new std::function<void()>(
             [this]() {
                 auto renderNode = renderGraphRef->GetNode(lightPassName);
                 renderGraphRef->resourcesManager->RequestStorageImageClear("specularHolderStorage");
-                renderNode->descCache->SetSampler("gCol", colAttachmentView);
-                renderNode->descCache->SetSampler("gNormals", normAttachmentView);
-                renderNode->descCache->SetSampler("gTang", tangAttachmentView);
-                renderNode->descCache->SetSampler("gDepth", depthAttachmentView);
-                renderNode->descCache->SetSampler("gMetRoughness", metRoughAttachmentView);
-                renderNode->descCache->SetSampler("gMeshUV", uvAttachmentView);
+                renderNode->SetSampler("gCol", colAttachmentView);
+                renderNode->SetSampler("gNormals", normAttachmentView);
+                renderNode->SetSampler("gTang", tangAttachmentView);
+                renderNode->SetSampler("gDepth", depthAttachmentView);
+                renderNode->SetSampler("gMetRoughness", metRoughAttachmentView);
+                renderNode->SetSampler("gMeshUV", uvAttachmentView);
 
-                renderNode->descCache->SetStorageImage("specularHolder", specularHolder);
-                renderNode->descCache->SetBuffer("CameraProperties", cPropsUbo);
-                renderNode->descCache->SetBuffer("PointLights", pointLights);
-                renderNode->descCache->SetBuffer("LightMap", lightsMap);
-                renderNode->descCache->SetBuffer("LightIndices", lightsIndices);
+                renderNode->SetStorageImage("specularHolder", specularHolder);
+                renderNode->SetBuffer("CameraProperties", cPropsUbo);
+                renderNode->SetBuffer("PointLights", pointLights);
+                renderNode->SetBuffer("LightMap", lightsMap);
+                renderNode->SetBuffer("LightIndices", lightsIndices);
                 vk::DeviceSize offset = 0;
                 renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
                 renderNode->GetCurrCmd().bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->pipelineLayout.get(),
+                renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->shaderNodeRef->pipelineLayout.get(),
 			                                              vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
 			                                              0, sizeof(LightPc), &lightPc);
                 renderNode->GetCurrCmd().drawIndexed(quadIndices.size(), 1, 0,
@@ -388,14 +388,14 @@ class ClusterRenderer : public BaseRenderer
 		renderNode->AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
 		renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
 		renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
-		renderNode->AddColorImageResource("gColor", colAttachmentView);
-		renderNode->AddColorImageResource("gNorm", normAttachmentView);
-		renderNode->AddColorImageResource("gTang", tangAttachmentView);
-		renderNode->AddColorImageResource("gMetRoughness", metRoughAttachmentView);
-		renderNode->AddColorImageResource("gUVs", uvAttachmentView);
-		renderNode->SetDepthImageResource("gDepth", depthAttachmentView);
+		renderNode->AddColorImageResource(colAttachmentView);
+		renderNode->AddColorImageResource(normAttachmentView);
+		renderNode->AddColorImageResource(tangAttachmentView);
+		renderNode->AddColorImageResource(metRoughAttachmentView);
+		renderNode->AddColorImageResource(uvAttachmentView);
+		renderNode->SetDepthImageResource(depthAttachmentView);
 		renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
-		renderNode->AddBufferSync("indirectBuffer", {B_COMPUTE_WRITE, B_DRAW_INDIRECT});
+		renderNode->AddBufferSync({B_COMPUTE_WRITE, B_DRAW_INDIRECT});
 		renderNode->DependsOn(meshCullPassName);
 		renderNode->BuildRenderGraphNode();
 
@@ -416,13 +416,13 @@ class ClusterRenderer : public BaseRenderer
 		lRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
 		lRenderNode->SetVertexInput(lVertexInput);
 		lRenderNode->AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
-		lRenderNode->AddSamplerResource("colGSampler", colAttachmentView);
-		lRenderNode->AddSamplerResource("normGSampler", normAttachmentView);
-		lRenderNode->AddSamplerResource("tangGSampler", tangAttachmentView);
-		lRenderNode->AddSamplerResource("metRoughnessGSampler", metRoughAttachmentView);
-		lRenderNode->AddSamplerResource("uvGSampler", uvAttachmentView);
-		lRenderNode->AddSamplerResource("depthGSampler", depthAttachmentView);
-		lRenderNode->AddStorageResource("specularHolder", specularHolder);
+		lRenderNode->AddSamplerResource(colAttachmentView);
+		lRenderNode->AddSamplerResource(normAttachmentView);
+		lRenderNode->AddSamplerResource(tangAttachmentView);
+		lRenderNode->AddSamplerResource(metRoughAttachmentView);
+		lRenderNode->AddSamplerResource(uvAttachmentView);
+		lRenderNode->AddSamplerResource(depthAttachmentView);
+		lRenderNode->AddStorageResource(specularHolder);
 		lRenderNode->DependsOn(computePassName);
 		lRenderNode->BuildRenderGraphNode();
 	}

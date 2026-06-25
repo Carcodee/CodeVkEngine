@@ -609,7 +609,7 @@ struct GraphNodeRegistry
 				std::string        imageName = "nodeImage_" + std::to_string(image.first);
 				ENGINE::ImageView *imgView   = selfNode.renderGraph->resourcesManager->GetStorageFromId(
                     imageId);
-				renderNode->AddStorageResource(imageName, imgView);
+				renderNode->AddStorageResource(imgView);
 			}
 			if (configsAdded.contains(N_COMP_SHADER))
 			{
@@ -634,7 +634,7 @@ struct GraphNodeRegistry
 					std::string        imageName = "nodeImage_" + std::to_string(image.first);
 					ENGINE::ImageView *imgView   = selfNode.renderGraph->resourcesManager->GetImageViewFromId(
                         imageId);
-					renderNode->AddColorImageResource(imageName, imgView);
+					renderNode->AddColorImageResource(imgView);
 				}
 
 				if (configsAdded.contains(N_DEPTH_STRUCTURE))
@@ -643,7 +643,6 @@ struct GraphNodeRegistry
 					{
 						std::string imageName = depthImage->GetData<std::string>();
 						renderNode->SetDepthImageResource(
-						    imageName,
 						    selfNode.renderGraph->resourcesManager->GetImageViewFromName(
 						        imageName));
 					}

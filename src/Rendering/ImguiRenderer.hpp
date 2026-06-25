@@ -320,6 +320,8 @@ class ImguiRenderer
 			ImGui::Text("%02d. %s | queue: %s | active: %s", i, node->passName.c_str(), node->workerQueueName.c_str(), node->active ? "true" : "false");
 		}
 
+		DisplayRenderGraphDag();
+
 		ImGui::SeparatorText("Sorted Queue Order");
 		ImGui::Text("Queue batches: %d", static_cast<int>(renderGraph->sortedQueueBatches.size()));
 		for (int i = 0; i < renderGraph->sortedQueueBatches.size(); ++i)
@@ -508,6 +510,150 @@ class ImguiRenderer
 
 		ImGui::End();
 	}
+
+	void DisplayRenderGraphDag()
+	{
+		ImGui::SeparatorText("Render Graph DAG");
+
+		std::vector<RenderGraphNode *> graphNodes = renderGraph->sortedByDepNodes;
+		if (graphNodes.empty())
+		{
+			graphNodes = renderGraph->sequentialRenderNodes;
+		}
+		if (graphNodes.empty())
+		{
+			ImGui::Text("No render graph nodes");
+			return;
+		}
+
+		std::map<std::string, RenderGraphNode *> nodeByName;
+		std::map<std::string, int>              levelByName;
+		for (auto *node : graphNodes)
+		{
+			if (!node)
+			{
+				continue;
+			}
+			nodeByName[node->passName]  = node;
+			levelByName[node->passName] = 0;
+		}
+
+		int maxLevel = 0;
+		for (auto *node : graphNodes)
+		{
+			if (!node)
+			{
+				continue;
+			}
+			int nodeLevel = 0;
+			for (const auto &dependency : node->dependencies)
+			{
+				if (levelByName.contains(dependency))
+				{
+					nodeLevel = std::max(nodeLevel, levelByName.at(dependency) + 1);
+				}
+			}
+			levelByName[node->passName] = nodeLevel;
+			maxLevel                    = std::max(maxLevel, nodeLevel);
+		}
+
+		std::vector<std::vector<RenderGraphNode *>> nodesByLevel(maxLevel + 1);
+		for (auto *node : graphNodes)
+		{
+			if (!node)
+			{
+				continue;
+			}
+			nodesByLevel[levelByName.at(node->passName)].push_back(node);
+		}
+
+		int maxRows = 1;
+		for (const auto &levelNodes : nodesByLevel)
+		{
+			maxRows = std::max(maxRows, static_cast<int>(levelNodes.size()));
+		}
+
+		const ImVec2 nodeSize(180.0f, 42.0f);
+		const float  levelGap = 90.0f;
+		const float  rowGap   = 28.0f;
+		const ImVec2 padding(24.0f, 24.0f);
+		const ImVec2 canvasSize(
+		    padding.x * 2.0f + (maxLevel + 1) * nodeSize.x + maxLevel * levelGap,
+		    padding.y * 2.0f + maxRows * nodeSize.y + std::max(0, maxRows - 1) * rowGap);
+
+		ImGui::BeginChild("render_graph_dag_canvas", ImVec2(0.0f, 360.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImDrawList *drawList = ImGui::GetWindowDrawList();
+		ImVec2      origin   = ImGui::GetCursorScreenPos();
+
+		std::map<std::string, ImVec2> nodeMinByName;
+		std::map<std::string, ImVec2> nodeMaxByName;
+		for (int level = 0; level < nodesByLevel.size(); ++level)
+		{
+			const auto &levelNodes  = nodesByLevel[level];
+			float       levelHeight = levelNodes.size() * nodeSize.y + std::max(0, static_cast<int>(levelNodes.size()) - 1) * rowGap;
+			float       yOffset     = std::max(0.0f, (canvasSize.y - padding.y * 2.0f - levelHeight) * 0.5f);
+			for (int row = 0; row < levelNodes.size(); ++row)
+			{
+				RenderGraphNode *node = levelNodes[row];
+				ImVec2          minPos(
+                    origin.x + padding.x + level * (nodeSize.x + levelGap),
+                    origin.y + padding.y + yOffset + row * (nodeSize.y + rowGap));
+				ImVec2 maxPos(minPos.x + nodeSize.x, minPos.y + nodeSize.y);
+				nodeMinByName[node->passName] = minPos;
+				nodeMaxByName[node->passName] = maxPos;
+			}
+		}
+
+		const ImU32 edgeColor      = IM_COL32(130, 140, 170, 180);
+		const ImU32 edgeArrowColor = IM_COL32(170, 180, 220, 220);
+		for (auto *node : graphNodes)
+		{
+			if (!node || !nodeMinByName.contains(node->passName))
+			{
+				continue;
+			}
+			for (const auto &dependency : node->dependencies)
+			{
+				if (!nodeMaxByName.contains(dependency))
+				{
+					continue;
+				}
+				ImVec2 src(nodeMaxByName.at(dependency).x, (nodeMinByName.at(dependency).y + nodeMaxByName.at(dependency).y) * 0.5f);
+				ImVec2 dst(nodeMinByName.at(node->passName).x, (nodeMinByName.at(node->passName).y + nodeMaxByName.at(node->passName).y) * 0.5f);
+				float  midX = (src.x + dst.x) * 0.5f;
+				drawList->AddBezierCubic(src, ImVec2(midX, src.y), ImVec2(midX, dst.y), dst, edgeColor, 2.0f);
+				drawList->AddTriangleFilled(
+				    ImVec2(dst.x, dst.y),
+				    ImVec2(dst.x - 8.0f, dst.y - 5.0f),
+				    ImVec2(dst.x - 8.0f, dst.y + 5.0f),
+				    edgeArrowColor);
+			}
+		}
+
+		const ImU32 activeFill   = IM_COL32(38, 55, 65, 255);
+		const ImU32 inactiveFill = IM_COL32(42, 38, 44, 255);
+		const ImU32 borderColor  = IM_COL32(150, 155, 170, 220);
+		const ImU32 textColor    = IM_COL32(230, 230, 235, 255);
+		const ImU32 mutedColor   = IM_COL32(175, 175, 185, 255);
+		for (auto *node : graphNodes)
+		{
+			if (!node || !nodeMinByName.contains(node->passName))
+			{
+				continue;
+			}
+			ImVec2 minPos = nodeMinByName.at(node->passName);
+			ImVec2 maxPos = nodeMaxByName.at(node->passName);
+			drawList->AddRectFilled(minPos, maxPos, node->active ? activeFill : inactiveFill, 6.0f);
+			drawList->AddRect(minPos, maxPos, borderColor, 6.0f);
+			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 7.0f), textColor, node->passName.c_str());
+			std::string nodeMeta = node->workerQueueName + (node->active ? " | active" : " | inactive");
+			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 24.0f), mutedColor, nodeMeta.c_str());
+		}
+
+		ImGui::Dummy(canvasSize);
+		ImGui::EndChild();
+	}
+
 	void PaintingInfo()
 	{
 

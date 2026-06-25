@@ -89,24 +89,20 @@ class DebugRenderer : public BaseRenderer
 				rawVerticesBuff = ResourcesManager::GetInstance()->SetBuffer(
 				    "debugRawVertices", sizeof(D_Vertex3D) * raw3DVertices.size(), raw3DVertices.data());
 				auto *currImage = renderGraph->currentBackBuffer;
-				renderGraph->AddColorImageResource(mDebuggerPassName, "modelCol", currImage);
+				renderGraph->AddColorImageResource(mDebuggerPassName,  currImage);
 				renderGraph->GetNode(mDebuggerPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
 			});
 			auto renderOp  = new std::function<void()>(
                 [this]() {
                     vk::DeviceSize offset = 0;
                     auto           node   = renderGraph->GetNode(mDebuggerPassName);
-                    node->GetCurrCmd().bindDescriptorSets(node->pipelineType,
-				                                                                           node->pipelineLayout.get(), 0,
-				                                                                           1,
-				                                                                           &node->descCache->dstSet, 0, nullptr);
 
                     node->GetCurrCmd().bindVertexBuffers(0, 1, &rawVerticesBuff->bufferHandle.get(), &offset);
 
                     pc.projView = currentViewCam->matrices.perspective * currentViewCam->matrices.view;
                     pc.model    = glm::mat4(1.0);
 
-                    node->GetCurrCmd().pushConstants(node->pipelineLayout.get(),
+                    node->GetCurrCmd().pushConstants(node->shaderNodeRef->pipelineLayout.get(),
 				                                                                      vk::ShaderStageFlagBits::eVertex |
 				                                                                          vk::ShaderStageFlagBits::eFragment,
 				                                                                      0, sizeof(MvpPc), &pc);

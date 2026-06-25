@@ -93,8 +93,8 @@ class ForwardRenderer : BaseRenderer
 		renderNode->AddColorAttachmentOutput("color", colInfo, ENGINE::BlendConfigs::B_OPAQUE);
 		renderNode->SetDepthAttachmentOutput("depth", depthInfo);
 		renderNode->SetDepthConfig(ENGINE::DepthConfigs::D_ENABLE);
-		renderNode->AddSamplerResource("sampler", imageShipper->imageView.get());
-		renderNode->AddStorageResource("storageImage", computeStorage);
+		renderNode->AddSamplerResource(imageShipper->imageView.get());
+		renderNode->AddStorageResource(computeStorage);
 		renderNode->BuildRenderGraphNode();
 	}
 	~ForwardRenderer() override
@@ -110,8 +110,8 @@ class ForwardRenderer : BaseRenderer
 		auto setViewTask = new std::function<void()>([this]() {
 			auto *currImage      = renderGraphRef->currentBackBuffer;
 			auto *currDepthImage = core->swapchainRef->depthImagesFull.at(renderGraphRef->frameIndex).imageView.get();
-			renderGraphRef->AddColorImageResource("ForwardPass", "color", currImage);
-			renderGraphRef->SetDepthImageResource("ForwardPass", "depth", currDepthImage);
+			renderGraphRef->AddColorImageResource("ForwardPass", currImage);
+			renderGraphRef->SetDepthImageResource("ForwardPass", currDepthImage);
 			renderGraphRef->GetNode("ForwardPass")->SetFramebufferSize(windowProvider->GetWindowSize());
 		});
 
@@ -136,11 +136,7 @@ class ForwardRenderer : BaseRenderer
 
 			    vk::DeviceSize offset = 0;
 		    	
-			    renderNode->GetCurrCmd().bindDescriptorSets(renderGraphRef->GetNode(forwardPassName)->pipelineType,
-			                                                                             renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(), 0, 1,
-			                                                                             &descriptorCache->dstSet, 0, nullptr);
-
-			    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
+				    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &vertexBuffer->bufferHandle.get(), &offset);
 			    renderNode->GetCurrCmd().bindIndexBuffer(indexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 			    for (int i = 0; i < model->meshCount; ++i)
 			    {
@@ -151,7 +147,7 @@ class ForwardRenderer : BaseRenderer
 				    pc.model    = model->modelsMat[i];
 				    // pc.model = glm::scale(pc.model, glm::vec3(0.01f));
 
-				    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(forwardPassName)->pipelineLayout.get(),
+				    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(forwardPassName)->shaderNodeRef->pipelineLayout.get(),
 				                                                                        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 				                                                                        0, sizeof(MvpPc), &pc);
 

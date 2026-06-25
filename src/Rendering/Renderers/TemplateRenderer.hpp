@@ -65,16 +65,11 @@ class TemplateRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>(
 		    [this] {
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->AddColorImageResource("default_attachment", renderGraph->currentBackBuffer);
+			    renderNode->AddColorImageResource(renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(passName);
-			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-			                                                                          renderNode->pipelineLayout.get(), 0,
-			                                                                          1,
-			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
-			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    vk::DeviceSize offset = 0;
 			    renderNode->GetCurrCmd().bindVertexBuffers(
 			        0, 1,

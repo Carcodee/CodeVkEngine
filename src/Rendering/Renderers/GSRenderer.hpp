@@ -188,7 +188,7 @@ class GSRenderer : public BaseRenderer
 			    splitMvp.model = glm::identity<glm::mat4>();
 
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->AddColorImageResource("DisplayAttachment", renderGraph->currentBackBuffer);
+			    renderNode->AddColorImageResource(renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {
@@ -196,15 +196,10 @@ class GSRenderer : public BaseRenderer
 
 			    renderNode->SetBuffer("GSConfigs", gsConfigsPc);
 
-			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-			                                                renderNode->pipelineLayout.get(), 0,
-			                                                1,
-			                                                &renderNode->descCache->dstSet, 0, nullptr);
-			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    vk::DeviceSize offset = 0;
 
 			    renderNode->GetCurrCmd().pushConstants(
-			        renderGraph->GetNode(passName)->pipelineLayout.get(),
+			        renderGraph->GetNode(passName)->shaderNodeRef->pipelineLayout.get(),
 			        vk::ShaderStageFlagBits::eVertex |
 			            vk::ShaderStageFlagBits::eFragment,
 			        0, sizeof(SplitMVP), &splitMvp);

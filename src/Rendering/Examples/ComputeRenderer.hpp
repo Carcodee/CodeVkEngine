@@ -62,7 +62,7 @@ class ComputeRenderer : BaseRenderer
 
 		renderNode->SetCompShader(compShader.get());
 		renderNode->SetPipelineLayoutCI(layoutCreateInfo);
-		renderNode->AddStorageResource("storageImage", computeImageView.get());
+		renderNode->AddStorageResource(computeImageView.get());
 		renderNode->BuildRenderGraphNode();
 	}
 	void RecreateSwapChainResources() override
@@ -73,11 +73,6 @@ class ComputeRenderer : BaseRenderer
 		auto renderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraphRef->renderNodes.at(computeNodeName);
-			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-			                                                                             renderNode->pipelineLayout.get(), 0,
-			                                                                             1,
-			                                                                             &dstSet.get(), 0, nullptr);
-			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    renderNode->GetCurrCmd().dispatch(windowProvider->GetWindowSize().x, windowProvider->GetWindowSize().y, 1);
 		    });
 

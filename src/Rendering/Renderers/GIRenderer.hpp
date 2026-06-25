@@ -58,17 +58,12 @@ class GIRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>([this] {
 			auto renderNode     = renderGraph->GetNode(shPassName);
 			auto currBackBuffer = renderGraph->currentBackBuffer;
-			renderNode->AddColorImageResource("shAttachment", currBackBuffer);
+			renderNode->AddColorImageResource(currBackBuffer);
 		});
 
 		auto shRenderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(shPassName);
-			    renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-			                                                                          renderNode->pipelineLayout.get(), 0,
-			                                                                          1,
-			                                                                          &renderNode->descCache->dstSet, 0, nullptr);
-			    renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
 			    vk::DeviceSize offset = 0;
 			    renderNode->GetCurrCmd().bindVertexBuffers(
 			        0, 1,

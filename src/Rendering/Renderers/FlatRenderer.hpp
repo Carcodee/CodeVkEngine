@@ -155,9 +155,9 @@ class FlatRenderer : public BaseRenderer
 		paintingNode->SetCompShader(paintCompShader);
 		// paintingNode->SetPipelineLayoutCI(paintingLayoutCreateInfo);
 		paintingNode->SetPushConstantSize(sizeof(PaintingPc));
-		paintingNode->AddStorageResource("PaintingStorage", paintingLayers[0]);
-		paintingNode->AddStorageResource("OcluddersStorage", paintingLayers[1]);
-		paintingNode->AddStorageResource("DebugLayer", paintingLayers[2]);
+		paintingNode->AddStorageResource(paintingLayers[0]);
+		paintingNode->AddStorageResource(paintingLayers[1]);
+		paintingNode->AddStorageResource(paintingLayers[2]);
 		paintingNode->BuildRenderGraphNode();
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
@@ -170,21 +170,23 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv",
 		    S_FRAG);
 
+		auto probesGenShaderNode = renderGraph->AddShader("ProbesGenShader");
+		probesGenShaderNode->SetConfigs({true});
+		probesGenShaderNode->SetPushConstantSize(sizeof(PaintingPc));
+		probesGenShaderNode->SetVertShader(probesVertShader);
+		probesGenShaderNode->SetFragShader(probesFragShader);
+		probesGenShaderNode->SetVertexInput(vertexInput);
+		probesGenShaderNode->AddColorAttachmentOutput("CascadeAttachment", colInfo, BlendConfigs::B_OPAQUE);
+		probesGenShaderNode->BuildShader();
+		
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
 			std::string name = "ProbesGen_" + std::to_string(i);
 			probesGenPassNames.push_back(name);
-			auto renderNode = renderGraph->AddPass(name, "Graphics_Test");
-			renderNode->SetConfigs({true});
-			renderNode->SetPushConstantSize(sizeof(PaintingPc));
-			renderNode->SetVertShader(probesVertShader);
-			renderNode->SetFragShader(probesFragShader);
+			auto renderNode = renderGraph->AddPass(probesGenShaderNode, name, "Graphics_Test");
 			renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
-			renderNode->SetVertexInput(vertexInput);
-			renderNode->AddColorAttachmentOutput("CascadeAttachment_" + std::to_string(i), colInfo, BlendConfigs::B_OPAQUE);
-			renderNode->AddColorImageResource("CascadeAttachment_" + std::to_string(i), cascadesAttachmentsImagesViews[i]);
+			renderNode->AddColorImageResource( cascadesAttachmentsImagesViews[i]);
 			renderNode->DependsOn(paintingPassName);
-			renderNode->BuildRenderGraphNode();
 		}
 
 		vertShader = renderGraph->resourcesManager->GetShader(
@@ -215,23 +217,23 @@ class FlatRenderer : public BaseRenderer
 
 		mergeVertShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
 		mergeFragShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
+		
+		auto        shaderNode = renderGraph->AddShader("MergeShader");
+		shaderNode->SetVertShader(mergeVertShader);
+		shaderNode->SetFragShader(mergeFragShader);
+		shaderNode->SetPushConstantSize(sizeof(RcPc));
+		shaderNode->SetVertexInput(vertexInput);
+		shaderNode->AddColorAttachmentOutput("mergeColor", mergeColInfo, BlendConfigs::B_OPAQUE);
+		shaderNode->BuildShader();
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
 			std::string name            = rMergePassName + "_" + std::to_string(i);
-			auto        mergeRenderNode = renderGraph->AddPass(name, "Graphics");
-			mergeRenderNode->SetVertShader(mergeVertShader);
-			mergeRenderNode->SetFragShader(mergeFragShader);
-			mergeRenderNode->SetPushConstantSize(sizeof(RcPc));
+			auto        mergeRenderNode = renderGraph->AddPass(shaderNode, name, "Graphics");
 			mergeRenderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
-			mergeRenderNode->SetVertexInput(vertexInput);
-			mergeRenderNode->AddColorAttachmentOutput("mergeColor_" + std::to_string(i), mergeColInfo, BlendConfigs::B_OPAQUE);
-			std::string name1 = "radianceStorage_" + std::to_string(i);
-			mergeRenderNode->AddStorageResource(name1, radiancesImages[i]);
-			std::string name2 = "radianceStorage_" + std::to_string(i + 1);
-			mergeRenderNode->AddStorageResource(name2, radiancesImages[i + 1]);
+			mergeRenderNode->AddStorageResource(radiancesImages[i]);
+			mergeRenderNode->AddStorageResource(radiancesImages[i + 1]);
 			mergeRenderNode->DependsOn(rCascadesPassName);
-			mergeRenderNode->BuildRenderGraphNode();
 			if (i < cascadesInfo.cascadeCount - 2)
 			{
 				std::string dependancyName = rMergePassName + "_" + std::to_string(i + 1);
@@ -276,8 +278,8 @@ class FlatRenderer : public BaseRenderer
 			    }
 
 			    auto &renderNode = renderGraph->renderNodes.at(paintingPassName);
-			    renderNode->descCache->SetStorageImageArray("PaintingLayers", paintingLayers);
-			    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
+			    renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
+			    renderNode->GetCurrCmd().pushConstants(renderNode->shaderNodeRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
 			                                           0, sizeof(PaintingPc), &paintingPc);
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
@@ -301,7 +303,7 @@ class FlatRenderer : public BaseRenderer
 				    probesGenPc.probeSizePx  = gridSizePc;
 				    auto &renderNode         = renderGraph->renderNodes.at(probesGenPassNames[idx]);
 
-				    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
+				    renderNode->GetCurrCmd().pushConstants(renderNode->shaderNodeRef->pipelineLayout.get(),
 				                                           vk::ShaderStageFlagBits::eVertex |
 				                                               vk::ShaderStageFlagBits::eFragment,
 				                                           0, sizeof(ProbesGenPc), &probesGenPc);
@@ -323,7 +325,7 @@ class FlatRenderer : public BaseRenderer
 			rcPc.fHeight            = renderGraph->currentBackBuffer->imageData->GetImageSize().y;
 
 			auto *currImage = renderGraph->currentBackBuffer;
-			renderGraph->AddColorImageResource(rCascadesPassName, "rColor", currImage);
+			renderGraph->AddColorImageResource(rCascadesPassName, currImage);
 			renderGraph->GetNode(rCascadesPassName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		});
 		auto radianceOutputOp   = new std::function<void()>(
@@ -342,7 +344,7 @@ class FlatRenderer : public BaseRenderer
                 renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
                 renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
+                renderNode->GetCurrCmd().pushConstants(renderNode->shaderNodeRef->pipelineLayout.get(),
 			                                             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                             0, sizeof(RcPc), &rcPc);
 
@@ -359,8 +361,7 @@ class FlatRenderer : public BaseRenderer
                 int         idx       = i;
                 std::string mergeName = rMergePassName + "_" + std::to_string(idx);
                 auto       *currImage = renderGraph->currentBackBuffer;
-                renderGraph->GetNode(mergeName)->AddColorImageResource(
-                    "mergeColor_" + std::to_string(idx), currImage);
+                renderGraph->GetNode(mergeName)->AddColorImageResource(currImage);
                 renderGraph->GetNode(mergeName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
             });
 			auto        mergeRenderOp     = new std::function<void()>(
@@ -378,7 +379,7 @@ class FlatRenderer : public BaseRenderer
                     renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0,
 				                                                        vk::IndexType::eUint32);
 
-                    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
+                    renderNode->GetCurrCmd().pushConstants(renderNode->shaderNodeRef->pipelineLayout.get(),
 				                                                      vk::ShaderStageFlagBits::eVertex |
 				                                                          vk::ShaderStageFlagBits::eFragment,
 				                                                      0, sizeof(RcPc), &rcPc);
@@ -391,7 +392,7 @@ class FlatRenderer : public BaseRenderer
 
 		auto resultTask     = new std::function<void()>([this]() {
             auto *currImage = renderGraph->currentBackBuffer;
-            renderGraph->GetNode(resultPassName)->AddColorImageResource("resultColor", currImage);
+            renderGraph->GetNode(resultPassName)->AddColorImageResource(currImage);
             renderGraph->GetNode(resultPassName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
         });
 		auto resultRenderOp = new std::function<void()>(
@@ -411,7 +412,7 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
 			    renderNode->GetCurrCmd().bindIndexBuffer(quadIndexBufferRef->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-			    renderNode->GetCurrCmd().pushConstants(renderNode->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderNode->shaderNodeRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                           0, sizeof(RcPc), &rcPc);
 

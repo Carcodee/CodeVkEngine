@@ -44,187 +44,59 @@ struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 
 class RenderGraph;
 
-struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
+struct ShaderNode
 {
-	RenderGraphNode() = default;
+	ShaderNode() = default;
+	~ShaderNode() = default;
 
-	nlohmann::json Serialize() override
-	{
-		nlohmann::json json;
-		json["passName"]                 = passName;
-		json["active"]                   = active;
-		json["waitForResourcesCreation"] = waitForResourcesCreation;
-		json["pipelineType"]             = static_cast<int>(pipelineType);
-		json["frameBufferSize"]          = {frameBufferSize.x, frameBufferSize.y};
-		json["pushConstantSize"]         = pushConstantSize;
-		json["configs"]                  = configs.Serialize();
-		json["rasterizationConfigs"]     = static_cast<int>(graphicsPipelineConfigs.rasterizationConfigs);
-		json["topologyConfigs"]          = static_cast<int>(graphicsPipelineConfigs.topologyConfigs);
-		json["depthConfig"]              = static_cast<int>(depthConfig);
+	Core                            *core;
+	vk::UniquePipeline               pipeline;
+	vk::UniquePipelineLayout         pipelineLayout;
+	vk::UniquePipelineCache          pipelineCache;
+	vk::PipelineLayoutCreateInfo     pipelineLayoutCI;
+	vk::PushConstantRange            pushConstantRange;
+	vk::PipelineBindPoint            pipelineType;
+	DynamicRenderPass                dynamicRenderPass;
+	std::unique_ptr<DescriptorCache> descCache;
 
-		// Serialize shaders
-		json["shaders"] = nlohmann::json::array();
-		for (const auto &[key, shader] : shaders)
-		{
-			if (shader != nullptr && !shader->path.empty())
-			{
-				json["shaders"].push_back({shader->stage, shader->path});
-			}
-		}
-		// Serialize color attachments
-		json["colAttachments"] = nlohmann::json::array();
-		for (auto &attachment : colAttachments)
-		{
-			json["colAttachments"].push_back(attachment.Serialize());
-		}
-		// Serialize depth attachment
-		json["depthAttachment"] = depthAttachment.Serialize();
+	GraphicsPipelineConfigs                                   graphicsPipelineConfigs = {};
+	VertexInput                                               vertexInput;
+	std::vector<BlendConfigs>                                 colorBlendConfigs;
+	std::vector<AttachmentInfo>                               colAttachments;
+	AttachmentInfo                                            depthAttachment  = {};
+	size_t                                                    pushConstantSize = 4;
+	DepthConfigs                                              depthConfig      = D_NONE;
+	RenderNodeConfigs                                         configs          = {true, false};
+	std::unordered_map<std::string, std::unique_ptr<Shader>> *shadersProxyRef;
+	std::unordered_map<std::string, AttachmentInfo>           outColAttachmentsProxyRef;
+	std::unordered_map<std::string, AttachmentInfo>           outDepthAttachmentProxyRef;
+	std::string                                               name;
 
-		// Serialize dependencies
-		json["dependencies"] = nlohmann::json::array();
-		for (const auto &dep : dependencies)
-		{
-			json["dependencies"].push_back(dep);
-		}
+	std::map<std::string, Shader *> shaders = {
+	    {"frag", nullptr},
+	    {"vert", nullptr},
+	    {"comp", nullptr},
+	    {"tesc", nullptr},
+	    {"tese", nullptr},
+	    {"geom", nullptr}};
 
-		// Serialize resources
-		json["imageAttachmentsNames"] = nlohmann::json::array();
-		for (const auto &pair : imageAttachmentsNames)
-		{
-			json["imageAttachmentsNames"].push_back({{"name", pair.first}, {"index", pair.second}});
-		}
-		json["imagesAttachmentOutputs"] = nlohmann::json::array();
-		for (const auto &imgView : imagesAttachmentOutputs)
-		{
-			json["imagesAttachmentOutputs"].push_back({{"id", imgView->id}});
-		}
-
-		json["storageImages"] = nlohmann::json::array();
-		for (const auto &[name, imgView] : storageImages)
-		{
-			json["storageImages"].push_back({{"id", imgView->id}, {"name", name}});
-		}
-		json["sampledImages"] = nlohmann::json::array();
-		for (const auto &[name, imgView] : sampledImages)
-		{
-			json["sampledImages"].push_back({{"id", imgView->id}, {"name", name}});
-		}
-		std::string text     = json.dump(4);
-		std::string filename = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" + passName + ".json";
-		if (!filename.empty())
-		{
-			SYSTEMS::OS::GetInstance()->WriteFile(filename, text.c_str(), text.size());
-		}
-		return text;
-	}
-
-	RenderGraphNode *Deserialize(std::string filename) override
-	{
-		if (!std::filesystem::exists(filename))
-		{
-			SYSTEMS::Logger::GetInstance()->LogMessage(
-			    "Pass with name: (" + passName + ") does not have a serialized file, the pass may be null");
-			return this;
-		}
-		nlohmann::json json = SYSTEMS::OS::GetJsonFromFile(filename);
-		assert(!json.empty());
-		std::vector<float> fSize;
-		passName                 = json.at("passName");
-		active                   = json.at("active");
-		waitForResourcesCreation = json.at("waitForResourcesCreation");
-		pipelineType             = json.at("pipelineType");
-
-		fSize             = json.at("frameBufferSize").get<std::vector<float>>();
-		frameBufferSize.x = fSize[0];
-		frameBufferSize.y = fSize[1];
-
-		pushConstantSize                             = json.at("pushConstantSize");
-		configs.Serialize()                          = json.at("configs");
-		graphicsPipelineConfigs.rasterizationConfigs = json.at("rasterizationConfigs");
-		graphicsPipelineConfigs.topologyConfigs      = json.at("topologyConfigs");
-		depthConfig                                  = json.at("depthConfig");
-
-		// to do: missing images deserialize;
-		//  Serialize shaders
-		if (json.contains("shaders") && json["shaders"].is_array())
-		{
-			for (auto &shaderJson : json["shaders"])
-			{
-				if (shaderJson.is_array() && shaderJson.size() == 2)
-				{
-					ShaderStage stage  = static_cast<ShaderStage>(shaderJson[0]);
-					std::string path   = static_cast<std::string>(shaderJson[1]);
-					Shader     *shader = resManagerRef->GetShader(path, stage);
-					switch (stage)
-					{
-						case S_VERT:
-							SetVertShader(shader);
-							break;
-						case S_FRAG:
-							SetFragShader(shader);
-							break;
-						case S_COMP:
-							SetCompShader(shader);
-							break;
-						case S_TESS_CONTROL:
-							SetTesControlShader(shader);
-							break;
-						case S_TESS_EVAL:
-							SetTesEvalShader(shader);
-							break;
-						case S_GEOM:
-							SetGeomShader(shader);
-							break;
-						case S_UNKNOWN:
-							assert(false);
-							break;
-					}
-				}
-				else
-				{
-					assert(false);
-				}
-			}
-		}
-
-		if (colAttachments.size() == json["colAttachments"].size())
-		{
-			colAttachments.clear();
-			for (auto &colAttachment : json["colAttachments"])
-			{
-				colAttachments.emplace_back(AttachmentInfo{});
-				colAttachments.back().GetFromJson(colAttachment);
-			}
-		}
-		else
-		{
-			SYSTEMS::Logger::GetInstance()->LogMessage("There is a mismatch in size with the col attachments(" + filename + ") avoiding override");
-		}
-
-		// Serialize depth attachment
-		depthAttachment.GetFromJson(json.at("depthAttachment"));
-
-		// Serialize dependencies
-		for (const auto &dep : json["dependencies"])
-		{
-			DependsOn(dep);
-		}
-		waitForResourcesCreation = true;
-
-		return this;
-	}
 	void RecreateResources()
 	{
 		assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
+		assert(core != nullptr && "Core is null");
+
 		pipeline.reset();
 		pipelineLayout.reset();
+
 		ReloadShaders();
-		Shader                         *vertShader = shaders.at("vert");
-		Shader                         *fragShader = shaders.at("frag");
-		Shader                         *compShader = shaders.at("comp");
-		Shader                         *tescShader = shaders.at("tesc");
-		Shader                         *teseShader = shaders.at("tese");
-		Shader                         *geomShader = shaders.at("geom");
+
+		Shader *vertShader = shaders.at("vert");
+		Shader *fragShader = shaders.at("frag");
+		Shader *compShader = shaders.at("comp");
+		Shader *tescShader = shaders.at("tesc");
+		Shader *teseShader = shaders.at("tese");
+		Shader *geomShader = shaders.at("geom");
+
 		std::map<ShaderStage, Shader *> stages;
 		GetShaderStages(stages);
 
@@ -234,21 +106,30 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			{
 				descCache.reset();
 				descCache = std::make_unique<DescriptorCache>(core);
+
 				descCache->AddShaderInfo(vertShader->sParser.get());
 				descCache->AddShaderInfo(fragShader->sParser.get());
-				vk::ShaderStageFlags stageFlags = vk::ShaderStageFlagBits::eFragment |
-				                                  vk::ShaderStageFlagBits::eVertex;
+
+				vk::ShaderStageFlags stageFlags =
+				    vk::ShaderStageFlagBits::eFragment |
+				    vk::ShaderStageFlagBits::eVertex;
+
 				if (tescShader)
 				{
 					descCache->AddShaderInfo(tescShader->sParser.get());
+
 					if (!teseShader)
 					{
 						assert(false && "Must have tese shader");
 					}
+
 					descCache->AddShaderInfo(teseShader->sParser.get());
-					stageFlags |= vk::ShaderStageFlagBits::eTessellationControl |
-					              vk::ShaderStageFlagBits::eTessellationEvaluation;
+
+					stageFlags |=
+					    vk::ShaderStageFlagBits::eTessellationControl |
+					    vk::ShaderStageFlagBits::eTessellationEvaluation;
 				}
+
 				if (geomShader)
 				{
 					descCache->AddShaderInfo(geomShader->sParser.get());
@@ -256,38 +137,60 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				}
 
 				descCache->BuildDescriptorsCache(stageFlags);
+
 				if (pushConstantSize <= 0)
 				{
 					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
-				auto paintingPushConstantRanges = vk::PushConstantRange()
-				                                      .setOffset(0)
-				                                      .setStageFlags(
-				                                          vk::ShaderStageFlagBits::eVertex |
-				                                          vk::ShaderStageFlagBits::eFragment)
-				                                      .setSize(pushConstantSize);
-				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-				                                    .setSetLayoutCount(1)
-				                                    .setPushConstantRanges(paintingPushConstantRanges)
-				                                    .setPSetLayouts(&descCache->dstLayout.get());
+
+				auto paintingPushConstantRanges =
+				    vk::PushConstantRange()
+				        .setOffset(0)
+				        .setStageFlags(
+				            vk::ShaderStageFlagBits::eVertex |
+				            vk::ShaderStageFlagBits::eFragment)
+				        .setSize(pushConstantSize);
+
+				auto paintingLayoutCreateInfo =
+				    vk::PipelineLayoutCreateInfo()
+				        .setSetLayoutCount(1)
+				        .setPushConstantRanges(paintingPushConstantRanges)
+				        .setPSetLayouts(&descCache->dstLayout.get());
+
 				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
+
 			std::vector<vk::Format> colorFormats;
 			colorFormats.reserve(colAttachments.size());
+
 			std::vector<vk::RenderingAttachmentInfo> renderingAttachmentInfos;
+
 			for (auto &colAttachment : colAttachments)
 			{
 				colorFormats.push_back(colAttachment.format);
 				renderingAttachmentInfos.push_back(colAttachment.attachmentInfo);
 			}
-			dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
 
-			pipelineLayout                                     = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-			std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<GraphicsPipeline>(
-			    core->logicalDevice.get(), stages, pipelineLayout.get(),
-			    dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
-			    colorBlendConfigs, depthConfig,
-			    vertexInput, pipelineCache.get());
+			dynamicRenderPass.SetPipelineRenderingInfo(
+			    colAttachments.size(),
+			    colorFormats,
+			    depthAttachment.format);
+
+			pipelineLayout =
+			    core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
+
+			std::unique_ptr<GraphicsPipeline> graphicsPipeline =
+			    std::make_unique<GraphicsPipeline>(
+			        core->logicalDevice.get(),
+			        stages,
+			        pipelineLayout.get(),
+			        dynamicRenderPass.pipelineRenderingCreateInfo,
+			        graphicsPipelineConfigs,
+			        colorBlendConfigs,
+			        depthConfig,
+			        vertexInput,
+			        pipelineCache.get());
+
 			pipeline     = std::move(graphicsPipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eGraphics;
 		}
@@ -297,7 +200,9 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			{
 				descCache.reset();
 				descCache = std::make_unique<DescriptorCache>(core);
+
 				descCache->AddShaderInfo(compShader->sParser.get());
+
 				descCache->BuildDescriptorsCache(
 				    vk::ShaderStageFlagBits::eCompute);
 
@@ -305,22 +210,32 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				{
 					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
-				auto paintingPushConstantRanges = vk::PushConstantRange()
-				                                      .setOffset(0)
-				                                      .setStageFlags(
-				                                          vk::ShaderStageFlagBits::eCompute)
-				                                      .setSize(pushConstantSize);
-				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-				                                    .setSetLayoutCount(1)
-				                                    .setPushConstantRanges(paintingPushConstantRanges)
-				                                    .setPSetLayouts(&descCache->dstLayout.get());
+
+				auto paintingPushConstantRanges =
+				    vk::PushConstantRange()
+				        .setOffset(0)
+				        .setStageFlags(vk::ShaderStageFlagBits::eCompute)
+				        .setSize(pushConstantSize);
+
+				auto paintingLayoutCreateInfo =
+				    vk::PipelineLayoutCreateInfo()
+				        .setSetLayoutCount(1)
+				        .setPushConstantRanges(paintingPushConstantRanges)
+				        .setPSetLayouts(&descCache->dstLayout.get());
+
 				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
-			pipelineLayout                                   = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ComputePipeline>(
-			    core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
-			    pipelineCache.get());
+			pipelineLayout =
+			    core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
+
+			std::unique_ptr<ComputePipeline> computePipeline =
+			    std::make_unique<ComputePipeline>(
+			        core->logicalDevice.get(),
+			        compShader->sModule->shaderModuleHandle.get(),
+			        pipelineLayout.get(),
+			        pipelineCache.get());
+
 			pipeline     = std::move(computePipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eCompute;
 		}
@@ -330,12 +245,16 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 	}
 
-	void BuildRenderGraphNode()
+	void BuildShader()
 	{
 		assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
+		assert(core != nullptr && "Core is null");
 
 		auto pipelineCacheCreateInfo = vk::PipelineCacheCreateInfo();
-		pipelineCache                = core->logicalDevice->createPipelineCacheUnique(pipelineCacheCreateInfo);
+
+		pipelineCache =
+		    core->logicalDevice->createPipelineCacheUnique(
+		        pipelineCacheCreateInfo);
 
 		Shader *vertShader = shaders.at("vert");
 		Shader *fragShader = shaders.at("frag");
@@ -350,21 +269,30 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			{
 				descCache.reset();
 				descCache = std::make_unique<DescriptorCache>(core);
+
 				descCache->AddShaderInfo(vertShader->sParser.get());
 				descCache->AddShaderInfo(fragShader->sParser.get());
-				vk::ShaderStageFlags stageFlags = vk::ShaderStageFlagBits::eFragment |
-				                                  vk::ShaderStageFlagBits::eVertex;
+
+				vk::ShaderStageFlags stageFlags =
+				    vk::ShaderStageFlagBits::eFragment |
+				    vk::ShaderStageFlagBits::eVertex;
+
 				if (tescShader)
 				{
 					descCache->AddShaderInfo(tescShader->sParser.get());
+
 					if (!teseShader)
 					{
 						assert(false && "Must have tese shader");
 					}
+
 					descCache->AddShaderInfo(teseShader->sParser.get());
-					stageFlags |= vk::ShaderStageFlagBits::eTessellationControl |
-					              vk::ShaderStageFlagBits::eTessellationEvaluation;
+
+					stageFlags |=
+					    vk::ShaderStageFlagBits::eTessellationControl |
+					    vk::ShaderStageFlagBits::eTessellationEvaluation;
 				}
+
 				if (geomShader)
 				{
 					descCache->AddShaderInfo(geomShader->sParser.get());
@@ -377,42 +305,61 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				{
 					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
-				auto paintingPushConstantRanges = vk::PushConstantRange()
-				                                      .setOffset(0)
-				                                      .setStageFlags(
-				                                          vk::ShaderStageFlagBits::eFragment |
-				                                          vk::ShaderStageFlagBits::eVertex)
-				                                      .setSize(pushConstantSize);
-				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-				                                    .setSetLayoutCount(1)
-				                                    .setPushConstantRanges(paintingPushConstantRanges)
-				                                    .setPSetLayouts(&descCache->dstLayout.get());
+
+				auto paintingPushConstantRanges =
+				    vk::PushConstantRange()
+				        .setOffset(0)
+				        .setStageFlags(
+				            vk::ShaderStageFlagBits::eFragment |
+				            vk::ShaderStageFlagBits::eVertex)
+				        .setSize(pushConstantSize);
+
+				auto paintingLayoutCreateInfo =
+				    vk::PipelineLayoutCreateInfo()
+				        .setSetLayoutCount(1)
+				        .setPushConstantRanges(paintingPushConstantRanges)
+				        .setPSetLayouts(&descCache->dstLayout.get());
 
 				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
+
 			std::vector<vk::Format> colorFormats;
 			colorFormats.reserve(colAttachments.size());
+
 			std::vector<vk::RenderingAttachmentInfo> renderingAttachmentInfos;
+
 			for (auto &colAttachment : colAttachments)
 			{
 				colorFormats.push_back(colAttachment.format);
 				renderingAttachmentInfos.push_back(colAttachment.attachmentInfo);
 			}
-			dynamicRenderPass.SetPipelineRenderingInfo(colAttachments.size(), colorFormats, depthAttachment.format);
 
-			pipelineLayout = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
+			dynamicRenderPass.SetPipelineRenderingInfo(
+			    colAttachments.size(),
+			    colorFormats,
+			    depthAttachment.format);
+
+			pipelineLayout =
+			    core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
 
 			std::map<ShaderStage, Shader *> stages;
 			GetShaderStages(stages);
 
-			std::unique_ptr<GraphicsPipeline> graphicsPipeline = std::make_unique<GraphicsPipeline>(
-			    core->logicalDevice.get(), stages, pipelineLayout.get(),
-			    dynamicRenderPass.pipelineRenderingCreateInfo, graphicsPipelineConfigs,
-			    colorBlendConfigs, depthConfig,
-			    vertexInput, pipelineCache.get());
+			std::unique_ptr<GraphicsPipeline> graphicsPipeline =
+			    std::make_unique<GraphicsPipeline>(
+			        core->logicalDevice.get(),
+			        stages,
+			        pipelineLayout.get(),
+			        dynamicRenderPass.pipelineRenderingCreateInfo,
+			        graphicsPipelineConfigs,
+			        colorBlendConfigs,
+			        depthConfig,
+			        vertexInput,
+			        pipelineCache.get());
+
 			pipeline     = std::move(graphicsPipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eGraphics;
-			active       = true;
+
 			std::cout << "Graphics pipeline created\n";
 		}
 		else if (compShader)
@@ -421,31 +368,45 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			{
 				descCache.reset();
 				descCache = std::make_unique<DescriptorCache>(core);
+
 				descCache->AddShaderInfo(compShader->sParser.get());
+
 				descCache->BuildDescriptorsCache(
 				    vk::ShaderStageFlagBits::eCompute);
+
 				if (pushConstantSize <= 0)
 				{
 					SetPushConstantSize(DUMMY_PC_SIZE);
 				}
-				auto paintingPushConstantRanges = vk::PushConstantRange()
-				                                      .setOffset(0)
-				                                      .setStageFlags(
-				                                          vk::ShaderStageFlagBits::eCompute)
-				                                      .setSize(pushConstantSize);
-				auto paintingLayoutCreateInfo = vk::PipelineLayoutCreateInfo()
-				                                    .setSetLayoutCount(1)
-				                                    .setPushConstantRanges(paintingPushConstantRanges)
-				                                    .setPSetLayouts(&descCache->dstLayout.get());
+
+				auto paintingPushConstantRanges =
+				    vk::PushConstantRange()
+				        .setOffset(0)
+				        .setStageFlags(vk::ShaderStageFlagBits::eCompute)
+				        .setSize(pushConstantSize);
+
+				auto paintingLayoutCreateInfo =
+				    vk::PipelineLayoutCreateInfo()
+				        .setSetLayoutCount(1)
+				        .setPushConstantRanges(paintingPushConstantRanges)
+				        .setPSetLayouts(&descCache->dstLayout.get());
+
 				SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
-			pipelineLayout                                   = core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
-			std::unique_ptr<ComputePipeline> computePipeline = std::make_unique<ComputePipeline>(
-			    core->logicalDevice.get(), compShader->sModule->shaderModuleHandle.get(), pipelineLayout.get(),
-			    pipelineCache.get());
+
+			pipelineLayout =
+			    core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
+
+			std::unique_ptr<ComputePipeline> computePipeline =
+			    std::make_unique<ComputePipeline>(
+			        core->logicalDevice.get(),
+			        compShader->sModule->shaderModuleHandle.get(),
+			        pipelineLayout.get(),
+			        pipelineCache.get());
+
 			pipeline     = std::move(computePipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eCompute;
-			active       = true;
+
 			std::cout << "Compute pipeline created\n";
 		}
 		else
@@ -454,62 +415,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 	}
 
-	void TransitionImages(vk::CommandBuffer commandBuffer)
-	{
-		for (auto &storageImage : storageImages)
-		{
-			LayoutPatterns dstPattern = EMPTY;
-			switch (pipelineType)
-			{
-				case vk::PipelineBindPoint::eGraphics:
-					dstPattern = GRAPHICS_WRITE;
-					break;
-				case vk::PipelineBindPoint::eCompute:
-					dstPattern = COMPUTE_WRITE;
-					break;
-				default:
-					assert(false && "pipeline type is unknown");
-			}
-			if (IsImageTransitionNeeded(storageImage.second->imageData->currentLayout, dstPattern))
-			{
-				TransitionImage(storageImage.second->imageData, dstPattern,
-				                storageImage.second->GetSubresourceRange(),
-				                commandBuffer);
-			}
-		}
-		for (auto &sampler : sampledImages)
-		{
-			LayoutPatterns dstPattern = EMPTY;
-			switch (pipelineType)
-			{
-				case vk::PipelineBindPoint::eGraphics:
-					dstPattern = GRAPHICS_READ;
-					break;
-				case vk::PipelineBindPoint::eCompute:
-					dstPattern = COMPUTE;
-					break;
-				default:
-					assert(false && "pipeline type is unknown");
-			}
-			// TODO: Better transition for sampler images
-			//  if (IsImageTransitionNeeded(sampler.second->imageData->currentLayout, dstPattern))
-			//  {
-			//  }
-			TransitionImage(sampler.second->imageData, dstPattern, sampler.second->GetSubresourceRange(),
-			                commandBuffer);
-		}
-	}
-
-	void SyncBuffers(vk::CommandBuffer commandBuffer)
-	{
-		for (auto &pair : buffers)
-		{
-			BufferKey           buffer     = pair.second;
-			BufferAccessPattern srcPattern = GetSrcBufferAccessPattern(buffer.srcUsage);
-			BufferAccessPattern dstPattern = GetSrcBufferAccessPattern(buffer.dstUsage);
-			CreateMemBarrier(srcPattern, dstPattern, commandBuffer);
-		}
-	}
 	void SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
@@ -548,190 +453,24 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer(name, bufferData);
 	}
-	void ReloadShaders()
-	{
-		Shader *vertShader = shaders.at("vert");
-		Shader *fragShader = shaders.at("frag");
-		Shader *compShader = shaders.at("comp");
-		Shader *tescShader = shaders.at("tesc");
-		Shader *teseShader = shaders.at("tese");
-		Shader *geomShader = shaders.at("geom");
-		if (vertShader && fragShader)
-		{
-			vertShader->Reload();
-			fragShader->Reload();
-		}
-		if (tescShader)
-		{
-			tescShader->Reload();
-		}
-		if (teseShader)
-		{
-			teseShader->Reload();
-		}
-		if (geomShader)
-		{
-			geomShader->Reload();
-		}
-		if (compShader)
-		{
-			compShader->Reload();
-		}
-	}
-	void GetShaderStages(std::map<ShaderStage, Shader *> &stages)
-	{
-		Shader *vertShader = shaders.at("vert");
-		Shader *fragShader = shaders.at("frag");
-		Shader *compShader = shaders.at("comp");
-		Shader *tescShader = shaders.at("tesc");
-		Shader *teseShader = shaders.at("tese");
-		Shader *geomShader = shaders.at("geom");
-		if (vertShader)
-		{
-			stages.try_emplace(S_VERT, vertShader);
-		}
-		if (fragShader)
-		{
-			stages.try_emplace(S_FRAG, fragShader);
-		}
-		if (compShader)
-		{
-			stages.try_emplace(S_COMP, compShader);
-		}
-		if (tescShader)
-		{
-			stages.try_emplace(S_TESS_CONTROL, tescShader);
-		}
-		if (teseShader)
-		{
-			stages.try_emplace(S_TESS_EVAL, teseShader);
-		}
-		if (geomShader)
-		{
-			stages.try_emplace(S_GEOM, geomShader);
-		}
-	}
-
-	void ExecutePass(vk::CommandBuffer commandBuffer)
-	{
-		assert(imagesAttachmentOutputs.size() == colAttachments.size() && "Not all color attachments were set");
-		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
-
-		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
-		dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
-		commandBuffer.setViewport(0, 1, &dynamicRenderPass.viewport);
-		commandBuffer.setScissor(0, 1, &dynamicRenderPass.scissor);
-
-		int                                      index = 0;
-		std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
-		attachmentInfos.reserve(colAttachments.size());
-		for (auto &imagePair : imagesAttachmentOutputs)
-		{
-			if (IsImageTransitionNeeded(imagePair->imageData->currentLayout, COLOR_ATTACHMENT))
-			{
-				TransitionImage(imagePair->imageData, COLOR_ATTACHMENT,
-				                imagePair->GetSubresourceRange(), commandBuffer);
-			}
-			colAttachments[index].attachmentInfo.setImageView(imagePair->imageView.get());
-			colAttachments[index].attachmentInfo.imageLayout = imagePair->imageData->currentPattern.layout;
-			attachmentInfos.push_back(colAttachments[index].attachmentInfo);
-			index++;
-		}
-		if (depthImage)
-		{
-			if (depthImage->imageData->currentLayout != DEPTH_ATTACHMENT)
-			{
-				TransitionImage(depthImage->imageData, DEPTH_ATTACHMENT, depthImage->GetSubresourceRange(),
-				                commandBuffer);
-			}
-		}
-
-		TransitionImages(commandBuffer);
-		SyncBuffers(commandBuffer);
-		if (depthImage != nullptr)
-		{
-			depthAttachment.attachmentInfo.imageView = depthImage->imageView.get();
-		}
-		dynamicRenderPass.SetRenderInfo(attachmentInfos, frameBufferSize, &depthAttachment.attachmentInfo);
-
-		commandBuffer.bindPipeline(pipelineType, pipeline.get());
-		commandBuffer.beginRendering(dynamicRenderPass.renderInfo);
-		commandBuffer.bindDescriptorSets(pipelineType,
-		                                 pipelineLayout.get(), 0,
-		                                 1,
-		                                 &descCache->dstSet, 0, nullptr);
-		(*renderOperations)();
-		commandBuffer.endRendering();
-	}
-
-	void ExecuteCompute(vk::CommandBuffer commandBuffer)
-	{
-		TransitionImages(commandBuffer);
-		SyncBuffers(commandBuffer);
-		commandBuffer.bindPipeline(pipelineType, pipeline.get());
-		commandBuffer.bindDescriptorSets(pipelineType,
-		                                 pipelineLayout.get(), 0,
-		                                 1,
-		                                 &descCache->dstSet, 0, nullptr);
-		(*renderOperations)();
-	}
-
-	void Execute(vk::CommandBuffer commandBuffer)
-	{
-		for (int i = 0; i < tasks.size(); ++i)
-		{
-			if (tasks[i] != nullptr)
-			{
-				(*tasks[i])();
-			}
-		}
-		switch (pipelineType)
-		{
-			case vk::PipelineBindPoint::eGraphics:
-				ExecutePass(commandBuffer);
-				break;
-			case vk::PipelineBindPoint::eCompute:
-				ExecuteCompute(commandBuffer);
-				break;
-			default:
-				assert(false && "Unsuported pipeline type");
-				break;
-		}
-	}
-
-	void SetVertexInput(VertexInput vertexInput)
-	{
-		this->vertexInput = vertexInput;
-	}
-
-	void SetFramebufferSize(glm::uvec2 size)
-	{
-		this->frameBufferSize = size;
-	}
-
-	void SetRenderOperation(std::function<void()> *renderOperations)
-	{
-		if (this->renderOperations)
-		{
-			delete (this->renderOperations);
-		}
-		this->renderOperations = renderOperations;
-	}
-
-	void AddTask(std::function<void()> *task)
-	{
-		this->tasks.push_back(task);
-	}
 
 	void SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
 	{
 		this->pipelineLayoutCI = createInfo;
+
 		if (createInfo.pPushConstantRanges != nullptr)
 		{
-			this->pushConstantRange.offset     = createInfo.pPushConstantRanges->offset;
-			this->pushConstantRange.size       = createInfo.pPushConstantRanges->size;
-			this->pushConstantRange.stageFlags = createInfo.pPushConstantRanges->stageFlags;
-			this->pipelineLayoutCI.setPushConstantRanges(this->pushConstantRange);
+			this->pushConstantRange.offset =
+			    createInfo.pPushConstantRanges->offset;
+
+			this->pushConstantRange.size =
+			    createInfo.pPushConstantRanges->size;
+
+			this->pushConstantRange.stageFlags =
+			    createInfo.pPushConstantRanges->stageFlags;
+
+			this->pipelineLayoutCI.setPushConstantRanges(
+			    this->pushConstantRange);
 		}
 	}
 
@@ -740,7 +479,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		pushConstantSize = size;
 	}
 
-	void SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
+	void SetGraphicsPipelineConfigs(
+	    GraphicsPipelineConfigs graphicsPipelineConfigs)
 	{
 		this->graphicsPipelineConfigs = graphicsPipelineConfigs;
 	}
@@ -748,6 +488,15 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	void SetDepthConfig(DepthConfigs dephtConfig)
 	{
 		this->depthConfig = dephtConfig;
+	}
+
+	void SetConfigs(RenderNodeConfigs configs)
+	{
+		this->configs = configs;
+	}
+	void SetVertexInput(VertexInput vertexInput)
+	{
+		this->vertexInput = vertexInput;
 	}
 
 	void SetVertShader(Shader *shader)
@@ -778,6 +527,82 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	void SetGeomShader(Shader *shader)
 	{
 		shaders.at("geom") = shader;
+	}
+
+	void ReloadShaders()
+	{
+		Shader *vertShader = shaders.at("vert");
+		Shader *fragShader = shaders.at("frag");
+		Shader *compShader = shaders.at("comp");
+		Shader *tescShader = shaders.at("tesc");
+		Shader *teseShader = shaders.at("tese");
+		Shader *geomShader = shaders.at("geom");
+
+		if (vertShader && fragShader)
+		{
+			vertShader->Reload();
+			fragShader->Reload();
+		}
+
+		if (tescShader)
+		{
+			tescShader->Reload();
+		}
+
+		if (teseShader)
+		{
+			teseShader->Reload();
+		}
+
+		if (geomShader)
+		{
+			geomShader->Reload();
+		}
+
+		if (compShader)
+		{
+			compShader->Reload();
+		}
+	}
+
+	void GetShaderStages(std::map<ShaderStage, Shader *> &stages)
+	{
+		Shader *vertShader = shaders.at("vert");
+		Shader *fragShader = shaders.at("frag");
+		Shader *compShader = shaders.at("comp");
+		Shader *tescShader = shaders.at("tesc");
+		Shader *teseShader = shaders.at("tese");
+		Shader *geomShader = shaders.at("geom");
+
+		if (vertShader)
+		{
+			stages.try_emplace(S_VERT, vertShader);
+		}
+
+		if (fragShader)
+		{
+			stages.try_emplace(S_FRAG, fragShader);
+		}
+
+		if (compShader)
+		{
+			stages.try_emplace(S_COMP, compShader);
+		}
+
+		if (tescShader)
+		{
+			stages.try_emplace(S_TESS_CONTROL, tescShader);
+		}
+
+		if (teseShader)
+		{
+			stages.try_emplace(S_TESS_EVAL, teseShader);
+		}
+
+		if (geomShader)
+		{
+			stages.try_emplace(S_GEOM, geomShader);
+		}
 	}
 
 	void SetVertShader_IMode(std::string path)
@@ -830,9 +655,9 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	void AddColorAttachmentInput(std::string name)
 	{
-		if (outColAttachmentsProxyRef->contains(name))
+		if (!outColAttachmentsProxyRef.contains(name))
 		{
-			colAttachments.push_back(outColAttachmentsProxyRef->at(name));
+			colAttachments.push_back(outColAttachmentsProxyRef.at(name));
 		}
 		else
 		{
@@ -842,10 +667,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
 	{
-		if (!outColAttachmentsProxyRef->contains(name))
+		if (!outColAttachmentsProxyRef.contains(name))
 		{
-			outColAttachmentsProxyRef->try_emplace(name, attachmentInfo);
-			colAttachments.push_back(outColAttachmentsProxyRef->at(name));
+			outColAttachmentsProxyRef.try_emplace(name, attachmentInfo);
+			colAttachments.push_back(outColAttachmentsProxyRef.at(name));
 			colorBlendConfigs.push_back(blendConfig);
 		}
 		else
@@ -853,18 +678,11 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			std::cout << "Attachment: " << "\"" << name << "\"" << " already exist";
 		}
 	}
-
-	void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig, ImageView *imageView)
-	{
-		AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
-		AddColorImageResource(name, imageView);
-	}
-
 	void SetDepthAttachmentInput(std::string name)
 	{
-		if (outDepthAttachmentProxyRef->contains(name))
+		if (!outDepthAttachmentProxyRef.contains(name))
 		{
-			depthAttachment = outDepthAttachmentProxyRef->at(name);
+			depthAttachment = outDepthAttachmentProxyRef.at(name);
 		}
 		else
 		{
@@ -874,10 +692,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	void SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
 	{
-		if (!outDepthAttachmentProxyRef->contains(name))
+		if (!outDepthAttachmentProxyRef.contains(name))
 		{
-			outDepthAttachmentProxyRef->try_emplace(name, depth);
-			depthAttachment = outColAttachmentsProxyRef->at(name);
+			outDepthAttachmentProxyRef.try_emplace(name, depth);
+			depthAttachment = outColAttachmentsProxyRef.at(name);
 		}
 		else
 		{
@@ -885,10 +703,368 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 	}
 
-	void SetDepthImageResource(std::string name, ImageView *imageView)
+	void Reset()
 	{
-		depthImage = imageView;
-		AddImageToProxy(name, imageView);
+		pipeline.reset();
+		pipelineLayout.reset();
+		pipelineCache.reset();
+		descCache.reset();
+		pipelineLayoutCI  = vk::PipelineLayoutCreateInfo();
+		pushConstantRange = vk::PushConstantRange();
+		pipelineType      = vk::PipelineBindPoint::eGraphics;
+		dynamicRenderPass.Reset();
+		graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
+		graphicsPipelineConfigs.topologyConfigs      = T_TRIANGLE;
+		colorBlendConfigs.clear();
+		depthConfig = D_NONE;
+		vertexInput.bindingDescription.clear();
+		vertexInput.inputDescription.clear();
+		pushConstantSize = 4;
+		colAttachments.clear();
+		depthAttachment = {};
+	}
+};
+
+struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
+{
+	RenderGraphNode() = default;
+
+	nlohmann::json Serialize() override
+	{
+		nlohmann::json json;
+		std::string    text     = json.dump(3);
+		std::string    filename = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" + passName + ".json";
+		if (!filename.empty())
+		{
+			SYSTEMS::OS::GetInstance()->WriteFile(filename, text.c_str(), text.size());
+		}
+		return text;
+	}
+
+	RenderGraphNode *Deserialize(std::string filename) override
+	{
+		if (!std::filesystem::exists(filename))
+		{
+			SYSTEMS::Logger::GetInstance()->LogMessage(
+			    "Pass with name: (" + passName + ") does not have a serialized file, the pass may be null");
+			return this;
+		}
+		return this;
+	}
+	void RecreateResources()
+	{
+		shaderNodeRef->RecreateResources();
+	}
+
+	void BuildRenderGraphNode()
+	{
+		shaderNodeRef->BuildShader();
+	}
+
+	void TransitionImages(vk::CommandBuffer commandBuffer)
+	{
+		for (auto &storageImage : storageImages)
+		{
+			LayoutPatterns dstPattern = EMPTY;
+			switch (shaderNodeRef->pipelineType)
+			{
+				case vk::PipelineBindPoint::eGraphics:
+					dstPattern = GRAPHICS_WRITE;
+					break;
+				case vk::PipelineBindPoint::eCompute:
+					dstPattern = COMPUTE_WRITE;
+					break;
+				default:
+					assert(false && "pipeline type is unknown");
+			}
+			if (IsImageTransitionNeeded(storageImage.second->imageData->currentLayout, dstPattern))
+			{
+				TransitionImage(storageImage.second->imageData, dstPattern,
+				                storageImage.second->GetSubresourceRange(),
+				                commandBuffer);
+			}
+		}
+		for (auto &sampler : sampledImages)
+		{
+			LayoutPatterns dstPattern = EMPTY;
+			switch (shaderNodeRef->pipelineType)
+			{
+				case vk::PipelineBindPoint::eGraphics:
+					dstPattern = GRAPHICS_READ;
+					break;
+				case vk::PipelineBindPoint::eCompute:
+					dstPattern = COMPUTE;
+					break;
+				default:
+					assert(false && "pipeline type is unknown");
+			}
+			// TODO: Better transition for sampler images
+			//  if (IsImageTransitionNeeded(sampler.second->imageData->currentLayout, dstPattern))
+			//  {
+			//  }
+			TransitionImage(sampler.second->imageData, dstPattern, sampler.second->GetSubresourceRange(),
+			                commandBuffer);
+		}
+	}
+
+	void SyncBuffers(vk::CommandBuffer commandBuffer)
+	{
+		for (auto &pair : buffers)
+		{
+			BufferKey           buffer     = pair.second;
+			BufferAccessPattern srcPattern = GetSrcBufferAccessPattern(buffer.srcUsage);
+			BufferAccessPattern dstPattern = GetSrcBufferAccessPattern(buffer.dstUsage);
+			CreateMemBarrier(srcPattern, dstPattern, commandBuffer);
+		}
+	}
+	void SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	{
+		shaderNodeRef->SetSampler(name, imageView, sampler);
+	}
+	void SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
+	{
+		shaderNodeRef->SetSamplerArray(name, imageViews, samplers);
+	}
+	void SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	{
+		shaderNodeRef->SetStorageImage(name, imageView, sampler);
+	}
+	void SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
+	                          std::vector<Sampler *> *samplers = nullptr)
+	{
+		shaderNodeRef->SetStorageImageArray(name, imageViews, samplers);
+	}
+	template <typename T>
+	void SetBuffer(std::string name, T &bufferData)
+	{
+		shaderNodeRef->SetBuffer<T>(name, bufferData);
+	}
+	template <typename T>
+	void SetBuffer(std::string name, std::vector<T> &bufferData)
+	{
+		shaderNodeRef->SetBuffer<T>(name, bufferData);
+	}
+	void SetBuffer(std::string name, Buffer *bufferData)
+	{
+		shaderNodeRef->SetBuffer(name, bufferData);
+	}
+	void ReloadShaders()
+	{
+		shaderNodeRef->ReloadShaders();
+	}
+
+	void ExecutePass(vk::CommandBuffer commandBuffer)
+	{
+		assert(imagesAttachmentOutputs.size() == shaderNodeRef->colAttachments.size() && "Not all color attachments were set");
+		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
+
+		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
+		shaderNodeRef->dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
+		commandBuffer.setViewport(0, 1, &shaderNodeRef->dynamicRenderPass.viewport);
+		commandBuffer.setScissor(0, 1, &shaderNodeRef->dynamicRenderPass.scissor);
+
+		int                                      index = 0;
+		std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
+		attachmentInfos.reserve(shaderNodeRef->colAttachments.size());
+		for (auto &imagePair : imagesAttachmentOutputs)
+		{
+			if (IsImageTransitionNeeded(imagePair->imageData->currentLayout, COLOR_ATTACHMENT))
+			{
+				TransitionImage(imagePair->imageData, COLOR_ATTACHMENT,
+				                imagePair->GetSubresourceRange(), commandBuffer);
+			}
+			shaderNodeRef->colAttachments[index].attachmentInfo.setImageView(imagePair->imageView.get());
+			shaderNodeRef->colAttachments[index].attachmentInfo.imageLayout = imagePair->imageData->currentPattern.layout;
+			attachmentInfos.push_back(shaderNodeRef->colAttachments[index].attachmentInfo);
+			index++;
+		}
+		if (depthImage)
+		{
+			if (depthImage->imageData->currentLayout != DEPTH_ATTACHMENT)
+			{
+				TransitionImage(depthImage->imageData, DEPTH_ATTACHMENT, depthImage->GetSubresourceRange(),
+				                commandBuffer);
+			}
+		}
+
+		TransitionImages(commandBuffer);
+		SyncBuffers(commandBuffer);
+		if (depthImage != nullptr)
+		{
+			shaderNodeRef->depthAttachment.attachmentInfo.imageView = depthImage->imageView.get();
+		}
+		shaderNodeRef->dynamicRenderPass.SetRenderInfo(attachmentInfos, frameBufferSize, &shaderNodeRef->depthAttachment.attachmentInfo);
+
+		commandBuffer.bindPipeline(shaderNodeRef->pipelineType, shaderNodeRef->pipeline.get());
+		commandBuffer.beginRendering(shaderNodeRef->dynamicRenderPass.renderInfo);
+		commandBuffer.bindDescriptorSets(shaderNodeRef->pipelineType,
+		                                 shaderNodeRef->pipelineLayout.get(), 0,
+		                                 1,
+		                                 &shaderNodeRef->descCache->dstSet, 0, nullptr);
+		(*renderOperations)();
+		commandBuffer.endRendering();
+	}
+
+	void ExecuteCompute(vk::CommandBuffer commandBuffer)
+	{
+		TransitionImages(commandBuffer);
+		SyncBuffers(commandBuffer);
+		commandBuffer.bindPipeline(shaderNodeRef->pipelineType, shaderNodeRef->pipeline.get());
+		commandBuffer.bindDescriptorSets(shaderNodeRef->pipelineType,
+		                                 shaderNodeRef->pipelineLayout.get(), 0,
+		                                 1,
+		                                 &shaderNodeRef->descCache->dstSet, 0, nullptr);
+		(*renderOperations)();
+	}
+
+	void Execute(vk::CommandBuffer commandBuffer)
+	{
+		for (int i = 0; i < tasks.size(); ++i)
+		{
+			if (tasks[i] != nullptr)
+			{
+				(*tasks[i])();
+			}
+		}
+		switch (shaderNodeRef->pipelineType)
+		{
+			case vk::PipelineBindPoint::eGraphics:
+				ExecutePass(commandBuffer);
+				break;
+			case vk::PipelineBindPoint::eCompute:
+				ExecuteCompute(commandBuffer);
+				break;
+			default:
+				assert(false && "Unsuported pipeline type");
+				break;
+		}
+	}
+
+	void SetVertexInput(VertexInput vertexInput)
+	{
+		this->shaderNodeRef->SetVertexInput(vertexInput);
+	}
+
+	void SetFramebufferSize(glm::uvec2 size)
+	{
+		this->frameBufferSize = size;
+	}
+
+	void SetRenderOperation(std::function<void()> *renderOperations)
+	{
+		if (this->renderOperations)
+		{
+			delete (this->renderOperations);
+		}
+		this->renderOperations = renderOperations;
+	}
+
+	void AddTask(std::function<void()> *task)
+	{
+		this->tasks.push_back(task);
+	}
+
+	void SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
+	{
+		shaderNodeRef->SetPipelineLayoutCI(createInfo);
+	}
+
+	void SetPushConstantSize(size_t size)
+	{
+		shaderNodeRef->SetPushConstantSize(size);
+	}
+
+	void SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
+	{
+		shaderNodeRef->SetGraphicsPipelineConfigs(graphicsPipelineConfigs);
+	}
+
+	void SetDepthConfig(DepthConfigs dephtConfig)
+	{
+		shaderNodeRef->SetDepthConfig(dephtConfig);
+	}
+
+	void SetVertShader(Shader *shader)
+	{
+		shaderNodeRef->SetVertShader(shader);
+	}
+
+	void SetFragShader(Shader *shader)
+	{
+		shaderNodeRef->SetFragShader(shader);
+	}
+
+	void SetCompShader(Shader *shader)
+	{
+		shaderNodeRef->SetCompShader(shader);
+	}
+
+	void SetTesControlShader(Shader *shader)
+	{
+		shaderNodeRef->SetTesControlShader(shader);
+	}
+
+	void SetTesEvalShader(Shader *shader)
+	{
+		shaderNodeRef->SetTesEvalShader(shader);
+	}
+
+	void SetGeomShader(Shader *shader)
+	{
+		shaderNodeRef->SetGeomShader(shader);
+	}
+
+	void SetVertShader_IMode(std::string path)
+	{
+		shaderNodeRef->SetVertShader_IMode(path);
+	}
+
+	void SetFragShader_IMode(std::string path)
+	{
+		shaderNodeRef->SetFragShader_IMode(path);
+	}
+
+	void SetCompShader_IMode(std::string path)
+	{
+		shaderNodeRef->SetCompShader_IMode(path);
+	}
+
+	void SetTesControlShader_IMode(std::string path)
+	{
+		shaderNodeRef->SetTesControlShader_IMode(path);
+	}
+
+	void SetTesEvalShader_IMode(std::string path)
+	{
+		shaderNodeRef->SetTesEvalShader_IMode(path);
+	}
+
+	void SetGeomShader_IMode(std::string path)
+	{
+		shaderNodeRef->SetGeomShader_IMode(path);
+	}
+
+	void AddColorAttachmentInput(std::string name)
+	{
+		shaderNodeRef->AddColorAttachmentInput(name);
+	}
+
+	void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
+	{
+		shaderNodeRef->AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
+	}
+	void SetDepthAttachmentInput(std::string name)
+	{
+		shaderNodeRef->SetDepthAttachmentInput(name);
+	}
+
+	void SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
+	{
+		shaderNodeRef->SetDepthAttachmentOutput(name, depth);
+	}
+	void SetDepthImageResource(ImageView *imageView)
+	{
+		AddImageToProxy(imageView->name, imageView);
 	}
 
 	void ActivateNode(bool value)
@@ -952,61 +1128,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		AddBufferToProxy(buffer.name, buffer);
 	}
 	// We change the image view if the name already exist when using resources
-	void AddColorImageResource(std::string name, ImageView *imageView)
-	{
-		assert(imageView && "Name does not exist or image view is null");
-		if (!imageAttachmentsNames.contains(name))
-		{
-			imageAttachmentsNames.try_emplace(name, imagesAttachmentOutputs.size());
-			imagesAttachmentOutputs.emplace_back(imageView);
-		}
-		else
-		{
-			imagesAttachmentOutputs.at(imageAttachmentsNames.at(name)) = imageView;
-		}
-		AddImageToProxy(name, imageView);
-	}
-
-	void AddSamplerResource(std::string name, ImageView *imageView)
-	{
-		assert(imageView && "Name does not exist or image view is null");
-		if (!sampledImages.contains(name))
-		{
-			sampledImages.try_emplace(name, imageView);
-		}
-		else
-		{
-			sampledImages.at(name) = imageView;
-		}
-		AddImageToProxy(name, imageView);
-	}
-
-	void AddStorageResource(std::string name, ImageView *imageView)
-	{
-		assert(imageView && "Name does not exist or image view is null");
-		if (!storageImages.contains(name))
-		{
-			storageImages.try_emplace(name, imageView);
-		}
-		else
-		{
-			storageImages.at(name) = imageView;
-		}
-		AddImageToProxy(name, imageView);
-	}
-
-	void AddBufferSync(std::string name, BufferKey buffer)
-	{
-		if (!buffers.contains(name))
-		{
-			buffers.try_emplace(name, buffer);
-		}
-		else
-		{
-			buffers.at(name) = buffer;
-		}
-		AddBufferToProxy(name, buffer);
-	}
 
 	void DependsOn(std::string dependency)
 	{
@@ -1062,39 +1183,16 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	}
 	void SetConfigs(RenderNodeConfigs configs)
 	{
-		this->configs = configs;
+		shaderNodeRef->SetConfigs(configs);
 	}
 	void Reset()
 	{
-		pipeline.release();
-		pipelineLayout.release();
-		pipelineCache.release();
-		pipelineLayoutCI  = vk::PipelineLayoutCreateInfo();
-		pushConstantRange = vk::PushConstantRange();
-		pipelineType      = vk::PipelineBindPoint::eGraphics;
-		dynamicRenderPass.Reset();
-		descCache.release();
-		active                                       = false;
-		graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
-		graphicsPipelineConfigs.topologyConfigs      = T_TRIANGLE;
-		colorBlendConfigs.clear();
-		depthConfig = D_NONE;
-		vertexInput.bindingDescription.clear();
-		vertexInput.inputDescription.clear();
-		frameBufferSize  = {0, 0};
-		pushConstantSize = 0;
-		workerQueueName  = "Graphics";
-		currCmd          = nullptr;
-		colAttachments.clear();
-		depthAttachment = {};
+		shaderNodeRef->Reset();
+		active          = false;
+		frameBufferSize = {0, 0};
+		workerQueueName = "Graphics";
+		currCmd         = nullptr;
 		depthImage      = nullptr;
-		shaders         = {
-            {"frag", nullptr},
-            {"vert", nullptr},
-            {"comp", nullptr},
-            {"tesc", nullptr},
-            {"tese", nullptr},
-            {"geom", nullptr}};
 
 		imagesAttachmentOutputs.clear();
 		storageImages.clear();
@@ -1104,42 +1202,25 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		dependencies.clear();
 	}
 
-	vk::UniquePipeline               pipeline;
-	vk::UniquePipelineLayout         pipelineLayout;
-	vk::UniquePipelineCache          pipelineCache;
-	vk::PipelineLayoutCreateInfo     pipelineLayoutCI;
-	vk::PushConstantRange            pushConstantRange;
-	vk::PipelineBindPoint            pipelineType;
-	DynamicRenderPass                dynamicRenderPass;
-	std::unique_ptr<DescriptorCache> descCache;
-	std::string                      passName;
-	std::string                      workerQueueName = "Graphics";
-	bool                             active          = false;
 	// unused
+
+	ShaderNode *shaderNodeRef            = nullptr;
 	bool        waitForResourcesCreation = false;
 	std::string path;
+	std::string passName;
+	std::string workerQueueName = "Graphics";
+	bool        active          = false;
+
+	std::set<std::string> dependencies;
 
   private:
 	friend class RenderGraph;
-	vk::CommandBuffer         currCmd;
-	RenderNodeConfigs         configs                 = {true, false};
-	GraphicsPipelineConfigs   graphicsPipelineConfigs = {};
-	std::vector<BlendConfigs> colorBlendConfigs;
-	DepthConfigs              depthConfig = D_NONE;
-	VertexInput               vertexInput;
-	glm::uvec2                frameBufferSize  = {0, 0};
-	size_t                    pushConstantSize = 4;
 
-	std::vector<AttachmentInfo>     colAttachments;
-	AttachmentInfo                  depthAttachment = {};
-	ImageView                      *depthImage      = nullptr;
-	std::map<std::string, Shader *> shaders         = {
-        {"frag", nullptr},
-        {"vert", nullptr},
-        {"comp", nullptr},
-        {"tesc", nullptr},
-        {"tese", nullptr},
-        {"geom", nullptr}};
+	Core             *core;
+	ImageView        *depthImage = nullptr;
+	vk::CommandBuffer currCmd;
+
+	glm::uvec2 frameBufferSize = {0, 0};
 
 	std::unordered_map<std::string, int> imageAttachmentsNames;
 	std::vector<ImageView *>             imagesAttachmentOutputs;
@@ -1151,17 +1232,9 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	std::function<void()>               *renderOperations = nullptr;
 	std::vector<std::function<void()> *> tasks;
 
-	std::set<std::string> dependencies;
-
-	Core                                                     *core;
-	ResourcesManager                                         *resManagerRef;
-	std::unordered_map<std::string, ImageView *>             *imagesProxyRef;
-	std::unordered_map<std::string, BufferKey>               *bufferProxyRef;
-	std::unordered_map<std::string, AttachmentInfo>          *outColAttachmentsProxyRef;
-	std::unordered_map<std::string, AttachmentInfo>          *outDepthAttachmentProxyRef;
-	std::unordered_map<std::string, std::unique_ptr<Shader>> *shadersProxyRef;
-	// unused
-	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descriptorsCachesRef;
+	std::unordered_map<std::string, ImageView *> *imagesProxyRef;
+	std::unordered_map<std::string, BufferKey>   *bufferProxyRef;
+	ResourcesManager                             *resManagerRef;
 };
 struct QueueNodesBatch
 {
@@ -1184,6 +1257,7 @@ class RenderGraph
 	size_t     frameIndex;
 	bool       debugUI = true;
 
+	std::unordered_map<std::string, std::unique_ptr<ShaderNode>>      shaderNodes;
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
 	std::vector<RenderGraphNode *>                                    sortedByDepNodes;
@@ -1282,7 +1356,7 @@ class RenderGraph
 	void BuildRenderOperations()
 	{
 		auto blitterTask = new std::function<void()>([this]() {
-			GetNode("BlitterNode")->AddColorImageResource("BF_SwapChain", currentBackBufferSwapchain);
+			GetNode("BlitterNode")->AddColorImageResource(currentBackBufferSwapchain);
 			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});
 
@@ -1362,21 +1436,62 @@ class RenderGraph
 		}
 	}
 
+	ShaderNode *AddShader(std::string name)
+	{
+		if (!shaderNodes.contains(name))
+		{
+			auto shaderNode             = std::make_unique<ShaderNode>();
+			shaderNode->shadersProxyRef = &shadersProxy;
+			shaderNode->core            = core;
+			shaderNode->name            = name;
+			shaderNodes.try_emplace(name, std::move(shaderNode));
+			return shaderNodes.at(name).get();
+		}
+		
+		auto shaderNode = shaderNodes.at(name).get();
+		assert(shaderNode != nullptr && "Shader is null");
+		return shaderNode;
+	}
+
+	RenderGraphNode *AddPass(ShaderNode *shaderNode, std::string name, std::string workerQueueName = "Graphics")
+	{
+		if (!renderNodes.contains(name))
+		{
+			assert(shaderNode != nullptr && "Shader is null");
+			auto renderGraphNode             = std::make_unique<RenderGraphNode>();
+			renderGraphNode->shaderNodeRef   = shaderNode;
+			renderGraphNode->passName        = name;
+			renderGraphNode->imagesProxyRef  = &imagesProxy;
+			renderGraphNode->bufferProxyRef  = &buffersProxy;
+			renderGraphNode->core            = core;
+			renderGraphNode->resManagerRef   = resourcesManager;
+			renderGraphNode->workerQueueName = workerQueueName;
+			renderGraphNode->active          = true;
+			renderGraphNode->path            = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+			                        name + ".json";
+			renderNodes.try_emplace(name, std::move(renderGraphNode));
+			sequentialRenderNodes.push_back(renderNodes.at(name).get());
+			return renderNodes.at(name).get();
+		}
+		return renderNodes.at(name).get();
+	}
+
 	RenderGraphNode *AddPass(std::string name, std::string workerQueueName = "Graphics")
 	{
 		if (!renderNodes.contains(name))
 		{
-			auto renderGraphNode                        = std::make_unique<RenderGraphNode>();
-			renderGraphNode->passName                   = name;
-			renderGraphNode->imagesProxyRef             = &imagesProxy;
-			renderGraphNode->outColAttachmentsProxyRef  = &outColAttachmentsProxy;
-			renderGraphNode->outDepthAttachmentProxyRef = &outColAttachmentsProxy;
-			renderGraphNode->bufferProxyRef             = &buffersProxy;
-			renderGraphNode->shadersProxyRef            = &shadersProxy;
-			renderGraphNode->core                       = core;
-			renderGraphNode->resManagerRef              = resourcesManager;
-			renderGraphNode->workerQueueName            = workerQueueName;
-			renderGraphNode->path                       = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+			auto shaderNode             = AddShader("Shader_" + name);
+			assert(shaderNode != nullptr && "Shader is null");
+			auto renderGraphNode             = std::make_unique<RenderGraphNode>();
+			renderGraphNode->shaderNodeRef   = shaderNode;
+			renderGraphNode->passName        = name;
+			renderGraphNode->imagesProxyRef  = &imagesProxy;
+			renderGraphNode->bufferProxyRef  = &buffersProxy;
+			renderGraphNode->core            = core;
+			renderGraphNode->resManagerRef   = resourcesManager;
+			renderGraphNode->workerQueueName = workerQueueName;
+			renderGraphNode->active          = true;
+			renderGraphNode->path            = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
 			sequentialRenderNodes.push_back(renderNodes.at(name).get());
@@ -1398,15 +1513,15 @@ class RenderGraph
 		}
 	}
 
-	ImageView *AddColorImageResource(std::string passName, std::string name, ImageView *imageView)
+	ImageView *AddColorImageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(name))
+		if (!imagesProxy.contains(imageView->name))
 		{
-			imagesProxy.try_emplace(name, imageView);
+			imagesProxy.try_emplace(imageView->name, imageView);
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddColorImageResource(name, imageView);
+				renderNodes.at(passName)->AddColorImageResource(imageView);
 			}
 			else
 			{
@@ -1415,10 +1530,10 @@ class RenderGraph
 		}
 		else
 		{
-			imagesProxy.at(name) = imageView;
+			imagesProxy.at(imageView->name) = imageView;
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddColorImageResource(name, imageView);
+				renderNodes.at(passName)->AddColorImageResource(imageView);
 			}
 			else
 			{
@@ -1429,15 +1544,15 @@ class RenderGraph
 		return imageView;
 	}
 
-	ImageView *SetDepthImageResource(std::string passName, std::string name, ImageView *imageView)
+	ImageView *SetDepthImageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(name))
+		if (!imagesProxy.contains(imageView->name))
 		{
-			imagesProxy.try_emplace(name, imageView);
+			imagesProxy.try_emplace(imageView->name, imageView);
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->SetDepthImageResource(name, imageView);
+				renderNodes.at(passName)->SetDepthImageResource(imageView);
 			}
 			else
 			{
@@ -1446,10 +1561,10 @@ class RenderGraph
 		}
 		else
 		{
-			imagesProxy.at(name) = imageView;
+			imagesProxy.at(imageView->name) = imageView;
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->SetDepthImageResource(name, imageView);
+				renderNodes.at(passName)->SetDepthImageResource(imageView);
 			}
 			else
 			{
@@ -1460,15 +1575,15 @@ class RenderGraph
 		return imageView;
 	}
 
-	ImageView *AddSamplerResource(std::string passName, std::string name, ImageView *imageView)
+	ImageView *AddSamplerResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(name))
+		if (!imagesProxy.contains(imageView->name))
 		{
-			imagesProxy.try_emplace(name, imageView);
+			imagesProxy.try_emplace(imageView->name, imageView);
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddSamplerResource(name, imageView);
+				renderNodes.at(passName)->AddSamplerResource(imageView);
 			}
 			else
 			{
@@ -1477,10 +1592,10 @@ class RenderGraph
 		}
 		else
 		{
-			imagesProxy.at(name) = imageView;
+			imagesProxy.at(imageView->name) = imageView;
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddSamplerResource(name, imageView);
+				renderNodes.at(passName)->AddSamplerResource(imageView);
 			}
 			else
 			{
@@ -1491,15 +1606,15 @@ class RenderGraph
 		return imageView;
 	}
 
-	ImageView *AddStorageResource(std::string passName, std::string name, ImageView *imageView)
+	ImageView *AddStorageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(name))
+		if (!imagesProxy.contains(imageView->name))
 		{
-			imagesProxy.try_emplace(name, imageView);
+			imagesProxy.try_emplace(imageView->name, imageView);
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddStorageResource(name, imageView);
+				renderNodes.at(passName)->AddStorageResource(imageView);
 			}
 			else
 			{
@@ -1508,10 +1623,10 @@ class RenderGraph
 		}
 		else
 		{
-			imagesProxy.at(name) = imageView;
+			imagesProxy.at(imageView->name) = imageView;
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddStorageResource(name, imageView);
+				renderNodes.at(passName)->AddStorageResource(imageView);
 			}
 			else
 			{
@@ -1522,15 +1637,15 @@ class RenderGraph
 		return imageView;
 	}
 
-	BufferKey &AddBufferSync(std::string passName, std::string name, BufferKey buffer)
+	BufferKey &AddBufferSync(std::string passName, BufferKey buffer)
 	{
 		assert(buffer.buffer && "ImageView is null");
-		if (!buffersProxy.contains(name))
+		if (!buffersProxy.contains(buffer.name))
 		{
-			buffersProxy.try_emplace(name, buffer);
+			buffersProxy.try_emplace(buffer.name, buffer);
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddBufferSync(name, buffer);
+				renderNodes.at(passName)->AddBufferSync(buffer);
 			}
 			else
 			{
@@ -1539,10 +1654,10 @@ class RenderGraph
 		}
 		else
 		{
-			buffersProxy.at(name) = buffer;
+			buffersProxy.at(buffer.name) = buffer;
 			if (renderNodes.contains(passName))
 			{
-				renderNodes.at(passName)->AddBufferSync(name, buffer);
+				renderNodes.at(passName)->AddBufferSync(buffer);
 			}
 			else
 			{
@@ -1672,15 +1787,15 @@ class RenderGraph
 		{
 			return;
 		}
-		int batchIdx = -1;
+		int batchIdx = 0;
 		for (int i = 0; i < sortedNodes.size(); ++i)
 		{
 			if (batches.empty() || batches.back().queueName != sortedNodes[i]->workerQueueName)
 			{
 				batchIdx++;
-				auto *queueRef  = core->queueWorkerManager->GetWorkerQueue(sortedNodes[i]->workerQueueName);
-				int   poolCmdId = -1;
-				vk::CommandBuffer cmd = queueRef->RequestQueueCmd(poolCmdId);
+				auto             *queueRef  = core->queueWorkerManager->GetWorkerQueue(sortedNodes[i]->workerQueueName);
+				int               poolCmdId = 0;
+				vk::CommandBuffer cmd       = queueRef->RequestQueueCmd(poolCmdId);
 				batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{sortedNodes[i]}, queueRef->name, cmd, batchIdx});
 				batches.back().poolIdUsed = poolCmdId;
 			}
@@ -1691,8 +1806,8 @@ class RenderGraph
 		}
 		if (debugUI)
 		{
-			auto *queueRef = core->queueWorkerManager->GetWorkerQueue("UI");
-			int   poolCmdId = -1;
+			auto *queueRef  = core->queueWorkerManager->GetWorkerQueue("UI");
+			int   poolCmdId = 0;
 			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{}, "UI", queueRef->RequestQueueCmd(poolCmdId), batchIdx + 1});
 			batches.back().poolIdUsed = poolCmdId;
 		}
@@ -1786,8 +1901,8 @@ class RenderGraph
 					// if a dependency is not active we skip the node
 					continue;
 				}
-				BufferUsageTypes    lastNodeType    = (depenNode->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
-				BufferUsageTypes    currNodeType    = (node->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    lastNodeType    = (depenNode->shaderNodeRef->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    currNodeType    = (node->shaderNodeRef->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
 				BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, node->GetCurrCmd());
