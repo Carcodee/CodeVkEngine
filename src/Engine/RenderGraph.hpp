@@ -1190,7 +1190,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	ImageView        *depthImage = nullptr;
 	vk::CommandBuffer currCmd;
 
-	glm::uvec2 frameBufferSize = {0, 0};
+	glm::uvec2                      frameBufferSize = {0, 0};
+	std::vector<RenderGraphNode *> *nodesToExecuteRef;
 
 	std::unordered_map<std::string, int> imageAttachmentsNames;
 	std::vector<ImageView *>             imagesAttachmentOutputs;
@@ -1227,10 +1228,10 @@ class RenderGraph
 
 	std::unordered_map<std::string, std::unique_ptr<ShaderNode>>      shaderNodes;
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
-	//todo
-	std::unordered_map<std::string, RenderGraphNode *>                enqueueNodes;
-	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
-	std::vector<RenderGraphNode *>                                    sortedByDepNodes;
+	// todo
+	std::vector<RenderGraphNode *> nodesToExecute;
+	std::vector<RenderGraphNode *> sequentialRenderNodes;
+	std::vector<RenderGraphNode *> sortedByDepNodes;
 
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
@@ -1384,6 +1385,10 @@ class RenderGraph
 		}
 		RecreateNodePipelines();
 	}
+	void EnqueueNode(RenderGraphNode *node)
+	{
+		nodesToExecute.push_back(node);
+	}
 	void UpdateAllFromMetaData()
 	{
 		for (auto &node : sequentialRenderNodes)
@@ -1448,14 +1453,15 @@ class RenderGraph
 		if (!renderNodes.contains(name))
 		{
 			assert(shaderNode != nullptr && "Shader is null");
-			auto renderGraphNode             = std::make_unique<RenderGraphNode>();
-			renderGraphNode->shaderNodeRef   = shaderNode;
-			renderGraphNode->passName        = name;
-			renderGraphNode->core            = core;
-			renderGraphNode->resManagerRef   = resourcesManager;
-			renderGraphNode->workerQueueName = workerQueueName;
-			renderGraphNode->active          = true;
-			renderGraphNode->path            = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
+			renderGraphNode->shaderNodeRef     = shaderNode;
+			renderGraphNode->passName          = name;
+			renderGraphNode->core              = core;
+			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
+			renderGraphNode->resManagerRef     = resourcesManager;
+			renderGraphNode->workerQueueName   = workerQueueName;
+			renderGraphNode->active            = true;
+			renderGraphNode->path              = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
 			sequentialRenderNodes.push_back(renderNodes.at(name).get());
@@ -1470,14 +1476,15 @@ class RenderGraph
 		{
 			auto shaderNode = AddShader("Shader_" + name);
 			assert(shaderNode != nullptr && "Shader is null");
-			auto renderGraphNode             = std::make_unique<RenderGraphNode>();
-			renderGraphNode->shaderNodeRef   = shaderNode;
-			renderGraphNode->passName        = name;
-			renderGraphNode->core            = core;
-			renderGraphNode->resManagerRef   = resourcesManager;
-			renderGraphNode->workerQueueName = workerQueueName;
-			renderGraphNode->active          = true;
-			renderGraphNode->path            = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
+			renderGraphNode->shaderNodeRef     = shaderNode;
+			renderGraphNode->passName          = name;
+			renderGraphNode->core              = core;
+			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
+			renderGraphNode->resManagerRef     = resourcesManager;
+			renderGraphNode->workerQueueName   = workerQueueName;
+			renderGraphNode->active            = true;
+			renderGraphNode->path              = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
 			                        name + ".json";
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
 			sequentialRenderNodes.push_back(renderNodes.at(name).get());
@@ -1605,7 +1612,7 @@ class RenderGraph
 		CreateUtilityShaders();
 		BlitToBackbuffer();
 	}
-	void SortNodesByDep()
+	void SortNodesByDep(std::vector<RenderGraphNode*>& nodesSortedOut)
 	{
 		std::vector<std::string> solvedNodesOrdered;
 		std::set<std::string>    solvedNodesNames;
@@ -1655,11 +1662,11 @@ class RenderGraph
 			idx = (idx + 1) % sequentialRenderNodes.size();
 		}
 		bool reorderDone = solvedNodesOrdered.size() == sequentialRenderNodes.size();
-		sortedByDepNodes.clear();
-		sortedByDepNodes.reserve(solvedNodesOrdered.size());
+		nodesSortedOut.clear();
+		nodesSortedOut.reserve(solvedNodesOrdered.size());
 		for (int i = 0; i < solvedNodesOrdered.size(); ++i)
 		{
-			sortedByDepNodes.emplace_back(GetNode(solvedNodesOrdered[i]));
+			nodesSortedOut.emplace_back(GetNode(solvedNodesOrdered[i]));
 		}
 	}
 	void BuildQueuePassesBatches(std::vector<RenderGraphNode *> &sortedNodes, std::vector<QueueNodesBatch> &batches)
@@ -1695,14 +1702,14 @@ class RenderGraph
 		}
 	}
 
-	void ResolveNodesDependancies()
+	void ResolveNodesDependancies(std::vector<RenderGraphNode*>& nodesToResolve)
 	{
-		for (int i = sequentialRenderNodes.size() - 1; i >= 0; i--)
+		for (int i = nodesToResolve.size() - 1; i >= 0; i--)
 		{
-			RenderGraphNode *node = sequentialRenderNodes[i];
+			RenderGraphNode *node = nodesToResolve[i];
 			for (int j = i - 1; j >= 0; j--)
 			{
-				RenderGraphNode *toCheckNode = sequentialRenderNodes[j];
+				RenderGraphNode *toCheckNode = nodesToResolve[j];
 
 				for (auto &image : toCheckNode->imageAttachmentsNames)
 				{
@@ -1810,13 +1817,16 @@ class RenderGraph
 		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph prepare cpu");
 		resourcesManager->UpdateBuffers();
 		resourcesManager->UpdateImages();
-		ResolveNodesDependancies();
+		
+		
+		ResolveNodesDependancies(sequentialRenderNodes);
 		if (sequentialRenderNodes.size() > 1)
 		{
 			GetNode("BlitterNode")->DependsOn(sequentialRenderNodes[sequentialRenderNodes.size() - 2]->passName);
 		}
-		SortNodesByDep();
+		sortedByDepNodes.clear();
 		sortedQueueBatches.clear();
+		SortNodesByDep(sortedByDepNodes);
 		BuildQueuePassesBatches(sortedByDepNodes, sortedQueueBatches);
 		Profiler::GetInstance()->EndProfilerCpuSpot("Rendergraph prepare cpu");
 	}

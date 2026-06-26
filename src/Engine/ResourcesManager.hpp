@@ -808,6 +808,11 @@ class ResourcesManager : SYSTEMS::Subject
 	{
 		for (auto &watcher : watchers)
 		{
+			if (watcher == nullptr)
+			{
+				SYSTEMS::Logger::GetInstance()->LogMessage("Watcher is null");
+				continue;
+			}
 			watcher->UpdateWatcher();
 		}
 	}

@@ -14,7 +14,7 @@
 namespace ENGINE
 {
 #define DEFAULT_VAR_DESCRIPTOR_COUNT 1000
-    class DescriptorCache : SYSTEMS::Watcher
+    class DescriptorCache : public SYSTEMS::Watcher
     {
         struct SamplerBinding 
         {
@@ -50,6 +50,7 @@ namespace ENGINE
         }
         ~DescriptorCache()
         {
+        	resourcesManagerRef->Detach(this);
             resourcesManagerRef->DeallocateDset(dsetsInfo.id);
         }
         void UpdateWatcher() override
