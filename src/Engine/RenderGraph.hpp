@@ -46,7 +46,7 @@ class RenderGraph;
 
 struct ShaderNode
 {
-	ShaderNode() = default;
+	ShaderNode()  = default;
 	~ShaderNode() = default;
 
 	Core                            *core;
@@ -63,11 +63,11 @@ struct ShaderNode
 	VertexInput                                               vertexInput;
 	std::vector<BlendConfigs>                                 colorBlendConfigs;
 	std::vector<AttachmentInfo>                               colAttachments;
-	AttachmentInfo                                            depthAttachment  = {};
-	AttachmentInfo                                            depthAttachmentInput  = {};
-	size_t                                                    pushConstantSize = 4;
-	DepthConfigs                                              depthConfig      = D_NONE;
-	RenderNodeConfigs                                         configs          = {true, false};
+	AttachmentInfo                                            depthAttachment      = {};
+	AttachmentInfo                                            depthAttachmentInput = {};
+	size_t                                                    pushConstantSize     = DUMMY_PC_SIZE;
+	DepthConfigs                                              depthConfig          = D_NONE;
+	RenderNodeConfigs                                         configs              = {true, false};
 	std::unordered_map<std::string, std::unique_ptr<Shader>> *shadersProxyRef;
 	std::unordered_map<std::string, AttachmentInfo>           outColAttachmentsProxyRef;
 	std::unordered_map<std::string, AttachmentInfo>           outDepthAttachmentProxyRef;
@@ -681,7 +681,6 @@ struct ShaderNode
 	}
 	void SetDepthAttachmentInput(std::string name)
 	{
-		
 		if (!outDepthAttachmentProxyRef.contains(name))
 		{
 			depthAttachment = outDepthAttachmentProxyRef.at(name);
@@ -753,6 +752,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	void BuildRenderGraphNode()
 	{
 		shaderNodeRef->BuildShader();
+	}
+
+	void EnqueueNode()
+	{
 	}
 
 	void TransitionImages(vk::CommandBuffer commandBuffer)
@@ -1060,7 +1063,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	void SetDepthImageResource(ImageView *imageView)
 	{
 		this->depthImage = imageView;
-		AddImageToProxy(imageView->name, imageView);
 	}
 
 	void ActivateNode(bool value)
@@ -1080,7 +1082,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			imagesAttachmentOutputs.at(imageAttachmentsNames.at(imageView->name)) = imageView;
 		}
-		AddImageToProxy(imageView->name, imageView);
 	}
 
 	void AddSamplerResource(ImageView *imageView)
@@ -1094,7 +1095,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			sampledImages.at(imageView->name) = imageView;
 		}
-		AddImageToProxy(imageView->name, imageView);
 	}
 
 	void AddStorageResource(ImageView *imageView)
@@ -1108,7 +1108,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			storageImages.at(imageView->name) = imageView;
 		}
-		AddImageToProxy(imageView->name, imageView);
 	}
 
 	void AddBufferSync(BufferKey buffer)
@@ -1121,7 +1120,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			buffers.at(buffer.name) = buffer;
 		}
-		AddBufferToProxy(buffer.name, buffer);
 	}
 	// We change the image view if the name already exist when using resources
 
@@ -1143,30 +1141,6 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 		renderOperations = nullptr;
 		tasks.clear();
-	}
-
-	void AddImageToProxy(std::string name, ImageView *imageView)
-	{
-		if (!imagesProxyRef->contains(name))
-		{
-			imagesProxyRef->try_emplace(name, imageView);
-		}
-		else
-		{
-			imagesProxyRef->at(name) = imageView;
-		}
-	}
-
-	void AddBufferToProxy(std::string name, BufferKey buffer)
-	{
-		if (!bufferProxyRef->contains(name))
-		{
-			bufferProxyRef->try_emplace(name, buffer);
-		}
-		else
-		{
-			bufferProxyRef->at(name) = buffer;
-		}
 	}
 	void SetCurrCmd(vk::CommandBuffer cmd)
 	{
@@ -1228,9 +1202,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	std::function<void()>               *renderOperations = nullptr;
 	std::vector<std::function<void()> *> tasks;
 
-	std::unordered_map<std::string, ImageView *> *imagesProxyRef;
-	std::unordered_map<std::string, BufferKey>   *bufferProxyRef;
-	ResourcesManager                             *resManagerRef;
+	ResourcesManager *resManagerRef;
 };
 struct QueueNodesBatch
 {
@@ -1255,14 +1227,11 @@ class RenderGraph
 
 	std::unordered_map<std::string, std::unique_ptr<ShaderNode>>      shaderNodes;
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
+	//todo
+	std::unordered_map<std::string, RenderGraphNode *>                enqueueNodes;
 	std::vector<RenderGraphNode *>                                    sequentialRenderNodes;
 	std::vector<RenderGraphNode *>                                    sortedByDepNodes;
-	std::vector<std::string>                                          addedToRenderingNodes;
 
-	std::unordered_map<std::string, ImageView *>                      imagesProxy;
-	std::unordered_map<std::string, BufferKey>                        buffersProxy;
-	std::unordered_map<std::string, AttachmentInfo>                   outColAttachmentsProxy;
-	std::unordered_map<std::string, AttachmentInfo>                   outDepthAttachmentProxy;
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 	std::vector<QueueNodesBatch>                                      sortedQueueBatches;
@@ -1278,6 +1247,20 @@ class RenderGraph
 		{
 			node->Serialize();
 		}
+	}
+
+	ShaderNode *GetTemplateShader(std::string name, std::string shaderName, ShaderCompiler compiler)
+	{
+		Shader *vShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_VERT, compiler);
+		Shader *fShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_FRAG, compiler);
+		auto    shaderNode = AddShader(name);
+		shaderNode->SetConfigs({true});
+		shaderNode->SetVertShader(vShader);
+		shaderNode->SetFragShader(fShader);
+		shaderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		// change this
+		shaderNode->SetPushConstantSize(4);
+		return shaderNode;
 	}
 
 	RenderGraphNode *GetTemplateNode_DF(std::string name, std::string shaderName, ShaderCompiler compiler)
@@ -1330,27 +1313,27 @@ class RenderGraph
 		renderNode->SetPushConstantSize(4);
 		return renderNode;
 	}
-	RenderGraphNode *GetBlitterNode()
+	void CreateUtilityShaders()
 	{
-		auto *blitterNode = GetTemplateNode_DF("BlitterNode", "Blitter", ShaderCompiler::C_GLSL);
-
-		return blitterNode;
+		auto          *blitterShader = GetTemplateShader("BlitterShader", "Blitter", ShaderCompiler::C_GLSL);
+		AttachmentInfo colInfo       = GetColorAttachmentInfo(
+            glm::vec4(0.0f), core->swapchainRef->GetFormat());
+		blitterShader->AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
+		blitterShader->BuildShader();
+	}
+	ShaderNode *GetBlitterShader()
+	{
+		auto *blitterShader = GetShader("BlitterShader");
+		return blitterShader;
 	}
 	RenderGraphNode *BlitToBackbuffer()
 	{
-		auto *blitterNode = GetBlitterNode();
+		auto *blitterNode = AddPass(GetBlitterShader(), "BlitterNode");
 
-		AttachmentInfo colInfo = GetColorAttachmentInfo(
-		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
-		blitterNode->AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
 		blitterNode->BuildRenderGraphNode();
-
 		blitterNode->SetSampler("MainTex", currentBackBuffer);
+		blitterNode->EnqueueNode();
 
-		return blitterNode;
-	}
-	void BuildRenderOperations()
-	{
 		auto blitterTask = new std::function<void()>([this]() {
 			GetNode("BlitterNode")->AddColorImageResource(currentBackBufferSwapchain);
 			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
@@ -1371,8 +1354,9 @@ class RenderGraph
 			                                         0, 0);
 		    });
 
-		GetNode("BlitterNode")->AddTask(blitterTask);
-		GetNode("BlitterNode")->SetRenderOperation(blitterRenderOp);
+		blitterNode->AddTask(blitterTask);
+		blitterNode->SetRenderOperation(blitterRenderOp);
+		return blitterNode;
 	}
 
 	void LoadExternalPasses()
@@ -1432,6 +1416,16 @@ class RenderGraph
 		}
 	}
 
+	ShaderNode *GetShader(std::string name)
+	{
+		if (!shaderNodes.contains(name))
+		{
+			return nullptr;
+		}
+		auto shaderNode = shaderNodes.at(name).get();
+		assert(shaderNode != nullptr && "Shader is null");
+		return shaderNode;
+	}
 	ShaderNode *AddShader(std::string name)
 	{
 		if (!shaderNodes.contains(name))
@@ -1443,7 +1437,7 @@ class RenderGraph
 			shaderNodes.try_emplace(name, std::move(shaderNode));
 			return shaderNodes.at(name).get();
 		}
-		
+
 		auto shaderNode = shaderNodes.at(name).get();
 		assert(shaderNode != nullptr && "Shader is null");
 		return shaderNode;
@@ -1457,8 +1451,6 @@ class RenderGraph
 			auto renderGraphNode             = std::make_unique<RenderGraphNode>();
 			renderGraphNode->shaderNodeRef   = shaderNode;
 			renderGraphNode->passName        = name;
-			renderGraphNode->imagesProxyRef  = &imagesProxy;
-			renderGraphNode->bufferProxyRef  = &buffersProxy;
 			renderGraphNode->core            = core;
 			renderGraphNode->resManagerRef   = resourcesManager;
 			renderGraphNode->workerQueueName = workerQueueName;
@@ -1476,13 +1468,11 @@ class RenderGraph
 	{
 		if (!renderNodes.contains(name))
 		{
-			auto shaderNode             = AddShader("Shader_" + name);
+			auto shaderNode = AddShader("Shader_" + name);
 			assert(shaderNode != nullptr && "Shader is null");
 			auto renderGraphNode             = std::make_unique<RenderGraphNode>();
 			renderGraphNode->shaderNodeRef   = shaderNode;
 			renderGraphNode->passName        = name;
-			renderGraphNode->imagesProxyRef  = &imagesProxy;
-			renderGraphNode->bufferProxyRef  = &buffersProxy;
 			renderGraphNode->core            = core;
 			renderGraphNode->resManagerRef   = resourcesManager;
 			renderGraphNode->workerQueueName = workerQueueName;
@@ -1512,30 +1502,13 @@ class RenderGraph
 	ImageView *AddColorImageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(imageView->name))
+		if (renderNodes.contains(passName))
 		{
-			imagesProxy.try_emplace(imageView->name, imageView);
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddColorImageResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
+			renderNodes.at(passName)->AddColorImageResource(imageView);
 		}
 		else
 		{
-			imagesProxy.at(imageView->name) = imageView;
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddColorImageResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
-			// std::cout << "Image with name: \"" << name << "\" has changed \n";
+			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
 		}
 		return imageView;
 	}
@@ -1543,30 +1516,13 @@ class RenderGraph
 	ImageView *SetDepthImageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(imageView->name))
+		if (renderNodes.contains(passName))
 		{
-			imagesProxy.try_emplace(imageView->name, imageView);
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->SetDepthImageResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
+			renderNodes.at(passName)->SetDepthImageResource(imageView);
 		}
 		else
 		{
-			imagesProxy.at(imageView->name) = imageView;
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->SetDepthImageResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
-			// std::cout << "Image with name: \"" << name << "\" has changed \n";
+			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
 		}
 		return imageView;
 	}
@@ -1574,30 +1530,13 @@ class RenderGraph
 	ImageView *AddSamplerResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(imageView->name))
+		if (renderNodes.contains(passName))
 		{
-			imagesProxy.try_emplace(imageView->name, imageView);
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddSamplerResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
+			renderNodes.at(passName)->AddSamplerResource(imageView);
 		}
 		else
 		{
-			imagesProxy.at(imageView->name) = imageView;
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddSamplerResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
-			// std::cout << "Image with name: \"" << name << "\" has changed \n";
+			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
 		}
 		return imageView;
 	}
@@ -1605,30 +1544,13 @@ class RenderGraph
 	ImageView *AddStorageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
-		if (!imagesProxy.contains(imageView->name))
+		if (renderNodes.contains(passName))
 		{
-			imagesProxy.try_emplace(imageView->name, imageView);
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddStorageResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
+			renderNodes.at(passName)->AddStorageResource(imageView);
 		}
 		else
 		{
-			imagesProxy.at(imageView->name) = imageView;
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddStorageResource(imageView);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
-			// std::cout << "Image with name: \"" << name << "\" has changed \n";
+			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
 		}
 		return imageView;
 	}
@@ -1636,52 +1558,16 @@ class RenderGraph
 	BufferKey &AddBufferSync(std::string passName, BufferKey buffer)
 	{
 		assert(buffer.buffer && "ImageView is null");
-		if (!buffersProxy.contains(buffer.name))
+		if (renderNodes.contains(passName))
 		{
-			buffersProxy.try_emplace(buffer.name, buffer);
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddBufferSync(buffer);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
+			renderNodes.at(passName)->AddBufferSync(buffer);
 		}
 		else
 		{
-			buffersProxy.at(buffer.name) = buffer;
-			if (renderNodes.contains(passName))
-			{
-				renderNodes.at(passName)->AddBufferSync(buffer);
-			}
-			else
-			{
-				std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-			}
-			// std::cout << "Image with name: \"" << name << "\" has changed \n";
+			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
 		}
+		// std::cout << "Image with name: \"" << name << "\" has changed \n";
 		return buffer;
-	}
-
-	ImageView *GetImageResource(std::string name)
-	{
-		if (imagesProxy.contains(name))
-		{
-			return imagesProxy.at(name);
-		}
-		PrintInvalidResource("Resource", name);
-		return nullptr;
-	}
-
-	BufferKey &GetBufferResource(std::string name)
-	{
-		if (buffersProxy.contains(name))
-		{
-			return buffersProxy.at(name);
-		}
-		PrintInvalidResource("Resource", name);
-		assert(false && "Invalid name requested");
 	}
 
 	void RecreateFrameResources()
@@ -1714,10 +1600,10 @@ class RenderGraph
 			assert(false && "reload shaders failed");
 		}
 	}
-	void CreateUtilityPasses()
+	void CreateUtility()
 	{
+		CreateUtilityShaders();
 		BlitToBackbuffer();
-		BuildRenderOperations();
 	}
 	void SortNodesByDep()
 	{
