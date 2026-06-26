@@ -386,7 +386,7 @@ class ClusterRenderer : public BaseRenderer
 		renderNode->AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
 		renderNode->AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
 		renderNode->AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->SetDepthAttachmentOutput("gDepth", depthInfo);
+		renderNode->SetDepthAttachmentOutput(depthAttachmentView->name, depthInfo);
 		renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
 		renderNode->AddColorImageResource(colAttachmentView);
 		renderNode->AddColorImageResource(normAttachmentView);

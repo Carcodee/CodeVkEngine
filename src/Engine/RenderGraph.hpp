@@ -64,6 +64,7 @@ struct ShaderNode
 	std::vector<BlendConfigs>                                 colorBlendConfigs;
 	std::vector<AttachmentInfo>                               colAttachments;
 	AttachmentInfo                                            depthAttachment  = {};
+	AttachmentInfo                                            depthAttachmentInput  = {};
 	size_t                                                    pushConstantSize = 4;
 	DepthConfigs                                              depthConfig      = D_NONE;
 	RenderNodeConfigs                                         configs          = {true, false};
@@ -680,6 +681,7 @@ struct ShaderNode
 	}
 	void SetDepthAttachmentInput(std::string name)
 	{
+		
 		if (!outDepthAttachmentProxyRef.contains(name))
 		{
 			depthAttachment = outDepthAttachmentProxyRef.at(name);
@@ -692,15 +694,7 @@ struct ShaderNode
 
 	void SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
 	{
-		if (!outDepthAttachmentProxyRef.contains(name))
-		{
-			outDepthAttachmentProxyRef.try_emplace(name, depth);
-			depthAttachment = outColAttachmentsProxyRef.at(name);
-		}
-		else
-		{
-			std::cout << "Attachment: " << "\"" << name << "\"" << " already exist";
-		}
+		depthAttachment = depth;
 	}
 
 	void Reset()
@@ -857,6 +851,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	{
 		assert(imagesAttachmentOutputs.size() == shaderNodeRef->colAttachments.size() && "Not all color attachments were set");
 		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
+		assert(!(shaderNodeRef->depthAttachment.format != vk::Format::eUndefined && depthImage == nullptr) && "there is no depth attachment set");
 
 		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
 		shaderNodeRef->dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
@@ -1064,6 +1059,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	}
 	void SetDepthImageResource(ImageView *imageView)
 	{
+		this->depthImage = imageView;
 		AddImageToProxy(imageView->name, imageView);
 	}
 
