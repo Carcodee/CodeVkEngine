@@ -535,12 +535,12 @@ set "errorfound="
             shaderFileInfo = std::make_unique<SYSTEMS::FileInfo>(this->path);
         }
 
-        void Reload()
+        bool Reload()
         {
             shaderFileInfo->CheckLastTimeWrite();
             if (!shaderFileInfo->modified)
             {
-                return;
+                return false;
             }
             std::string code = SYSTEMS::OS::ReadFile(path);
             std::vector<uint32_t> byteCode;
@@ -576,6 +576,7 @@ set "errorfound="
             SYSTEMS::Logger::GetInstance()->LogMessage("Shader compiled: "+ path);
             SYSTEMS::Logger::GetInstance()->LogMessage("SPIRV: "+ spirvPath);
             shaderFileInfo->Invalidate();
+        	return true;
         }
 
 

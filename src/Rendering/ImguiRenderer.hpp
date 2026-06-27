@@ -322,29 +322,7 @@ class ImguiRenderer
 
 		DisplayRenderGraphDag();
 
-		ImGui::SeparatorText("Sorted Queue Order");
-		ImGui::Text("Queue batches: %d", static_cast<int>(renderGraph->sortedQueueBatches.size()));
-		for (int i = 0; i < renderGraph->sortedQueueBatches.size(); ++i)
-		{
-			auto       &batch = renderGraph->sortedQueueBatches[i];
-			std::string label = std::to_string(i) + ": " + batch.queueName + "##engine_queue_batch_" + std::to_string(i);
-			if (ImGui::TreeNode(label.c_str()))
-			{
-				ImGui::Text("Batch id: %d", batch.id);
-				ImGui::Text("Pool id used: %d", batch.poolIdUsed);
-				ImGui::Text("Members: %d", static_cast<int>(batch.sortedNodes.size()));
-				for (int nodeIdx = 0; nodeIdx < batch.sortedNodes.size(); ++nodeIdx)
-				{
-					auto *node = batch.sortedNodes[nodeIdx];
-					ImGui::BulletText("%02d. %s", nodeIdx, node->passName.c_str());
-				}
-				if (batch.sortedNodes.empty())
-				{
-					ImGui::Text("No render nodes in this queue batch");
-				}
-				ImGui::TreePop();
-			}
-		}
+		DisplayQueueExecutionTimeline();
 
 		ImGui::End();
 	}
@@ -526,17 +504,63 @@ class ImguiRenderer
 			return;
 		}
 
+		static std::string selectedNodeName;
+
 		std::map<std::string, RenderGraphNode *> nodeByName;
 		std::map<std::string, int>              levelByName;
+		std::map<std::string, int>              incomingCountByName;
+		std::map<std::string, int>              outgoingCountByName;
+		int                                     activeNodeCount        = 0;
+		int                                     edgeCount              = 0;
+		int                                     missingDependencyCount = 0;
 		for (auto *node : graphNodes)
 		{
 			if (!node)
 			{
 				continue;
 			}
-			nodeByName[node->passName]  = node;
-			levelByName[node->passName] = 0;
+			nodeByName[node->passName]        = node;
+			levelByName[node->passName]       = 0;
+			incomingCountByName[node->passName] = 0;
+			outgoingCountByName[node->passName] = 0;
+			if (node->active)
+			{
+				activeNodeCount++;
+			}
 		}
+
+		for (auto *node : graphNodes)
+		{
+			if (!node)
+			{
+				continue;
+			}
+			incomingCountByName[node->passName] = static_cast<int>(node->dependencies.size());
+			edgeCount += static_cast<int>(node->dependencies.size());
+			for (const auto &dependency : node->dependencies)
+			{
+				if (outgoingCountByName.contains(dependency))
+				{
+					outgoingCountByName.at(dependency)++;
+				}
+				else
+				{
+					missingDependencyCount++;
+				}
+			}
+		}
+
+		if (selectedNodeName.empty() || !nodeByName.contains(selectedNodeName))
+		{
+			selectedNodeName = graphNodes.front() ? graphNodes.front()->passName : "";
+		}
+
+		ImGui::Text("Nodes: %d | Active: %d | Edges: %d | Queue batches: %d | Missing deps: %d",
+		            static_cast<int>(nodeByName.size()),
+		            activeNodeCount,
+		            edgeCount,
+		            static_cast<int>(renderGraph->sortedQueueBatches.size()),
+		            missingDependencyCount);
 
 		int maxLevel = 0;
 		for (auto *node : graphNodes)
@@ -573,15 +597,15 @@ class ImguiRenderer
 			maxRows = std::max(maxRows, static_cast<int>(levelNodes.size()));
 		}
 
-		const ImVec2 nodeSize(180.0f, 42.0f);
-		const float  levelGap = 90.0f;
+		const ImVec2 nodeSize(220.0f, 66.0f);
+		const float  levelGap = 100.0f;
 		const float  rowGap   = 28.0f;
 		const ImVec2 padding(24.0f, 24.0f);
 		const ImVec2 canvasSize(
 		    padding.x * 2.0f + (maxLevel + 1) * nodeSize.x + maxLevel * levelGap,
 		    padding.y * 2.0f + maxRows * nodeSize.y + std::max(0, maxRows - 1) * rowGap);
 
-		ImGui::BeginChild("render_graph_dag_canvas", ImVec2(0.0f, 360.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("render_graph_dag_canvas", ImVec2(0.0f, 420.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
 		ImDrawList *drawList = ImGui::GetWindowDrawList();
 		ImVec2      origin   = ImGui::GetCursorScreenPos();
 
@@ -632,7 +656,11 @@ class ImguiRenderer
 
 		const ImU32 activeFill   = IM_COL32(38, 55, 65, 255);
 		const ImU32 inactiveFill = IM_COL32(42, 38, 44, 255);
+		const ImU32 selectedFill = IM_COL32(56, 76, 92, 255);
+		const ImU32 warningFill  = IM_COL32(80, 54, 36, 255);
 		const ImU32 borderColor  = IM_COL32(150, 155, 170, 220);
+		const ImU32 selectedBorderColor = IM_COL32(110, 185, 230, 255);
+		const ImU32 warningColor        = IM_COL32(245, 172, 95, 255);
 		const ImU32 textColor    = IM_COL32(230, 230, 235, 255);
 		const ImU32 mutedColor   = IM_COL32(175, 175, 185, 255);
 		for (auto *node : graphNodes)
@@ -643,15 +671,438 @@ class ImguiRenderer
 			}
 			ImVec2 minPos = nodeMinByName.at(node->passName);
 			ImVec2 maxPos = nodeMaxByName.at(node->passName);
-			drawList->AddRectFilled(minPos, maxPos, node->active ? activeFill : inactiveFill, 6.0f);
-			drawList->AddRect(minPos, maxPos, borderColor, 6.0f);
+			bool   hasMissingDependency = false;
+			for (const auto &dependency : node->dependencies)
+			{
+				if (!nodeByName.contains(dependency))
+				{
+					hasMissingDependency = true;
+					break;
+				}
+			}
+			bool  selected = selectedNodeName == node->passName;
+			ImU32 fillColor = hasMissingDependency ? warningFill : (selected ? selectedFill : (node->active ? activeFill : inactiveFill));
+			drawList->AddRectFilled(minPos, maxPos, fillColor, 6.0f);
+			drawList->AddRect(minPos, maxPos, selected ? selectedBorderColor : (hasMissingDependency ? warningColor : borderColor), 6.0f, 0, selected ? 3.0f : 1.0f);
 			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 7.0f), textColor, node->passName.c_str());
 			std::string nodeMeta = node->workerQueueName + (node->active ? " | active" : " | inactive");
 			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 24.0f), mutedColor, nodeMeta.c_str());
+			std::string edgeMeta = "in " + std::to_string(incomingCountByName[node->passName]) +
+			                       " | out " + std::to_string(outgoingCountByName[node->passName]);
+			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 43.0f), hasMissingDependency ? warningColor : mutedColor, edgeMeta.c_str());
+
+			ImGui::SetCursorScreenPos(minPos);
+			ImGui::PushID(node->passName.c_str());
+			if (ImGui::InvisibleButton("dag_node_hitbox", nodeSize))
+			{
+				selectedNodeName = node->passName;
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				ImGui::Text("%s", node->passName.c_str());
+				ImGui::Text("Queue: %s", node->workerQueueName.c_str());
+				ImGui::Text("Dependencies: %d", static_cast<int>(node->dependencies.size()));
+				ImGui::Text("Dependents: %d", outgoingCountByName[node->passName]);
+				ImGui::Text("Shader node: %s", node->shaderNodeRef ? node->shaderNodeRef->name.c_str() : "null");
+				ImGui::EndTooltip();
+			}
+			ImGui::PopID();
 		}
 
+		ImGui::SetCursorScreenPos(origin);
 		ImGui::Dummy(canvasSize);
 		ImGui::EndChild();
+
+		if (!selectedNodeName.empty() && nodeByName.contains(selectedNodeName))
+		{
+			RenderGraphNode *selectedNode = nodeByName.at(selectedNodeName);
+			ShaderNode      *shaderNode   = selectedNode->shaderNodeRef;
+
+			ImGui::SeparatorText("Selected Node");
+			if (ImGui::BeginTable("selected_render_graph_node", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+			{
+				ImGui::TableSetupColumn("Field");
+				ImGui::TableSetupColumn("Value");
+				ImGui::TableHeadersRow();
+
+				auto addRow = [](const char *name, const std::string &value) {
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::TextUnformatted(name);
+					ImGui::TableSetColumnIndex(1);
+					ImGui::TextWrapped("%s", value.c_str());
+				};
+
+				auto pipelineName = [](vk::PipelineBindPoint bindPoint) {
+					switch (bindPoint)
+					{
+					case vk::PipelineBindPoint::eGraphics:
+						return "Graphics";
+					case vk::PipelineBindPoint::eCompute:
+						return "Compute";
+					default:
+						return "Unknown";
+					}
+				};
+
+				auto imageMapNames = [](const std::unordered_map<std::string, ImageView *> &images) {
+					std::string names;
+					for (const auto &image : images)
+					{
+						if (!names.empty())
+						{
+							names += ", ";
+						}
+						names += image.first;
+						if (image.second)
+						{
+							names += " -> ";
+							names += image.second->name;
+						}
+						else
+						{
+							names += " -> null";
+						}
+					}
+					return names.empty() ? std::string("none") : names;
+				};
+
+				auto bufferNames = [](const std::unordered_map<std::string, BufferKey> &buffers) {
+					std::string names;
+					for (const auto &buffer : buffers)
+					{
+						if (!names.empty())
+						{
+							names += ", ";
+						}
+						names += buffer.first;
+						if (!buffer.second.name.empty() && buffer.second.name != buffer.first)
+						{
+							names += " -> ";
+							names += buffer.second.name;
+						}
+					}
+					return names.empty() ? std::string("none") : names;
+				};
+
+				addRow("Pass", selectedNode->passName);
+				addRow("Queue", selectedNode->workerQueueName);
+				addRow("State", selectedNode->active ? "active" : "inactive");
+				addRow("Level", std::to_string(levelByName[selectedNode->passName]));
+				addRow("Dependencies", std::to_string(selectedNode->dependencies.size()));
+				addRow("Dependents", std::to_string(outgoingCountByName[selectedNode->passName]));
+				addRow("Shader node", shaderNode ? shaderNode->name : "null");
+				addRow("Pipeline", shaderNode ? pipelineName(shaderNode->pipelineType) : "n/a");
+				addRow("Push constant bytes", shaderNode ? std::to_string(shaderNode->pushConstantSize) : "n/a");
+				addRow("Color attachments", shaderNode ? std::to_string(shaderNode->colAttachments.size()) : "n/a");
+				addRow("Blend configs", shaderNode ? std::to_string(shaderNode->colorBlendConfigs.size()) : "n/a");
+				addRow("Depth attachment", shaderNode ? (shaderNode->depthAttachment.format == vk::Format::eUndefined ? "none" : "present") : "n/a");
+				addRow("Framebuffer", std::to_string(selectedNode->GetFrameBufferSize().x) + " x " + std::to_string(selectedNode->GetFrameBufferSize().y));
+				addRow("Attachment outputs", std::to_string(selectedNode->GetImageAttachmentOutputs().size()));
+				addRow("Attachment names", std::to_string(selectedNode->GetImageAttachmentNames().size()));
+				addRow("Depth image", selectedNode->GetDepthImage() ? selectedNode->GetDepthImage()->name : "none");
+				addRow("Sampled images", std::to_string(selectedNode->GetSampledImages().size()));
+				addRow("Sampled image names", imageMapNames(selectedNode->GetSampledImages()));
+				addRow("Storage images", std::to_string(selectedNode->GetStorageImages().size()));
+				addRow("Storage image names", imageMapNames(selectedNode->GetStorageImages()));
+				addRow("Buffers", std::to_string(selectedNode->GetBuffers().size()));
+				addRow("Buffer names", bufferNames(selectedNode->GetBuffers()));
+				addRow("Descriptor cache", shaderNode ? (shaderNode->descCache ? "present" : "null") : "n/a");
+				addRow("Auto descriptor cache", shaderNode ? (shaderNode->configs.automaticCache ? "true" : "false") : "n/a");
+				addRow("Manual add", shaderNode ? (shaderNode->configs.manualAdd ? "true" : "false") : "n/a");
+
+				std::string shaderStages;
+				if (shaderNode)
+				{
+					for (const auto &shader : shaderNode->shaders)
+					{
+						if (shader.second)
+						{
+							if (!shaderStages.empty())
+							{
+								shaderStages += ", ";
+							}
+							shaderStages += shader.first;
+						}
+					}
+				}
+				addRow("Shaders", shaderStages.empty() ? "none" : shaderStages);
+
+				std::string dependencies;
+				for (const auto &dependency : selectedNode->dependencies)
+				{
+					if (!dependencies.empty())
+					{
+						dependencies += ", ";
+					}
+					dependencies += dependency;
+					if (!nodeByName.contains(dependency))
+					{
+						dependencies += " (missing)";
+					}
+				}
+				addRow("Depends on", dependencies.empty() ? "none" : dependencies);
+
+				std::string dependents;
+				for (auto *node : graphNodes)
+				{
+					if (node && node->dependencies.contains(selectedNode->passName))
+					{
+						if (!dependents.empty())
+						{
+							dependents += ", ";
+						}
+						dependents += node->passName;
+					}
+				}
+				addRow("Used by", dependents.empty() ? "none" : dependents);
+
+				ImGui::EndTable();
+			}
+		}
+	}
+
+	void DisplayQueueExecutionTimeline()
+	{
+		ImGui::SeparatorText("Queue Execution Timeline");
+
+		if (renderGraph->sortedQueueBatches.empty())
+		{
+			ImGui::Text("No queue batches");
+			return;
+		}
+
+		static int selectedBatchIdx = 0;
+		if (selectedBatchIdx < 0 || selectedBatchIdx >= renderGraph->sortedQueueBatches.size())
+		{
+			selectedBatchIdx = 0;
+		}
+
+		std::vector<std::string> queueNames;
+		std::map<std::string, int> queueLaneByName;
+		std::map<std::string, int> queueBatchCount;
+		std::map<std::string, int> queueNodeCount;
+		int totalNodeCount   = 0;
+		int activeNodeCount  = 0;
+		int emptyBatchCount  = 0;
+		for (const auto &batch : renderGraph->sortedQueueBatches)
+		{
+			if (!queueLaneByName.contains(batch.queueName))
+			{
+				queueLaneByName[batch.queueName] = static_cast<int>(queueNames.size());
+				queueNames.push_back(batch.queueName);
+			}
+			queueBatchCount[batch.queueName]++;
+			if (batch.sortedNodes.empty())
+			{
+				emptyBatchCount++;
+			}
+			for (auto *node : batch.sortedNodes)
+			{
+				if (!node)
+				{
+					continue;
+				}
+				totalNodeCount++;
+				queueNodeCount[batch.queueName]++;
+				if (node->active)
+				{
+					activeNodeCount++;
+				}
+			}
+		}
+
+		ImGui::Text("Batches: %d | Queues: %d | Nodes: %d | Active nodes: %d | Empty batches: %d",
+		            static_cast<int>(renderGraph->sortedQueueBatches.size()),
+		            static_cast<int>(queueNames.size()),
+		            totalNodeCount,
+		            activeNodeCount,
+		            emptyBatchCount);
+
+		const ImU32 queueColors[] = {
+		    IM_COL32(72, 113, 153, 255),
+		    IM_COL32(92, 133, 96, 255),
+		    IM_COL32(153, 117, 72, 255),
+		    IM_COL32(126, 96, 153, 255),
+		    IM_COL32(153, 82, 88, 255),
+		    IM_COL32(74, 138, 132, 255),
+		};
+		const ImU32 laneFill      = IM_COL32(24, 24, 29, 255);
+		const ImU32 laneBorder    = IM_COL32(72, 74, 84, 180);
+		const ImU32 selectedColor = IM_COL32(110, 185, 230, 255);
+		const ImU32 nodeFill      = IM_COL32(30, 35, 42, 255);
+		const ImU32 inactiveFill  = IM_COL32(50, 43, 48, 255);
+		const ImU32 emptyFill     = IM_COL32(48, 44, 37, 255);
+		const ImU32 textColor     = IM_COL32(232, 232, 238, 255);
+		const ImU32 mutedColor    = IM_COL32(175, 178, 188, 255);
+
+		const float labelWidth  = 150.0f;
+		const float laneHeight  = 94.0f;
+		const float batchGap    = 18.0f;
+		const float batchHeight = 62.0f;
+		const float nodeHeight  = 20.0f;
+		const ImVec2 padding(18.0f, 18.0f);
+
+		float timelineWidth = labelWidth + padding.x * 2.0f;
+		for (const auto &batch : renderGraph->sortedQueueBatches)
+		{
+			timelineWidth += std::max(170.0f, 74.0f * std::max(1, static_cast<int>(batch.sortedNodes.size()))) + batchGap;
+		}
+		float timelineHeight = padding.y * 2.0f + std::max(1, static_cast<int>(queueNames.size())) * laneHeight;
+
+		ImGui::BeginChild("queue_execution_timeline_canvas", ImVec2(0.0f, 320.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImDrawList *drawList = ImGui::GetWindowDrawList();
+		ImVec2      origin   = ImGui::GetCursorScreenPos();
+
+		for (int lane = 0; lane < queueNames.size(); ++lane)
+		{
+			float y = origin.y + padding.y + lane * laneHeight;
+			ImVec2 laneMin(origin.x + padding.x, y);
+			ImVec2 laneMax(origin.x + timelineWidth - padding.x, y + laneHeight - 12.0f);
+			drawList->AddRectFilled(laneMin, laneMax, laneFill, 6.0f);
+			drawList->AddRect(laneMin, laneMax, laneBorder, 6.0f);
+			drawList->AddText(ImVec2(laneMin.x + 10.0f, laneMin.y + 9.0f), textColor, queueNames[lane].c_str());
+			std::string laneMeta = "batches " + std::to_string(queueBatchCount[queueNames[lane]]) +
+			                       " | nodes " + std::to_string(queueNodeCount[queueNames[lane]]);
+			drawList->AddText(ImVec2(laneMin.x + 10.0f, laneMin.y + 30.0f), mutedColor, laneMeta.c_str());
+		}
+
+		float xCursor = origin.x + padding.x + labelWidth;
+		for (int batchIdx = 0; batchIdx < renderGraph->sortedQueueBatches.size(); ++batchIdx)
+		{
+			const auto &batch      = renderGraph->sortedQueueBatches[batchIdx];
+			int         lane       = queueLaneByName.at(batch.queueName);
+			float       batchWidth = std::max(170.0f, 74.0f * std::max(1, static_cast<int>(batch.sortedNodes.size())));
+			float       y          = origin.y + padding.y + lane * laneHeight + 14.0f;
+			ImVec2      minPos(xCursor, y);
+			ImVec2      maxPos(xCursor + batchWidth, y + batchHeight);
+			bool        selected = selectedBatchIdx == batchIdx;
+			ImU32       fill     = batch.sortedNodes.empty() ? emptyFill : queueColors[lane % IM_ARRAYSIZE(queueColors)];
+
+			drawList->AddRectFilled(minPos, maxPos, fill, 6.0f);
+			drawList->AddRect(minPos, maxPos, selected ? selectedColor : laneBorder, 6.0f, 0, selected ? 3.0f : 1.0f);
+
+			std::string batchTitle = "#" + std::to_string(batchIdx) + " batch " + std::to_string(batch.id);
+			drawList->AddText(ImVec2(minPos.x + 9.0f, minPos.y + 7.0f), textColor, batchTitle.c_str());
+			std::string batchMeta = "pool " + std::to_string(batch.poolIdUsed) + " | nodes " + std::to_string(batch.sortedNodes.size());
+			drawList->AddText(ImVec2(minPos.x + 9.0f, minPos.y + 26.0f), mutedColor, batchMeta.c_str());
+
+			if (batch.sortedNodes.empty())
+			{
+				drawList->AddText(ImVec2(minPos.x + 9.0f, minPos.y + 45.0f), mutedColor, "no render nodes");
+			}
+			else
+			{
+				float nodeX = minPos.x + 9.0f;
+				for (int nodeIdx = 0; nodeIdx < batch.sortedNodes.size(); ++nodeIdx)
+				{
+					RenderGraphNode *node = batch.sortedNodes[nodeIdx];
+					float chipWidth = std::min(96.0f, std::max(48.0f, (batchWidth - 18.0f) / static_cast<float>(batch.sortedNodes.size()) - 4.0f));
+					ImVec2 chipMin(nodeX, minPos.y + 41.0f);
+					ImVec2 chipMax(nodeX + chipWidth, chipMin.y + nodeHeight);
+					drawList->AddRectFilled(chipMin, chipMax, node && node->active ? nodeFill : inactiveFill, 4.0f);
+					drawList->AddRect(chipMin, chipMax, IM_COL32(120, 124, 138, 160), 4.0f);
+					std::string nodeLabel = node ? node->passName : "null";
+					if (nodeLabel.size() > 10)
+					{
+						nodeLabel = nodeLabel.substr(0, 9) + ".";
+					}
+					drawList->AddText(ImVec2(chipMin.x + 5.0f, chipMin.y + 3.0f), textColor, nodeLabel.c_str());
+					nodeX += chipWidth + 4.0f;
+				}
+			}
+
+			ImGui::SetCursorScreenPos(minPos);
+			ImGui::PushID(batchIdx);
+			if (ImGui::InvisibleButton("queue_batch_hitbox", ImVec2(batchWidth, batchHeight)))
+			{
+				selectedBatchIdx = batchIdx;
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				ImGui::Text("Batch index: %d", batchIdx);
+				ImGui::Text("Batch id: %d", batch.id);
+				ImGui::Text("Queue: %s", batch.queueName.c_str());
+				ImGui::Text("Pool id: %d", batch.poolIdUsed);
+				ImGui::Text("Nodes: %d", static_cast<int>(batch.sortedNodes.size()));
+				for (int nodeIdx = 0; nodeIdx < batch.sortedNodes.size(); ++nodeIdx)
+				{
+					RenderGraphNode *node = batch.sortedNodes[nodeIdx];
+					ImGui::BulletText("%02d. %s%s", nodeIdx, node ? node->passName.c_str() : "null", node && !node->active ? " (inactive)" : "");
+				}
+				ImGui::EndTooltip();
+			}
+			ImGui::PopID();
+
+			xCursor += batchWidth + batchGap;
+		}
+
+		ImGui::SetCursorScreenPos(origin);
+		ImGui::Dummy(ImVec2(timelineWidth, timelineHeight));
+		ImGui::EndChild();
+
+		const auto &selectedBatch = renderGraph->sortedQueueBatches[selectedBatchIdx];
+		ImGui::SeparatorText("Selected Queue Batch");
+		if (ImGui::BeginTable("selected_queue_batch", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Order");
+			ImGui::TableSetupColumn("Pass");
+			ImGui::TableSetupColumn("Queue");
+			ImGui::TableSetupColumn("State");
+			ImGui::TableSetupColumn("Dependencies");
+			ImGui::TableHeadersRow();
+
+			for (int nodeIdx = 0; nodeIdx < selectedBatch.sortedNodes.size(); ++nodeIdx)
+			{
+				RenderGraphNode *node = selectedBatch.sortedNodes[nodeIdx];
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("%02d", nodeIdx);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Text("%s", node ? node->passName.c_str() : "null");
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text("%s", node ? node->workerQueueName.c_str() : selectedBatch.queueName.c_str());
+				ImGui::TableSetColumnIndex(3);
+				ImGui::Text("%s", node && node->active ? "active" : "inactive");
+				ImGui::TableSetColumnIndex(4);
+				if (node && !node->dependencies.empty())
+				{
+					std::string dependencies;
+					for (const auto &dependency : node->dependencies)
+					{
+						if (!dependencies.empty())
+						{
+							dependencies += ", ";
+						}
+						dependencies += dependency;
+					}
+					ImGui::TextWrapped("%s", dependencies.c_str());
+				}
+				else
+				{
+					ImGui::TextUnformatted("none");
+				}
+			}
+
+			if (selectedBatch.sortedNodes.empty())
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("%d", selectedBatchIdx);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextUnformatted("no render nodes");
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text("%s", selectedBatch.queueName.c_str());
+				ImGui::TableSetColumnIndex(3);
+				ImGui::TextUnformatted("empty");
+				ImGui::TableSetColumnIndex(4);
+				ImGui::Text("batch id %d | pool %d", selectedBatch.id, selectedBatch.poolIdUsed);
+			}
+
+			ImGui::EndTable();
+		}
 	}
 
 	void PaintingInfo()

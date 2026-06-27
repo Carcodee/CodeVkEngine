@@ -530,7 +530,7 @@ struct ShaderNode
 		shaders.at("geom") = shader;
 	}
 
-	void ReloadShaders()
+	bool ReloadShaders()
 	{
 		Shader *vertShader = shaders.at("vert");
 		Shader *fragShader = shaders.at("frag");
@@ -539,31 +539,34 @@ struct ShaderNode
 		Shader *teseShader = shaders.at("tese");
 		Shader *geomShader = shaders.at("geom");
 
-		if (vertShader && fragShader)
+		//todo
+		bool isReloaded = false;
+		if (vertShader != nullptr && fragShader != nullptr )
 		{
 			vertShader->Reload();
 			fragShader->Reload();
 		}
 
-		if (tescShader)
+		if (tescShader != nullptr)
 		{
 			tescShader->Reload();
 		}
 
-		if (teseShader)
+		if (teseShader != nullptr)
 		{
 			teseShader->Reload();
 		}
 
-		if (geomShader)
+		if (geomShader != nullptr)
 		{
 			geomShader->Reload();
 		}
 
-		if (compShader)
+		if (compShader != nullptr)
 		{
 			compShader->Reload();
 		}
+		return isReloaded;
 	}
 
 	void GetShaderStages(std::map<ShaderStage, Shader *> &stages)
@@ -1183,6 +1186,41 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	std::set<std::string> dependencies;
 
+	const std::unordered_map<std::string, int> &GetImageAttachmentNames() const
+	{
+		return imageAttachmentsNames;
+	}
+
+	const std::vector<ImageView *> &GetImageAttachmentOutputs() const
+	{
+		return imagesAttachmentOutputs;
+	}
+
+	const std::unordered_map<std::string, ImageView *> &GetStorageImages() const
+	{
+		return storageImages;
+	}
+
+	const std::unordered_map<std::string, ImageView *> &GetSampledImages() const
+	{
+		return sampledImages;
+	}
+
+	const std::unordered_map<std::string, BufferKey> &GetBuffers() const
+	{
+		return buffers;
+	}
+
+	ImageView *GetDepthImage() const
+	{
+		return depthImage;
+	}
+
+	glm::uvec2 GetFrameBufferSize() const
+	{
+		return frameBufferSize;
+	}
+
   private:
 	friend class RenderGraph;
 
@@ -1332,10 +1370,10 @@ class RenderGraph
 		auto *blitterNode = AddPass(GetBlitterShader(), "BlitterNode");
 
 		blitterNode->BuildRenderGraphNode();
-		blitterNode->SetSampler("MainTex", currentBackBuffer);
 		blitterNode->EnqueueNode();
 
 		auto blitterTask = new std::function<void()>([this]() {
+			GetNode("BlitterNode")->SetSampler("MainTex", currentBackBuffer);
 			GetNode("BlitterNode")->AddColorImageResource(currentBackBufferSwapchain);
 			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});
@@ -1817,15 +1855,14 @@ class RenderGraph
 		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph prepare cpu");
 		resourcesManager->UpdateBuffers();
 		resourcesManager->UpdateImages();
-		
+		sortedByDepNodes.clear();
+		sortedQueueBatches.clear();
 		
 		ResolveNodesDependancies(sequentialRenderNodes);
 		if (sequentialRenderNodes.size() > 1)
 		{
 			GetNode("BlitterNode")->DependsOn(sequentialRenderNodes[sequentialRenderNodes.size() - 2]->passName);
 		}
-		sortedByDepNodes.clear();
-		sortedQueueBatches.clear();
 		SortNodesByDep(sortedByDepNodes);
 		BuildQueuePassesBatches(sortedByDepNodes, sortedQueueBatches);
 		Profiler::GetInstance()->EndProfilerCpuSpot("Rendergraph prepare cpu");
