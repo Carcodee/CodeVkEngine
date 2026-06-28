@@ -88,6 +88,7 @@ struct InFlightQueue
 		renderGraph->frameIndex                 = frameIndex;
 		// add pass info from my data
 	}
+	
 	void EndFrame()
 	{
 		auto &currFrame = frameResources[frameIndex];
@@ -143,7 +144,7 @@ struct InFlightQueue
 					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalTimeline);
-					queueRef->workerQueue.submit(submitInfo);
+					queueRef->workerQueue.submit({submitInfo});
 				}
 				else if (i > 0 && i != renderGraph->sortedQueueBatches.size() - 1)
 				{
@@ -171,7 +172,7 @@ struct InFlightQueue
 					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalTimeline);
-					queueRef->workerQueue.submit(submitInfo);
+					queueRef->workerQueue.submit({submitInfo});
 				}
 				else if (i == renderGraph->sortedQueueBatches.size() - 1)
 				{
@@ -195,7 +196,7 @@ struct InFlightQueue
 					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 					                      .setSignalSemaphoreCount(1)
 					                      .setPSignalSemaphores(signalTimeline);
-					queueRef->workerQueue.submit(submitInfo, currFrame.inflightFence.get());
+					queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
 				}
 			}
 		}

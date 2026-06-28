@@ -26,6 +26,7 @@ class Core
 	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffersSecondary(vk::CommandPool commandPool, size_t count);
 	vk::UniqueSemaphore                  CreateVulkanSemaphore();
 	vk::UniqueSemaphore                  CreateVulkanTimelineSemaphore(uint32_t initialValue);
+	vk::UniqueSemaphore                  CreateExportableTimelineSemaphore(uint32_t initialValue, HANDLE& handleOut);
 	vk::UniqueFence                      CreateFence(bool state);
 	void                                 WaitForFence(vk::Fence fence);
 	void                                 ResetFence(vk::Fence fence);
@@ -83,13 +84,15 @@ struct WorkerQueue
 	SYSTEMS::TaskThread                               taskThreat        = {};
 	std::vector<std::vector<vk::UniqueCommandBuffer>> commandBuffers;
 	vk::UniqueSemaphore                               timelineSem;
-	int64_t                                           timelineValue     = -1;
-	std::string                                       name              = "";
-	int                                               perCmdPoolSize    = 0;
-	bool                                              isMainThreat      = true;
-	int                                               activeCmdIdx      = 0;
-	int                                               cmdsPoolSize      = 0;
-	int                                               currentPoolCmdIdx = 0;
+	HANDLE                                            exportableHandle   = nullptr;
+	int64_t                                           timelineValue      = -1;
+	std::string                                       name               = "";
+	int                                               perCmdPoolSize     = 0;
+	bool                                              isMainThreat       = true;
+	bool                                              isForExternalUsage = false;
+	int                                               activeCmdIdx       = 0;
+	int                                               cmdsPoolSize       = 0;
+	int                                               currentPoolCmdIdx  = 0;
 
 	vk::CommandBuffer &RequestQueueCmd(int &poolIdxOut)
 	{
@@ -105,6 +108,22 @@ struct WorkerQueue
 		currentPoolCmdIdx++;
 
 		return cmd;
+	}
+
+	void InitTimelineSemaphore(int timelineValueIn, bool externalUsageIn)
+	{
+		assert(coreRef != nullptr);
+
+		isForExternalUsage = externalUsageIn;
+		timelineValue      = timelineValueIn;
+		if (isForExternalUsage)
+		{
+			timelineSem = coreRef->CreateVulkanTimelineSemaphore(timelineValue);
+		}
+		else
+		{
+			timelineSem = coreRef->CreateExportableTimelineSemaphore(timelineValue, exportableHandle);
+		}
 	}
 
 	void ResetPoolUsage()
@@ -195,7 +214,7 @@ class QueueWorkerManager
 		this->coreRef = core;
 	}
 	~QueueWorkerManager() = default;
-	WorkerQueue *GetOrCreateWorkerQueue(std::string name, uint32_t familyIndex, bool mainThread = true)
+	WorkerQueue *GetOrCreateWorkerQueue(std::string name, uint32_t familyIndex, bool mainThread = true, bool externalUsage = false)
 	{
 		assert(coreRef != nullptr);
 		if (workersQueues.contains(name))
@@ -203,7 +222,7 @@ class QueueWorkerManager
 			return GetWorkerQueue(name);
 		}
 		workersQueues.try_emplace(name);
-		auto& queueRef = workersQueues.at(name);
+		auto &queueRef             = workersQueues.at(name);
 		queueRef.coreRef           = coreRef;
 		queueRef.name              = name;
 		queueRef.workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
@@ -212,8 +231,7 @@ class QueueWorkerManager
 		queueRef.isMainThreat      = mainThread;
 		queueRef.cmdsPoolSize      = 1;
 		queueRef.InitPools(queueRef.cmdsPoolSize);
-		queueRef.timelineValue = 0;
-		queueRef.timelineSem = coreRef->CreateVulkanTimelineSemaphore(queueRef.timelineValue);
+		queueRef.InitTimelineSemaphore(0, externalUsage);
 
 		if (mainThread == false)
 		{

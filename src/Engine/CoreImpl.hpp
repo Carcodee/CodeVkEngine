@@ -65,6 +65,7 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.computeFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics_Test", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("UI", queueFamilyIndices.graphicsFamilyIndex);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("CUDA", queueFamilyIndices.computeFamilyIndex, true);
 
 	for (auto &property : properties)
 	{
@@ -145,6 +146,32 @@ vk::UniqueSemaphore Core::CreateVulkanTimelineSemaphore(uint32_t initialValue)
 	auto semaphoreInfo  = vk::SemaphoreCreateInfo();
 	semaphoreInfo.pNext = &semaphoreTypeInfo;
 	return logicalDevice->createSemaphoreUnique(semaphoreInfo);
+}
+
+vk::UniqueSemaphore Core::CreateExportableTimelineSemaphore(uint32_t initialValue, HANDLE& handleOut)
+{
+	auto semaphoreTypeInfo          = vk::SemaphoreTypeCreateInfo();
+	semaphoreTypeInfo.semaphoreType = vk::SemaphoreType::eTimeline;
+	semaphoreTypeInfo.initialValue  = initialValue;
+	
+	vk::ExportSemaphoreCreateInfo exportInfo{};
+	exportInfo.handleTypes =
+		vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+	
+	semaphoreTypeInfo.pNext = &exportInfo;
+
+	auto semaphoreInfo  = vk::SemaphoreCreateInfo();
+	semaphoreInfo.pNext = &semaphoreTypeInfo;
+	auto timeline = logicalDevice->createSemaphoreUnique(semaphoreInfo);
+	
+	vk::SemaphoreGetWin32HandleInfoKHR handleInfo{};
+	handleInfo.semaphore = timeline.get();
+	handleInfo.handleType =
+		vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+
+	handleOut = logicalDevice->getSemaphoreWin32HandleKHR(handleInfo, loader);
+
+	return timeline;
 }
 vk::UniqueFence Core::CreateFence(bool state)
 {
