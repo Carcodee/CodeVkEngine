@@ -68,7 +68,7 @@ class ResourcesManager : SYSTEMS::Subject
 	struct DsetsInfo
 	{
 		vk::DescriptorSet dset;
-		int32_t           id;
+		int32_t           id = -1;
 	};
 
 	struct BufferParams

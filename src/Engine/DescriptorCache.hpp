@@ -145,6 +145,11 @@ namespace ENGINE
 
             dstLayout = dstSetBuilder.BuildBindings(core->logicalDevice.get(), stageFlags, &bindingsFlagsCreateInfo, vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPoolEXT);
 
+        	if (dstSet != nullptr)
+        	{
+        		assert(dsetsInfo.id > -1 && "you are trying to deallocate an dset without dset info");
+        		resourcesManagerRef->DeallocateDset(dsetsInfo.id);
+        	}
             dsetsInfo = resourcesManagerRef->AllocateDset(dstLayout.get());
             dstSet = dsetsInfo.dset;
             for (auto& buffBinding : bufferBindingsKeys)
@@ -580,7 +585,7 @@ namespace ENGINE
         DescriptorWriterBuilder writerBuilder;
         vk::UniqueDescriptorSetLayout dstLayout;
         vk::DescriptorSet dstSet;
-        ResourcesManager::DsetsInfo dsetsInfo;
+        ResourcesManager::DsetsInfo dsetsInfo = {};
         
         DescriptorLayoutBuilder dstSetBuilder;
         vk::DescriptorSetLayout* dstSetLayoutHandle;

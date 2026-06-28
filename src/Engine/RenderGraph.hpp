@@ -105,9 +105,6 @@ struct ShaderNode
 		{
 			if (configs.automaticCache)
 			{
-				descCache.reset();
-				descCache = std::make_unique<DescriptorCache>(core);
-
 				descCache->AddShaderInfo(vertShader->sParser.get());
 				descCache->AddShaderInfo(fragShader->sParser.get());
 
@@ -199,11 +196,8 @@ struct ShaderNode
 		{
 			if (configs.automaticCache)
 			{
-				descCache.reset();
-				descCache = std::make_unique<DescriptorCache>(core);
-
 				descCache->AddShaderInfo(compShader->sParser.get());
-
+				
 				descCache->BuildDescriptorsCache(
 				    vk::ShaderStageFlagBits::eCompute);
 
@@ -1371,9 +1365,12 @@ class RenderGraph
 
 		blitterNode->BuildRenderGraphNode();
 		blitterNode->EnqueueNode();
+		
 
+		GetNode("BlitterNode")->SetSampler("MainTex", currentBackBuffer);
 		auto blitterTask = new std::function<void()>([this]() {
-			GetNode("BlitterNode")->SetSampler("MainTex", currentBackBuffer);
+			//there is one thing that I may change and is that when I set the sampler from outside of the task 
+			//function and I reload the shaders the ref of the sampler is gone because I reset the descriptor set, I should change that
 			GetNode("BlitterNode")->AddColorImageResource(currentBackBufferSwapchain);
 			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});

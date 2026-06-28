@@ -35,7 +35,8 @@ void main() {
     float squaredD = pow(2.0, dir.x) + pow(2.0, dir.y);
     
     if(distance(vec2(xCoord, yCoord), vec2(pc.xMouseCoord, pc.yMouseCoord)) < pc.radius/2.0){
-        ivec2 xy = ivec2(xCoord, yCoord);
+        ivec2 xy = ivec2(xCoord, yCoord) * 2;
+        
         bool painting = (pc.painting == 1);
         if(painting && pc.layerSelected == 0){
             imageStore(PaintingLayers[0], xy , pc.color);
