@@ -199,7 +199,7 @@ class GSRenderer : public BaseRenderer
 			    vk::DeviceSize offset = 0;
 
 			    renderNode->GetCurrCmd().pushConstants(
-			        renderGraph->GetNode(passName)->shaderNodeRef->pipelineLayout.get(),
+			        renderGraph->GetNode(passName)->GPUPipelineRef->pipelineLayout.get(),
 			        vk::ShaderStageFlagBits::eVertex |
 			            vk::ShaderStageFlagBits::eFragment,
 			        0, sizeof(SplitMVP), &splitMvp);

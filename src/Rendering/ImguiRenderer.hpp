@@ -141,25 +141,7 @@ class ImguiRenderer
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		StartNodeEditor();
-
-		DisplayGeneralEngineInfo();
-
-		// ImGui::ShowDemoWindow();
-		if (clusterRenderer)
-		{
-			ClusterRendererInfo();
-		}
-		if (flatRenderer)
-		{
-			RCascadesInfo();
-		}
-		if (gsRenderer)
-		{
-			GSRendererInfo();
-		}
-
-		RenderGraphProfiler();
+		RenderDebuggerWindow();
 
 		ImGui::Render();
 		ENGINE::AttachmentInfo attachmentInfo = ENGINE::GetColorAttachmentInfo(glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad);
@@ -187,13 +169,74 @@ class ImguiRenderer
 		imageViewsToRecover.clear();
 		layoutPatternsToRecover.clear();
 	}
+	template<typename DrawFn>
+	void RenderDebuggerTab(const char *title, DrawFn drawFn)
+	{
+		if (ImGui::BeginTabItem(title))
+		{
+			if (ImGui::BeginChild(title, ImVec2(0.0f, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar))
+			{
+				drawFn();
+			}
+			ImGui::EndChild();
+			ImGui::EndTabItem();
+		}
+	}
+	void RenderDebuggerWindow()
+	{
+		ImGuiIO &io = ImGui::GetIO();
+		ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * 0.45f, io.DisplaySize.y * 0.9f), ImGuiCond_FirstUseEver);
+		if (ImGui::Begin("Engine Debugger"))
+		{
+			if (ImGui::BeginTabBar("engine_debugger_tabs", ImGuiTabBarFlags_Reorderable))
+			{
+				RenderDebuggerTab("Node Editor", [this]() {
+					StartNodeEditor();
+				});
+
+				RenderDebuggerTab("Engine Info", [this]() {
+					DisplayEngineInfo();
+				});
+
+				RenderDebuggerTab("Images Loaded", [this]() {
+					DisplayAllTextures();
+				});
+
+				if (clusterRenderer)
+				{
+					RenderDebuggerTab("Cluster Renderer", [this]() {
+						ClusterRendererInfo();
+					});
+				}
+				if (flatRenderer)
+				{
+					RenderDebuggerTab("Radiance Cascades", [this]() {
+						RCascadesInfo();
+					});
+				}
+				if (gsRenderer)
+				{
+					RenderDebuggerTab("GS Renderer", [this]() {
+						GSRendererInfo();
+					});
+				}
+
+				RenderDebuggerTab("Profiler", [this]() {
+					RenderGraphProfiler();
+				});
+
+				ImGui::EndTabBar();
+			}
+		}
+		ImGui::End();
+	}
 	void RenderGraphProfiler()
 	{
 		profilersWindow.cpuGraph.LoadFrameData(Profiler::GetInstance()->cpuTasks.data(),
 		                                       Profiler::GetInstance()->cpuTasks.size());
 		profilersWindow.gpuGraph.LoadFrameData(Profiler::GetInstance()->gpuTasks.data(),
 		                                       Profiler::GetInstance()->gpuTasks.size());
-		profilersWindow.Render();
+		profilersWindow.RenderContent();
 	}
 
 	void SetStyle()
@@ -270,8 +313,6 @@ class ImguiRenderer
 
 	void DisplayEngineInfo()
 	{
-		ImGui::Begin("engine info");
-
 		auto *queueWorkerManager = core->queueWorkerManager.get();
 		const int engineQueueCount = static_cast<int>(queueWorkerManager->workersQueues.size());
 		ImGui::Text("Engine queues: %d", engineQueueCount);
@@ -323,14 +364,10 @@ class ImguiRenderer
 		DisplayRenderGraphDag();
 
 		DisplayQueueExecutionTimeline();
-
-		ImGui::End();
 	}
 
 	void ClusterRendererInfo()
 	{
-		ImGui::Begin("Debug Info");
-
 		ImGui::SeparatorText("Light Info");
 
 		float speed = 0.01f;
@@ -485,383 +522,9 @@ class ImguiRenderer
 			ImGui::Checkbox(name.c_str(), nodeInfo.active);
 		}
 		nodeInfos.clear();
-
-		ImGui::End();
 	}
 
-	void DisplayRenderGraphDag()
-	{
-		ImGui::SeparatorText("Render Graph DAG");
-
-		std::vector<RenderGraphNode *> graphNodes = renderGraph->sortedByDepNodes;
-		if (graphNodes.empty())
-		{
-			graphNodes = renderGraph->sequentialRenderNodes;
-		}
-		if (graphNodes.empty())
-		{
-			ImGui::Text("No render graph nodes");
-			return;
-		}
-
-		static std::string selectedNodeName;
-
-		std::map<std::string, RenderGraphNode *> nodeByName;
-		std::map<std::string, int>              levelByName;
-		std::map<std::string, int>              incomingCountByName;
-		std::map<std::string, int>              outgoingCountByName;
-		int                                     activeNodeCount        = 0;
-		int                                     edgeCount              = 0;
-		int                                     missingDependencyCount = 0;
-		for (auto *node : graphNodes)
-		{
-			if (!node)
-			{
-				continue;
-			}
-			nodeByName[node->passName]        = node;
-			levelByName[node->passName]       = 0;
-			incomingCountByName[node->passName] = 0;
-			outgoingCountByName[node->passName] = 0;
-			if (node->active)
-			{
-				activeNodeCount++;
-			}
-		}
-
-		for (auto *node : graphNodes)
-		{
-			if (!node)
-			{
-				continue;
-			}
-			incomingCountByName[node->passName] = static_cast<int>(node->dependencies.size());
-			edgeCount += static_cast<int>(node->dependencies.size());
-			for (const auto &dependency : node->dependencies)
-			{
-				if (outgoingCountByName.contains(dependency))
-				{
-					outgoingCountByName.at(dependency)++;
-				}
-				else
-				{
-					missingDependencyCount++;
-				}
-			}
-		}
-
-		if (selectedNodeName.empty() || !nodeByName.contains(selectedNodeName))
-		{
-			selectedNodeName = graphNodes.front() ? graphNodes.front()->passName : "";
-		}
-
-		ImGui::Text("Nodes: %d | Active: %d | Edges: %d | Queue batches: %d | Missing deps: %d",
-		            static_cast<int>(nodeByName.size()),
-		            activeNodeCount,
-		            edgeCount,
-		            static_cast<int>(renderGraph->sortedQueueBatches.size()),
-		            missingDependencyCount);
-
-		int maxLevel = 0;
-		for (auto *node : graphNodes)
-		{
-			if (!node)
-			{
-				continue;
-			}
-			int nodeLevel = 0;
-			for (const auto &dependency : node->dependencies)
-			{
-				if (levelByName.contains(dependency))
-				{
-					nodeLevel = std::max(nodeLevel, levelByName.at(dependency) + 1);
-				}
-			}
-			levelByName[node->passName] = nodeLevel;
-			maxLevel                    = std::max(maxLevel, nodeLevel);
-		}
-
-		std::vector<std::vector<RenderGraphNode *>> nodesByLevel(maxLevel + 1);
-		for (auto *node : graphNodes)
-		{
-			if (!node)
-			{
-				continue;
-			}
-			nodesByLevel[levelByName.at(node->passName)].push_back(node);
-		}
-
-		int maxRows = 1;
-		for (const auto &levelNodes : nodesByLevel)
-		{
-			maxRows = std::max(maxRows, static_cast<int>(levelNodes.size()));
-		}
-
-		const ImVec2 nodeSize(220.0f, 66.0f);
-		const float  levelGap = 100.0f;
-		const float  rowGap   = 28.0f;
-		const ImVec2 padding(24.0f, 24.0f);
-		const ImVec2 canvasSize(
-		    padding.x * 2.0f + (maxLevel + 1) * nodeSize.x + maxLevel * levelGap,
-		    padding.y * 2.0f + maxRows * nodeSize.y + std::max(0, maxRows - 1) * rowGap);
-
-		ImGui::BeginChild("render_graph_dag_canvas", ImVec2(0.0f, 420.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
-		ImDrawList *drawList = ImGui::GetWindowDrawList();
-		ImVec2      origin   = ImGui::GetCursorScreenPos();
-
-		std::map<std::string, ImVec2> nodeMinByName;
-		std::map<std::string, ImVec2> nodeMaxByName;
-		for (int level = 0; level < nodesByLevel.size(); ++level)
-		{
-			const auto &levelNodes  = nodesByLevel[level];
-			float       levelHeight = levelNodes.size() * nodeSize.y + std::max(0, static_cast<int>(levelNodes.size()) - 1) * rowGap;
-			float       yOffset     = std::max(0.0f, (canvasSize.y - padding.y * 2.0f - levelHeight) * 0.5f);
-			for (int row = 0; row < levelNodes.size(); ++row)
-			{
-				RenderGraphNode *node = levelNodes[row];
-				ImVec2          minPos(
-                    origin.x + padding.x + level * (nodeSize.x + levelGap),
-                    origin.y + padding.y + yOffset + row * (nodeSize.y + rowGap));
-				ImVec2 maxPos(minPos.x + nodeSize.x, minPos.y + nodeSize.y);
-				nodeMinByName[node->passName] = minPos;
-				nodeMaxByName[node->passName] = maxPos;
-			}
-		}
-
-		const ImU32 edgeColor      = IM_COL32(130, 140, 170, 180);
-		const ImU32 edgeArrowColor = IM_COL32(170, 180, 220, 220);
-		for (auto *node : graphNodes)
-		{
-			if (!node || !nodeMinByName.contains(node->passName))
-			{
-				continue;
-			}
-			for (const auto &dependency : node->dependencies)
-			{
-				if (!nodeMaxByName.contains(dependency))
-				{
-					continue;
-				}
-				ImVec2 src(nodeMaxByName.at(dependency).x, (nodeMinByName.at(dependency).y + nodeMaxByName.at(dependency).y) * 0.5f);
-				ImVec2 dst(nodeMinByName.at(node->passName).x, (nodeMinByName.at(node->passName).y + nodeMaxByName.at(node->passName).y) * 0.5f);
-				float  midX = (src.x + dst.x) * 0.5f;
-				drawList->AddBezierCubic(src, ImVec2(midX, src.y), ImVec2(midX, dst.y), dst, edgeColor, 2.0f);
-				drawList->AddTriangleFilled(
-				    ImVec2(dst.x, dst.y),
-				    ImVec2(dst.x - 8.0f, dst.y - 5.0f),
-				    ImVec2(dst.x - 8.0f, dst.y + 5.0f),
-				    edgeArrowColor);
-			}
-		}
-
-		const ImU32 activeFill   = IM_COL32(38, 55, 65, 255);
-		const ImU32 inactiveFill = IM_COL32(42, 38, 44, 255);
-		const ImU32 selectedFill = IM_COL32(56, 76, 92, 255);
-		const ImU32 warningFill  = IM_COL32(80, 54, 36, 255);
-		const ImU32 borderColor  = IM_COL32(150, 155, 170, 220);
-		const ImU32 selectedBorderColor = IM_COL32(110, 185, 230, 255);
-		const ImU32 warningColor        = IM_COL32(245, 172, 95, 255);
-		const ImU32 textColor    = IM_COL32(230, 230, 235, 255);
-		const ImU32 mutedColor   = IM_COL32(175, 175, 185, 255);
-		for (auto *node : graphNodes)
-		{
-			if (!node || !nodeMinByName.contains(node->passName))
-			{
-				continue;
-			}
-			ImVec2 minPos = nodeMinByName.at(node->passName);
-			ImVec2 maxPos = nodeMaxByName.at(node->passName);
-			bool   hasMissingDependency = false;
-			for (const auto &dependency : node->dependencies)
-			{
-				if (!nodeByName.contains(dependency))
-				{
-					hasMissingDependency = true;
-					break;
-				}
-			}
-			bool  selected = selectedNodeName == node->passName;
-			ImU32 fillColor = hasMissingDependency ? warningFill : (selected ? selectedFill : (node->active ? activeFill : inactiveFill));
-			drawList->AddRectFilled(minPos, maxPos, fillColor, 6.0f);
-			drawList->AddRect(minPos, maxPos, selected ? selectedBorderColor : (hasMissingDependency ? warningColor : borderColor), 6.0f, 0, selected ? 3.0f : 1.0f);
-			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 7.0f), textColor, node->passName.c_str());
-			std::string nodeMeta = node->workerQueueName + (node->active ? " | active" : " | inactive");
-			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 24.0f), mutedColor, nodeMeta.c_str());
-			std::string edgeMeta = "in " + std::to_string(incomingCountByName[node->passName]) +
-			                       " | out " + std::to_string(outgoingCountByName[node->passName]);
-			drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 43.0f), hasMissingDependency ? warningColor : mutedColor, edgeMeta.c_str());
-
-			ImGui::SetCursorScreenPos(minPos);
-			ImGui::PushID(node->passName.c_str());
-			if (ImGui::InvisibleButton("dag_node_hitbox", nodeSize))
-			{
-				selectedNodeName = node->passName;
-			}
-			if (ImGui::IsItemHovered())
-			{
-				ImGui::BeginTooltip();
-				ImGui::Text("%s", node->passName.c_str());
-				ImGui::Text("Queue: %s", node->workerQueueName.c_str());
-				ImGui::Text("Dependencies: %d", static_cast<int>(node->dependencies.size()));
-				ImGui::Text("Dependents: %d", outgoingCountByName[node->passName]);
-				ImGui::Text("Shader node: %s", node->shaderNodeRef ? node->shaderNodeRef->name.c_str() : "null");
-				ImGui::EndTooltip();
-			}
-			ImGui::PopID();
-		}
-
-		ImGui::SetCursorScreenPos(origin);
-		ImGui::Dummy(canvasSize);
-		ImGui::EndChild();
-
-		if (!selectedNodeName.empty() && nodeByName.contains(selectedNodeName))
-		{
-			RenderGraphNode *selectedNode = nodeByName.at(selectedNodeName);
-			ShaderNode      *shaderNode   = selectedNode->shaderNodeRef;
-
-			ImGui::SeparatorText("Selected Node");
-			if (ImGui::BeginTable("selected_render_graph_node", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
-			{
-				ImGui::TableSetupColumn("Field");
-				ImGui::TableSetupColumn("Value");
-				ImGui::TableHeadersRow();
-
-				auto addRow = [](const char *name, const std::string &value) {
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::TextUnformatted(name);
-					ImGui::TableSetColumnIndex(1);
-					ImGui::TextWrapped("%s", value.c_str());
-				};
-
-				auto pipelineName = [](vk::PipelineBindPoint bindPoint) {
-					switch (bindPoint)
-					{
-					case vk::PipelineBindPoint::eGraphics:
-						return "Graphics";
-					case vk::PipelineBindPoint::eCompute:
-						return "Compute";
-					default:
-						return "Unknown";
-					}
-				};
-
-				auto imageMapNames = [](const std::unordered_map<std::string, ImageView *> &images) {
-					std::string names;
-					for (const auto &image : images)
-					{
-						if (!names.empty())
-						{
-							names += ", ";
-						}
-						names += image.first;
-						if (image.second)
-						{
-							names += " -> ";
-							names += image.second->name;
-						}
-						else
-						{
-							names += " -> null";
-						}
-					}
-					return names.empty() ? std::string("none") : names;
-				};
-
-				auto bufferNames = [](const std::unordered_map<std::string, BufferKey> &buffers) {
-					std::string names;
-					for (const auto &buffer : buffers)
-					{
-						if (!names.empty())
-						{
-							names += ", ";
-						}
-						names += buffer.first;
-						if (!buffer.second.name.empty() && buffer.second.name != buffer.first)
-						{
-							names += " -> ";
-							names += buffer.second.name;
-						}
-					}
-					return names.empty() ? std::string("none") : names;
-				};
-
-				addRow("Pass", selectedNode->passName);
-				addRow("Queue", selectedNode->workerQueueName);
-				addRow("State", selectedNode->active ? "active" : "inactive");
-				addRow("Level", std::to_string(levelByName[selectedNode->passName]));
-				addRow("Dependencies", std::to_string(selectedNode->dependencies.size()));
-				addRow("Dependents", std::to_string(outgoingCountByName[selectedNode->passName]));
-				addRow("Shader node", shaderNode ? shaderNode->name : "null");
-				addRow("Pipeline", shaderNode ? pipelineName(shaderNode->pipelineType) : "n/a");
-				addRow("Push constant bytes", shaderNode ? std::to_string(shaderNode->pushConstantSize) : "n/a");
-				addRow("Color attachments", shaderNode ? std::to_string(shaderNode->colAttachments.size()) : "n/a");
-				addRow("Blend configs", shaderNode ? std::to_string(shaderNode->colorBlendConfigs.size()) : "n/a");
-				addRow("Depth attachment", shaderNode ? (shaderNode->depthAttachment.format == vk::Format::eUndefined ? "none" : "present") : "n/a");
-				addRow("Framebuffer", std::to_string(selectedNode->GetFrameBufferSize().x) + " x " + std::to_string(selectedNode->GetFrameBufferSize().y));
-				addRow("Attachment outputs", std::to_string(selectedNode->GetImageAttachmentOutputs().size()));
-				addRow("Attachment names", std::to_string(selectedNode->GetImageAttachmentNames().size()));
-				addRow("Depth image", selectedNode->GetDepthImage() ? selectedNode->GetDepthImage()->name : "none");
-				addRow("Sampled images", std::to_string(selectedNode->GetSampledImages().size()));
-				addRow("Sampled image names", imageMapNames(selectedNode->GetSampledImages()));
-				addRow("Storage images", std::to_string(selectedNode->GetStorageImages().size()));
-				addRow("Storage image names", imageMapNames(selectedNode->GetStorageImages()));
-				addRow("Buffers", std::to_string(selectedNode->GetBuffers().size()));
-				addRow("Buffer names", bufferNames(selectedNode->GetBuffers()));
-				addRow("Descriptor cache", shaderNode ? (shaderNode->descCache ? "present" : "null") : "n/a");
-				addRow("Auto descriptor cache", shaderNode ? (shaderNode->configs.automaticCache ? "true" : "false") : "n/a");
-				addRow("Manual add", shaderNode ? (shaderNode->configs.manualAdd ? "true" : "false") : "n/a");
-
-				std::string shaderStages;
-				if (shaderNode)
-				{
-					for (const auto &shader : shaderNode->shaders)
-					{
-						if (shader.second)
-						{
-							if (!shaderStages.empty())
-							{
-								shaderStages += ", ";
-							}
-							shaderStages += shader.first;
-						}
-					}
-				}
-				addRow("Shaders", shaderStages.empty() ? "none" : shaderStages);
-
-				std::string dependencies;
-				for (const auto &dependency : selectedNode->dependencies)
-				{
-					if (!dependencies.empty())
-					{
-						dependencies += ", ";
-					}
-					dependencies += dependency;
-					if (!nodeByName.contains(dependency))
-					{
-						dependencies += " (missing)";
-					}
-				}
-				addRow("Depends on", dependencies.empty() ? "none" : dependencies);
-
-				std::string dependents;
-				for (auto *node : graphNodes)
-				{
-					if (node && node->dependencies.contains(selectedNode->passName))
-					{
-						if (!dependents.empty())
-						{
-							dependents += ", ";
-						}
-						dependents += node->passName;
-					}
-				}
-				addRow("Used by", dependents.empty() ? "none" : dependents);
-
-				ImGui::EndTable();
-			}
-		}
-	}
+	void DisplayRenderGraphDag();
 
 	void DisplayQueueExecutionTimeline()
 	{
@@ -1178,8 +841,6 @@ class ImguiRenderer
 		//
 		// ImGui::End();
 		//
-		ImGui::Begin("Radiance Cascades Configs");
-
 		ImGui::SeparatorText("Cascades Configs");
 		static int probeSizePx = flatRenderer->cascadesInfo.probeSizePx;
 		if (ImGui::SliderInt("Probe Size in Px", &probeSizePx, 2, 1024))
@@ -1247,16 +908,12 @@ class ImguiRenderer
 		PaintingInfo();
 		
 		AnimatorInfo();
-
-		ImGui::End();
 	}
 
 	void GSRendererInfo()
 	{
 		if (!gsRenderer)
 			return;
-
-		ImGui::Begin("GS Renderer Info");
 
 		ImGui::SeparatorText("Gaussian Info");
 		int gaussianCount = gsRenderer->gaussians.pos.size();
@@ -1284,8 +941,6 @@ class ImguiRenderer
 		{
 			gsRenderer->ReSort();
 		}
-
-		ImGui::End();
 	}
 
 	void AddImage(std::string name, ImageView *imageView)
@@ -1348,7 +1003,6 @@ class ImguiRenderer
 	void DisplayAllTextures()
 	{
 		AddAllImages();
-		ImGui::Begin("Images Loaded");
 		static char textBuff[256] = "";
 		ImGui::InputText("Filter: ", textBuff, 256);
 		std::string input(textBuff);
@@ -1390,7 +1044,6 @@ class ImguiRenderer
 			                                                           image->imageView->name),
 			                                                       {size, size});
 		}
-		ImGui::End();
 	}
 	void Destroy()
 	{
@@ -1415,6 +1068,379 @@ class ImguiRenderer
 	std::vector<LayoutPatterns>      layoutPatternsToRecover;
 	std::vector<ImageView *>         imageViewsToRecover;
 };
+inline void ImguiRenderer::DisplayRenderGraphDag()
+{
+	ImGui::SeparatorText("Render Graph DAG");
+
+	std::vector<RenderGraphNode *> graphNodes = renderGraph->sortedByDepNodes;
+	if (graphNodes.empty())
+	{
+		graphNodes = renderGraph->sequentialRenderNodes;
+	}
+	if (graphNodes.empty())
+	{
+		ImGui::Text("No render graph nodes");
+		return;
+	}
+
+	static std::string selectedNodeName;
+
+	std::map<std::string, RenderGraphNode *> nodeByName;
+	std::map<std::string, int>               levelByName;
+	std::map<std::string, int>               incomingCountByName;
+	std::map<std::string, int>               outgoingCountByName;
+	int                                      activeNodeCount        = 0;
+	int                                      edgeCount              = 0;
+	int                                      missingDependencyCount = 0;
+	for (auto *node : graphNodes)
+	{
+		if (!node)
+		{
+			continue;
+		}
+		nodeByName[node->passName]          = node;
+		levelByName[node->passName]         = 0;
+		incomingCountByName[node->passName] = 0;
+		outgoingCountByName[node->passName] = 0;
+		if (node->active)
+		{
+			activeNodeCount++;
+		}
+	}
+
+	for (auto *node : graphNodes)
+	{
+		if (!node)
+		{
+			continue;
+		}
+		incomingCountByName[node->passName] = static_cast<int>(node->dependencies.size());
+		edgeCount += static_cast<int>(node->dependencies.size());
+		for (const auto &dependency : node->dependencies)
+		{
+			if (outgoingCountByName.contains(dependency))
+			{
+				outgoingCountByName.at(dependency)++;
+			}
+			else
+			{
+				missingDependencyCount++;
+			}
+		}
+	}
+
+	if (selectedNodeName.empty() || !nodeByName.contains(selectedNodeName))
+	{
+		selectedNodeName = graphNodes.front() ? graphNodes.front()->passName : "";
+	}
+
+	ImGui::Text("Nodes: %d | Active: %d | Edges: %d | Queue batches: %d | Missing deps: %d",
+	            static_cast<int>(nodeByName.size()),
+	            activeNodeCount,
+	            edgeCount,
+	            static_cast<int>(renderGraph->sortedQueueBatches.size()),
+	            missingDependencyCount);
+
+	int maxLevel = 0;
+	for (auto *node : graphNodes)
+	{
+		if (!node)
+		{
+			continue;
+		}
+		int nodeLevel = 0;
+		for (const auto &dependency : node->dependencies)
+		{
+			if (levelByName.contains(dependency))
+			{
+				nodeLevel = std::max(nodeLevel, levelByName.at(dependency) + 1);
+			}
+		}
+		levelByName[node->passName] = nodeLevel;
+		maxLevel                    = std::max(maxLevel, nodeLevel);
+	}
+
+	std::vector<std::vector<RenderGraphNode *>> nodesByLevel(maxLevel + 1);
+	for (auto *node : graphNodes)
+	{
+		if (!node)
+		{
+			continue;
+		}
+		nodesByLevel[levelByName.at(node->passName)].push_back(node);
+	}
+
+	int maxRows = 1;
+	for (const auto &levelNodes : nodesByLevel)
+	{
+		maxRows = std::max(maxRows, static_cast<int>(levelNodes.size()));
+	}
+
+	const ImVec2 nodeSize(220.0f, 66.0f);
+	const float  levelGap = 100.0f;
+	const float  rowGap   = 28.0f;
+	const ImVec2 padding(24.0f, 24.0f);
+	const ImVec2 canvasSize(
+	    padding.x * 2.0f + (maxLevel + 1) * nodeSize.x + maxLevel * levelGap,
+	    padding.y * 2.0f + maxRows * nodeSize.y + std::max(0, maxRows - 1) * rowGap);
+
+	ImGui::BeginChild("render_graph_dag_canvas", ImVec2(0.0f, 420.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+	ImDrawList *drawList = ImGui::GetWindowDrawList();
+	ImVec2      origin   = ImGui::GetCursorScreenPos();
+
+	std::map<std::string, ImVec2> nodeMinByName;
+	std::map<std::string, ImVec2> nodeMaxByName;
+	for (int level = 0; level < nodesByLevel.size(); ++level)
+	{
+		const auto &levelNodes  = nodesByLevel[level];
+		float       levelHeight = levelNodes.size() * nodeSize.y + std::max(0, static_cast<int>(levelNodes.size()) - 1) * rowGap;
+		float       yOffset     = std::max(0.0f, (canvasSize.y - padding.y * 2.0f - levelHeight) * 0.5f);
+		for (int row = 0; row < levelNodes.size(); ++row)
+		{
+			RenderGraphNode *node = levelNodes[row];
+			ImVec2           minPos(
+                origin.x + padding.x + level * (nodeSize.x + levelGap),
+                origin.y + padding.y + yOffset + row * (nodeSize.y + rowGap));
+			ImVec2 maxPos(minPos.x + nodeSize.x, minPos.y + nodeSize.y);
+			nodeMinByName[node->passName] = minPos;
+			nodeMaxByName[node->passName] = maxPos;
+		}
+	}
+
+	const ImU32 edgeColor      = IM_COL32(130, 140, 170, 180);
+	const ImU32 edgeArrowColor = IM_COL32(170, 180, 220, 220);
+	for (auto *node : graphNodes)
+	{
+		if (!node || !nodeMinByName.contains(node->passName))
+		{
+			continue;
+		}
+		for (const auto &dependency : node->dependencies)
+		{
+			if (!nodeMaxByName.contains(dependency))
+			{
+				continue;
+			}
+			ImVec2 src(nodeMaxByName.at(dependency).x, (nodeMinByName.at(dependency).y + nodeMaxByName.at(dependency).y) * 0.5f);
+			ImVec2 dst(nodeMinByName.at(node->passName).x, (nodeMinByName.at(node->passName).y + nodeMaxByName.at(node->passName).y) * 0.5f);
+			float  midX = (src.x + dst.x) * 0.5f;
+			drawList->AddBezierCubic(src, ImVec2(midX, src.y), ImVec2(midX, dst.y), dst, edgeColor, 2.0f);
+			drawList->AddTriangleFilled(
+			    ImVec2(dst.x, dst.y),
+			    ImVec2(dst.x - 8.0f, dst.y - 5.0f),
+			    ImVec2(dst.x - 8.0f, dst.y + 5.0f),
+			    edgeArrowColor);
+		}
+	}
+
+	const ImU32 activeFill          = IM_COL32(38, 55, 65, 255);
+	const ImU32 inactiveFill        = IM_COL32(42, 38, 44, 255);
+	const ImU32 selectedFill        = IM_COL32(56, 76, 92, 255);
+	const ImU32 warningFill         = IM_COL32(80, 54, 36, 255);
+	const ImU32 borderColor         = IM_COL32(150, 155, 170, 220);
+	const ImU32 selectedBorderColor = IM_COL32(110, 185, 230, 255);
+	const ImU32 warningColor        = IM_COL32(245, 172, 95, 255);
+	const ImU32 textColor           = IM_COL32(230, 230, 235, 255);
+	const ImU32 mutedColor          = IM_COL32(175, 175, 185, 255);
+	for (auto *node : graphNodes)
+	{
+		if (!node || !nodeMinByName.contains(node->passName))
+		{
+			continue;
+		}
+		ImVec2 minPos               = nodeMinByName.at(node->passName);
+		ImVec2 maxPos               = nodeMaxByName.at(node->passName);
+		bool   hasMissingDependency = false;
+		for (const auto &dependency : node->dependencies)
+		{
+			if (!nodeByName.contains(dependency))
+			{
+				hasMissingDependency = true;
+				break;
+			}
+		}
+		bool  selected  = selectedNodeName == node->passName;
+		ImU32 fillColor = hasMissingDependency ? warningFill : (selected ? selectedFill : (node->active ? activeFill : inactiveFill));
+		drawList->AddRectFilled(minPos, maxPos, fillColor, 6.0f);
+		drawList->AddRect(minPos, maxPos, selected ? selectedBorderColor : (hasMissingDependency ? warningColor : borderColor), 6.0f, 0, selected ? 3.0f : 1.0f);
+		drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 7.0f), textColor, node->passName.c_str());
+		std::string nodeMeta = node->workerQueueName + (node->active ? " | active" : " | inactive");
+		drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 24.0f), mutedColor, nodeMeta.c_str());
+		std::string edgeMeta = "in " + std::to_string(incomingCountByName[node->passName]) +
+		                       " | out " + std::to_string(outgoingCountByName[node->passName]);
+		drawList->AddText(ImVec2(minPos.x + 10.0f, minPos.y + 43.0f), hasMissingDependency ? warningColor : mutedColor, edgeMeta.c_str());
+
+		ImGui::SetCursorScreenPos(minPos);
+		ImGui::PushID(node->passName.c_str());
+		if (ImGui::InvisibleButton("dag_node_hitbox", nodeSize))
+		{
+			selectedNodeName = node->passName;
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::BeginTooltip();
+			ImGui::Text("%s", node->passName.c_str());
+			ImGui::Text("Queue: %s", node->workerQueueName.c_str());
+			ImGui::Text("Dependencies: %d", static_cast<int>(node->dependencies.size()));
+			ImGui::Text("Dependents: %d", outgoingCountByName[node->passName]);
+			ImGui::Text("Shader node: %s", node->GPUPipelineRef ? node->GPUPipelineRef->name.c_str() : "null");
+			ImGui::EndTooltip();
+		}
+		ImGui::PopID();
+	}
+
+	ImGui::SetCursorScreenPos(origin);
+	ImGui::Dummy(canvasSize);
+	ImGui::EndChild();
+
+	if (!selectedNodeName.empty() && nodeByName.contains(selectedNodeName))
+	{
+		RenderGraphNode *selectedNode = nodeByName.at(selectedNodeName);
+		GPUPipeline      *shaderNode   = selectedNode->GPUPipelineRef;
+
+		ImGui::SeparatorText("Selected Node");
+		if (ImGui::BeginTable("selected_render_graph_node", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Field");
+			ImGui::TableSetupColumn("Value");
+			ImGui::TableHeadersRow();
+
+			auto addRow = [](const char *name, const std::string &value) {
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextUnformatted(name);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextWrapped("%s", value.c_str());
+			};
+
+			auto pipelineName = [](vk::PipelineBindPoint bindPoint) {
+				switch (bindPoint)
+				{
+					case vk::PipelineBindPoint::eGraphics:
+						return "Graphics";
+					case vk::PipelineBindPoint::eCompute:
+						return "Compute";
+					default:
+						return "Unknown";
+				}
+			};
+
+			auto imageMapNames = [](const std::unordered_map<std::string, ImageView *> &images) {
+				std::string names;
+				for (const auto &image : images)
+				{
+					if (!names.empty())
+					{
+						names += ", ";
+					}
+					names += image.first;
+					if (image.second)
+					{
+						names += " -> ";
+						names += image.second->name;
+					}
+					else
+					{
+						names += " -> null";
+					}
+				}
+				return names.empty() ? std::string("none") : names;
+			};
+
+			auto bufferNames = [](const std::unordered_map<std::string, BufferKey> &buffers) {
+				std::string names;
+				for (const auto &buffer : buffers)
+				{
+					if (!names.empty())
+					{
+						names += ", ";
+					}
+					names += buffer.first;
+					if (!buffer.second.name.empty() && buffer.second.name != buffer.first)
+					{
+						names += " -> ";
+						names += buffer.second.name;
+					}
+				}
+				return names.empty() ? std::string("none") : names;
+			};
+
+			addRow("Pass", selectedNode->passName);
+			addRow("Queue", selectedNode->workerQueueName);
+			addRow("State", selectedNode->active ? "active" : "inactive");
+			addRow("Level", std::to_string(levelByName[selectedNode->passName]));
+			addRow("Dependencies", std::to_string(selectedNode->dependencies.size()));
+			addRow("Dependents", std::to_string(outgoingCountByName[selectedNode->passName]));
+			addRow("Shader node", shaderNode ? shaderNode->name : "null");
+			addRow("Pipeline", shaderNode ? pipelineName(shaderNode->pipelineType) : "n/a");
+			addRow("Push constant bytes", shaderNode ? std::to_string(shaderNode->pushConstantSize) : "n/a");
+			addRow("Color attachments", shaderNode ? std::to_string(shaderNode->colAttachments.size()) : "n/a");
+			addRow("Blend configs", shaderNode ? std::to_string(shaderNode->colorBlendConfigs.size()) : "n/a");
+			addRow("Depth attachment", shaderNode ? (shaderNode->depthAttachment.format == vk::Format::eUndefined ? "none" : "present") : "n/a");
+			addRow("Framebuffer", std::to_string(selectedNode->GetFrameBufferSize().x) + " x " + std::to_string(selectedNode->GetFrameBufferSize().y));
+			addRow("Attachment outputs", std::to_string(selectedNode->GetImageAttachmentOutputs().size()));
+			addRow("Attachment names", std::to_string(selectedNode->GetImageAttachmentNames().size()));
+			addRow("Depth image", selectedNode->GetDepthImage() ? selectedNode->GetDepthImage()->name : "none");
+			addRow("Sampled images", std::to_string(selectedNode->GetSampledImages().size()));
+			addRow("Sampled image names", imageMapNames(selectedNode->GetSampledImages()));
+			addRow("Storage images", std::to_string(selectedNode->GetStorageImages().size()));
+			addRow("Storage image names", imageMapNames(selectedNode->GetStorageImages()));
+			addRow("Buffers", std::to_string(selectedNode->GetBuffers().size()));
+			addRow("Buffer names", bufferNames(selectedNode->GetBuffers()));
+			addRow("Descriptor cache", shaderNode ? (shaderNode->descCache ? "present" : "null") : "n/a");
+			addRow("Auto descriptor cache", shaderNode ? (shaderNode->configs.automaticCache ? "true" : "false") : "n/a");
+			addRow("Manual add", shaderNode ? (shaderNode->configs.manualAdd ? "true" : "false") : "n/a");
+
+			std::string shaderStages;
+			if (shaderNode)
+			{
+				for (const auto &shader : shaderNode->shaders)
+				{
+					if (shader.second)
+					{
+						if (!shaderStages.empty())
+						{
+							shaderStages += ", ";
+						}
+						shaderStages += shader.first;
+					}
+				}
+			}
+			addRow("Shaders", shaderStages.empty() ? "none" : shaderStages);
+
+			std::string dependencies;
+			for (const auto &dependency : selectedNode->dependencies)
+			{
+				if (!dependencies.empty())
+				{
+					dependencies += ", ";
+				}
+				dependencies += dependency;
+				if (!nodeByName.contains(dependency))
+				{
+					dependencies += " (missing)";
+				}
+			}
+			addRow("Depends on", dependencies.empty() ? "none" : dependencies);
+
+			std::string dependents;
+			for (auto *node : graphNodes)
+			{
+				if (node && node->dependencies.contains(selectedNode->passName))
+				{
+					if (!dependents.empty())
+					{
+						dependents += ", ";
+					}
+					dependents += node->passName;
+				}
+			}
+			addRow("Used by", dependents.empty() ? "none" : dependents);
+
+			ImGui::EndTable();
+		}
+	}
+}
 }        // namespace Rendering
 
 #endif        // IMGUIRENDERER_HPP

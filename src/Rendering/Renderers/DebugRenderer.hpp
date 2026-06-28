@@ -102,7 +102,7 @@ class DebugRenderer : public BaseRenderer
                     pc.projView = currentViewCam->matrices.perspective * currentViewCam->matrices.view;
                     pc.model    = glm::mat4(1.0);
 
-                    node->GetCurrCmd().pushConstants(node->shaderNodeRef->pipelineLayout.get(),
+                    node->GetCurrCmd().pushConstants(node->GPUPipelineRef->pipelineLayout.get(),
 				                                                                      vk::ShaderStageFlagBits::eVertex |
 				                                                                          vk::ShaderStageFlagBits::eFragment,
 				                                                                      0, sizeof(MvpPc), &pc);

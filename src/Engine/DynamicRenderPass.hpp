@@ -8,6 +8,7 @@
 namespace ENGINE
 {
 
+
     //TODO: set base configs 
     static AttachmentInfo GetColorAttachmentInfo(glm::vec4 clearCol = glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
                                                  vk::Format format = g_32bFormat,

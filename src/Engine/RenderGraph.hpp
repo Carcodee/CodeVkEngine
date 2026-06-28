@@ -16,6 +16,13 @@ struct BufferKey
 	Buffer          *buffer;
 	std::string      name;
 };
+enum class GPUPipelineType
+{
+	NONE,
+	GRAPHICS,
+	COMPUTE,
+	CUDA
+};
 
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 {
@@ -44,18 +51,20 @@ struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 
 class RenderGraph;
 
-struct ShaderNode
+struct GPUPipeline
 {
-	ShaderNode()  = default;
-	~ShaderNode() = default;
+	GPUPipeline()  = default;
+	~GPUPipeline() = default;
 
-	Core                            *core;
-	vk::UniquePipeline               pipeline;
-	vk::UniquePipelineLayout         pipelineLayout;
-	vk::UniquePipelineCache          pipelineCache;
-	vk::PipelineLayoutCreateInfo     pipelineLayoutCI;
-	vk::PushConstantRange            pushConstantRange;
-	vk::PipelineBindPoint            pipelineType;
+	Core                        *core;
+	vk::UniquePipeline           pipeline;
+	vk::UniquePipelineLayout     pipelineLayout;
+	vk::UniquePipelineCache      pipelineCache;
+	vk::PipelineLayoutCreateInfo pipelineLayoutCI;
+	vk::PushConstantRange        pushConstantRange;
+	vk::PipelineBindPoint        pipelineType;
+	GPUPipelineType              gpuPipelineType;
+
 	DynamicRenderPass                dynamicRenderPass;
 	std::unique_ptr<DescriptorCache> descCache;
 
@@ -81,7 +90,7 @@ struct ShaderNode
 	    {"tese", nullptr},
 	    {"geom", nullptr}};
 
-	void RecreateResources()
+	GPUPipeline *RecreateResources()
 	{
 		assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
 		assert(core != nullptr && "Core is null");
@@ -191,13 +200,14 @@ struct ShaderNode
 
 			pipeline     = std::move(graphicsPipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eGraphics;
+			gpuPipelineType = GPUPipelineType::GRAPHICS;
 		}
 		else if (compShader)
 		{
 			if (configs.automaticCache)
 			{
 				descCache->AddShaderInfo(compShader->sParser.get());
-				
+
 				descCache->BuildDescriptorsCache(
 				    vk::ShaderStageFlagBits::eCompute);
 
@@ -233,14 +243,16 @@ struct ShaderNode
 
 			pipeline     = std::move(computePipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eCompute;
+			gpuPipelineType = GPUPipelineType::COMPUTE;
 		}
 		else
 		{
 			std::cout << "Not viable shader configuration set\n";
 		}
+		return this;
 	}
 
-	void BuildShader()
+	GPUPipeline *BuildGPUPipeline()
 	{
 		assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
 		assert(core != nullptr && "Core is null");
@@ -354,6 +366,8 @@ struct ShaderNode
 
 			pipeline     = std::move(graphicsPipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eGraphics;
+			gpuPipelineType = GPUPipelineType::GRAPHICS;
+			
 
 			std::cout << "Graphics pipeline created\n";
 		}
@@ -401,6 +415,7 @@ struct ShaderNode
 
 			pipeline     = std::move(computePipeline->pipelineHandle);
 			pipelineType = vk::PipelineBindPoint::eCompute;
+			gpuPipelineType = GPUPipelineType::COMPUTE;
 
 			std::cout << "Compute pipeline created\n";
 		}
@@ -408,48 +423,56 @@ struct ShaderNode
 		{
 			std::cout << "No compute or graphics shaders were set\n";
 		}
+		return this;
 	}
 
-	void SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	GPUPipeline *SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetSampler(name, imageView, sampler);
+		return this;
 	}
-	void SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
+	GPUPipeline *SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetSamplerArray(name, imageViews, samplers);
+		return this;
 	}
-	void SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	GPUPipeline *SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetStorageImage(name, imageView, sampler);
+		return this;
 	}
-	void SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
-	                          std::vector<Sampler *> *samplers = nullptr)
+	GPUPipeline *SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
+	                                  std::vector<Sampler *> *samplers = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetStorageImageArray(name, imageViews, samplers);
+		return this;
 	}
 	template <typename T>
-	void SetBuffer(std::string name, T &bufferData)
+	GPUPipeline *SetBuffer(std::string name, T &bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer<T>(name, bufferData);
+		return this;
 	}
 	template <typename T>
-	void SetBuffer(std::string name, std::vector<T> &bufferData)
+	GPUPipeline *SetBuffer(std::string name, std::vector<T> &bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer<T>(name, bufferData);
+		return this;
 	}
-	void SetBuffer(std::string name, Buffer *bufferData)
+	GPUPipeline *SetBuffer(std::string name, Buffer *bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer(name, bufferData);
+		return this;
 	}
 
-	void SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
+	GPUPipeline *SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
 	{
 		this->pipelineLayoutCI = createInfo;
 
@@ -467,61 +490,73 @@ struct ShaderNode
 			this->pipelineLayoutCI.setPushConstantRanges(
 			    this->pushConstantRange);
 		}
+		return this;
 	}
 
-	void SetPushConstantSize(size_t size)
+	GPUPipeline *SetPushConstantSize(size_t size)
 	{
 		pushConstantSize = size;
+		return this;
 	}
 
-	void SetGraphicsPipelineConfigs(
+	GPUPipeline *SetGraphicsPipelineConfigs(
 	    GraphicsPipelineConfigs graphicsPipelineConfigs)
 	{
 		this->graphicsPipelineConfigs = graphicsPipelineConfigs;
+		return this;
 	}
 
-	void SetDepthConfig(DepthConfigs dephtConfig)
+	GPUPipeline *SetDepthConfig(DepthConfigs dephtConfig)
 	{
 		this->depthConfig = dephtConfig;
+		return this;
 	}
 
-	void SetConfigs(RenderNodeConfigs configs)
+	GPUPipeline *SetConfigs(RenderNodeConfigs configs)
 	{
 		this->configs = configs;
+		return this;
 	}
-	void SetVertexInput(VertexInput vertexInput)
+	GPUPipeline *SetVertexInput(VertexInput vertexInput)
 	{
 		this->vertexInput = vertexInput;
+		return this;
 	}
 
-	void SetVertShader(Shader *shader)
+	GPUPipeline *SetVertShader(Shader *shader)
 	{
 		shaders.at("vert") = shader;
+		return this;
 	}
 
-	void SetFragShader(Shader *shader)
+	GPUPipeline *SetFragShader(Shader *shader)
 	{
 		shaders.at("frag") = shader;
+		return this;
 	}
 
-	void SetCompShader(Shader *shader)
+	GPUPipeline *SetCompShader(Shader *shader)
 	{
 		shaders.at("comp") = shader;
+		return this;
 	}
 
-	void SetTesControlShader(Shader *shader)
+	GPUPipeline *SetTesControlShader(Shader *shader)
 	{
 		shaders.at("tesc") = shader;
+		return this;
 	}
 
-	void SetTesEvalShader(Shader *shader)
+	GPUPipeline *SetTesEvalShader(Shader *shader)
 	{
 		shaders.at("tese") = shader;
+		return this;
 	}
 
-	void SetGeomShader(Shader *shader)
+	GPUPipeline *SetGeomShader(Shader *shader)
 	{
 		shaders.at("geom") = shader;
+		return this;
 	}
 
 	bool ReloadShaders()
@@ -533,9 +568,9 @@ struct ShaderNode
 		Shader *teseShader = shaders.at("tese");
 		Shader *geomShader = shaders.at("geom");
 
-		//todo
+		// todo
 		bool isReloaded = false;
-		if (vertShader != nullptr && fragShader != nullptr )
+		if (vertShader != nullptr && fragShader != nullptr)
 		{
 			vertShader->Reload();
 			fragShader->Reload();
@@ -563,7 +598,7 @@ struct ShaderNode
 		return isReloaded;
 	}
 
-	void GetShaderStages(std::map<ShaderStage, Shader *> &stages)
+	GPUPipeline *GetShaderStages(std::map<ShaderStage, Shader *> &stages)
 	{
 		Shader *vertShader = shaders.at("vert");
 		Shader *fragShader = shaders.at("frag");
@@ -601,57 +636,64 @@ struct ShaderNode
 		{
 			stages.try_emplace(S_GEOM, geomShader);
 		}
+		return this;
 	}
 
-	void SetVertShader_IMode(std::string path)
+	GPUPipeline *SetVertShader_IMode(std::string path)
 	{
 		if (shadersProxyRef->contains(path))
 		{
 			shaders.at("vert") = shadersProxyRef->at(path).get();
 		}
+		return this;
 	}
 
-	void SetFragShader_IMode(std::string path)
+	GPUPipeline *SetFragShader_IMode(std::string path)
 	{
 		if (shadersProxyRef->contains(path))
 		{
 			shaders.at("frag") = shadersProxyRef->at(path).get();
 		}
+		return this;
 	}
 
-	void SetCompShader_IMode(std::string path)
+	GPUPipeline *SetCompShader_IMode(std::string path)
 	{
 		if (shadersProxyRef->contains(path))
 		{
 			shaders.at("comp") = shadersProxyRef->at(path).get();
 		}
+		return this;
 	}
 
-	void SetTesControlShader_IMode(std::string path)
+	GPUPipeline *SetTesControlShader_IMode(std::string path)
 	{
 		if (shadersProxyRef->contains(path))
 		{
 			shaders.at("tesc") = shadersProxyRef->at(path).get();
 		}
+		return this;
 	}
 
-	void SetTesEvalShader_IMode(std::string path)
+	GPUPipeline *SetTesEvalShader_IMode(std::string path)
 	{
 		if (shadersProxyRef->contains(path))
 		{
 			shaders.at("tese") = shadersProxyRef->at(path).get();
 		}
+		return this;
 	}
 
-	void SetGeomShader_IMode(std::string path)
+	GPUPipeline *SetGeomShader_IMode(std::string path)
 	{
 		if (shadersProxyRef->contains(path))
 		{
 			shaders.at("geom") = shadersProxyRef->at(path).get();
 		}
+		return this;
 	}
 
-	void AddColorAttachmentInput(std::string name)
+	GPUPipeline *AddColorAttachmentInput(std::string name)
 	{
 		if (!outColAttachmentsProxyRef.contains(name))
 		{
@@ -661,9 +703,10 @@ struct ShaderNode
 		{
 			std::cout << "Attachment input: " << "\"" << name << "\"" << " does not exist";
 		}
+		return this;
 	}
 
-	void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
+	GPUPipeline *AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
 	{
 		if (!outColAttachmentsProxyRef.contains(name))
 		{
@@ -675,8 +718,9 @@ struct ShaderNode
 		{
 			std::cout << "Attachment: " << "\"" << name << "\"" << " already exist";
 		}
+		return this;
 	}
-	void SetDepthAttachmentInput(std::string name)
+	GPUPipeline *SetDepthAttachmentInput(std::string name)
 	{
 		if (!outDepthAttachmentProxyRef.contains(name))
 		{
@@ -686,14 +730,16 @@ struct ShaderNode
 		{
 			std::cout << "Attachment input: " << "\"" << name << "\"" << " does not exist";
 		}
+		return this;
 	}
 
-	void SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
+	GPUPipeline *SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
 	{
 		depthAttachment = depth;
+		return this;
 	}
 
-	void Reset()
+	GPUPipeline *Reset()
 	{
 		pipeline.reset();
 		pipelineLayout.reset();
@@ -702,6 +748,8 @@ struct ShaderNode
 		pipelineLayoutCI  = vk::PipelineLayoutCreateInfo();
 		pushConstantRange = vk::PushConstantRange();
 		pipelineType      = vk::PipelineBindPoint::eGraphics;
+		gpuPipelineType = GPUPipelineType::NONE; 
+			
 		dynamicRenderPass.Reset();
 		graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
 		graphicsPipelineConfigs.topologyConfigs      = T_TRIANGLE;
@@ -712,6 +760,7 @@ struct ShaderNode
 		pushConstantSize = 4;
 		colAttachments.clear();
 		depthAttachment = {};
+		return this;
 	}
 };
 
@@ -741,31 +790,34 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 		return this;
 	}
-	void RecreateResources()
+	RenderGraphNode *RecreateResources()
 	{
-		shaderNodeRef->RecreateResources();
+		GPUPipelineRef->RecreateResources();
+		return this;
 	}
 
-	void BuildRenderGraphNode()
+	RenderGraphNode *BuildRenderGraphNode()
 	{
-		shaderNodeRef->BuildShader();
+		GPUPipelineRef->BuildGPUPipeline();
+		return this;
 	}
 
-	void EnqueueNode()
+	RenderGraphNode *EnqueueNode()
 	{
+		return this;
 	}
 
-	void TransitionImages(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *TransitionImages(vk::CommandBuffer commandBuffer)
 	{
 		for (auto &storageImage : storageImages)
 		{
 			LayoutPatterns dstPattern = EMPTY;
-			switch (shaderNodeRef->pipelineType)
+			switch (GPUPipelineRef->gpuPipelineType)
 			{
-				case vk::PipelineBindPoint::eGraphics:
+				case GPUPipelineType::GRAPHICS:
 					dstPattern = GRAPHICS_WRITE;
 					break;
-				case vk::PipelineBindPoint::eCompute:
+				case GPUPipelineType::COMPUTE:
 					dstPattern = COMPUTE_WRITE;
 					break;
 				default:
@@ -781,12 +833,12 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		for (auto &sampler : sampledImages)
 		{
 			LayoutPatterns dstPattern = EMPTY;
-			switch (shaderNodeRef->pipelineType)
+			switch (GPUPipelineRef->gpuPipelineType)
 			{
-				case vk::PipelineBindPoint::eGraphics:
+				case GPUPipelineType::GRAPHICS:
 					dstPattern = GRAPHICS_READ;
 					break;
-				case vk::PipelineBindPoint::eCompute:
+				case GPUPipelineType::COMPUTE:
 					dstPattern = COMPUTE;
 					break;
 				default:
@@ -799,9 +851,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			TransitionImage(sampler.second->imageData, dstPattern, sampler.second->GetSubresourceRange(),
 			                commandBuffer);
 		}
+		return this;
 	}
 
-	void SyncBuffers(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *SyncBuffers(vk::CommandBuffer commandBuffer)
 	{
 		for (auto &pair : buffers)
 		{
@@ -810,57 +863,66 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 			BufferAccessPattern dstPattern = GetSrcBufferAccessPattern(buffer.dstUsage);
 			CreateMemBarrier(srcPattern, dstPattern, commandBuffer);
 		}
+		return this;
 	}
-	void SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	RenderGraphNode *SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
-		shaderNodeRef->SetSampler(name, imageView, sampler);
+		GPUPipelineRef->SetSampler(name, imageView, sampler);
+		return this;
 	}
-	void SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
+	RenderGraphNode *SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
 	{
-		shaderNodeRef->SetSamplerArray(name, imageViews, samplers);
+		GPUPipelineRef->SetSamplerArray(name, imageViews, samplers);
+		return this;
 	}
-	void SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	RenderGraphNode *SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
-		shaderNodeRef->SetStorageImage(name, imageView, sampler);
+		GPUPipelineRef->SetStorageImage(name, imageView, sampler);
+		return this;
 	}
-	void SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
-	                          std::vector<Sampler *> *samplers = nullptr)
+	RenderGraphNode *SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
+	                                      std::vector<Sampler *> *samplers = nullptr)
 	{
-		shaderNodeRef->SetStorageImageArray(name, imageViews, samplers);
+		GPUPipelineRef->SetStorageImageArray(name, imageViews, samplers);
+		return this;
 	}
 	template <typename T>
-	void SetBuffer(std::string name, T &bufferData)
+	RenderGraphNode *SetBuffer(std::string name, T &bufferData)
 	{
-		shaderNodeRef->SetBuffer<T>(name, bufferData);
+		GPUPipelineRef->SetBuffer<T>(name, bufferData);
+		return this;
 	}
 	template <typename T>
-	void SetBuffer(std::string name, std::vector<T> &bufferData)
+	RenderGraphNode *SetBuffer(std::string name, std::vector<T> &bufferData)
 	{
-		shaderNodeRef->SetBuffer<T>(name, bufferData);
+		GPUPipelineRef->SetBuffer<T>(name, bufferData);
+		return this;
 	}
-	void SetBuffer(std::string name, Buffer *bufferData)
+	RenderGraphNode *SetBuffer(std::string name, Buffer *bufferData)
 	{
-		shaderNodeRef->SetBuffer(name, bufferData);
+		GPUPipelineRef->SetBuffer(name, bufferData);
+		return this;
 	}
-	void ReloadShaders()
+	RenderGraphNode *ReloadShaders()
 	{
-		shaderNodeRef->ReloadShaders();
+		GPUPipelineRef->ReloadShaders();
+		return this;
 	}
 
-	void ExecutePass(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *ExecutePass(vk::CommandBuffer commandBuffer)
 	{
-		assert(imagesAttachmentOutputs.size() == shaderNodeRef->colAttachments.size() && "Not all color attachments were set");
+		assert(imagesAttachmentOutputs.size() == GPUPipelineRef->colAttachments.size() && "Not all color attachments were set");
 		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
-		assert(!(shaderNodeRef->depthAttachment.format != vk::Format::eUndefined && depthImage == nullptr) && "there is no depth attachment set");
+		assert(!(GPUPipelineRef->depthAttachment.format != vk::Format::eUndefined && depthImage == nullptr) && "there is no depth attachment set");
 
 		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
-		shaderNodeRef->dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
-		commandBuffer.setViewport(0, 1, &shaderNodeRef->dynamicRenderPass.viewport);
-		commandBuffer.setScissor(0, 1, &shaderNodeRef->dynamicRenderPass.scissor);
+		GPUPipelineRef->dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
+		commandBuffer.setViewport(0, 1, &GPUPipelineRef->dynamicRenderPass.viewport);
+		commandBuffer.setScissor(0, 1, &GPUPipelineRef->dynamicRenderPass.scissor);
 
 		int                                      index = 0;
 		std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
-		attachmentInfos.reserve(shaderNodeRef->colAttachments.size());
+		attachmentInfos.reserve(GPUPipelineRef->colAttachments.size());
 		for (auto &imagePair : imagesAttachmentOutputs)
 		{
 			if (IsImageTransitionNeeded(imagePair->imageData->currentLayout, COLOR_ATTACHMENT))
@@ -868,9 +930,9 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				TransitionImage(imagePair->imageData, COLOR_ATTACHMENT,
 				                imagePair->GetSubresourceRange(), commandBuffer);
 			}
-			shaderNodeRef->colAttachments[index].attachmentInfo.setImageView(imagePair->imageView.get());
-			shaderNodeRef->colAttachments[index].attachmentInfo.imageLayout = imagePair->imageData->currentPattern.layout;
-			attachmentInfos.push_back(shaderNodeRef->colAttachments[index].attachmentInfo);
+			GPUPipelineRef->colAttachments[index].attachmentInfo.setImageView(imagePair->imageView.get());
+			GPUPipelineRef->colAttachments[index].attachmentInfo.imageLayout = imagePair->imageData->currentPattern.layout;
+			attachmentInfos.push_back(GPUPipelineRef->colAttachments[index].attachmentInfo);
 			index++;
 		}
 		if (depthImage)
@@ -886,33 +948,35 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		SyncBuffers(commandBuffer);
 		if (depthImage != nullptr)
 		{
-			shaderNodeRef->depthAttachment.attachmentInfo.imageView = depthImage->imageView.get();
+			GPUPipelineRef->depthAttachment.attachmentInfo.imageView = depthImage->imageView.get();
 		}
-		shaderNodeRef->dynamicRenderPass.SetRenderInfo(attachmentInfos, frameBufferSize, &shaderNodeRef->depthAttachment.attachmentInfo);
+		GPUPipelineRef->dynamicRenderPass.SetRenderInfo(attachmentInfos, frameBufferSize, &GPUPipelineRef->depthAttachment.attachmentInfo);
 
-		commandBuffer.bindPipeline(shaderNodeRef->pipelineType, shaderNodeRef->pipeline.get());
-		commandBuffer.beginRendering(shaderNodeRef->dynamicRenderPass.renderInfo);
-		commandBuffer.bindDescriptorSets(shaderNodeRef->pipelineType,
-		                                 shaderNodeRef->pipelineLayout.get(), 0,
+		commandBuffer.bindPipeline(GPUPipelineRef->pipelineType, GPUPipelineRef->pipeline.get());
+		commandBuffer.beginRendering(GPUPipelineRef->dynamicRenderPass.renderInfo);
+		commandBuffer.bindDescriptorSets(GPUPipelineRef->pipelineType,
+		                                 GPUPipelineRef->pipelineLayout.get(), 0,
 		                                 1,
-		                                 &shaderNodeRef->descCache->dstSet, 0, nullptr);
+		                                 &GPUPipelineRef->descCache->dstSet, 0, nullptr);
 		(*renderOperations)();
 		commandBuffer.endRendering();
+		return this;
 	}
 
-	void ExecuteCompute(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *ExecuteCompute(vk::CommandBuffer commandBuffer)
 	{
 		TransitionImages(commandBuffer);
 		SyncBuffers(commandBuffer);
-		commandBuffer.bindPipeline(shaderNodeRef->pipelineType, shaderNodeRef->pipeline.get());
-		commandBuffer.bindDescriptorSets(shaderNodeRef->pipelineType,
-		                                 shaderNodeRef->pipelineLayout.get(), 0,
+		commandBuffer.bindPipeline(GPUPipelineRef->pipelineType, GPUPipelineRef->pipeline.get());
+		commandBuffer.bindDescriptorSets(GPUPipelineRef->pipelineType,
+		                                 GPUPipelineRef->pipelineLayout.get(), 0,
 		                                 1,
-		                                 &shaderNodeRef->descCache->dstSet, 0, nullptr);
+		                                 &GPUPipelineRef->descCache->dstSet, 0, nullptr);
 		(*renderOperations)();
+		return this;
 	}
 
-	void Execute(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *Execute(vk::CommandBuffer commandBuffer)
 	{
 		for (int i = 0; i < tasks.size(); ++i)
 		{
@@ -921,153 +985,180 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				(*tasks[i])();
 			}
 		}
-		switch (shaderNodeRef->pipelineType)
+		switch (GPUPipelineRef->gpuPipelineType)
 		{
-			case vk::PipelineBindPoint::eGraphics:
+			case GPUPipelineType::GRAPHICS:
 				ExecutePass(commandBuffer);
 				break;
-			case vk::PipelineBindPoint::eCompute:
+			case GPUPipelineType::COMPUTE:
 				ExecuteCompute(commandBuffer);
 				break;
 			default:
 				assert(false && "Unsuported pipeline type");
 				break;
 		}
+		return this;
 	}
 
-	void SetVertexInput(VertexInput vertexInput)
+	RenderGraphNode *SetVertexInput(VertexInput vertexInput)
 	{
-		this->shaderNodeRef->SetVertexInput(vertexInput);
+		this->GPUPipelineRef->SetVertexInput(vertexInput);
+		return this;
 	}
 
-	void SetFramebufferSize(glm::uvec2 size)
+	RenderGraphNode *SetFramebufferSize(glm::uvec2 size)
 	{
 		this->frameBufferSize = size;
+		return this;
 	}
 
-	void SetRenderOperation(std::function<void()> *renderOperations)
+	RenderGraphNode *SetRenderOperation(std::function<void()> *renderOperations)
 	{
 		if (this->renderOperations)
 		{
 			delete (this->renderOperations);
 		}
 		this->renderOperations = renderOperations;
+		return this;
 	}
 
-	void AddTask(std::function<void()> *task)
+	RenderGraphNode *AddTask(std::function<void()> *task)
 	{
 		this->tasks.push_back(task);
+		return this;
 	}
 
-	void SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
+	RenderGraphNode *SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
 	{
-		shaderNodeRef->SetPipelineLayoutCI(createInfo);
+		GPUPipelineRef->SetPipelineLayoutCI(createInfo);
+		return this;
 	}
 
-	void SetPushConstantSize(size_t size)
+	RenderGraphNode *SetPushConstantSize(size_t size)
 	{
-		shaderNodeRef->SetPushConstantSize(size);
+		GPUPipelineRef->SetPushConstantSize(size);
+		return this;
 	}
 
-	void SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
+	RenderGraphNode *SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
 	{
-		shaderNodeRef->SetGraphicsPipelineConfigs(graphicsPipelineConfigs);
+		GPUPipelineRef->SetGraphicsPipelineConfigs(graphicsPipelineConfigs);
+		return this;
 	}
 
-	void SetDepthConfig(DepthConfigs dephtConfig)
+	RenderGraphNode *SetDepthConfig(DepthConfigs dephtConfig)
 	{
-		shaderNodeRef->SetDepthConfig(dephtConfig);
+		GPUPipelineRef->SetDepthConfig(dephtConfig);
+		return this;
 	}
 
-	void SetVertShader(Shader *shader)
+	RenderGraphNode *SetVertShader(Shader *shader)
 	{
-		shaderNodeRef->SetVertShader(shader);
+		GPUPipelineRef->SetVertShader(shader);
+		return this;
 	}
 
-	void SetFragShader(Shader *shader)
+	RenderGraphNode *SetFragShader(Shader *shader)
 	{
-		shaderNodeRef->SetFragShader(shader);
+		GPUPipelineRef->SetFragShader(shader);
+		return this;
 	}
 
-	void SetCompShader(Shader *shader)
+	RenderGraphNode *SetCompShader(Shader *shader)
 	{
-		shaderNodeRef->SetCompShader(shader);
+		GPUPipelineRef->SetCompShader(shader);
+		return this;
 	}
 
-	void SetTesControlShader(Shader *shader)
+	RenderGraphNode *SetTesControlShader(Shader *shader)
 	{
-		shaderNodeRef->SetTesControlShader(shader);
+		GPUPipelineRef->SetTesControlShader(shader);
+		return this;
 	}
 
-	void SetTesEvalShader(Shader *shader)
+	RenderGraphNode *SetTesEvalShader(Shader *shader)
 	{
-		shaderNodeRef->SetTesEvalShader(shader);
+		GPUPipelineRef->SetTesEvalShader(shader);
+		return this;
 	}
 
-	void SetGeomShader(Shader *shader)
+	RenderGraphNode *SetGeomShader(Shader *shader)
 	{
-		shaderNodeRef->SetGeomShader(shader);
+		GPUPipelineRef->SetGeomShader(shader);
+		return this;
 	}
 
-	void SetVertShader_IMode(std::string path)
+	RenderGraphNode *SetVertShader_IMode(std::string path)
 	{
-		shaderNodeRef->SetVertShader_IMode(path);
+		GPUPipelineRef->SetVertShader_IMode(path);
+		return this;
 	}
 
-	void SetFragShader_IMode(std::string path)
+	RenderGraphNode *SetFragShader_IMode(std::string path)
 	{
-		shaderNodeRef->SetFragShader_IMode(path);
+		GPUPipelineRef->SetFragShader_IMode(path);
+		return this;
 	}
 
-	void SetCompShader_IMode(std::string path)
+	RenderGraphNode *SetCompShader_IMode(std::string path)
 	{
-		shaderNodeRef->SetCompShader_IMode(path);
+		GPUPipelineRef->SetCompShader_IMode(path);
+		return this;
 	}
 
-	void SetTesControlShader_IMode(std::string path)
+	RenderGraphNode *SetTesControlShader_IMode(std::string path)
 	{
-		shaderNodeRef->SetTesControlShader_IMode(path);
+		GPUPipelineRef->SetTesControlShader_IMode(path);
+		return this;
 	}
 
-	void SetTesEvalShader_IMode(std::string path)
+	RenderGraphNode *SetTesEvalShader_IMode(std::string path)
 	{
-		shaderNodeRef->SetTesEvalShader_IMode(path);
+		GPUPipelineRef->SetTesEvalShader_IMode(path);
+		return this;
 	}
 
-	void SetGeomShader_IMode(std::string path)
+	RenderGraphNode *SetGeomShader_IMode(std::string path)
 	{
-		shaderNodeRef->SetGeomShader_IMode(path);
+		GPUPipelineRef->SetGeomShader_IMode(path);
+		return this;
 	}
 
-	void AddColorAttachmentInput(std::string name)
+	RenderGraphNode *AddColorAttachmentInput(std::string name)
 	{
-		shaderNodeRef->AddColorAttachmentInput(name);
+		GPUPipelineRef->AddColorAttachmentInput(name);
+		return this;
 	}
 
-	void AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
+	RenderGraphNode *AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
 	{
-		shaderNodeRef->AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
+		GPUPipelineRef->AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
+		return this;
 	}
-	void SetDepthAttachmentInput(std::string name)
+	RenderGraphNode *SetDepthAttachmentInput(std::string name)
 	{
-		shaderNodeRef->SetDepthAttachmentInput(name);
+		GPUPipelineRef->SetDepthAttachmentInput(name);
+		return this;
 	}
 
-	void SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
+	RenderGraphNode *SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
 	{
-		shaderNodeRef->SetDepthAttachmentOutput(name, depth);
+		GPUPipelineRef->SetDepthAttachmentOutput(name, depth);
+		return this;
 	}
-	void SetDepthImageResource(ImageView *imageView)
+	RenderGraphNode *SetDepthImageResource(ImageView *imageView)
 	{
 		this->depthImage = imageView;
+		return this;
 	}
 
-	void ActivateNode(bool value)
+	RenderGraphNode *ActivateNode(bool value)
 	{
 		this->active = value;
+		return this;
 	}
 
-	void AddColorImageResource(ImageView *imageView)
+	RenderGraphNode *AddColorImageResource(ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
 		if (!imageAttachmentsNames.contains(imageView->name))
@@ -1079,9 +1170,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			imagesAttachmentOutputs.at(imageAttachmentsNames.at(imageView->name)) = imageView;
 		}
+		return this;
 	}
 
-	void AddSamplerResource(ImageView *imageView)
+	RenderGraphNode *AddSamplerResource(ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
 		if (!sampledImages.contains(imageView->name))
@@ -1092,9 +1184,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			sampledImages.at(imageView->name) = imageView;
 		}
+		return this;
 	}
 
-	void AddStorageResource(ImageView *imageView)
+	RenderGraphNode *AddStorageResource(ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
 		if (!storageImages.contains(imageView->name))
@@ -1105,9 +1198,10 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			storageImages.at(imageView->name) = imageView;
 		}
+		return this;
 	}
 
-	void AddBufferSync(BufferKey buffer)
+	RenderGraphNode *AddBufferSync(BufferKey buffer)
 	{
 		if (!buffers.contains(buffer.name))
 		{
@@ -1117,19 +1211,21 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		{
 			buffers.at(buffer.name) = buffer;
 		}
+		return this;
 	}
 	// We change the image view if the name already exist when using resources
 
-	void DependsOn(std::string dependency)
+	RenderGraphNode *DependsOn(std::string dependency)
 	{
 		if (!dependencies.contains(dependency))
 		{
 			dependencies.insert(dependency);
 			SYSTEMS::Logger::GetInstance()->LogMessage("Renderpass: (" + this->passName + ") Depends On-> (" + dependency + ")");
 		}
+		return this;
 	}
 
-	void ClearOperations()
+	RenderGraphNode *ClearOperations()
 	{
 		delete renderOperations;
 		for (auto &task : tasks)
@@ -1138,23 +1234,26 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 		renderOperations = nullptr;
 		tasks.clear();
+		return this;
 	}
-	void SetCurrCmd(vk::CommandBuffer cmd)
+	RenderGraphNode *SetCurrCmd(vk::CommandBuffer cmd)
 	{
 		currCmd = cmd;
+		return this;
 	}
 	vk::CommandBuffer &GetCurrCmd()
 	{
 		assert(currCmd != nullptr && "Cmd must be valid");
 		return currCmd;
 	}
-	void SetConfigs(RenderNodeConfigs configs)
+	RenderGraphNode *SetConfigs(RenderNodeConfigs configs)
 	{
-		shaderNodeRef->SetConfigs(configs);
+		GPUPipelineRef->SetConfigs(configs);
+		return this;
 	}
-	void Reset()
+	RenderGraphNode *Reset()
 	{
-		shaderNodeRef->Reset();
+		GPUPipelineRef->Reset();
 		active          = false;
 		frameBufferSize = {0, 0};
 		workerQueueName = "Graphics";
@@ -1167,16 +1266,17 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		buffers.clear();
 		ClearOperations();
 		dependencies.clear();
+		return this;
 	}
 
 	// unused
 
-	ShaderNode *shaderNodeRef            = nullptr;
-	bool        waitForResourcesCreation = false;
-	std::string path;
-	std::string passName;
-	std::string workerQueueName = "Graphics";
-	bool        active          = false;
+	GPUPipeline *GPUPipelineRef           = nullptr;
+	bool         waitForResourcesCreation = false;
+	std::string  path;
+	std::string  passName;
+	std::string  workerQueueName = "Graphics";
+	bool         active          = false;
 
 	std::set<std::string> dependencies;
 
@@ -1258,7 +1358,7 @@ class RenderGraph
 	size_t     frameIndex;
 	bool       debugUI = true;
 
-	std::unordered_map<std::string, std::unique_ptr<ShaderNode>>      shaderNodes;
+	std::unordered_map<std::string, std::unique_ptr<GPUPipeline>>     gpuPipelines;
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	// todo
 	std::vector<RenderGraphNode *> nodesToExecute;
@@ -1282,18 +1382,16 @@ class RenderGraph
 		}
 	}
 
-	ShaderNode *GetTemplateShader(std::string name, std::string shaderName, ShaderCompiler compiler)
+	GPUPipeline *GetTemplateGPUPipeline(std::string name, std::string shaderName, ShaderCompiler compiler)
 	{
-		Shader *vShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_VERT, compiler);
-		Shader *fShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_FRAG, compiler);
-		auto    shaderNode = AddShader(name);
-		shaderNode->SetConfigs({true});
-		shaderNode->SetVertShader(vShader);
-		shaderNode->SetFragShader(fShader);
-		shaderNode->SetVertexInput(Vertex2D::GetVertexInput());
-		// change this
-		shaderNode->SetPushConstantSize(4);
-		return shaderNode;
+		Shader *vShader     = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_VERT, compiler);
+		Shader *fShader     = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_FRAG, compiler);
+		auto    gpuPipeline = AddGPUPipeline(name);
+		gpuPipeline->SetConfigs({true});
+		gpuPipeline->SetVertShader(vShader);
+		gpuPipeline->SetFragShader(fShader);
+		gpuPipeline->SetVertexInput(Vertex2D::GetVertexInput());
+		return gpuPipeline;
 	}
 
 	RenderGraphNode *GetTemplateNode_DF(std::string name, std::string shaderName, ShaderCompiler compiler)
@@ -1305,8 +1403,6 @@ class RenderGraph
 		renderNode->SetVertShader(vShader);
 		renderNode->SetFragShader(fShader);
 		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
-		// change this
-		renderNode->SetPushConstantSize(4);
 		return renderNode;
 	}
 
@@ -1316,8 +1412,6 @@ class RenderGraph
 		auto    renderNode = AddPass(name);
 		renderNode->SetConfigs({true});
 		renderNode->SetCompShader(shader);
-		// change this
-		renderNode->SetPushConstantSize(4);
 		return renderNode;
 	}
 	RenderGraphNode *GetTemplateNode(std::string name, std::string vPath, std::string fPath)
@@ -1348,15 +1442,15 @@ class RenderGraph
 	}
 	void CreateUtilityShaders()
 	{
-		auto          *blitterShader = GetTemplateShader("BlitterShader", "Blitter", ShaderCompiler::C_GLSL);
+		auto          *blitterShader = GetTemplateGPUPipeline("BlitterPipeline", "Blitter", ShaderCompiler::C_GLSL);
 		AttachmentInfo colInfo       = GetColorAttachmentInfo(
             glm::vec4(0.0f), core->swapchainRef->GetFormat());
 		blitterShader->AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
-		blitterShader->BuildShader();
+		blitterShader->BuildGPUPipeline();
 	}
-	ShaderNode *GetBlitterShader()
+	GPUPipeline *GetBlitterShader()
 	{
-		auto *blitterShader = GetShader("BlitterShader");
+		auto *blitterShader = GetGPUPipeline("BlitterPipeline");
 		return blitterShader;
 	}
 	RenderGraphNode *BlitToBackbuffer()
@@ -1365,12 +1459,11 @@ class RenderGraph
 
 		blitterNode->BuildRenderGraphNode();
 		blitterNode->EnqueueNode();
-		
 
 		GetNode("BlitterNode")->SetSampler("MainTex", currentBackBuffer);
 		auto blitterTask = new std::function<void()>([this]() {
-			//there is one thing that I may change and is that when I set the sampler from outside of the task 
-			//function and I reload the shaders the ref of the sampler is gone because I reset the descriptor set, I should change that
+			// there is one thing that I may change and is that when I set the sampler from outside of the task
+			// function and I reload the shaders the ref of the sampler is gone because I reset the descriptor set, I should change that
 			GetNode("BlitterNode")->AddColorImageResource(currentBackBufferSwapchain);
 			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});
@@ -1456,40 +1549,40 @@ class RenderGraph
 		}
 	}
 
-	ShaderNode *GetShader(std::string name)
+	GPUPipeline *GetGPUPipeline(std::string name)
 	{
-		if (!shaderNodes.contains(name))
+		if (!gpuPipelines.contains(name))
 		{
 			return nullptr;
 		}
-		auto shaderNode = shaderNodes.at(name).get();
-		assert(shaderNode != nullptr && "Shader is null");
-		return shaderNode;
+		auto gpuPipeline = gpuPipelines.at(name).get();
+		assert(gpuPipeline != nullptr && "Shader is null");
+		return gpuPipeline;
 	}
-	ShaderNode *AddShader(std::string name)
+	GPUPipeline *AddGPUPipeline(std::string name)
 	{
-		if (!shaderNodes.contains(name))
+		if (!gpuPipelines.contains(name))
 		{
-			auto shaderNode             = std::make_unique<ShaderNode>();
-			shaderNode->shadersProxyRef = &shadersProxy;
-			shaderNode->core            = core;
-			shaderNode->name            = name;
-			shaderNodes.try_emplace(name, std::move(shaderNode));
-			return shaderNodes.at(name).get();
+			auto gpuPipeline             = std::make_unique<GPUPipeline>();
+			gpuPipeline->shadersProxyRef = &shadersProxy;
+			gpuPipeline->core            = core;
+			gpuPipeline->name            = name;
+			gpuPipelines.try_emplace(name, std::move(gpuPipeline));
+			return gpuPipelines.at(name).get();
 		}
 
-		auto shaderNode = shaderNodes.at(name).get();
-		assert(shaderNode != nullptr && "Shader is null");
-		return shaderNode;
+		auto gpuPipeline = gpuPipelines.at(name).get();
+		assert(gpuPipeline != nullptr && "Shader is null");
+		return gpuPipeline;
 	}
 
-	RenderGraphNode *AddPass(ShaderNode *shaderNode, std::string name, std::string workerQueueName = "Graphics")
+	RenderGraphNode *AddPass(GPUPipeline *gpuPipeline, std::string name, std::string workerQueueName = "Graphics")
 	{
 		if (!renderNodes.contains(name))
 		{
-			assert(shaderNode != nullptr && "Shader is null");
+			assert(gpuPipeline != nullptr && "Shader is null");
 			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
-			renderGraphNode->shaderNodeRef     = shaderNode;
+			renderGraphNode->GPUPipelineRef    = gpuPipeline;
 			renderGraphNode->passName          = name;
 			renderGraphNode->core              = core;
 			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
@@ -1509,10 +1602,10 @@ class RenderGraph
 	{
 		if (!renderNodes.contains(name))
 		{
-			auto shaderNode = AddShader("Shader_" + name);
-			assert(shaderNode != nullptr && "Shader is null");
+			auto gpuPipeline = AddGPUPipeline("GPUPipeline_" + name);
+			assert(gpuPipeline != nullptr && "GPUPipeline_ is null");
 			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
-			renderGraphNode->shaderNodeRef     = shaderNode;
+			renderGraphNode->GPUPipelineRef    = gpuPipeline;
 			renderGraphNode->passName          = name;
 			renderGraphNode->core              = core;
 			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
@@ -1647,7 +1740,7 @@ class RenderGraph
 		CreateUtilityShaders();
 		BlitToBackbuffer();
 	}
-	void SortNodesByDep(std::vector<RenderGraphNode*>& nodesSortedOut)
+	void SortNodesByDep(std::vector<RenderGraphNode *> &nodesSortedOut)
 	{
 		std::vector<std::string> solvedNodesOrdered;
 		std::set<std::string>    solvedNodesNames;
@@ -1737,7 +1830,7 @@ class RenderGraph
 		}
 	}
 
-	void ResolveNodesDependancies(std::vector<RenderGraphNode*>& nodesToResolve)
+	void ResolveNodesDependancies(std::vector<RenderGraphNode *> &nodesToResolve)
 	{
 		for (int i = nodesToResolve.size() - 1; i >= 0; i--)
 		{
@@ -1825,8 +1918,8 @@ class RenderGraph
 					// if a dependency is not active we skip the node
 					continue;
 				}
-				BufferUsageTypes    lastNodeType    = (depenNode->shaderNodeRef->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
-				BufferUsageTypes    currNodeType    = (node->shaderNodeRef->pipelineType == vk::PipelineBindPoint::eGraphics) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    lastNodeType    = (depenNode->GPUPipelineRef->gpuPipelineType == GPUPipelineType::GRAPHICS) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    currNodeType    = (node->GPUPipelineRef->gpuPipelineType == GPUPipelineType::GRAPHICS) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
 				BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, node->GetCurrCmd());
@@ -1854,7 +1947,7 @@ class RenderGraph
 		resourcesManager->UpdateImages();
 		sortedByDepNodes.clear();
 		sortedQueueBatches.clear();
-		
+
 		ResolveNodesDependancies(sequentialRenderNodes);
 		if (sequentialRenderNodes.size() > 1)
 		{

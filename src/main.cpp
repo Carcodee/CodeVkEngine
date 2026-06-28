@@ -35,7 +35,7 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
     // core, windowProvider));
     // Rendering::ClusterRenderer* clusterRenderer = dynamic_cast<Rendering::ClusterRenderer*>(renderers.at("ClusterRenderer").get());
     // clusterRenderer->SetRenderOperation();
-    //
+    
     // renderers.try_emplace("HairRenderer", std::make_unique<Rendering::HairRenderer>(core, windowProvider));
     // Rendering::HairRenderer* hairRenderer = dynamic_cast<Rendering::HairRenderer*>(renderers.at("HairRenderer").get());
     // hairRenderer->SetRenderOperation();

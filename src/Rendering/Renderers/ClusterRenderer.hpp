@@ -90,7 +90,7 @@ class ClusterRenderer : public BaseRenderer
 			    renderNode->SetBuffer("LightMap", lightsMap);
 			    renderNode->SetBuffer("LightIndices", lightsIndices);
 			    renderNode->SetBuffer("CameraProperties", cPropsUbo);
-			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->shaderNodeRef->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->GPUPipelineRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
 			                                           0, sizeof(ScreenDataPc), &cullDataPc);
 			    renderNode->GetCurrCmd().dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
@@ -139,7 +139,7 @@ class ClusterRenderer : public BaseRenderer
 			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshesModelMatrices", modelMats);
 
 			    pc.projView = camera.matrices.perspective * camera.matrices.view;
-			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->shaderNodeRef->pipelineLayout.get(),
+			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->GPUPipelineRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eVertex |
 			                                               vk::ShaderStageFlagBits::eFragment,
 			                                           0, sizeof(MvpPc), &pc);
@@ -197,7 +197,7 @@ class ClusterRenderer : public BaseRenderer
                 renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
                 renderNode->GetCurrCmd().bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
 
-                renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->shaderNodeRef->pipelineLayout.get(),
+                renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->GPUPipelineRef->pipelineLayout.get(),
 			                                              vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
 			                                              0, sizeof(LightPc), &lightPc);
                 renderNode->GetCurrCmd().drawIndexed(quadIndices.size(), 1, 0,

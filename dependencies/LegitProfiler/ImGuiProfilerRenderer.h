@@ -351,6 +351,16 @@ namespace ImGuiUtils
     }
     void Render()
     {
+      std::stringstream title;
+      title.precision(2);
+      title << std::fixed << "Legit profiler [" << 1.0f / avgFrameTime << "fps\t" << avgFrameTime * 1000.0f << "ms]###ProfilerWindow";
+      //###AnimatedTitle
+      ImGui::Begin(title.str().c_str(), 0, ImGuiWindowFlags_NoScrollbar);
+      RenderContent(false);
+      ImGui::End();
+    }
+    void RenderContent(bool showHeader = true)
+    {
       fpsFramesCount++;
       auto currFrameTime = std::chrono::system_clock::now();
       {
@@ -362,12 +372,8 @@ namespace ImGuiUtils
           prevFpsFrameTime = currFrameTime;
         }
       }
-
-      std::stringstream title;
-      title.precision(2);
-      title << std::fixed << "Legit profiler [" << 1.0f / avgFrameTime << "fps\t" << avgFrameTime * 1000.0f << "ms]###ProfilerWindow";
-      //###AnimatedTitle
-      ImGui::Begin(title.str().c_str(), 0, ImGuiWindowFlags_NoScrollbar);
+      if (showHeader)
+        ImGui::Text("Legit profiler [%.2ffps %.2fms]", 1.0f / avgFrameTime, avgFrameTime * 1000.0f);
       ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
       int sizeMargin = int(ImGui::GetStyle().ItemSpacing.y);
@@ -401,8 +407,6 @@ namespace ImGuiUtils
       cpuGraph.frameWidth = frameWidth;
       cpuGraph.frameSpacing = frameSpacing;
       cpuGraph.useColoredLegendText = useColoredLegendText;
-
-      ImGui::End();
     }
     bool stopProfiling;
     int frameOffset;
