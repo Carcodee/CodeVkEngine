@@ -61,7 +61,6 @@ struct InFlightQueue
 		presentQueue.reset(new PresentQueue(this->core, windowDesc, inflightCount, preferredMode, windowSize));
 
 		core->queueWorkerManager->AllocateCmds(inflightCount);
-		timelineSemaphore = core->CreateVulkanTimelineSemaphore(0);
 
 		for (int frameIndex = 0; frameIndex < inflightCount; frameIndex++)
 		{
@@ -101,7 +100,6 @@ struct InFlightQueue
 		core->queueWorkerManager->EndCmds();
 
 		{
-			vk::Semaphore timeline = timelineSemaphore.get();
 
 			for (int i = 0; i < renderGraph->sortedQueueBatches.size(); ++i)
 			{
@@ -128,9 +126,9 @@ struct InFlightQueue
 				{
 					vk::Semaphore          waitSemaphores[] = {currFrame.imageAcquiredSemaphore.get()};
 					vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-					vk::Semaphore          signalTimeline[] = {timeline};
+					vk::Semaphore          signalTimeline[] = {queueRef->timelineSem.get()};
 
-					uint64_t signalValue = ++timelineValue;
+					uint64_t signalValue = ++queueRef->timelineValue;
 
 					vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
 					timelineInfo.setSignalSemaphoreValueCount(1);
@@ -149,12 +147,14 @@ struct InFlightQueue
 				}
 				else if (i > 0 && i != renderGraph->sortedQueueBatches.size() - 1)
 				{
-					vk::Semaphore          waitSemaphores[] = {timeline};
+					
+					WorkerQueue* lastQueueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i - 1].queueName);
+					vk::Semaphore          waitSemaphores[] = {lastQueueRef->timelineSem.get()};
 					vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-					vk::Semaphore          signalTimeline[] = {timeline};
+					vk::Semaphore          signalTimeline[] = {queueRef->timelineSem.get()};
 
-					uint64_t waitValue   = timelineValue;
-					uint64_t signalValue = ++timelineValue;
+					uint64_t waitValue   = lastQueueRef->timelineValue;
+					uint64_t signalValue = ++queueRef->timelineValue;
 
 					vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
 					timelineInfo.setWaitSemaphoreValueCount(1);
@@ -175,11 +175,12 @@ struct InFlightQueue
 				}
 				else if (i == renderGraph->sortedQueueBatches.size() - 1)
 				{
-					vk::Semaphore          waitSemaphores[] = {timeline};
+					WorkerQueue* lastQueueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i - 1].queueName);
+					vk::Semaphore          waitSemaphores[] = {lastQueueRef->timelineSem.get()};
 					vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 					vk::Semaphore          signalTimeline[] = {currFrame.renderingFinishedSemaphore.get()};
 
-					uint64_t waitValue = timelineValue;
+					uint64_t waitValue = lastQueueRef->timelineValue;
 
 					vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
 					timelineInfo.setWaitSemaphoreValueCount(1);
@@ -235,8 +236,6 @@ struct InFlightQueue
 
 	std::vector<FrameResources> frameResources;
 	size_t                      frameIndex;
-	vk::UniqueSemaphore         timelineSemaphore;
-	uint64_t                    timelineValue = 0;
 
 	Core                         *core;
 	RenderGraph                  *renderGraph;

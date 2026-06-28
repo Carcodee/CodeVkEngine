@@ -82,6 +82,8 @@ struct WorkerQueue
 	vk::UniqueCommandPool                             workerCommandPool = {};
 	SYSTEMS::TaskThread                               taskThreat        = {};
 	std::vector<std::vector<vk::UniqueCommandBuffer>> commandBuffers;
+	vk::UniqueSemaphore                               timelineSem;
+	int64_t                                           timelineValue     = -1;
 	std::string                                       name              = "";
 	int                                               perCmdPoolSize    = 0;
 	bool                                              isMainThreat      = true;
@@ -98,13 +100,13 @@ struct WorkerQueue
 			IncreasePool();
 			AllocatePoolCmds(perCmdPoolSize, currentPoolCmdIdx);
 		}
-		poolIdxOut = currentPoolCmdIdx;
+		poolIdxOut            = currentPoolCmdIdx;
 		vk::CommandBuffer cmd = GetCurrentCmd(currentPoolCmdIdx);
 		currentPoolCmdIdx++;
 
 		return cmd;
 	}
-	
+
 	void ResetPoolUsage()
 	{
 		currentPoolCmdIdx = 0;
@@ -115,7 +117,7 @@ struct WorkerQueue
 		cmdsPoolSize++;
 		commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
 	}
-	
+
 	void InitPools(int count)
 	{
 		cmdsPoolSize = count;
@@ -125,7 +127,7 @@ struct WorkerQueue
 			commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
 		}
 	}
-	
+
 	void SetCmdIdx(int idx)
 	{
 		assert(coreRef != nullptr && "Core is null");
@@ -150,7 +152,7 @@ struct WorkerQueue
 		assert(count > 0 && "there must be more than 0 cmds to allocate");
 		commandBuffers[cmdPoolIdx] = std::move(coreRef->AllocateCommandBuffers(workerCommandPool.get(), count));
 	}
-	
+
 	void AllocateAllCmds(int count)
 	{
 		assert(coreRef != nullptr && "Core is null");
@@ -161,7 +163,7 @@ struct WorkerQueue
 			AllocatePoolCmds(perCmdPoolSize, i);
 		}
 	}
-	
+
 	void BeginCurrentCmds(vk::CommandBufferBeginInfo beginInfo)
 	{
 		for (int i = 0; i < commandBuffers.size(); ++i)
@@ -201,20 +203,23 @@ class QueueWorkerManager
 			return GetWorkerQueue(name);
 		}
 		workersQueues.try_emplace(name);
-		workersQueues.at(name).coreRef           = coreRef;
-		workersQueues.at(name).name              = name;
-		workersQueues.at(name).workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
-		workersQueues.at(name).familyIndex       = static_cast<int32_t>(familyIndex);
-		workersQueues.at(name).workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
-		workersQueues.at(name).isMainThreat      = mainThread;
-		workersQueues.at(name).cmdsPoolSize      = 1;
-		workersQueues.at(name).InitPools(workersQueues.at(name).cmdsPoolSize);
+		auto& queueRef = workersQueues.at(name);
+		queueRef.coreRef           = coreRef;
+		queueRef.name              = name;
+		queueRef.workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
+		queueRef.familyIndex       = static_cast<int32_t>(familyIndex);
+		queueRef.workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
+		queueRef.isMainThreat      = mainThread;
+		queueRef.cmdsPoolSize      = 1;
+		queueRef.InitPools(queueRef.cmdsPoolSize);
+		queueRef.timelineValue = 0;
+		queueRef.timelineSem = coreRef->CreateVulkanTimelineSemaphore(queueRef.timelineValue);
 
 		if (mainThread == false)
 		{
-			workersQueues.at(name).taskThreat.Start();
+			queueRef.taskThreat.Start();
 		}
-		return &workersQueues.at(name);
+		return &queueRef;
 	}
 	WorkerQueue *GetWorkerQueue(std::string name)
 	{
@@ -225,13 +230,12 @@ class QueueWorkerManager
 		return &workersQueues.at(name);
 	}
 
-	vk::CommandBuffer RequestWorkerQueueCmd(std::string name, int& cmdPoolIdxUsedOut)
+	vk::CommandBuffer RequestWorkerQueueCmd(std::string name, int &cmdPoolIdxUsedOut)
 	{
 		if (!workersQueues.contains(name))
 		{
 			return nullptr;
-		}
-		;
+		};
 		return workersQueues.at(name).RequestQueueCmd(cmdPoolIdxUsedOut);
 	}
 
@@ -293,7 +297,6 @@ class QueueWorkerManager
 	}
 	void ResetPoolUsage()
 	{
-		
 		for (auto &queue : workersQueues)
 		{
 			if (queue.first == "Present")
