@@ -21,7 +21,6 @@ double previousTime;
 
 
 #include "Rendering/RenderingInclude.hpp"
-#include <CodeInclude.h>
 
 CONST int WINDOWS_WIDTH = 1024;
 CONST int WINDOWS_HEIGHT = 1024;
@@ -83,11 +82,6 @@ void run(WindowProvider* windowProvider)
     
     renderGraph->CreateResManager();
 	
-	auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-																   "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
-	
-	CodeCuda::C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
-	CodeCuda::C_ImportExternalBuffer(cudaBuffer->GetBufferHandle(), cudaBuffer->deviceSize);
     
 	Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());

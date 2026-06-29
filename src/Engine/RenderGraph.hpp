@@ -198,8 +198,8 @@ struct GPUPipeline
 			        vertexInput,
 			        pipelineCache.get());
 
-			pipeline     = std::move(graphicsPipeline->pipelineHandle);
-			pipelineType = vk::PipelineBindPoint::eGraphics;
+			pipeline        = std::move(graphicsPipeline->pipelineHandle);
+			pipelineType    = vk::PipelineBindPoint::eGraphics;
 			gpuPipelineType = GPUPipelineType::GRAPHICS;
 		}
 		else if (compShader)
@@ -241,8 +241,8 @@ struct GPUPipeline
 			        pipelineLayout.get(),
 			        pipelineCache.get());
 
-			pipeline     = std::move(computePipeline->pipelineHandle);
-			pipelineType = vk::PipelineBindPoint::eCompute;
+			pipeline        = std::move(computePipeline->pipelineHandle);
+			pipelineType    = vk::PipelineBindPoint::eCompute;
 			gpuPipelineType = GPUPipelineType::COMPUTE;
 		}
 		else
@@ -364,10 +364,9 @@ struct GPUPipeline
 			        vertexInput,
 			        pipelineCache.get());
 
-			pipeline     = std::move(graphicsPipeline->pipelineHandle);
-			pipelineType = vk::PipelineBindPoint::eGraphics;
+			pipeline        = std::move(graphicsPipeline->pipelineHandle);
+			pipelineType    = vk::PipelineBindPoint::eGraphics;
 			gpuPipelineType = GPUPipelineType::GRAPHICS;
-			
 
 			std::cout << "Graphics pipeline created\n";
 		}
@@ -413,8 +412,8 @@ struct GPUPipeline
 			        pipelineLayout.get(),
 			        pipelineCache.get());
 
-			pipeline     = std::move(computePipeline->pipelineHandle);
-			pipelineType = vk::PipelineBindPoint::eCompute;
+			pipeline        = std::move(computePipeline->pipelineHandle);
+			pipelineType    = vk::PipelineBindPoint::eCompute;
 			gpuPipelineType = GPUPipelineType::COMPUTE;
 
 			std::cout << "Compute pipeline created\n";
@@ -748,8 +747,8 @@ struct GPUPipeline
 		pipelineLayoutCI  = vk::PipelineLayoutCreateInfo();
 		pushConstantRange = vk::PushConstantRange();
 		pipelineType      = vk::PipelineBindPoint::eGraphics;
-		gpuPipelineType = GPUPipelineType::NONE; 
-			
+		gpuPipelineType   = GPUPipelineType::NONE;
+
 		dynamicRenderPass.Reset();
 		graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
 		graphicsPipelineConfigs.topologyConfigs      = T_TRIANGLE;
@@ -1368,6 +1367,7 @@ class RenderGraph
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 	std::vector<QueueNodesBatch>                                      sortedQueueBatches;
+	CodeCuda::CodeCudaContext*                        cudaContext;
 
 	RenderGraph(Core *core)
 	{
@@ -1526,14 +1526,18 @@ class RenderGraph
 		}
 	}
 
-	~RenderGraph() {
-
-	};
-
 	void CreateResManager()
 	{
 		resourcesManager  = ResourcesManager::GetInstance();
 		currentBackBuffer = resourcesManager->GetImageViewFromName("bf");
+		
+		cudaContext = new CodeCuda::CodeCudaContext();
+		
+		auto cudaBuffer = resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+		    "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+
+		CodeCuda::C_InitFromExternalDevice(cudaContext, core->deviceUUID.data(), VK_UUID_SIZE);
+		CodeCuda::C_ImportExternalBuffer(cudaContext, cudaBuffer->GetBufferHandle(), cudaBuffer->deviceSize);
 	}
 
 	RenderGraphNode *GetNode(std::string name)
@@ -1976,6 +1980,11 @@ class RenderGraph
 	void BuildDeserializedPasses()
 	{
 	}
+	
+	~RenderGraph() {
+		CodeCuda::C_Shutdown(cudaContext);
+		delete(cudaContext);
+	};
 };
 
 }        // namespace ENGINE

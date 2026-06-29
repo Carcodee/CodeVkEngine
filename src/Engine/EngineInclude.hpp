@@ -52,6 +52,7 @@
 #include "ResourcesManager.hpp"
 #include "DescriptorCache.hpp"
 
+#include <CodeInclude.h>
 #include "RenderGraph.hpp"
 #include "CoreImpl.hpp"
 
