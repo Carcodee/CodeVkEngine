@@ -21,7 +21,13 @@ enum class GPUPipelineType
 	NONE,
 	GRAPHICS,
 	COMPUTE,
-	CUDA
+};
+
+enum class RenderNodeType
+{
+	NONE,
+	RENDERING,
+	CUDA,
 };
 
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
@@ -51,6 +57,11 @@ struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 
 class RenderGraph;
 
+struct CUDAPipeline
+{
+	CUDAPipeline()  = default;
+	~CUDAPipeline() = default;
+};
 struct GPUPipeline
 {
 	GPUPipeline()  = default;
