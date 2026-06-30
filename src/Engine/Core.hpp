@@ -93,6 +93,12 @@ struct WorkerQueue
 	int                                               activeCmdIdx       = 0;
 	int                                               cmdsPoolSize       = 0;
 	int                                               currentPoolCmdIdx  = 0;
+	
+	HANDLE& GetExportableHandle()
+	{
+		assert(exportableHandle!= nullptr);
+		return exportableHandle;
+	}
 
 	vk::CommandBuffer &RequestQueueCmd(int &poolIdxOut)
 	{
@@ -118,11 +124,11 @@ struct WorkerQueue
 		timelineValue      = timelineValueIn;
 		if (isForExternalUsage)
 		{
-			timelineSem = coreRef->CreateVulkanTimelineSemaphore(timelineValue);
+			timelineSem = coreRef->CreateExportableTimelineSemaphore(timelineValue, exportableHandle);
 		}
 		else
 		{
-			timelineSem = coreRef->CreateExportableTimelineSemaphore(timelineValue, exportableHandle);
+			timelineSem = coreRef->CreateVulkanTimelineSemaphore(timelineValue);
 		}
 	}
 
@@ -137,7 +143,7 @@ struct WorkerQueue
 		commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
 	}
 
-	void InitPools(int count)
+	void InitCmdsToUsePools(int count)
 	{
 		cmdsPoolSize = count;
 		commandBuffers.reserve(10);
@@ -227,12 +233,12 @@ class QueueWorkerManager
 		queueRef.name              = name;
 		queueRef.workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
 		queueRef.familyIndex       = static_cast<int32_t>(familyIndex);
-		queueRef.workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
 		queueRef.isMainThreat      = mainThread;
 		queueRef.cmdsPoolSize      = 1;
-		queueRef.InitPools(queueRef.cmdsPoolSize);
+		queueRef.isForExternalUsage = externalUsage;
+		queueRef.workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
+		queueRef.InitCmdsToUsePools(queueRef.cmdsPoolSize);
 		queueRef.InitTimelineSemaphore(0, externalUsage);
-
 		if (mainThread == false)
 		{
 			queueRef.taskThreat.Start();

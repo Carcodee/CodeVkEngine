@@ -6,7 +6,6 @@
 #ifndef CODEINCLUDE_H
 #define CODEINCLUDE_H
 
-
 #include <windows.h>
 #include "assert.h"
 #include "string"

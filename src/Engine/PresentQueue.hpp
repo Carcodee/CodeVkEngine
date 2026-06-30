@@ -107,21 +107,28 @@ struct InFlightQueue
 				auto* queueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i].queueName);
 				if (renderGraph->sortedQueueBatches.size() == 1)
 				{
-					vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
-					vk::PipelineStageFlags waitStages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-					vk::Semaphore          signalSemaphores[] = {currFrame.renderingFinishedSemaphore.get()};
+					if (queueRef->name == "CUDA")
+					{
+						ExecuteCUDA(&renderGraph->sortedQueueBatches[i], nullptr);
+						
+					}else
+					{
+						vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
+						vk::PipelineStageFlags waitStages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+						vk::Semaphore          signalSemaphores[] = {currFrame.renderingFinishedSemaphore.get()};
 
-					auto submitInfo = vk::SubmitInfo()
-					                      .setWaitSemaphoreCount(1)
-					                      .setPWaitSemaphores(waitSemaphores)
-					                      .setPWaitDstStageMask(waitStages)
-					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
-					                      .setSignalSemaphoreCount(1)
-					                      .setPSignalSemaphores(signalSemaphores);
+						auto submitInfo = vk::SubmitInfo()
+											  .setWaitSemaphoreCount(1)
+											  .setPWaitSemaphores(waitSemaphores)
+											  .setPWaitDstStageMask(waitStages)
+											  .setCommandBufferCount(1)
+											  .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
+											  .setSignalSemaphoreCount(1)
+											  .setPSignalSemaphores(signalSemaphores);
 
-					queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
-					break;
+						queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
+						break;
+					}
 				}
 				if (i == 0)
 				{
@@ -136,43 +143,51 @@ struct InFlightQueue
 					timelineInfo.setPSignalSemaphoreValues(&signalValue);
 
 					auto submitInfo = vk::SubmitInfo()
-					                      .setWaitSemaphoreCount(1)
-					                      .setPNext(&timelineInfo)
-					                      .setPWaitSemaphores(waitSemaphores)
-					                      .setPWaitDstStageMask(waitStages)
-					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
-					                      .setSignalSemaphoreCount(1)
-					                      .setPSignalSemaphores(signalTimeline);
+										  .setWaitSemaphoreCount(1)
+										  .setPNext(&timelineInfo)
+										  .setPWaitSemaphores(waitSemaphores)
+										  .setPWaitDstStageMask(waitStages)
+										  .setCommandBufferCount(1)
+										  .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
+										  .setSignalSemaphoreCount(1)
+										  .setPSignalSemaphores(signalTimeline);
 					queueRef->workerQueue.submit({submitInfo});
 				}
 				else if (i > 0 && i != renderGraph->sortedQueueBatches.size() - 1)
 				{
 					
 					WorkerQueue* lastQueueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i - 1].queueName);
-					vk::Semaphore          waitSemaphores[] = {lastQueueRef->timelineSem.get()};
-					vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-					vk::Semaphore          signalTimeline[] = {queueRef->timelineSem.get()};
+					
+					if (queueRef->name == "CUDA")
+					{
+						ExecuteCUDA(&renderGraph->sortedQueueBatches[i], &renderGraph->sortedQueueBatches[i - 1]);
+						
+					}else
+					{
+						vk::Semaphore          waitSemaphores[] = {lastQueueRef->timelineSem.get()};
+						vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+						vk::Semaphore          signalTimeline[] = {queueRef->timelineSem.get()};
 
-					uint64_t waitValue   = lastQueueRef->timelineValue;
-					uint64_t signalValue = ++queueRef->timelineValue;
+						uint64_t waitValue   = lastQueueRef->timelineValue;
+						uint64_t signalValue = ++queueRef->timelineValue;
 
-					vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
-					timelineInfo.setWaitSemaphoreValueCount(1);
-					timelineInfo.setPWaitSemaphoreValues(&waitValue);
-					timelineInfo.setSignalSemaphoreValueCount(1);
-					timelineInfo.setPSignalSemaphoreValues(&signalValue);
+						vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
+						timelineInfo.setWaitSemaphoreValueCount(1);
+						timelineInfo.setPWaitSemaphoreValues(&waitValue);
+						timelineInfo.setSignalSemaphoreValueCount(1);
+						timelineInfo.setPSignalSemaphoreValues(&signalValue);
 
-					auto submitInfo = vk::SubmitInfo()
-					                      .setWaitSemaphoreCount(1)
-					                      .setPNext(&timelineInfo)
-					                      .setPWaitSemaphores(waitSemaphores)
-					                      .setPWaitDstStageMask(waitStages)
-					                      .setCommandBufferCount(1)
-					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
-					                      .setSignalSemaphoreCount(1)
-					                      .setPSignalSemaphores(signalTimeline);
-					queueRef->workerQueue.submit({submitInfo});
+						auto submitInfo = vk::SubmitInfo()
+											  .setWaitSemaphoreCount(1)
+											  .setPNext(&timelineInfo)
+											  .setPWaitSemaphores(waitSemaphores)
+											  .setPWaitDstStageMask(waitStages)
+											  .setCommandBufferCount(1)
+											  .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
+											  .setSignalSemaphoreCount(1)
+											  .setPSignalSemaphores(signalTimeline);
+						queueRef->workerQueue.submit({submitInfo});
+					}
 				}
 				else if (i == renderGraph->sortedQueueBatches.size() - 1)
 				{
@@ -203,6 +218,20 @@ struct InFlightQueue
 		presentQueue->PresentImage(currFrame.renderingFinishedSemaphore.get());
 		frameIndex = (frameIndex + 1) % frameResources.size();
 		core->queueWorkerManager->SetFrameIndex(frameIndex);
+	}
+	void ExecuteCUDA(QueueNodesBatch* queueBatch, QueueNodesBatch* lastBatch = nullptr)
+	{
+		auto queueRef = core->queueWorkerManager->GetWorkerQueue(queueBatch->queueName);
+		for (int i = 0; i < queueBatch->sortedNodes.size(); ++i)
+		{
+			auto& node =queueBatch->sortedNodes[i];
+			if (i > 0)
+			{
+				node->CUDAPipeline->context->C_WaitExternalSemaphore(queueRef->timelineValue);
+			}
+			node->CUDAPipeline->context->C_Execute();
+			node->CUDAPipeline->context->C_SignalExternalSemaphore(++queueRef->timelineValue);
+		}
 	}
 	void BeginParallelThreads()
 	{

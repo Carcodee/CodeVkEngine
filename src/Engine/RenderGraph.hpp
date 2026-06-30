@@ -16,19 +16,14 @@ struct BufferKey
 	Buffer          *buffer;
 	std::string      name;
 };
-enum class GPUPipelineType
+enum class RenderNodeType
 {
 	NONE,
 	GRAPHICS,
 	COMPUTE,
+	CUDA
 };
 
-enum class RenderNodeType
-{
-	NONE,
-	RENDERING,
-	CUDA,
-};
 
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 {
@@ -59,7 +54,26 @@ class RenderGraph;
 
 struct CUDAPipeline
 {
-	CUDAPipeline()  = default;
+	CodeCuda::CodeCudaContext *context = nullptr;
+	Core                      *core    = nullptr;
+	
+	CUDAPipeline() = default;
+	CUDAPipeline *BuildCUDAPipeline()
+	{
+		assert(context != nullptr);
+		return this;
+	}
+	CUDAPipeline *ExportBuffer(Buffer *buffer)
+	{
+		assert(context);
+		assert(buffer->GetBufferHandle());
+		context->C_ImportExternalBuffer(buffer->GetBufferHandle(), buffer->deviceSize);
+		return this;
+	}
+	CUDAPipeline *CreatePipeline()
+	{
+		return this;
+	}
 	~CUDAPipeline() = default;
 };
 struct GPUPipeline
@@ -74,7 +88,6 @@ struct GPUPipeline
 	vk::PipelineLayoutCreateInfo pipelineLayoutCI;
 	vk::PushConstantRange        pushConstantRange;
 	vk::PipelineBindPoint        pipelineType;
-	GPUPipelineType              gpuPipelineType;
 
 	DynamicRenderPass                dynamicRenderPass;
 	std::unique_ptr<DescriptorCache> descCache;
@@ -211,7 +224,6 @@ struct GPUPipeline
 
 			pipeline        = std::move(graphicsPipeline->pipelineHandle);
 			pipelineType    = vk::PipelineBindPoint::eGraphics;
-			gpuPipelineType = GPUPipelineType::GRAPHICS;
 		}
 		else if (compShader)
 		{
@@ -254,7 +266,6 @@ struct GPUPipeline
 
 			pipeline        = std::move(computePipeline->pipelineHandle);
 			pipelineType    = vk::PipelineBindPoint::eCompute;
-			gpuPipelineType = GPUPipelineType::COMPUTE;
 		}
 		else
 		{
@@ -377,7 +388,6 @@ struct GPUPipeline
 
 			pipeline        = std::move(graphicsPipeline->pipelineHandle);
 			pipelineType    = vk::PipelineBindPoint::eGraphics;
-			gpuPipelineType = GPUPipelineType::GRAPHICS;
 
 			std::cout << "Graphics pipeline created\n";
 		}
@@ -425,7 +435,6 @@ struct GPUPipeline
 
 			pipeline        = std::move(computePipeline->pipelineHandle);
 			pipelineType    = vk::PipelineBindPoint::eCompute;
-			gpuPipelineType = GPUPipelineType::COMPUTE;
 
 			std::cout << "Compute pipeline created\n";
 		}
@@ -758,7 +767,6 @@ struct GPUPipeline
 		pipelineLayoutCI  = vk::PipelineLayoutCreateInfo();
 		pushConstantRange = vk::PushConstantRange();
 		pipelineType      = vk::PipelineBindPoint::eGraphics;
-		gpuPipelineType   = GPUPipelineType::NONE;
 
 		dynamicRenderPass.Reset();
 		graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
@@ -808,7 +816,21 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	RenderGraphNode *BuildRenderGraphNode()
 	{
-		GPUPipelineRef->BuildGPUPipeline();
+		if (GPUPipelineRef)
+		{
+			GPUPipelineRef->BuildGPUPipeline();
+			if (GPUPipelineRef->pipelineType == vk::PipelineBindPoint::eGraphics)
+			{
+				nodeType =RenderNodeType::GRAPHICS; 
+			}else
+			{
+				nodeType =RenderNodeType::COMPUTE; 
+			}
+		}else
+		{
+			nodeType = RenderNodeType::CUDA;
+			CUDAPipeline->BuildCUDAPipeline();
+		}
 		return this;
 	}
 
@@ -816,18 +838,27 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	{
 		return this;
 	}
+	
+	vk::PipelineBindPoint GetGPUPipelineType()
+	{
+		assert(CUDAPipeline == nullptr &&"this call should not happen in a cuda pipeline");
+		return GPUPipelineRef->pipelineType;
+	}
 
 	RenderGraphNode *TransitionImages(vk::CommandBuffer commandBuffer)
 	{
 		for (auto &storageImage : storageImages)
 		{
 			LayoutPatterns dstPattern = EMPTY;
-			switch (GPUPipelineRef->gpuPipelineType)
+			switch (nodeType)
 			{
-				case GPUPipelineType::GRAPHICS:
+				case RenderNodeType::GRAPHICS:
 					dstPattern = GRAPHICS_WRITE;
 					break;
-				case GPUPipelineType::COMPUTE:
+				case RenderNodeType::COMPUTE:
+					dstPattern = COMPUTE_WRITE;
+					break;
+				case RenderNodeType::CUDA:
 					dstPattern = COMPUTE_WRITE;
 					break;
 				default:
@@ -843,12 +874,15 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		for (auto &sampler : sampledImages)
 		{
 			LayoutPatterns dstPattern = EMPTY;
-			switch (GPUPipelineRef->gpuPipelineType)
+			switch (nodeType)
 			{
-				case GPUPipelineType::GRAPHICS:
+				case RenderNodeType::GRAPHICS:
 					dstPattern = GRAPHICS_READ;
 					break;
-				case GPUPipelineType::COMPUTE:
+				case RenderNodeType::COMPUTE:
+					dstPattern = COMPUTE;
+					break;
+				case RenderNodeType::CUDA:
 					dstPattern = COMPUTE;
 					break;
 				default:
@@ -918,6 +952,29 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		GPUPipelineRef->ReloadShaders();
 		return this;
 	}
+	RenderGraphNode *ValidateNodeType()
+	{
+		assert(!(GPUPipelineRef && CUDAPipeline) && "you only can have either gpu or cuda pipeline not both");
+		if (nodeType != RenderNodeType::NONE)
+		{
+			return this;
+		}
+		if (GPUPipelineRef == nullptr)
+		{
+			nodeType = RenderNodeType::CUDA;
+			return this;
+		}
+		if (GPUPipelineRef->pipelineType == vk::PipelineBindPoint::eCompute)
+		{
+			nodeType = RenderNodeType::COMPUTE;
+		}else
+		{
+			nodeType = RenderNodeType::GRAPHICS;
+		}
+		return this;
+		
+	}
+	
 
 	RenderGraphNode *ExecutePass(vk::CommandBuffer commandBuffer)
 	{
@@ -985,6 +1042,14 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		(*renderOperations)();
 		return this;
 	}
+	
+	RenderGraphNode *ExecuteCuda(vk::CommandBuffer commandBuffer)
+	{
+		TransitionImages(commandBuffer);
+		SyncBuffers(commandBuffer);
+		assert(this->CUDAPipeline);
+		return this;
+	}
 
 	RenderGraphNode *Execute(vk::CommandBuffer commandBuffer)
 	{
@@ -995,13 +1060,16 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 				(*tasks[i])();
 			}
 		}
-		switch (GPUPipelineRef->gpuPipelineType)
+		switch (nodeType)
 		{
-			case GPUPipelineType::GRAPHICS:
+			case RenderNodeType::GRAPHICS:
 				ExecutePass(commandBuffer);
 				break;
-			case GPUPipelineType::COMPUTE:
+			case RenderNodeType::COMPUTE:
 				ExecuteCompute(commandBuffer);
+				break;
+			case RenderNodeType::CUDA:
+				ExecuteCuda(commandBuffer);
 				break;
 			default:
 				assert(false && "Unsuported pipeline type");
@@ -1281,12 +1349,15 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	// unused
 
-	GPUPipeline *GPUPipelineRef           = nullptr;
-	bool         waitForResourcesCreation = false;
-	std::string  path;
-	std::string  passName;
-	std::string  workerQueueName = "Graphics";
-	bool         active          = false;
+	GPUPipeline *GPUPipelineRef  = nullptr;
+	CUDAPipeline *CUDAPipeline = nullptr;
+
+	bool           waitForResourcesCreation = false;
+	RenderNodeType nodeType                 = RenderNodeType::NONE;
+	std::string    path;
+	std::string    passName;
+	std::string    workerQueueName = "Graphics";
+	bool           active          = false;
 
 	std::set<std::string> dependencies;
 
@@ -1369,6 +1440,7 @@ class RenderGraph
 	bool       debugUI = true;
 
 	std::unordered_map<std::string, std::unique_ptr<GPUPipeline>>     gpuPipelines;
+	std::unordered_map<std::string, std::unique_ptr<CUDAPipeline>>     cudaPipelines;
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	// todo
 	std::vector<RenderGraphNode *> nodesToExecute;
@@ -1378,7 +1450,6 @@ class RenderGraph
 	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
 	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 	std::vector<QueueNodesBatch>                                      sortedQueueBatches;
-	CodeCuda::CodeCudaContext*                        cudaContext;
 
 	RenderGraph(Core *core)
 	{
@@ -1541,14 +1612,8 @@ class RenderGraph
 	{
 		resourcesManager  = ResourcesManager::GetInstance();
 		currentBackBuffer = resourcesManager->GetImageViewFromName("bf");
-		
-		cudaContext = new CodeCuda::CodeCudaContext();
-		
-		auto cudaBuffer = resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-		    "CudaBufferImg", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
 
-		CodeCuda::C_InitFromExternalDevice(cudaContext, core->deviceUUID.data(), VK_UUID_SIZE);
-		CodeCuda::C_ImportExternalBuffer(cudaContext, cudaBuffer->GetBufferHandle(), cudaBuffer->deviceSize);
+
 	}
 
 	RenderGraphNode *GetNode(std::string name)
@@ -1571,8 +1636,19 @@ class RenderGraph
 			return nullptr;
 		}
 		auto gpuPipeline = gpuPipelines.at(name).get();
-		assert(gpuPipeline != nullptr && "Shader is null");
+		assert(gpuPipeline != nullptr && "gpu pipeline is null");
 		return gpuPipeline;
+	}
+	
+	CUDAPipeline *GetCUDAPipeline(std::string name)
+	{
+		if (!cudaPipelines.contains(name))
+		{
+			return nullptr;
+		}
+		auto cudaPI = cudaPipelines.at(name).get();
+		assert(cudaPI != nullptr && "cuda pipeline is null");
+		return cudaPI;
 	}
 	GPUPipeline *AddGPUPipeline(std::string name)
 	{
@@ -1587,15 +1663,55 @@ class RenderGraph
 		}
 
 		auto gpuPipeline = gpuPipelines.at(name).get();
-		assert(gpuPipeline != nullptr && "Shader is null");
+		assert(gpuPipeline != nullptr && "Pipeline is null");
 		return gpuPipeline;
+	}
+	
+	CUDAPipeline *AddCUDAPipeline(std::string name)
+	{
+		if (!cudaPipelines.contains(name))
+		{
+			auto cudaPipeline             = std::make_unique<CUDAPipeline>();
+			auto queueRef = core->queueWorkerManager->GetWorkerQueue("CUDA");
+			cudaPipeline->context = new CodeCuda::CodeCudaContext();
+			cudaPipeline->context->C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
+			cudaPipeline->context->C_ImportExternalSemaphore(queueRef->GetExportableHandle());
+			cudaPipelines.try_emplace(name, std::move(cudaPipeline));
+			return cudaPipelines.at(name).get();
+		}
+
+		auto cudaPipeline = cudaPipelines.at(name).get();
+		assert(cudaPipeline != nullptr && "Pipeline is null");
+		return cudaPipeline;
+	}
+	
+	RenderGraphNode *AddCudaPass(CUDAPipeline *pipeline, std::string name, std::string workerQueueName = "CUDA")
+	{
+		if (!renderNodes.contains(name))
+		{
+			assert(pipeline != nullptr && "Pipeline is null");
+			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
+			renderGraphNode->CUDAPipeline    = pipeline;
+			renderGraphNode->passName          = name;
+			renderGraphNode->core              = core;
+			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
+			renderGraphNode->resManagerRef     = resourcesManager;
+			renderGraphNode->workerQueueName   = workerQueueName;
+			renderGraphNode->active            = true;
+			renderGraphNode->path              = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+									name + ".json";
+			renderNodes.try_emplace(name, std::move(renderGraphNode));
+			sequentialRenderNodes.push_back(renderNodes.at(name).get());
+			return renderNodes.at(name).get();
+		}
+		return renderNodes.at(name).get();
 	}
 
 	RenderGraphNode *AddPass(GPUPipeline *gpuPipeline, std::string name, std::string workerQueueName = "Graphics")
 	{
 		if (!renderNodes.contains(name))
 		{
-			assert(gpuPipeline != nullptr && "Shader is null");
+			assert(gpuPipeline != nullptr && "Pipeline is null");
 			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
 			renderGraphNode->GPUPipelineRef    = gpuPipeline;
 			renderGraphNode->passName          = name;
@@ -1933,8 +2049,8 @@ class RenderGraph
 					// if a dependency is not active we skip the node
 					continue;
 				}
-				BufferUsageTypes    lastNodeType    = (depenNode->GPUPipelineRef->gpuPipelineType == GPUPipelineType::GRAPHICS) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
-				BufferUsageTypes    currNodeType    = (node->GPUPipelineRef->gpuPipelineType == GPUPipelineType::GRAPHICS) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    lastNodeType    = (depenNode->nodeType == RenderNodeType::GRAPHICS) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
+				BufferUsageTypes    currNodeType    = (node->nodeType == RenderNodeType::GRAPHICS) ? B_GRAPHICS_WRITE : B_COMPUTE_WRITE;
 				BufferAccessPattern lastNodePattern = GetSrcBufferAccessPattern(lastNodeType);
 				BufferAccessPattern currNodePattern = GetSrcBufferAccessPattern(currNodeType);
 				CreateMemBarrier(lastNodePattern, currNodePattern, node->GetCurrCmd());
@@ -1960,9 +2076,12 @@ class RenderGraph
 		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph prepare cpu");
 		resourcesManager->UpdateBuffers();
 		resourcesManager->UpdateImages();
+		for (auto node :sequentialRenderNodes)
+		{
+			node->ValidateNodeType();
+		}
 		sortedByDepNodes.clear();
 		sortedQueueBatches.clear();
-
 		ResolveNodesDependancies(sequentialRenderNodes);
 		if (sequentialRenderNodes.size() > 1)
 		{
@@ -1991,10 +2110,13 @@ class RenderGraph
 	void BuildDeserializedPasses()
 	{
 	}
-	
-	~RenderGraph() {
-		CodeCuda::C_Shutdown(cudaContext);
-		delete(cudaContext);
+
+	~RenderGraph()
+	{
+		for (auto& pi : cudaPipelines)
+		{
+			pi.second->context->C_Shutdown();
+		}
 	};
 };
 

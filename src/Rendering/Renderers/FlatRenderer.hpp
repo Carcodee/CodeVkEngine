@@ -148,6 +148,8 @@ class FlatRenderer : public BaseRenderer
 	{
 		auto        logicalDevice = core->logicalDevice.get();
 		std::string shaderPath    = SYSTEMS::OS::GetInstance()->GetShadersPath();
+		
+		
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
@@ -160,6 +162,15 @@ class FlatRenderer : public BaseRenderer
 		paintingNode->AddStorageResource(paintingLayers[0]);
 		paintingNode->AddStorageResource(paintingLayers[1]);
 		paintingNode->AddStorageResource(paintingLayers[2]);
+		
+		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+			"CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
+		cudaPI->ExportBuffer(cudaBuffer);
+		cudaPI->BuildCUDAPipeline();
+		
+		auto cudaPass = renderGraph->AddCudaPass(cudaPI,"CudaTestNode");
+		cudaPass->DependsOn(paintingPassName);
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
 		AttachmentInfo colInfo     = GetColorAttachmentInfo(

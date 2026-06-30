@@ -65,7 +65,7 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Compute", queueFamilyIndices.computeFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("Graphics_Test", queueFamilyIndices.graphicsFamilyIndex);
 	this->queueWorkerManager->GetOrCreateWorkerQueue("UI", queueFamilyIndices.graphicsFamilyIndex);
-	this->queueWorkerManager->GetOrCreateWorkerQueue("CUDA", queueFamilyIndices.computeFamilyIndex, true);
+	this->queueWorkerManager->GetOrCreateWorkerQueue("CUDA", queueFamilyIndices.computeFamilyIndex, true, true);
 
 	for (auto &property : properties)
 	{
