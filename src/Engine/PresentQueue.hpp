@@ -107,28 +107,21 @@ struct InFlightQueue
 				auto* queueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i].queueName);
 				if (renderGraph->sortedQueueBatches.size() == 1)
 				{
-					if (queueRef->name == "CUDA")
-					{
-						ExecuteCUDA(&renderGraph->sortedQueueBatches[i], nullptr);
-						
-					}else
-					{
-						vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
-						vk::PipelineStageFlags waitStages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-						vk::Semaphore          signalSemaphores[] = {currFrame.renderingFinishedSemaphore.get()};
+					vk::Semaphore          waitSemaphores[]   = {currFrame.imageAcquiredSemaphore.get()};
+					vk::PipelineStageFlags waitStages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+					vk::Semaphore          signalSemaphores[] = {currFrame.renderingFinishedSemaphore.get()};
 
-						auto submitInfo = vk::SubmitInfo()
-											  .setWaitSemaphoreCount(1)
-											  .setPWaitSemaphores(waitSemaphores)
-											  .setPWaitDstStageMask(waitStages)
-											  .setCommandBufferCount(1)
-											  .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
-											  .setSignalSemaphoreCount(1)
-											  .setPSignalSemaphores(signalSemaphores);
+					auto submitInfo = vk::SubmitInfo()
+					                      .setWaitSemaphoreCount(1)
+					                      .setPWaitSemaphores(waitSemaphores)
+					                      .setPWaitDstStageMask(waitStages)
+					                      .setCommandBufferCount(1)
+					                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
+					                      .setSignalSemaphoreCount(1)
+					                      .setPSignalSemaphores(signalSemaphores);
 
-						queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
-						break;
-					}
+					queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
+					break;
 				}
 				if (i == 0)
 				{
