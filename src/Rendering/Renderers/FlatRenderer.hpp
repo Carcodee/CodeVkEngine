@@ -171,6 +171,10 @@ class FlatRenderer : public BaseRenderer
 		
 		auto cudaPass = renderGraph->AddCudaPass(cudaPI,"CudaTestNode");
 		cudaPass->DependsOn(paintingPassName);
+		
+		auto cudaPass3 = renderGraph->AddCudaPass(cudaPI,"CudaTestNode_3");
+		cudaPass3->DependsOn("CudaTestNode");
+		
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
 		AttachmentInfo colInfo     = GetColorAttachmentInfo(
@@ -224,6 +228,7 @@ class FlatRenderer : public BaseRenderer
 		{
 			renderNode->DependsOn("ProbesGen_" + std::to_string(i));
 		}
+		
 
 		AttachmentInfo mergeColInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad,
@@ -272,6 +277,9 @@ class FlatRenderer : public BaseRenderer
 		resultNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
 		resultNode->BuildRenderGraphNode();
+		
+		auto cudaPass2 = renderGraph->AddCudaPass(cudaPI,"CudaTestNode_2");
+		cudaPass2->DependsOn(resultPassName);
 	}
 
 	void RecreateSwapChainResources() override
