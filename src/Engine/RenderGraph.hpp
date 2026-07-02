@@ -1432,10 +1432,7 @@ struct QueueNodesBatch
 		for (int i = 0; i < sortedNodes.size(); ++i)
 		{
 			auto &node = sortedNodes[i];
-			if (i > 0)
-			{
-				node->CUDAPipeline->context->C_WaitExternalSemaphore(queueRef->timelineValue);
-			}
+			node->CUDAPipeline->context->C_WaitExternalSemaphore(queueRef->timelineValue);
 			node->CUDAPipeline->context->C_Execute();
 			node->CUDAPipeline->context->C_SignalExternalSemaphore(++queueRef->timelineValue);
 		}

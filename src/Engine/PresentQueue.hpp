@@ -116,12 +116,18 @@ struct InFlightQueue
 			auto *queueRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i].queueName);
 			if (i == 0)
 			{
+				//in case the next queue is cuda we need to signal that queue
+				WorkerQueue* queueToSignalRef = queueRef;
+				if (renderGraph->sortedQueueBatches[i + 1].queueName == "CUDA")
+				{
+					queueToSignalRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i + 1].queueName);	
+				}
 				assert(queueRef->name != "CUDA" && "First queue must never be cuda");
 				vk::Semaphore          waitSemaphores[] = {currFrame.imageAcquiredSemaphore.get()};
 				vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-				vk::Semaphore          signalTimeline[] = {queueRef->timelineSem.get()};
+				vk::Semaphore          signalTimeline[] = {queueToSignalRef->timelineSem.get()};
 
-				uint64_t signalValue = ++queueRef->timelineValue;
+				uint64_t signalValue = ++queueToSignalRef->timelineValue;
 
 				vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
 				timelineInfo.setSignalSemaphoreValueCount(1);
@@ -145,7 +151,7 @@ struct InFlightQueue
 				assert(queueRef->name != "CUDA" && "Last queue must never be cuda");
 				vk::Semaphore          waitSemaphores[] = {lastQueueRef->timelineSem.get()};
 				vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-				vk::Semaphore          signalTimeline[] = {currFrame.renderingFinishedSemaphore.get()};
+				vk::Semaphore          signalSemaphore[] = {currFrame.renderingFinishedSemaphore.get()};
 
 				uint64_t waitValue = lastQueueRef->timelineValue;
 
@@ -161,7 +167,7 @@ struct InFlightQueue
 				                      .setCommandBufferCount(1)
 				                      .setPCommandBuffers(&renderGraph->sortedQueueBatches[i].commandBuffer)
 				                      .setSignalSemaphoreCount(1)
-				                      .setPSignalSemaphores(signalTimeline);
+				                      .setPSignalSemaphores(signalSemaphore);
 				queueRef->workerQueue.submit({submitInfo}, currFrame.inflightFence.get());
 				continue;
 			}
@@ -174,12 +180,19 @@ struct InFlightQueue
 			}
 			else
 			{
+				
+				//in case the next queue is cuda we need to signal that queue
+				WorkerQueue* queueToSignalRef = queueRef;
+				if (renderGraph->sortedQueueBatches[i + 1].queueName == "CUDA")
+				{
+					queueToSignalRef = renderGraph->core->queueWorkerManager->GetWorkerQueue(renderGraph->sortedQueueBatches[i + 1].queueName);	
+				}
 				vk::Semaphore          waitSemaphores[] = {lastQueueRef->timelineSem.get()};
 				vk::PipelineStageFlags waitStages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-				vk::Semaphore          signalTimeline[] = {queueRef->timelineSem.get()};
+				vk::Semaphore          signalTimeline[] = {queueToSignalRef->timelineSem.get()};
 
 				uint64_t waitValue   = lastQueueRef->timelineValue;
-				uint64_t signalValue = ++queueRef->timelineValue;
+				uint64_t signalValue = ++queueToSignalRef->timelineValue;
 
 				vk::TimelineSemaphoreSubmitInfo timelineInfo = {};
 				timelineInfo.setWaitSemaphoreValueCount(1);
