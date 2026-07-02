@@ -25,6 +25,7 @@ class Core
 	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffers(vk::CommandPool commandPoolIn, size_t count);
 	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffersSecondary(vk::CommandPool commandPool, size_t count);
 	vk::UniqueSemaphore                  CreateVulkanSemaphore();
+	vk::UniqueSemaphore                  CreateExportableBinarySemaphore(HANDLE& handleOut);
 	vk::UniqueSemaphore                  CreateVulkanTimelineSemaphore(uint32_t initialValue);
 	vk::UniqueSemaphore                  CreateExportableTimelineSemaphore(uint32_t initialValue, HANDLE& handleOut);
 	vk::UniqueFence                      CreateFence(bool state);

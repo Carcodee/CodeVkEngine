@@ -1425,6 +1425,22 @@ struct QueueNodesBatch
 	vk::CommandBuffer              commandBuffer;
 	int                            id;
 	int                            poolIdUsed;
+	void ExecuteCUDA(Core* core)
+	{
+		
+		auto queueRef = core->queueWorkerManager->GetWorkerQueue(queueName);
+		for (int i = 0; i < sortedNodes.size(); ++i)
+		{
+			auto &node = sortedNodes[i];
+			if (i > 0)
+			{
+				node->CUDAPipeline->context->C_WaitExternalSemaphore(queueRef->timelineValue);
+			}
+			node->CUDAPipeline->context->C_Execute();
+			node->CUDAPipeline->context->C_SignalExternalSemaphore(++queueRef->timelineValue);
+		}
+		
+	}
 };
 
 class RenderGraph
@@ -1936,6 +1952,16 @@ class RenderGraph
 			return;
 		}
 		int batchIdx = 0;
+		
+		//if the first queue is cuda we need to add a "bridge sync point with image adquire semaphore"
+		if(sortedNodes[0]->workerQueueName == "CUDA"){
+			int               poolCmdId = 0;
+			auto             *queueRef  = core->queueWorkerManager->GetWorkerQueue("Graphics");
+			vk::CommandBuffer cmd       = queueRef->RequestQueueCmd(poolCmdId);
+			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{}, "Graphics", cmd, batchIdx});
+			batches.back().poolIdUsed = poolCmdId;
+			batchIdx++;
+		}
 		for (int i = 0; i < sortedNodes.size(); ++i)
 		{
 			if (batches.empty() || batches.back().queueName != sortedNodes[i]->workerQueueName)
@@ -1951,6 +1977,15 @@ class RenderGraph
 			{
 				batches.back().sortedNodes.emplace_back(sortedNodes[i]);
 			}
+		}
+		//if the first queue is cuda we need to add a "bridge sync point with rendering finished semaphore"
+		if(sortedNodes.back()->workerQueueName == "CUDA"){
+			int               poolCmdId = 0;
+			auto             *queueRef  = core->queueWorkerManager->GetWorkerQueue("Graphics");
+			vk::CommandBuffer cmd       = queueRef->RequestQueueCmd(poolCmdId);
+			batches.emplace_back(QueueNodesBatch{std::vector<RenderGraphNode *>{}, "Graphics", cmd, batchIdx});
+			batches.back().poolIdUsed = poolCmdId;
+			batchIdx++;
 		}
 		if (debugUI)
 		{

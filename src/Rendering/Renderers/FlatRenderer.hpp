@@ -150,6 +150,16 @@ class FlatRenderer : public BaseRenderer
 		std::string shaderPath    = SYSTEMS::OS::GetInstance()->GetShadersPath();
 		
 		
+		
+		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+			"CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+		
+		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
+		cudaPI->ExportBuffer(cudaBuffer);
+		cudaPI->BuildCUDAPipeline();
+		
+		auto cudaPass = renderGraph->AddCudaPass(cudaPI,"CudaTestNode");
+		// cudaPass->DependsOn(paintingPassName);
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
@@ -162,18 +172,6 @@ class FlatRenderer : public BaseRenderer
 		paintingNode->AddStorageResource(paintingLayers[0]);
 		paintingNode->AddStorageResource(paintingLayers[1]);
 		paintingNode->AddStorageResource(paintingLayers[2]);
-		
-		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-			"CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
-		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
-		cudaPI->ExportBuffer(cudaBuffer);
-		cudaPI->BuildCUDAPipeline();
-		
-		auto cudaPass = renderGraph->AddCudaPass(cudaPI,"CudaTestNode");
-		cudaPass->DependsOn(paintingPassName);
-		
-		auto cudaPass3 = renderGraph->AddCudaPass(cudaPI,"CudaTestNode_3");
-		cudaPass3->DependsOn("CudaTestNode");
 		
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
@@ -278,7 +276,8 @@ class FlatRenderer : public BaseRenderer
 		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
 		resultNode->BuildRenderGraphNode();
 		
-		auto cudaPass2 = renderGraph->AddCudaPass(cudaPI,"CudaTestNode_2");
+		
+		auto cudaPass2 = renderGraph->AddCudaPass(cudaPI,"CudaTestNode2");
 		cudaPass2->DependsOn(resultPassName);
 	}
 

@@ -137,6 +137,30 @@ vk::UniqueSemaphore Core::CreateVulkanSemaphore()
 	return logicalDevice->createSemaphoreUnique(semaphoreInfo);
 }
 
+vk::UniqueSemaphore Core::CreateExportableBinarySemaphore(HANDLE& handleOut)
+{
+	auto semaphoreTypeInfo          = vk::SemaphoreTypeCreateInfo();
+	semaphoreTypeInfo.semaphoreType = vk::SemaphoreType::eBinary;
+	
+	vk::ExportSemaphoreCreateInfo exportInfo{};
+	exportInfo.handleTypes =
+		vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+	
+	semaphoreTypeInfo.pNext = &exportInfo;
+
+	auto semaphoreInfo  = vk::SemaphoreCreateInfo();
+	semaphoreInfo.pNext = &semaphoreTypeInfo;
+	auto binarySem = logicalDevice->createSemaphoreUnique(semaphoreInfo);
+	
+	vk::SemaphoreGetWin32HandleInfoKHR handleInfo{};
+	handleInfo.semaphore = binarySem.get();
+	handleInfo.handleType =
+		vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+
+	handleOut = logicalDevice->getSemaphoreWin32HandleKHR(handleInfo, loader);
+	return binarySem;
+}
+
 vk::UniqueSemaphore Core::CreateVulkanTimelineSemaphore(uint32_t initialValue)
 {
 	auto semaphoreTypeInfo          = vk::SemaphoreTypeCreateInfo();
