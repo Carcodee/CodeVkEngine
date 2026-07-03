@@ -18,12 +18,19 @@ The current default renderer is **FlatRenderer**. It is the most recent active p
   - Named render passes with explicit dependencies.
   - Graphics and compute pass support.
   - Queue batching and a profiler/debug UI for inspecting execution order.
+  - CUDA passes can participate in the render graph as queue batches.
   - Render node metadata serialization into `Resources/Engine/RenderNodes`.
 
 - **Vulkan resource layer**
   - Core wrappers for images, buffers, samplers, descriptors, shader modules, pipelines, swapchain, synchronization, and present queue.
   - Automatic descriptor binding by resource name.
   - Dynamic resource manager for buffers, images, staged uploads, and shader assets.
+
+- **CUDA/Vulkan interop prototype**
+  - Vulkan-owned buffers can be exported to CUDA through `CodeCudaEngine`.
+  - CUDA work is represented as render graph nodes assigned to the `CUDA` queue.
+  - CUDA is intentionally never the first or last submitted queue batch; Vulkan bridge batches handle swapchain acquire and present edges.
+  - Queue synchronization uses an exported timeline semaphore imported by CUDA.
 
 - **Shader system**
   - GLSL and Slang support.
@@ -42,6 +49,55 @@ The current default renderer is **FlatRenderer**. It is the most recent active p
   - glTF model loading through tinygltf.
   - PLY point-cloud / Gaussian splat loading through happly.
   - Texture, sprite-sheet, material, and animation resource helpers.
+
+## CUDA / Vulkan Interop
+
+CodeVkEngine includes an experimental CUDA interop path for running CUDA work inside the render graph without copying shared GPU resources back through the CPU.
+
+The current ownership model is Vulkan-first:
+
+- Vulkan creates the GPU resource and synchronization object.
+- Vulkan exports the buffer memory and timeline semaphore handles.
+- CUDA imports those handles through `CodeCudaEngine`.
+- Render graph CUDA passes execute as `CUDA` queue batches.
+- Vulkan resumes after CUDA signals the imported timeline semaphore.
+
+The important rule in the queue system is that a CUDA batch should never be the first or last batch submitted for a frame. If sorted render nodes would put CUDA at either edge, the render graph inserts an empty Vulkan bridge batch. This keeps swapchain image acquire and present synchronization on Vulkan queues while still allowing CUDA to run in the middle of the frame.
+
+```mermaid
+flowchart LR
+    Acquire["Swapchain acquire semaphore"] --> G0["Vulkan bridge / graphics batch"]
+    G0 -->|signal CUDA timeline value N| C0["CUDA batch"]
+    C0 -->|wait value N| C1["CUDA node 0"]
+    C1 -->|signal value N+1| C2["CUDA node 1 / next CUDA work"]
+    C2 -->|signal final CUDA value| G1["Next Vulkan graphics / compute batch"]
+    G1 --> UI["UI batch"]
+    UI --> Present["Present semaphore"]
+    Present --> Swapchain["Swapchain present"]
+```
+
+The conservative CUDA-side synchronization model is per-node wait/signal unless the CUDA context guarantees all CUDA work in the batch runs on the same ordered stream. That keeps the batch correct even when separate CUDA nodes may dispatch on different streams.
+
+```text
+Vulkan batch
+  waits:  previous Vulkan/CUDA timeline
+  signals: CUDA timeline if the next batch is CUDA
+
+CUDA batch
+  waits:  current CUDA timeline value before each CUDA node
+  runs:   CUDA node work
+  signals: next CUDA timeline value after each CUDA node
+
+Next Vulkan batch
+  waits:  final CUDA timeline value
+  signals: its own timeline or the present semaphore
+```
+
+Main files:
+
+- `src/Engine/RenderGraph.hpp`: CUDA pipeline/pass creation and queue batch construction.
+- `src/Engine/PresentQueue.hpp`: per-frame queue submission and timeline semaphore chaining.
+- `src/Engine/Core.hpp` / `src/Engine/CoreImpl.hpp`: worker queues and exportable timeline semaphore creation.
 
 ## Renderers
 

@@ -1427,7 +1427,6 @@ struct QueueNodesBatch
 	int                            poolIdUsed;
 	void ExecuteCUDA(Core* core)
 	{
-		
 		auto queueRef = core->queueWorkerManager->GetWorkerQueue(queueName);
 		for (int i = 0; i < sortedNodes.size(); ++i)
 		{
@@ -1436,7 +1435,6 @@ struct QueueNodesBatch
 			node->CUDAPipeline->context->C_Execute();
 			node->CUDAPipeline->context->C_SignalExternalSemaphore(++queueRef->timelineValue);
 		}
-		
 	}
 };
 
