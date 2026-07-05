@@ -60,6 +60,10 @@ namespace ENGINE
 
         void AddShaderInfo(ShaderParser* parser)
         {
+            if (!parser->shaderName.empty())
+            {
+                shaderNames.push_back(parser->shaderName);
+            }
             std::vector<ShaderResource> uniqueResources;
             parser->GetLayout(uniqueResources);
             for (auto& resource : uniqueResources)
@@ -80,6 +84,7 @@ namespace ENGINE
                     assert(defaultSampler != nullptr && "Default sampler is needed");
                     assert(defaultImageView != nullptr && "Default Image view is needed");
                     imageBindingsKeys.try_emplace(resource.name, resource);
+                    resourceShaderNames.try_emplace(resource.name, parser->shaderName);
                     if (resource.array){
                         samplerArrayResources.try_emplace(resource.binding, SamplerArray({defaultImageView}, {defaultSampler}));
                     }else
@@ -91,6 +96,7 @@ namespace ENGINE
                     assert(defaultStorageSampler != nullptr && "Default sampler is needed");
                     assert(defaultStorageImageView != nullptr && "Default Image view is needed");
                     imageBindingsKeys.try_emplace(resource.name, resource);
+                    resourceShaderNames.try_emplace(resource.name, parser->shaderName);
                     if (resource.array)
                     {
                         storageArrayResources.try_emplace(resource.binding,StorageArray({defaultStorageImageView}, {defaultStorageSampler}));
@@ -103,6 +109,7 @@ namespace ENGINE
                     break;
                 case vk::DescriptorType::eUniformBuffer:
                     bufferBindingsKeys.try_emplace(resource.name, resource);
+                    resourceShaderNames.try_emplace(resource.name, parser->shaderName);
                     // ubo = resourcesManagerRef->GetStageBuffer(resource.name, vk::BufferUsageFlagBits::eUniformBuffer, 1)->deviceBuffer.get();
                     ubo = resourcesManagerRef->GetBuffer(ResourcesManager::BufferParams{resource.name, vk::BufferUsageFlagBits::eUniformBuffer,
                                                          vk::MemoryPropertyFlagBits::eHostVisible |
@@ -111,6 +118,7 @@ namespace ENGINE
                     break;
                 case vk::DescriptorType::eStorageBuffer:
                     bufferBindingsKeys.try_emplace(resource.name, resource);
+                    resourceShaderNames.try_emplace(resource.name, parser->shaderName);
                     // ssbo = resourcesManagerRef->GetStageBuffer(resource.name ,vk::BufferUsageFlagBits::eStorageBuffer, 1)->deviceBuffer.get();
                     ssbo = resourcesManagerRef->GetBuffer(ResourcesManager::BufferParams{resource.name, vk::BufferUsageFlagBits::eStorageBuffer,
                                                          vk::MemoryPropertyFlagBits::eHostVisible |
@@ -126,7 +134,6 @@ namespace ENGINE
                     dstSetBuilder.AddBinding(resource.binding, resource.type);
                 }
             }
-            
         }
 
         void BuildDescriptorsCache(vk::ShaderStageFlags stageFlags)
@@ -263,7 +270,6 @@ namespace ENGINE
         template<typename T>
         void SetBuffer(std::string name, std::vector<T>& bufferData)
         {
-            ShaderResource& binding = bufferBindingsKeys.at(name);
             Buffer* bufferRef = GetBufferByName(name);
             if (bufferRef==nullptr){return;}
             // resourcesManagerRef->SetStageBuffer(
@@ -280,7 +286,6 @@ namespace ENGINE
         template <typename T>
         void SetBuffer(std::string name, T& bufferData)
         {
-            ShaderResource& binding = bufferBindingsKeys.at(name);
             Buffer* bufferRef = GetBufferByName(name);
             if (bufferRef==nullptr){return;}
             // resourcesManagerRef->SetStageBuffer(
@@ -295,10 +300,13 @@ namespace ENGINE
 
         void SetBuffer(std::string name, Buffer* bufferData)
         {
-            ShaderResource& binding = bufferBindingsKeys.at(name);
             Buffer* bufferRef = GetBufferByName(name);
+        	if (bufferRef == nullptr)
+        	{
+        		return;
+        	}
+            ShaderResource& binding = bufferBindingsKeys.at(name);
             
-            assert(bufferRef != nullptr && "Buffer does not exist in shaders");
             //buffer updates is handled outside the descriptor cache
             if (bufferRef != bufferData)
             {
@@ -308,9 +316,14 @@ namespace ENGINE
         }
         void SetSampler(std::string name, ImageView* imageView, Sampler* sampler = nullptr)
         {
+            SamplerBinding* samplerBinding = GetSamplerByName(name);
+        	if (samplerBinding == nullptr)
+        	{
+        		return;
+        	}
+        	
             ShaderResource& resource = imageBindingsKeys.at(name);
             assert(resource.type == vk::DescriptorType::eCombinedImageSampler && "The image view is not a sampler image");
-            SamplerBinding* samplerBinding = GetSamplerByName(name);
 
             if (samplerBinding == nullptr){return;}
             if (samplerBinding->imageView == imageView) { return; }
@@ -325,11 +338,10 @@ namespace ENGINE
 
         void SetStorageImage(std::string name, ImageView* imageView, Sampler* sampler = nullptr)
         {
+             StorageBinding* storageBinding = GetStorageImageByName(name);
+            if (storageBinding == nullptr){return;}
             ShaderResource& resource = imageBindingsKeys.at(name);
             assert(resource.type == vk::DescriptorType::eStorageImage && "The image view is not a storage image");
-             StorageBinding* storageBinding = GetStorageImageByName(name);
-
-            if (storageBinding == nullptr){return;}
             if (storageBinding->imageView == imageView) { return; }
 
             if (sampler)
@@ -467,14 +479,14 @@ namespace ENGINE
         {
             if (!bufferBindingsKeys.contains(name))
             {
-                std::string text = "The buffer with name: " + name + ": does not exist on shaders\n";
+                std::string text = "The buffer with name: " + name + ": does not exist on shaders" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
             ShaderResource& binding = bufferBindingsKeys.at(name);
             if (!buffersResources.contains(binding.binding))
             {
-                std::string text = "The buffer with name: " + name + ": is present in the bindings but is not registered as a buffer\n";
+                std::string text = "The buffer with name: " + name + ": is present in the bindings but is not registered as a buffer" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
@@ -484,14 +496,14 @@ namespace ENGINE
         {
             if (!imageBindingsKeys.contains(name))
             {
-                std::string text = "The image with name: " + name + ": does not exist on shaders\n";
+                std::string text = "The image with name: " + name + ": does not exist on shaders" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
             ShaderResource& binding = imageBindingsKeys.at(name);
             if (!imageSamplers.contains(binding.binding))
             {
-                std::string text = "The image with name: " + name + ": is present in the bindings but is not registered as a sampler image \n";
+                std::string text = "The image with name: " + name + ": is present in the bindings but is not registered as a sampler image" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
@@ -502,14 +514,14 @@ namespace ENGINE
         {
             if (!imageBindingsKeys.contains(name))
             {
-                std::string text = "The image with name: " + name + ": does not exist on shaders\n";
+                std::string text = "The image with name: " + name + ": does not exist on shaders" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
             ShaderResource& binding = imageBindingsKeys.at(name);
             if (!storageImages.contains(binding.binding))
             {
-                std::string text = "The image with name: " + name + ": is present in the image bindings but is not registered as a storage image\n";
+                std::string text = "The image with name: " + name + ": is present in the image bindings but is not registered as a storage image" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
@@ -519,14 +531,14 @@ namespace ENGINE
         {
             if (!imageBindingsKeys.contains(name))
             {
-                std::string text = "The image with name: " + name + ": does not exist on shaders\n";
+                std::string text = "The image with name: " + name + ": does not exist on shaders" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
             ShaderResource& binding = imageBindingsKeys.at(name);
             if (!samplerArrayResources.contains(binding.binding))
             {
-                std::string text = "The image array with name: " + name + ": is present in the bindings but is not registered as a resource this should not happen\n";
+                std::string text = "The image array with name: " + name + ": is present in the bindings but is not registered as a resource this should not happen" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
@@ -536,14 +548,14 @@ namespace ENGINE
         {
             if (!imageBindingsKeys.contains(name))
             {
-                std::string text = "The image with name: " + name + ": does not exist on shaders\n";
+                std::string text = "The image with name: " + name + ": does not exist on shaders" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
             ShaderResource& binding = imageBindingsKeys.at(name);
             if (!storageArrayResources.contains(binding.binding))
             {
-                std::string text = "The image array with name: " + name + ": is present in the bindings but is not registered as a resource this should not happen\n";
+                std::string text = "The image array with name: " + name + ": is present in the bindings but is not registered as a resource this should not happen" + GetShaderLogSuffix(name) + "\n";
                 std::cout << text;
                 return nullptr;
             }
@@ -575,6 +587,8 @@ namespace ENGINE
         ResourcesManager* resourcesManagerRef;
         std::unordered_map<std::string, ShaderResource> bufferBindingsKeys;
         std::unordered_map<std::string, ShaderResource> imageBindingsKeys;
+        std::unordered_map<std::string, std::string> resourceShaderNames;
+        std::vector<std::string> shaderNames;
         
         std::map<uint32_t, Buffer*> buffersResources;
         std::map<uint32_t, SamplerBinding> imageSamplers;
@@ -593,6 +607,29 @@ namespace ENGINE
         Core* core;
         ImageView* defaultImageView;
         Sampler* defaultSampler;
+
+    private:
+        std::string GetShaderLogSuffix(const std::string& resourceName)
+        {
+            if (resourceShaderNames.contains(resourceName) && !resourceShaderNames.at(resourceName).empty())
+            {
+                return " shader: " + resourceShaderNames.at(resourceName);
+            }
+            if (shaderNames.empty())
+            {
+                return "";
+            }
+            std::string text = " shaders: ";
+            for (int i = 0; i < shaderNames.size(); ++i)
+            {
+                if (i > 0)
+                {
+                    text += ", ";
+                }
+                text += shaderNames[i];
+            }
+            return text;
+        }
         
         ImageView* defaultStorageImageView;
         Sampler* defaultStorageSampler;

@@ -1859,7 +1859,10 @@ class RenderGraph
 	{
 		for (auto &node : renderNodes)
 		{
-			node.second->RecreateResources();
+			if (node.second->GPUPipelineRef)
+			{
+				node.second->RecreateResources();
+			}
 		}
 		SYSTEMS::Logger::GetInstance()->LogMessage("Graphics Pipelines Recreated");
 	}

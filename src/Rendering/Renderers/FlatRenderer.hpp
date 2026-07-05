@@ -59,9 +59,11 @@ class FlatRenderer : public BaseRenderer
 		ImageView *occluderLayer    = ResourcesManager::GetInstance()->GetImage(
             "OccluderLayer", storageImageInfo, 0, 0);
 		ImageView *debugLayer = ResourcesManager::GetInstance()->GetImage("DebugRaysLayer", storageImageInfo, 0, 0);
+		ImageView *fluidSimLayer = ResourcesManager::GetInstance()->GetImage("FluidSimLayer", storageImageInfo, 0, 0);
 		paintingLayers.push_back(lightLayer);
 		paintingLayers.push_back(occluderLayer);
 		paintingLayers.push_back(debugLayer);
+		paintingLayers.push_back(fluidSimLayer);
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
@@ -158,8 +160,7 @@ class FlatRenderer : public BaseRenderer
 		cudaPI->ExportBuffer(cudaBuffer);
 		cudaPI->BuildCUDAPipeline();
 		
-		auto cudaPass = renderGraph->AddCudaPass(cudaPI,"CudaTestNode");
-		// cudaPass->DependsOn(paintingPassName);
+		auto cudaNode = renderGraph->AddCudaPass(cudaPI, "CudaNode");
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
@@ -172,6 +173,17 @@ class FlatRenderer : public BaseRenderer
 		paintingNode->AddStorageResource(paintingLayers[0]);
 		paintingNode->AddStorageResource(paintingLayers[1]);
 		paintingNode->AddStorageResource(paintingLayers[2]);
+		
+		
+		auto cudaBufferImports = renderGraph->resourcesManager->GetShader(
+			shaderPath + "\\slang\\test\\cudaBufferToImage.slang", S_COMP);
+		
+		auto *cudaImportBuffersNode = renderGraph->AddGPUPipeline("CudaBufferImporter");
+		cudaImportBuffersNode->SetCompShader(cudaBufferImports);
+		cudaImportBuffersNode->BuildGPUPipeline();
+		
+		auto *importBufferNode = renderGraph->AddPass(cudaImportBuffersNode, "CudaBufferImporterNode");
+		importBufferNode->AddStorageResource(paintingLayers[3]);
 		
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
@@ -275,10 +287,6 @@ class FlatRenderer : public BaseRenderer
 		resultNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
 		resultNode->BuildRenderGraphNode();
-		
-		
-		auto cudaPass2 = renderGraph->AddCudaPass(cudaPI,"CudaTestNode2");
-		cudaPass2->DependsOn(resultPassName);
 	}
 
 	void RecreateSwapChainResources() override
@@ -309,6 +317,16 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
 		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
+		
+		auto importCudaBufferNodeOp = new std::function<void()>(
+			[this]() {
+				auto &renderNode = renderGraph->renderNodes.at("CudaBufferImporterNode");
+				renderNode->SetStorageImage("OutImage", paintingLayers[3]);
+				renderNode->SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
+				renderNode->GetCurrCmd().dispatch(1024, 1024, 1);
+			});
+		
+		renderGraph->GetNode("CudaBufferImporterNode")->SetRenderOperation(importCudaBufferNodeOp);
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{

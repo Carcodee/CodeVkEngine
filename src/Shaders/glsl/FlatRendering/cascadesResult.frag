@@ -94,6 +94,8 @@ void main() {
 
 //    vec4 baseCol = imageLoad(Radiances[0], ivec2(gl_FragCoord.xy));
     vec4 paintingImage = imageLoad(PaintingLayers[0], coord);
+    vec4 simulationImage = imageLoad(PaintingLayers[3], coord);
+    
     vec4 testImg = texture(TestImage, textCoord);
     vec4 blackOc= imageLoad(PaintingLayers[1], coord);
     vec4 debug= imageLoad(PaintingLayers[2], coord);
@@ -130,8 +132,13 @@ void main() {
     if(spriteCol.w > 0.8){
         outColor = spriteCol;
     }
-    if(paintingImage.w > 0.01){
+    if(paintingImage.w > 0.1){
         outColor = paintingImage * paintingImage.w;
     }
+
+    if(simulationImage.w > 0.1){
+        outColor = simulationImage;
+    }
+    
 
 }

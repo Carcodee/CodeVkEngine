@@ -44,8 +44,9 @@ namespace CodeCuda
         kernel_launcher kernel_launcher;
         cudaExternalSemaphore_t external_semaphore = {};
         void* mappedPtr = nullptr;
+        float time_step = 0.1f;
     private:
-        
+        float fixed_time = 0.0f;
     };
     
     C_Res C_Matmul(CodeCudaContext* code_cuda_context, int M, int N, int K, const float *a, const float *b, float *c);

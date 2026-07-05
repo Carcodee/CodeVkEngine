@@ -247,6 +247,11 @@ namespace ENGINE
         }
 
         spSetCodeGenTarget(request, SLANG_SPIRV);
+        const char* preserveParamsArgs[] = {"-preserve-params"};
+        if (spProcessCommandLineArguments(request, preserveParamsArgs, 1) != SLANG_OK)
+        {
+            assert(false && "failed to set slang preserve params option");
+        }
         int translationUnitIndex = spAddTranslationUnit(request, SLANG_SOURCE_LANGUAGE_SLANG, nullptr);
 
         spAddEntryPoint(request, translationUnitIndex, entryPoint.c_str(), slangStage);
@@ -345,8 +350,9 @@ set "errorfound="
 
     public:
 
-        ShaderParser(std::vector<uint32_t>& byteCode)
+        ShaderParser(std::vector<uint32_t>& byteCode, bool slangResourceNames = false, std::string shaderName = "")
         {
+            this->shaderName = shaderName;
             
             spirv_cross::CompilerGLSL glsl((byteCode));
 
@@ -387,7 +393,7 @@ set "errorfound="
 
             for (auto& resource : resources.uniform_buffers)
             {
-                std::string name = resource.name;
+                std::string name = GetBufferResourceName(glsl, resource, slangResourceNames);
                 uint32_t binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
                 uint32_t set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
                 bool array = false;
@@ -402,8 +408,7 @@ set "errorfound="
             }
              for (auto& resource : resources.storage_buffers)
             {
-                
-                std::string name = resource.name;
+                std::string name = GetBufferResourceName(glsl, resource, slangResourceNames);
                 uint32_t binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
                 uint32_t set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
                 bool array = false;
@@ -517,6 +522,23 @@ set "errorfound="
         std::vector<ShaderResource> sampledImages;
         std::vector<ShaderResource> storageImages;
         ShaderStage stage;
+        std::string shaderName;
+
+    private:
+        static std::string GetBufferResourceName(spirv_cross::CompilerGLSL& glsl,
+                                                 const spirv_cross::Resource& resource,
+                                                 bool slangResourceNames)
+        {
+            if (slangResourceNames)
+            {
+                std::string variableName = glsl.get_name(resource.id);
+                if (!variableName.empty())
+                {
+                    return variableName;
+                }
+            }
+            return resource.name;
+        }
     };
 
     class Shader 
@@ -530,7 +552,7 @@ set "errorfound="
             assert(std::filesystem::path(this->spirvPath).extension() == ".spv" && "spv must be .spv filetypes");
             this->logicalDevice = logicalDevice;
             std::vector<uint32_t> byteCode = GetByteCode(spirvPath);
-            sParser = std::make_unique<ShaderParser>(byteCode);
+            sParser = std::make_unique<ShaderParser>(byteCode, IsSlangShader(), this->path);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
             shaderFileInfo = std::make_unique<SYSTEMS::FileInfo>(this->path);
         }
@@ -571,7 +593,7 @@ set "errorfound="
             
             sParser.reset();
             sModule.reset();
-            sParser = std::make_unique<ShaderParser>(byteCode);
+            sParser = std::make_unique<ShaderParser>(byteCode, IsSlangShader(), path);
             sModule = std::make_unique<ShaderModule>(logicalDevice, byteCode);
             SYSTEMS::Logger::GetInstance()->LogMessage("Shader compiled: "+ path);
             SYSTEMS::Logger::GetInstance()->LogMessage("SPIRV: "+ spirvPath);
@@ -633,6 +655,12 @@ set "errorfound="
         std::string path;
         std::string spirvPath;
         std::unique_ptr<SYSTEMS::FileInfo> shaderFileInfo;
+
+    private:
+        bool IsSlangShader() const
+        {
+            return std::filesystem::path(path).extension() == ".slang";
+        }
         
     };
 }

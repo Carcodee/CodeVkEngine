@@ -14,7 +14,7 @@ cbuffer PushConstantsBuffer{
 
 // Declare textures for painting layers
 [[vk::binding(0, 0)]]
-RWTexture2D<float4> PaintingLayers[2];
+RWTexture2D<float4> PaintingLayers[3];
 
 [[vk::binding(1, 0)]]
 Sampler2D InTex;
@@ -22,7 +22,9 @@ Sampler2D InTex;
 // Entry point for compute shader
 [numthreads(1, 1, 1)]
 void mainCS(uint3 dtid : SV_DispatchThreadID) {
-    // Calculate position
+  // Calculate position
+
+  uint2 xyScreen = int2(dtid.x, dtid.y);
     int posX = int(dtid.x - float(pc.radius) / 2.0 + 1);
     int posY = int(dtid.y - float(pc.radius) / 2.0 + 1);
 
@@ -39,9 +41,6 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
         bool painting = (pc.painting == 1);
         if (painting && pc.layerSelected == 0) {
             PaintingLayers[0][xy] = pc.color;
-        }
-        if (painting && pc.layerSelected == 1) {
-            PaintingLayers[1][xy] = float4(1.0, 1.0, 1.0, 1.0);
         }
     }
 }
