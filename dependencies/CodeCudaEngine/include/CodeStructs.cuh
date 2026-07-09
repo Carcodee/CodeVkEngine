@@ -331,20 +331,15 @@ namespace CodeCuda
         }
 
         int32_t *Shape() { return shape; }
-        static void PrintAnyMatrix(
-            int32_t M,
-            int32_t N,
-            float* data,
-            bool force_full_output = false,
-            bool padded = true)
+        static void PrintAnyMatrix(int32_t M, int32_t N, float *data, bool force_full_output = false,
+                                   bool padded = true)
         {
-            const std::string output =
-                padded
-                ? FormatMatrixOutput(M, N, data, force_full_output)
-                : FormatMatrixOutputNoPadding(M, N, data, force_full_output);
+            const std::string output = padded ? FormatMatrixOutput(M, N, data, force_full_output)
+                                              : FormatMatrixOutputNoPadding(M, N, data, force_full_output);
 
             printf("%s", output.c_str());
         }
+
     private:
         float *data = nullptr;
         float *data_t = nullptr;
@@ -353,7 +348,6 @@ namespace CodeCuda
         int32_t *shape = nullptr;
         int32_t data_size = 0;
     };
-
 
 } // namespace CodeCuda
 

@@ -58,7 +58,7 @@ class FlatRenderer : public BaseRenderer
 		ImageView *lightLayer       = ResourcesManager::GetInstance()->GetImage("PaintingLayer", storageImageInfo, 0, 0);
 		ImageView *occluderLayer    = ResourcesManager::GetInstance()->GetImage(
             "OccluderLayer", storageImageInfo, 0, 0);
-		ImageView *debugLayer = ResourcesManager::GetInstance()->GetImage("DebugRaysLayer", storageImageInfo, 0, 0);
+		ImageView *debugLayer    = ResourcesManager::GetInstance()->GetImage("DebugRaysLayer", storageImageInfo, 0, 0);
 		ImageView *fluidSimLayer = ResourcesManager::GetInstance()->GetImage("FluidSimLayer", storageImageInfo, 0, 0);
 		paintingLayers.push_back(lightLayer);
 		paintingLayers.push_back(occluderLayer);
@@ -150,16 +150,14 @@ class FlatRenderer : public BaseRenderer
 	{
 		auto        logicalDevice = core->logicalDevice.get();
 		std::string shaderPath    = SYSTEMS::OS::GetInstance()->GetShadersPath();
-		
-		
-		
+
 		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-			"CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
-		
+		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+
 		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
 		cudaPI->ExportBuffer(cudaBuffer);
 		cudaPI->BuildCUDAPipeline();
-		
+
 		auto cudaNode = renderGraph->AddCudaPass(cudaPI, "CudaNode");
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
@@ -168,23 +166,21 @@ class FlatRenderer : public BaseRenderer
 		paintingGPUPipeline->SetCompShader(paintCompShader);
 		paintingGPUPipeline->SetPushConstantSize(sizeof(PaintingPc));
 		paintingGPUPipeline->BuildGPUPipeline();
-		
+
 		auto *paintingNode = renderGraph->AddPass(paintingGPUPipeline, paintingPassName, "Graphics");
 		paintingNode->AddStorageResource(paintingLayers[0]);
 		paintingNode->AddStorageResource(paintingLayers[1]);
 		paintingNode->AddStorageResource(paintingLayers[2]);
-		
-		
+
 		auto cudaBufferImports = renderGraph->resourcesManager->GetShader(
-			shaderPath + "\\slang\\test\\cudaBufferToImage.slang", S_COMP);
-		
+		    shaderPath + "\\slang\\test\\cudaBufferToImage.slang", S_COMP);
+
 		auto *cudaImportBuffersNode = renderGraph->AddGPUPipeline("CudaBufferImporter");
 		cudaImportBuffersNode->SetCompShader(cudaBufferImports);
 		cudaImportBuffersNode->BuildGPUPipeline();
-		
+
 		auto *importBufferNode = renderGraph->AddPass(cudaImportBuffersNode, "CudaBufferImporterNode");
 		importBufferNode->AddStorageResource(paintingLayers[3]);
-		
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
 		AttachmentInfo colInfo     = GetColorAttachmentInfo(
@@ -204,14 +200,14 @@ class FlatRenderer : public BaseRenderer
 		probesGenGPUPipeline->SetVertexInput(vertexInput);
 		probesGenGPUPipeline->AddColorAttachmentOutput("CascadeAttachment", colInfo, BlendConfigs::B_OPAQUE);
 		probesGenGPUPipeline->BuildGPUPipeline();
-		
+
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
 			std::string name = "ProbesGen_" + std::to_string(i);
 			probesGenPassNames.push_back(name);
 			auto renderNode = renderGraph->AddPass(probesGenGPUPipeline, name, "Graphics_Test");
 			renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
-			renderNode->AddColorImageResource( cascadesAttachmentsImagesViews[i]);
+			renderNode->AddColorImageResource(cascadesAttachmentsImagesViews[i]);
 			renderNode->DependsOn(paintingPassName);
 		}
 
@@ -223,7 +219,7 @@ class FlatRenderer : public BaseRenderer
 
 		AttachmentInfo outputColInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
-		
+
 		auto cascadesGPUPipeline = renderGraph->AddGPUPipeline("CascadesGPUPipeline");
 		cascadesGPUPipeline->SetVertShader(vertShader);
 		cascadesGPUPipeline->SetFragShader(fragShader);
@@ -231,14 +227,13 @@ class FlatRenderer : public BaseRenderer
 		cascadesGPUPipeline->SetVertexInput(vertexInput);
 		cascadesGPUPipeline->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
 		cascadesGPUPipeline->BuildGPUPipeline();
-		
+
 		auto renderNode = renderGraph->AddPass(cascadesGPUPipeline, rCascadesPassName);
 		renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
 			renderNode->DependsOn("ProbesGen_" + std::to_string(i));
 		}
-		
 
 		AttachmentInfo mergeColInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad,
@@ -246,8 +241,8 @@ class FlatRenderer : public BaseRenderer
 
 		mergeVertShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
 		mergeFragShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
-		
-		auto        shaderNode = renderGraph->AddGPUPipeline("MergeShader");
+
+		auto shaderNode = renderGraph->AddGPUPipeline("MergeShader");
 		shaderNode->SetVertShader(mergeVertShader);
 		shaderNode->SetFragShader(mergeFragShader);
 		shaderNode->SetPushConstantSize(sizeof(RcPc));
@@ -275,15 +270,15 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath +
 		        "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv",
 		    S_FRAG);
-		
+
 		auto resultGPUPipeline = renderGraph->AddGPUPipeline("ResultCascadesShader");
 		resultGPUPipeline->SetVertShader(resultVertShader);
 		resultGPUPipeline->SetFragShader(resultFragShader);
 		resultGPUPipeline->SetVertexInput(Vertex2D::GetVertexInput());
 		resultGPUPipeline->SetPushConstantSize(sizeof(RcPc));
 		resultGPUPipeline->AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
-		
-		auto resultNode = renderGraph->AddPass(resultGPUPipeline,resultPassName, "Graphics");
+
+		auto resultNode = renderGraph->AddPass(resultGPUPipeline, resultPassName, "Graphics");
 		resultNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
 		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
 		resultNode->BuildRenderGraphNode();
@@ -317,15 +312,15 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
 		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
-		
+
 		auto importCudaBufferNodeOp = new std::function<void()>(
-			[this]() {
-				auto &renderNode = renderGraph->renderNodes.at("CudaBufferImporterNode");
-				renderNode->SetStorageImage("OutImage", paintingLayers[3]);
-				renderNode->SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
-				renderNode->GetCurrCmd().dispatch(1024, 1024, 1);
-			});
-		
+		    [this]() {
+			    auto &renderNode = renderGraph->renderNodes.at("CudaBufferImporterNode");
+			    renderNode->SetStorageImage("OutImage", paintingLayers[3]);
+			    renderNode->SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
+			    renderNode->GetCurrCmd().dispatch(50, 50, 1);
+		    });
+
 		renderGraph->GetNode("CudaBufferImporterNode")->SetRenderOperation(importCudaBufferNodeOp);
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)

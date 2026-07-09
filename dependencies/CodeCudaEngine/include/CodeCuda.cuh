@@ -17,10 +17,14 @@ namespace CodeCuda
         ERR
     };
     
-    
     struct kernel_launcher
     {
         std::function<void(cudaStream_t)> kernel{};
+    };
+    
+    struct cpu_launcher 
+    {
+        std::function<void()> task{};
     };
     
     class CodeCudaContext
@@ -34,7 +38,8 @@ namespace CodeCuda
         
         C_Res C_SignalExternalSemaphore(uint64_t signal_value);
         C_Res C_WaitExternalSemaphore(uint64_t wait_value);
-        C_Res C_Execute();
+        C_Res C_ExecuteKernel();
+        C_Res C_ExecuteCPU();
         
         C_Res C_Shutdown();
         cudaStream_t stream = nullptr;
@@ -42,11 +47,12 @@ namespace CodeCuda
         bool initialized = false;
         
         kernel_launcher kernel_launcher;
+        cpu_launcher cpu_launcher;
         cudaExternalSemaphore_t external_semaphore = {};
         void* mappedPtr = nullptr;
-        float time_step = 0.1f;
+        float time_step = 1.0f / 30.0f;
     private:
-        float fixed_time = 0.0f;
+        float curr_t = 0.0f;
     };
     
     C_Res C_Matmul(CodeCudaContext* code_cuda_context, int M, int N, int K, const float *a, const float *b, float *c);

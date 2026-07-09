@@ -1048,6 +1048,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		TransitionImages(commandBuffer);
 		SyncBuffers(commandBuffer);
 		assert(this->CUDAPipeline);
+		this->CUDAPipeline->context->C_ExecuteCPU();
 		return this;
 	}
 
@@ -1432,7 +1433,7 @@ struct QueueNodesBatch
 		{
 			auto &node = sortedNodes[i];
 			node->CUDAPipeline->context->C_WaitExternalSemaphore(queueRef->timelineValue);
-			node->CUDAPipeline->context->C_Execute();
+			node->CUDAPipeline->context->C_ExecuteKernel();
 			node->CUDAPipeline->context->C_SignalExternalSemaphore(++queueRef->timelineValue);
 		}
 	}
