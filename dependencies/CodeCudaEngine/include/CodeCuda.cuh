@@ -56,6 +56,7 @@ namespace CodeCuda
     };
     
     C_Res C_Matmul(CodeCudaContext* code_cuda_context, int M, int N, int K, const float *a, const float *b, float *c);
+    C_Res C_UpdateSim();
 
     class CodeCudaExecutor
     {

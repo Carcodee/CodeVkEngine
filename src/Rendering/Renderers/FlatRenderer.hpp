@@ -318,7 +318,7 @@ class FlatRenderer : public BaseRenderer
 			    auto &renderNode = renderGraph->renderNodes.at("CudaBufferImporterNode");
 			    renderNode->SetStorageImage("OutImage", paintingLayers[3]);
 			    renderNode->SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
-			    renderNode->GetCurrCmd().dispatch(50, 50, 1);
+			    renderNode->GetCurrCmd().dispatch(1024, 1024, 1);
 		    });
 
 		renderGraph->GetNode("CudaBufferImporterNode")->SetRenderOperation(importCudaBufferNodeOp);
