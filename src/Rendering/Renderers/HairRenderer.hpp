@@ -87,7 +87,7 @@ class HairRenderer : public BaseRenderer
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
 		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
-		renderGraph->GetNode(passName)->AddTask(taskOp);
+		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
 	}
 
 	void ReloadShaders() override

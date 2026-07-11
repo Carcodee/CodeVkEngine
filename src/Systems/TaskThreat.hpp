@@ -54,7 +54,7 @@ class TaskThread
 			assetThreat.join();
 		}
 	}
-	void AddTask(std::function<void()> task)
+	void AddPreRenderingTask(std::function<void()> task)
 	{
 		{
 			std::lock_guard<std::mutex> lockGuard(queueMutex);

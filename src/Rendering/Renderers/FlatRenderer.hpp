@@ -5,6 +5,7 @@
 
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
+#include "CodeCuda.cuh"
 
 namespace Rendering
 {
@@ -290,6 +291,31 @@ class FlatRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
+		auto cudaTask = new std::function<void()>(
+		    [this]() {
+		    	glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+			    auto &renderNode = renderGraph->renderNodes.at("CudaNode");
+				if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
+				{
+					float vx = 1.0f;
+					float vy = 1.0f;
+					int r = 5;
+					int x = mouseInput.x;
+					int y = mouseInput.y;
+					
+					float u = float(x) / 1023.0f; 
+					float v = float(y) / 1023.0f; 
+					
+					int x_final = int(u * 100.0f);
+					int y_final = int(v * 100.0f);
+					
+					
+					CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 10.0f);
+					
+				}
+		});
+		
+		renderGraph->GetNode("CudaNode")->AddPreRenderingTask(cudaTask);
 		auto paintingRenderOP = new std::function<void()>(
 		    [this]() {
 			    glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
@@ -311,6 +337,7 @@ class FlatRenderer : public BaseRenderer
 			                                           0, sizeof(PaintingPc), &paintingPc);
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
+		
 		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
 
 		auto importCudaBufferNodeOp = new std::function<void()>(
@@ -389,7 +416,7 @@ class FlatRenderer : public BaseRenderer
 			                                           0, 0);
             });
 		renderGraph->GetNode(rCascadesPassName)->SetRenderOperation(radianceOutputOp);
-		renderGraph->GetNode(rCascadesPassName)->AddTask(radianceOutputTask);
+		renderGraph->GetNode(rCascadesPassName)->AddPreRenderingTask(radianceOutputTask);
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
@@ -424,7 +451,7 @@ class FlatRenderer : public BaseRenderer
 				                                                    0, 0);
                 });
 			renderGraph->GetNode(mergeNameCascades)->SetRenderOperation(mergeRenderOp);
-			renderGraph->GetNode(mergeNameCascades)->AddTask(mergeTask);
+			renderGraph->GetNode(mergeNameCascades)->AddPreRenderingTask(mergeTask);
 		}
 
 		auto resultTask     = new std::function<void()>([this]() {
@@ -458,7 +485,7 @@ class FlatRenderer : public BaseRenderer
 			    testSpriteAnim->UseFrame();
 		    });
 		renderGraph->GetNode(resultPassName)->SetRenderOperation(resultRenderOp);
-		renderGraph->GetNode(resultPassName)->AddTask(resultTask);
+		renderGraph->GetNode(resultPassName)->AddPreRenderingTask(resultTask);
 	}
 
 	void ReloadShaders() override

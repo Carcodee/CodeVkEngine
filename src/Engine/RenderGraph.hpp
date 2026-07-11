@@ -1054,11 +1054,11 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	RenderGraphNode *Execute(vk::CommandBuffer commandBuffer)
 	{
-		for (int i = 0; i < tasks.size(); ++i)
+		for (int i = 0; i < preRenderingTasks.size(); ++i)
 		{
-			if (tasks[i] != nullptr)
+			if (preRenderingTasks[i] != nullptr)
 			{
-				(*tasks[i])();
+				(*preRenderingTasks[i])();
 			}
 		}
 		switch (nodeType)
@@ -1093,6 +1093,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	RenderGraphNode *SetRenderOperation(std::function<void()> *renderOperations)
 	{
+		assert(GPUPipelineRef != nullptr && "Render operations are only for gpu pipelines");
 		if (this->renderOperations)
 		{
 			delete (this->renderOperations);
@@ -1101,9 +1102,9 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *AddTask(std::function<void()> *task)
+	RenderGraphNode *AddPreRenderingTask(std::function<void()> *task)
 	{
-		this->tasks.push_back(task);
+		this->preRenderingTasks.push_back(task);
 		return this;
 	}
 
@@ -1307,12 +1308,12 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	RenderGraphNode *ClearOperations()
 	{
 		delete renderOperations;
-		for (auto &task : tasks)
+		for (auto &task : preRenderingTasks)
 		{
 			delete task;
 		}
 		renderOperations = nullptr;
-		tasks.clear();
+		preRenderingTasks.clear();
 		return this;
 	}
 	RenderGraphNode *SetCurrCmd(vk::CommandBuffer cmd)
@@ -1415,7 +1416,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	std::unordered_map<std::string, BufferKey>   buffers;
 
 	std::function<void()>               *renderOperations = nullptr;
-	std::vector<std::function<void()> *> tasks;
+	std::vector<std::function<void()> *> preRenderingTasks;
 
 	ResourcesManager *resManagerRef;
 };
@@ -1577,7 +1578,7 @@ class RenderGraph
 			                                         0, 0);
 		    });
 
-		blitterNode->AddTask(blitterTask);
+		blitterNode->AddPreRenderingTask(blitterTask);
 		blitterNode->SetRenderOperation(blitterRenderOp);
 		return blitterNode;
 	}
@@ -2099,7 +2100,7 @@ class RenderGraph
 			// 	std::function<void()> nodeTask([name, queueNodesBatch, this] {
 			// 		renderNodes.at(name)->Execute(queueNodesBatch.commandBuffer);
 			// 	});
-			// 	queueRef->taskThreat.AddTask(nodeTask);
+			// 	queueRef->taskThreat.AddPreRenderingTask(nodeTask);
 			// }
 			allPassesNames.push_back(node->passName);
 			profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
@@ -2139,10 +2140,6 @@ class RenderGraph
 	void EndRendering()
 	{
 		core->queueWorkerManager->ResetPoolUsage();
-	}
-
-	void BuildDeserializedPasses()
-	{
 	}
 
 	~RenderGraph()

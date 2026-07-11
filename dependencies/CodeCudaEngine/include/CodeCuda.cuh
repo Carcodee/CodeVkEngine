@@ -38,8 +38,8 @@ namespace CodeCuda
         
         C_Res C_SignalExternalSemaphore(uint64_t signal_value);
         C_Res C_WaitExternalSemaphore(uint64_t wait_value);
-        C_Res C_ExecuteKernel();
         C_Res C_ExecuteCPU();
+        C_Res C_ExecuteKernel();
         
         C_Res C_Shutdown();
         cudaStream_t stream = nullptr;
@@ -56,7 +56,11 @@ namespace CodeCuda
     };
     
     C_Res C_Matmul(CodeCudaContext* code_cuda_context, int M, int N, int K, const float *a, const float *b, float *c);
+    //simulation
     C_Res C_UpdateSim();
+    C_Res C_AddRandomVel();
+    C_Res C_AddVelocity(int x_pos, int y_pos, int radius, float vel_x, float vel_y);
+    C_Res C_AddRadialVelocity(int x_pos, int y_pos, int radius, float scale);
 
     class CodeCudaExecutor
     {

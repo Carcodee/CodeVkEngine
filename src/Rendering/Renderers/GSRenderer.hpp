@@ -158,7 +158,7 @@ class GSRenderer : public BaseRenderer
 		//             0, sizeof(PcHistogram), &pcHistogram);
 		//     });
 		//
-		// renderGraph->GetNode("histogramPass")->AddTask(hTaskOp);
+		// renderGraph->GetNode("histogramPass")->AddPreRenderingTask(hTaskOp);
 		// renderGraph->GetNode("histogramPass")->SetRenderOperation(hRenderOp);
 		//
 		// auto rRenderOp = new std::function<void()>(
@@ -223,7 +223,7 @@ class GSRenderer : public BaseRenderer
 			        stride);
 		    });
 		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
-		renderGraph->GetNode(passName)->AddTask(taskOp);
+		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
 	}
 
 	void MoveCam()

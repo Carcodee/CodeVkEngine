@@ -74,7 +74,7 @@ class GIRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().drawIndexed(
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(shPassName)->AddTask(taskOp);
+		renderGraph->GetNode(shPassName)->AddPreRenderingTask(taskOp);
 		renderGraph->GetNode(shPassName)->SetRenderOperation(shRenderOp);
 	}
 

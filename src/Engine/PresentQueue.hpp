@@ -243,7 +243,7 @@ struct InFlightQueue
 				// auto bufferBeginInfo         = vk::CommandBufferBeginInfo()
 				//                            .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 			});
-			worker.second.taskThreat.AddTask(workerStartTask);
+			worker.second.taskThreat.AddPreRenderingTask(workerStartTask);
 		}
 	}
 
@@ -257,7 +257,7 @@ struct InFlightQueue
 			}
 			std::function<void()> workerStartTask([&worker, this] {
 			});
-			worker.second.taskThreat.AddTask(workerStartTask);
+			worker.second.taskThreat.AddPreRenderingTask(workerStartTask);
 		}
 	}
 

@@ -109,7 +109,7 @@ class DebugRenderer : public BaseRenderer
                     node->GetCurrCmd().draw(raw3DVertices.size(), 1, 0, 0);
                 });
 
-			renderGraph->GetNode(mDebuggerPassName)->AddTask(debugTask);
+			renderGraph->GetNode(mDebuggerPassName)->AddPreRenderingTask(debugTask);
 			renderGraph->GetNode(mDebuggerPassName)->SetRenderOperation(renderOp);
 		}
 	}

@@ -37,7 +37,7 @@ class ClusterRenderer : public BaseRenderer
 			renderNode->SetBuffer("CullInfo", camFrustum);
 			renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
 		}));
-		renderGraphRef->GetNode(meshCullPassName)->AddTask(new std::function<void()>([this]() {
+		renderGraphRef->GetNode(meshCullPassName)->AddPreRenderingTask(new std::function<void()>([this]() {
 			MoveCam();
 			cPropsUbo.invProj = glm::inverse(currCamera->matrices.perspective);
 			cPropsUbo.invView = glm::inverse(currCamera->matrices.view);
@@ -97,7 +97,7 @@ class ClusterRenderer : public BaseRenderer
 			                                      zSlicesSize);
 		    });
 
-		renderGraphRef->GetNode(computePassName)->AddTask(cullTask);
+		renderGraphRef->GetNode(computePassName)->AddPreRenderingTask(cullTask);
 		renderGraphRef->GetNode(computePassName)->SetRenderOperation(cullRenderOp);
 
 		auto renderOp = new std::function<void()>(
@@ -204,7 +204,7 @@ class ClusterRenderer : public BaseRenderer
 			                                            0, 0);
             });
 
-		renderGraphRef->GetNode(lightPassName)->AddTask(lSetViewTask);
+		renderGraphRef->GetNode(lightPassName)->AddPreRenderingTask(lSetViewTask);
 		renderGraphRef->GetNode(lightPassName)->SetRenderOperation(lRenderOp);
 	}
 
