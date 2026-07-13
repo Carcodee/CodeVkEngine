@@ -297,21 +297,17 @@ class FlatRenderer : public BaseRenderer
 			    auto &renderNode = renderGraph->renderNodes.at("CudaNode");
 				if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
 				{
-					float vx = 1.0f;
-					float vy = 1.0f;
-					int r = 5;
+					int r = 2;
 					int x = mouseInput.x;
 					int y = mouseInput.y;
 					
 					float u = float(x) / 1023.0f; 
 					float v = float(y) / 1023.0f; 
 					
-					int x_final = int(u * 100.0f);
-					int y_final = int(v * 100.0f);
+					int x_final = int(u * 99.0f);
+					int y_final = int(v * 99.0f);
 					
-					
-					CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 10.0f);
-					
+					CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 8.2f);
 				}
 		});
 		
