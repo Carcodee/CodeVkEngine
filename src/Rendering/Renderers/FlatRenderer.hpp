@@ -298,24 +298,35 @@ class FlatRenderer : public BaseRenderer
 		    	
 			if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
 				{
-					int r = 3;
+					int r = 2;
 					int x = mouseInput.x;
 					int y = mouseInput.y;
 					
 					float u = float(x) / 1023.0f; 
 					float v = float(y) / 1023.0f; 
 					
-					int x_final = int(u * 99.0f);
-					int y_final = int(v * 99.0f);
-					
-					CodeCuda::C_AddRandomVelocity(-2);
-					CodeCuda::C_AddRandomVelocity(-5);
-					CodeCuda::C_AddRandomVelocity(-2);
-					CodeCuda::C_AddRandomVelocity(-1);
-					CodeCuda::C_AddRandomVelocity(-1);
-					CodeCuda::C_AddRandomVelocity(-5);
+					int x_final = int(u * float(CodeCuda::s_width - 1));
+					int y_final = int(v * float(CodeCuda::s_height - 1));
+
+					CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 2.5f);
 				}
-		});
+		    	int x_base = 1;
+				int y_base = 15;
+				for (int i = 0; i < 20; ++i)
+		    	{
+					float v = ((float(rand() % 100) / 100.0f) - 0.5f) * 2.0f;
+						CodeCuda::C_AddVelocity(x_base, y_base + i, 1, 1.0 * 0.5,v * 3.0f);
+				}
+		    	
+		    	// CodeCuda::C_AddRandomVelocity(5);
+		    	
+		  //   	CodeCuda::C_AddRandomVelocity(2);
+				// CodeCuda::C_AddRandomVelocity(5);
+				// CodeCuda::C_AddRandomVelocity(2);
+				// CodeCuda::C_AddRandomVelocity(1);
+				// CodeCuda::C_AddRandomVelocity(1);
+				// CodeCuda::C_AddRandomVelocity(5);
+	});
 		
 		renderGraph->GetNode("CudaNode")->AddPreRenderingTask(cudaTask);
 		auto paintingRenderOP = new std::function<void()>(

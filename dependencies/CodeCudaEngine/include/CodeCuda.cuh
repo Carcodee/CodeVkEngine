@@ -57,6 +57,9 @@ namespace CodeCuda
     
     C_Res C_Matmul(CodeCudaContext* code_cuda_context, int M, int N, int K, const float *a, const float *b, float *c);
     //simulation
+    
+    static int s_width = 50;
+    static int s_height = 50;
     C_Res C_UpdateSim();
     C_Res C_AddRandomVelocity(int scale);
     C_Res C_AddVelocity(int x_pos, int y_pos, int radius, float vel_x, float vel_y);

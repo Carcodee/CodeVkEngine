@@ -52,6 +52,5 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   float value = SimulationBuffer[y * 1024 + x];
   float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
   float3 valueInterp = ColorMap(value);
-  
   OutImage[uint2(x, y)] = float4(valueInterp.xyz, value);
 }
