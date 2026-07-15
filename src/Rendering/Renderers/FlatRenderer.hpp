@@ -295,9 +295,10 @@ class FlatRenderer : public BaseRenderer
 		    [this]() {
 		    	glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 			    auto &renderNode = renderGraph->renderNodes.at("CudaNode");
-				if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
+		    	
+			if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
 				{
-					int r = 2;
+					int r = 3;
 					int x = mouseInput.x;
 					int y = mouseInput.y;
 					
@@ -307,7 +308,12 @@ class FlatRenderer : public BaseRenderer
 					int x_final = int(u * 99.0f);
 					int y_final = int(v * 99.0f);
 					
-					CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 8.2f);
+					CodeCuda::C_AddRandomVelocity(-2);
+					CodeCuda::C_AddRandomVelocity(-5);
+					CodeCuda::C_AddRandomVelocity(-2);
+					CodeCuda::C_AddRandomVelocity(-1);
+					CodeCuda::C_AddRandomVelocity(-1);
+					CodeCuda::C_AddRandomVelocity(-5);
 				}
 		});
 		
