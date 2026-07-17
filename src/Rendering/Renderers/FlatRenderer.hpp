@@ -309,13 +309,15 @@ class FlatRenderer : public BaseRenderer
 					int y_final = int(v * float(CodeCuda::s_height - 1));
 
 					CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 2.5f);
+				
+				
 				}
-		    	int x_base = 1;
-				int y_base = 15;
-				for (int i = 0; i < 20; ++i)
+		    	int x_base = 4;
+				int y_base = 45;
+				for (int i = 0; i < 10; ++i)
 		    	{
 					float v = ((float(rand() % 100) / 100.0f) - 0.5f) * 2.0f;
-						CodeCuda::C_AddVelocity(x_base, y_base + i, 1, 1.0 * 0.5,v * 3.0f);
+						CodeCuda::C_AddVelocity(x_base, y_base + i, 1, 1.0 * 0.5,v * 2.2f);
 				}
 		    	
 		    	// CodeCuda::C_AddRandomVelocity(5);
