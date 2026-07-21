@@ -95,11 +95,12 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   if (value < 0.05) {
     show = true;
   }
-  if (value > 0.9) {
+  if (value > 0.3 && value < 0.8) {
     show = true;
   }
 
   float alpha = show ? 1.0 : 0.0f;
   
-  OutImage[uint2(x, y)] = float4(valueInterp.xyz, 1.0);
+  
+  OutImage[uint2(x, y)] = float4(valueInterp.xyz, alpha);
 }

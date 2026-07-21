@@ -298,7 +298,7 @@ class FlatRenderer : public BaseRenderer
 
 			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
 			    {
-				    int r = 15;
+				    int r = 10;
 				    int x = mouseInput.x;
 				    int y = mouseInput.y;
 
@@ -309,10 +309,32 @@ class FlatRenderer : public BaseRenderer
 				    int y_final = int(v * float(CodeCuda::s_height - 1));
 
 				    CodeCuda::C_SetDebugSimulation(false);
-				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 85.5f);
-				    CodeCuda::C_AddVelocity(x_final,  y_final, 5, 100.0, 0.0f);
+				    CodeCuda::C_AddRadialVelocity(x_final, y_final, r, -30.5f);
+				    // CodeCuda::C_AddVelocity(x_final,  y_final, 30, 10.0f, 0.0f);
 			    }
-			    int x_base = 1;
+		    	if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
+		    	{
+					int r = 1;
+					int x = mouseInput.x;
+					int y = mouseInput.y;
+
+					float u = float(x) / 1023.0f;
+					float v = float(y) / 1023.0f;
+
+					int x_final = int(u * float(CodeCuda::s_width - 2));
+					int y_final = int(v * float(CodeCuda::s_height - 2));
+
+					CodeCuda::C_SetDebugSimulation(false);
+					// CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 300.5f);
+					CodeCuda::C_AddSmoke(x_final,  y_final, 25, 0.5f);
+				}
+		    	
+		    	if (glfwGetKey(windowProvider->window, GLFW_KEY_L))
+		    	{
+					CodeCuda::C_SetSimulationResolution(900, 900);
+				}
+		    	
+				int x_base = 1;
 			    int y_base = 500;
 			    for (int i = 0; i < 25; ++i)
 			    {
@@ -336,14 +358,14 @@ class FlatRenderer : public BaseRenderer
 			    glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 			    paintingPc.xMousePos = mouseInput.x;
 			    paintingPc.yMousePos = mouseInput.y;
-			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
-			    {
-				    paintingPc.painting = 1;
-			    }
-			    else
-			    {
-				    paintingPc.painting = 0;
-			    }
+			    // if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
+			    // {
+				   //  paintingPc.painting = 1;
+			    // }
+			    // else
+			    // {
+				   //  paintingPc.painting = 0;
+			    // }
 
 			    auto &renderNode = renderGraph->renderNodes.at(paintingPassName);
 			    renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
