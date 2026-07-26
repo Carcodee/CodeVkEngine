@@ -308,9 +308,8 @@ class FlatRenderer : public BaseRenderer
 				    int x_final = int(u * float(CodeCuda::s_width - 1));
 				    int y_final = int(v * float(CodeCuda::s_height - 1));
 
-				    CodeCuda::C_SetDebugSimulation(false);
-				    CodeCuda::C_AddRadialVelocity(x_final, y_final, r, -30.5f);
-				    // CodeCuda::C_AddVelocity(x_final,  y_final, 30, 10.0f, 0.0f);
+				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 30.5f);
+				   CodeCuda::C_AddVelocity(x_final,  y_final, 5, 10.0f, 0.0f);
 			    }
 		    	if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
 		    	{
@@ -324,22 +323,23 @@ class FlatRenderer : public BaseRenderer
 					int x_final = int(u * float(CodeCuda::s_width - 2));
 					int y_final = int(v * float(CodeCuda::s_height - 2));
 
-					CodeCuda::C_SetDebugSimulation(false);
 					// CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 300.5f);
-					CodeCuda::C_AddSmoke(x_final,  y_final, 25, 0.5f);
+					CodeCuda::C_AddSmoke(x_final,  y_final, 15, 1.5f);
 				}
 		    	
+					CodeCuda::C_SetDebugSimulation(true);
 		    	if (glfwGetKey(windowProvider->window, GLFW_KEY_L))
 		    	{
-					CodeCuda::C_SetSimulationResolution(900, 900);
+					CodeCuda::C_SetSimulationResolution(64, 64);
 				}
 		    	
-				int x_base = 1;
-			    int y_base = 500;
-			    for (int i = 0; i < 25; ++i)
+				int x_base = 2;
+		    	int run = 1;
+			    int y_base = CodeCuda::s_height / 2 - (run / 2);
+			    for (int i = 0; i < run; ++i)
 			    {
 				    float v = ((float(rand() % 100) / 100.0f) - 0.5f) * 2.0f;
-				    // CodeCuda::C_AddVelocity(x_base, y_base, 2, 100.0, 0.0f);
+					CodeCuda::C_AddSmoke(x_base,  y_base + i, 50, 0.1f);
 			    }
 
 			    // CodeCuda::C_AddRandomVelocity(5);

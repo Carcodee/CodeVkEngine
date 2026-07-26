@@ -76,7 +76,7 @@ float3 ColorMapSpeed(float speed)
         float3(1.00f, 0.35f, 0.00f),
         float3(0.75f, 0.00f, 0.02f),
         (t - 0.90f) / 0.10f
-    );
+);
 }
 // Entry point for compute shader
 [numthreads(1, 1, 1)]
@@ -92,15 +92,14 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
 
 
   bool show = false;
-  if (value < 0.05) {
+  if (value < 0.05 && value > 0.01) {
     show = true;
   }
   if (value > 0.3 && value < 0.8) {
     show = true;
   }
 
-  float alpha = show ? 1.0 : 0.0f;
-  
-  
-  OutImage[uint2(x, y)] = float4(valueInterp.xyz, alpha);
+  float alpha = show ? 1.0 : 0.0;
+
+  OutImage[uint2(x, y)] = float4(valueInterp, 1.0);
 }

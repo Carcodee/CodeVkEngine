@@ -55,8 +55,8 @@ namespace CodeCuda
         float curr_t = 0.0f;
     };
     //simulation
-    inline int s_width = 900;
-    inline int s_height = 900;
+    inline int s_width = 612;
+    inline int s_height = 612;
  
     C_Res C_Matmul(CodeCudaContext* code_cuda_context, int M, int N, int K, const float *a, const float *b, float *c);
     C_Res C_UpdateSimGPU(CodeCudaContext* code_cuda_context);
