@@ -95,7 +95,6 @@ void main() {
 //    vec4 baseCol = imageLoad(Radiances[0], ivec2(gl_FragCoord.xy));
     vec4 paintingImage = imageLoad(PaintingLayers[0], coord);
     vec4 simulationImage = imageLoad(PaintingLayers[3], coord);
-    
     vec4 testImg = texture(TestImage, textCoord);
     vec4 blackOc= imageLoad(PaintingLayers[1], coord);
     vec4 debug= imageLoad(PaintingLayers[2], coord);

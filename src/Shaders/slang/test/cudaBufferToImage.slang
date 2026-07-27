@@ -86,20 +86,23 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   uint x = dtid.x;
   uint y = dtid.y;
   float value = SimulationBuffer[y * 1024 + x];
+  
+  float2 uv = float2(float(x)/1023.0f, float(y)/1023.0f);
   float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
   float3 valueInterp = ColorMapSpeed(value);
   float max_col = max(valueInterp.x, (max(valueInterp.y, valueInterp.z)));
 
 
   bool show = false;
-  if (value < 0.05 && value > 0.01) {
+  if (value < 0.1 && value > 0.05) {
     show = true;
   }
-  if (value > 0.3 && value < 0.8) {
+  if (value > 0.25 && value < 0.8) {
     show = true;
   }
 
   float alpha = show ? 1.0 : 0.0;
 
-  OutImage[uint2(x, y)] = float4(valueInterp, 1.0);
+  uint y_write = 1024 - y;
+  OutImage[uint2(x, y_write)] = float4(valueInterp, 1.0);
 }
