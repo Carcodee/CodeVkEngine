@@ -94,12 +94,17 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
 
 
   bool show = false;
-  if (value < 0.1 && value > 0.05) {
+  if (value < 0.1 && value > 0.005) {
     show = true;
   }
   if (value > 0.25 && value < 0.8) {
     show = true;
   }
+  
+  if (value > 35 && value < 0.7) {
+    show = false;
+  }
+
 
   float alpha = show ? 1.0 : 0.0;
 

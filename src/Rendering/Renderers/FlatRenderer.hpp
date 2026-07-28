@@ -309,38 +309,39 @@ class FlatRenderer : public BaseRenderer
 				    int y_final = int(v * float(CodeCuda::s_height - 1));
 
 				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 30.5f);
-				   CodeCuda::C_AddVelocity(x_final,  y_final, 25, -10.0f, 0.0f);
+				    r = CodeCuda::s_height / 12;
+				    CodeCuda::C_AddVelocity(x_final, y_final, r, -40.0f, 0.0f);
 			    }
-		    	if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
-		    	{
-					int r = 1;
-					int x = mouseInput.x;
-					int y = mouseInput.y;
+			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
+			    {
+				    int r = 1;
+				    int x = mouseInput.x;
+				    int y = mouseInput.y;
 
-					float u = float(x) / 1023.0f;
-					float v = 1.0f - float(y) / 1023.0f;
+				    float u = float(x) / 1023.0f;
+				    float v = 1.0f - float(y) / 1023.0f;
 
-					int x_final = int(u * float(CodeCuda::s_width - 2));
-					int y_final = int(v * float(CodeCuda::s_height - 2));
+				    int x_final = int(u * float(CodeCuda::s_width - 2));
+				    int y_final = int(v * float(CodeCuda::s_height - 2));
 
-					// CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 300.5f);
-					CodeCuda::C_AddSmoke(x_final,  y_final, 25, 1.5f);
-				}
-		    	
-					CodeCuda::C_SetDebugSimulation(false);
-		    	if (glfwGetKey(windowProvider->window, GLFW_KEY_L))
-		    	{
-					CodeCuda::C_SetSimulationResolution(64, 64);
-				}
-		    	
-				int x_base = 2;
-		    	int run = 1;
-		    	int r = CodeCuda::s_height / 12;
+				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 300.5f);
+				    CodeCuda::C_AddSmoke(x_final, y_final, 25, 0.001f);
+			    }
+
+			    CodeCuda::C_SetDebugSimulation(false);
+			    if (glfwGetKey(windowProvider->window, GLFW_KEY_L))
+			    {
+				    CodeCuda::C_SetSimulationResolution(64, 64);
+			    }
+
+			    int x_base = 2;
+			    int run    = 1;
+			    int r      = CodeCuda::s_height / 12;
 			    int y_base = CodeCuda::s_height / 2;
 			    for (int i = 0; i < run; ++i)
 			    {
 				    float v = ((float(rand() % 100) / 100.0f) - 0.5f) * 2.0f;
-					CodeCuda::C_AddSmoke(x_base,  y_base + i, r, 0.08f);
+				    CodeCuda::C_AddSmoke(x_base, y_base + i, r, 0.001f);
 			    }
 
 			    // CodeCuda::C_AddRandomVelocity(5);
@@ -361,11 +362,11 @@ class FlatRenderer : public BaseRenderer
 			    paintingPc.yMousePos = mouseInput.y;
 			    // if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
 			    // {
-				   //  paintingPc.painting = 1;
+			    //  paintingPc.painting = 1;
 			    // }
 			    // else
 			    // {
-				   //  paintingPc.painting = 0;
+			    //  paintingPc.painting = 0;
 			    // }
 
 			    auto &renderNode = renderGraph->renderNodes.at(paintingPassName);
