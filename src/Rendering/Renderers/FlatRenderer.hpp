@@ -153,7 +153,7 @@ class FlatRenderer : public BaseRenderer
 		std::string shaderPath    = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
 		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
 
 		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
 		cudaPI->ExportBuffer(cudaBuffer);
@@ -309,8 +309,8 @@ class FlatRenderer : public BaseRenderer
 				    int y_final = int(v * float(CodeCuda::s_height - 1));
 
 				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 30.5f);
+				    CodeCuda::C_AddVelocity(x_final, y_final, r, -10.0f, 0.0f);
 				    r = CodeCuda::s_height / 12;
-				    CodeCuda::C_AddVelocity(x_final, y_final, r, -40.0f, 0.0f);
 			    }
 			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
 			    {
@@ -325,23 +325,29 @@ class FlatRenderer : public BaseRenderer
 				    int y_final = int(v * float(CodeCuda::s_height - 2));
 
 				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 300.5f);
-				    CodeCuda::C_AddSmoke(x_final, y_final, 25, 0.001f);
+				    CodeCuda::C_AddSmoke(x_final, y_final, 25, 0.0f, 0.0f, 0.1f);
+				    CodeCuda::C_AddSmoke(x_final, y_final, 35, 0.0f, 0.1f, 0.0f);
+				    CodeCuda::C_AddSmoke(x_final, y_final, 45, 0.1f, 0.0f, 0.1f);
 			    }
-
-			    CodeCuda::C_SetDebugSimulation(false);
-			    if (glfwGetKey(windowProvider->window, GLFW_KEY_L))
-			    {
-				    CodeCuda::C_SetSimulationResolution(64, 64);
-			    }
-
 			    int x_base = 2;
 			    int run    = 1;
 			    int r      = CodeCuda::s_height / 12;
 			    int y_base = CodeCuda::s_height / 2;
-			    for (int i = 0; i < run; ++i)
+		    	CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f,renderNode->CUDAPipeline->context);
+				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f,renderNode->CUDAPipeline->context);
+				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f,renderNode->CUDAPipeline->context);
+				CodeCuda::C_AddSmokeGPU(x_base, y_base + r,       r, 0.005f, 0.060f, 0.050f,renderNode->CUDAPipeline->context);
+			 
+				CodeCuda::C_AddSmokeGPU(x_base, y_base,           r, 0.015f, 0.065f, 0.025f,renderNode->CUDAPipeline->context);
+
+				CodeCuda::C_AddSmokeGPU(x_base, y_base - r,       r, 0.050f, 0.060f, 0.010f,renderNode->CUDAPipeline->context);
+				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f,renderNode->CUDAPipeline->context);
+				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f,renderNode->CUDAPipeline->context);
+				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f,renderNode->CUDAPipeline->context);
+				// CodeCuda::C_AddSmokeGPU(x_base, y_base,           r, 0.01f, 0.01f, 0.01f,renderNode->CUDAPipeline->context);
+			for (int i = 0; i < run; ++i)
 			    {
 				    float v = ((float(rand() % 100) / 100.0f) - 0.5f) * 2.0f;
-				    CodeCuda::C_AddSmoke(x_base, y_base + i, r, 0.001f);
 			    }
 
 			    // CodeCuda::C_AddRandomVelocity(5);

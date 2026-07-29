@@ -214,6 +214,11 @@ class ImguiRenderer
 						RCascadesInfo();
 					});
 				}
+
+				RenderDebuggerTab("Fluid Simulation Info", [this]() {
+					FluidSimInfo();
+				});
+
 				if (gsRenderer)
 				{
 					RenderDebuggerTab("GS Renderer", [this]() {
@@ -237,6 +242,83 @@ class ImguiRenderer
 		profilersWindow.gpuGraph.LoadFrameData(Profiler::GetInstance()->gpuTasks.data(),
 		                                       Profiler::GetInstance()->gpuTasks.size());
 		profilersWindow.RenderContent();
+	}
+
+	void FluidSimInfo()
+	{
+		CodeCuda::sim_params fluidSimParams{};
+		if (CodeCuda::C_GetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
+		{
+			ImGui::TextDisabled("Unable to read fluid simulation parameters.");
+			return;
+		}
+
+		bool paramsChanged = false;
+
+		ImGui::SeparatorText("Resolution");
+		static int  resolutionWidth         = CodeCuda::s_width;
+		static int  resolutionHeight        = CodeCuda::s_height;
+		static bool resolutionChangePending = false;
+		static bool resolutionUpdateFailed  = false;
+
+		if (!resolutionChangePending)
+		{
+			resolutionWidth  = CodeCuda::s_width;
+			resolutionHeight = CodeCuda::s_height;
+		}
+
+		const bool widthChanged = ImGui::DragInt("Width", &resolutionWidth, 1.0f, 1, 4096, "%d",
+		                                         ImGuiSliderFlags_AlwaysClamp);
+		const bool widthActive  = ImGui::IsItemActive();
+		const bool heightChanged = ImGui::DragInt("Height", &resolutionHeight, 1.0f, 1, 4096, "%d",
+		                                          ImGuiSliderFlags_AlwaysClamp);
+		const bool heightActive = ImGui::IsItemActive();
+		resolutionChangePending |= widthChanged || heightChanged;
+
+		if (resolutionChangePending && !widthActive && !heightActive)
+		{
+			resolutionUpdateFailed =
+			    CodeCuda::C_SetSimulationResolution(resolutionWidth, resolutionHeight) != CodeCuda::C_Res::OK;
+			resolutionChangePending = false;
+		}
+		if (resolutionUpdateFailed)
+		{
+			ImGui::TextDisabled("Unable to update fluid simulation resolution.");
+		}
+
+		ImGui::SeparatorText("Simulation");
+		paramsChanged |= ImGui::DragFloat("Density", &fluidSimParams.density, 0.01f, 0.001f, 100.0f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragFloat("SOR Weight", &fluidSimParams.weight_sor, 0.01f, 0.0f, 2.0f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+		int timeStepDenominator = fluidSimParams.dt > 0.0f
+		                            ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f)
+		                            : 120;
+		if (ImGui::DragInt("Time Step", &timeStepDenominator, 1.0f, 1, 10000, "1 / %d",
+		                   ImGuiSliderFlags_AlwaysClamp))
+		{
+			fluidSimParams.dt = 1.0f / static_cast<float>(timeStepDenominator);
+			paramsChanged     = true;
+		}
+		paramsChanged |= ImGui::DragFloat("Gravity", &fluidSimParams.g, 0.01f, -100.0f, 100.0f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragFloat("Wind Speed", &fluidSimParams.wind_speed, 0.01f, -100.0f, 100.0f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragFloat("Viscosity", &fluidSimParams.viscosity, 0.01f, 0.0f, 100.0f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+
+		ImGui::SeparatorText("Solver");
+		paramsChanged |= ImGui::DragInt("GPU Iterations", &fluidSimParams.total_iter_gpu, 1.0f, 1, 10000, "%d",
+		                                ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragInt("CPU Iterations", &fluidSimParams.total_iter_cpu, 1.0f, 1, 10000, "%d",
+		                                ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::Checkbox("Debug", &fluidSimParams.debug);
+		paramsChanged |= ImGui::Checkbox("GPU Simulation", &fluidSimParams.gpu_sim);
+
+		if (paramsChanged && CodeCuda::C_SetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
+		{
+			ImGui::TextDisabled("Unable to update fluid simulation parameters.");
+		}
 	}
 
 	void SetStyle()

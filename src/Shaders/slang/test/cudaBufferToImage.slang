@@ -85,11 +85,19 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
 
   uint x = dtid.x;
   uint y = dtid.y;
-  float value = SimulationBuffer[y * 1024 + x];
-  
+  uint pixelIndex = y * 1024 + x;
+  uint baseIndex = pixelIndex * 3;
+
+  float3 value = float3(
+      SimulationBuffer[baseIndex + 0],
+      SimulationBuffer[baseIndex + 1],
+      SimulationBuffer[baseIndex + 2]
+  );
+
   float2 uv = float2(float(x)/1023.0f, float(y)/1023.0f);
-  float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
-  float3 valueInterp = ColorMapSpeed(value);
+  //float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
+  float3 valueInterp = ColorMapSpeed(length(value));
+  /*
   float max_col = max(valueInterp.x, (max(valueInterp.y, valueInterp.z)));
 
 
@@ -104,10 +112,11 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   if (value > 35 && value < 0.7) {
     show = false;
   }
+  */
 
 
-  float alpha = show ? 1.0 : 0.0;
+//  float alpha = show ? 1.0 : 0.0;
 
   uint y_write = 1024 - y;
-  OutImage[uint2(x, y_write)] = float4(valueInterp, 1.0);
+  OutImage[uint2(x, y_write)] = float4(value, 1.0);
 }
