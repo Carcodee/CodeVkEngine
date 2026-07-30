@@ -97,25 +97,23 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   float2 uv = float2(float(x)/1023.0f, float(y)/1023.0f);
   //float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
   float3 valueInterp = ColorMapSpeed(length(value));
-  /*
   float max_col = max(valueInterp.x, (max(valueInterp.y, valueInterp.z)));
 
 
   bool show = false;
-  if (value < 0.1 && value > 0.005) {
+  if (length(value) < 0.1 && length(value) > 0.005) {
     show = true;
   }
-  if (value > 0.25 && value < 0.8) {
+  if (length(value) > 0.25 && length(value) < 0.8) {
     show = true;
   }
   
-  if (value > 35 && value < 0.7) {
+  if (length(value) > 35 && length(value) < 0.7) {
     show = false;
   }
-  */
 
 
-//  float alpha = show ? 1.0 : 0.0;
+  float alpha = show ? 1.0 : 0.0;
 
   uint y_write = 1024 - y;
   OutImage[uint2(x, y_write)] = float4(value, 1.0);

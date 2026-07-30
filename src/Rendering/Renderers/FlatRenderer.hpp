@@ -6,7 +6,6 @@
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
 #include "CodeCuda.cuh"
-
 namespace Rendering
 {
 using namespace ENGINE;
@@ -288,6 +287,91 @@ class FlatRenderer : public BaseRenderer
 	void RecreateSwapChainResources() override
 	{
 	}
+	void AddSmokePretty(CodeCuda::CodeCudaContext *context, glm::vec2 mouseInput)
+	{
+		auto RandomPrettyColor = []() -> glm::vec3 {
+			// Muted random colors, avoiding values that are too bright.
+			return glm::vec3(
+			    glm::linearRand(0.02f, 0.35f),
+			    glm::linearRand(0.02f, 0.35f),
+			    glm::linearRand(0.05f, 0.45f));
+		};
+
+		int r = CodeCuda::s_height / 46;
+
+		glm::vec2 currentMousePos(mouseInput.x, mouseInput.y);
+		glm::vec2 mouseDelta = currentMousePos - lastMousePos;
+
+		float distance      = glm::length(mouseDelta);
+		float sampleSpacing = glm::max(1.0f, float(r) * 0.35f);
+		int   sampleCount   = glm::max(
+            1,
+            int(glm::ceil(distance / sampleSpacing)));
+
+		glm::vec3 newColor = RandomPrettyColor();
+
+		for (int i = 1; i <= sampleCount; ++i)
+		{
+			float t = float(i) / float(sampleCount);
+
+			glm::vec2 interpolatedMousePos = glm::mix(
+			    lastMousePos,
+			    currentMousePos,
+			    t);
+
+			// Smooth color interpolation along the line.
+			float smoothT = t * t * (3.0f - 2.0f * t);
+
+			glm::vec3 interpolatedColor = glm::mix(
+			    lastColor,
+			    newColor,
+			    smoothT);
+
+			glm::vec2 localMousePos =
+			    interpolatedMousePos;
+
+			float u = localMousePos.x / float(1023);
+			float v = localMousePos.y / float(1023);
+
+			u = glm::clamp(u, 0.0f, 1.0f);
+			v = glm::clamp(v, 0.0f, 1.0f);
+
+			int xFinal = int(
+			    u * float(CodeCuda::s_width - 1));
+
+			int yFinal = int(
+			    (1.0f - v) * float(CodeCuda::s_height - 1));
+
+			glm::vec2 simulationDelta(
+			    mouseDelta.x *
+			        float(CodeCuda::s_width) /
+			        float(1023),
+
+			    mouseDelta.y *
+			        float(CodeCuda::s_height) /
+			        float(1023));
+
+			CodeCuda::C_AddVelocityGPU(
+			    xFinal,
+			    yFinal,
+			    r,
+			    simulationDelta.x * 0.2f,
+			    -simulationDelta.y * 0.2f, context);
+
+			CodeCuda::C_AddSmokeGPU(
+			    xFinal,
+			    yFinal,
+			    r,
+			    interpolatedColor.r,
+			    interpolatedColor.g,
+			    interpolatedColor.b, context);
+		}
+
+		lastColor = newColor;
+	}
+
+	glm::vec2 lastMousePos = glm::vec2(0.0, 0.0);
+	glm::vec3 lastColor    = glm::vec3(0.15f, 0.05f, 0.25f);
 
 	void SetRenderOperation() override
 	{
@@ -295,10 +379,15 @@ class FlatRenderer : public BaseRenderer
 		    [this]() {
 			    glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 			    auto     &renderNode = renderGraph->renderNodes.at("CudaNode");
-
 			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
 			    {
-				    int r = 10;
+				    AddSmokePretty(renderNode->CUDAPipeline->context, mouseInput);
+			    }
+
+			    int r = CodeCuda::s_height / 12;
+			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
+			    {
+				    r = CodeCuda::s_height / 22;
 				    int x = mouseInput.x;
 				    int y = mouseInput.y;
 
@@ -309,55 +398,24 @@ class FlatRenderer : public BaseRenderer
 				    int y_final = int(v * float(CodeCuda::s_height - 1));
 
 				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 30.5f);
-				    CodeCuda::C_AddVelocity(x_final, y_final, r, -10.0f, 0.0f);
-				    r = CodeCuda::s_height / 12;
-			    }
-			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
-			    {
-				    int r = 1;
-				    int x = mouseInput.x;
-				    int y = mouseInput.y;
-
-				    float u = float(x) / 1023.0f;
-				    float v = 1.0f - float(y) / 1023.0f;
-
-				    int x_final = int(u * float(CodeCuda::s_width - 2));
-				    int y_final = int(v * float(CodeCuda::s_height - 2));
-
-				    // CodeCuda::C_AddRadialVelocity(x_final, y_final, r, 300.5f);
-				    CodeCuda::C_AddSmoke(x_final, y_final, 25, 0.0f, 0.0f, 0.1f);
-				    CodeCuda::C_AddSmoke(x_final, y_final, 35, 0.0f, 0.1f, 0.0f);
-				    CodeCuda::C_AddSmoke(x_final, y_final, 45, 0.1f, 0.0f, 0.1f);
+				    CodeCuda::C_AddVelocityGPU(x_final, y_final, r, 0.0f, 10.0f, renderNode->CUDAPipeline->context);
+				    CodeCuda::C_AddSmokeGPU(x_final, y_final, r, 0.3f, 0.1f, 0.05f, renderNode->CUDAPipeline->context);
 			    }
 			    int x_base = 2;
 			    int run    = 1;
-			    int r      = CodeCuda::s_height / 12;
 			    int y_base = CodeCuda::s_height / 2;
-		    	CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f,renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f,renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f,renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + r,       r, 0.005f, 0.060f, 0.050f,renderNode->CUDAPipeline->context);
-			 
-				CodeCuda::C_AddSmokeGPU(x_base, y_base,           r, 0.015f, 0.065f, 0.025f,renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + r, r, 0.005f, 0.060f, 0.050f, renderNode->CUDAPipeline->context);
 
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - r,       r, 0.050f, 0.060f, 0.010f,renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f,renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f,renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f,renderNode->CUDAPipeline->context);
-				// CodeCuda::C_AddSmokeGPU(x_base, y_base,           r, 0.01f, 0.01f, 0.01f,renderNode->CUDAPipeline->context);
-			for (int i = 0; i < run; ++i)
-			    {
-				    float v = ((float(rand() % 100) / 100.0f) - 0.5f) * 2.0f;
-			    }
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base, r, 0.015f, 0.065f, 0.025f, renderNode->CUDAPipeline->context);
 
-			    // CodeCuda::C_AddRandomVelocity(5);
-
-			    //   	CodeCuda::C_AddRandomVelocity(2);
-			    // CodeCuda::C_AddRandomVelocity(5);
-			    // CodeCuda::C_AddRandomVelocity(2);
-			    // CodeCuda::C_AddRandomVelocity(1);
-			    // CodeCuda::C_AddRandomVelocity(1);
-			    // CodeCuda::C_AddRandomVelocity(5);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - r, r, 0.050f, 0.060f, 0.010f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f, renderNode->CUDAPipeline->context);
+			    lastMousePos = mouseInput;
 		    });
 
 		renderGraph->GetNode("CudaNode")->AddPreRenderingTask(cudaTask);
