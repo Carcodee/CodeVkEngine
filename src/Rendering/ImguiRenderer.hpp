@@ -291,6 +291,12 @@ class ImguiRenderer
 		                                  ImGuiSliderFlags_AlwaysClamp);
 		paramsChanged |= ImGui::DragFloat("SOR Weight", &fluidSimParams.weight_sor, 0.01f, 0.0f, 2.0f, "%.3f",
 		                                  ImGuiSliderFlags_AlwaysClamp);
+		
+		paramsChanged |= ImGui::DragFloat("Velocity Dissipation", &fluidSimParams.velocity_dissipation, 0.01f, 0.0f, 1.0f, "%.3f",
+										  ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragFloat("Smoke Dissipation", &fluidSimParams.smoke_dissipation, 0.01f, 0.0f, 1.0f, "%.3f",
+										  ImGuiSliderFlags_AlwaysClamp);
+		
 		int timeStepDenominator = fluidSimParams.dt > 0.0f
 		                            ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f)
 		                            : 120;

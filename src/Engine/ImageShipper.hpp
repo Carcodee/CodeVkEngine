@@ -16,6 +16,7 @@ namespace ENGINE
         {
             int width, height, channels;
             stbi_uc* pixelsData = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        	//4 - 1 byte per channel - R G B A
             size = width * height * 4;
             data = static_cast<void*>(pixelsData);
             imageSize = {width, height};
