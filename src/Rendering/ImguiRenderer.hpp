@@ -4,6 +4,7 @@
 
 #ifndef IMGUIRENDERER_HPP
 #define IMGUIRENDERER_HPP
+#include "CodeCuda.cuh"
 
 namespace Rendering
 {
@@ -114,6 +115,30 @@ class ImguiRenderer
 		ed::Config config;
 		config.SettingsFile = "Simple.json";
 		m_Context           = ed::CreateEditor(&config);
+
+		std::string resourcesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath();
+		std::string fileName      = resourcesPath + "\\Images\\f1.png";
+		stbi_uc    *pixelsData    = stbi_load(fileName.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		void       *data          = (void *) pixelsData;
+		image_pixels.resize(width * height);
+		solid_mask.resize(width * height);
+		for (int y = 0; y < height; ++y)
+		{
+			for (int x = 0; x < width; ++x)
+			{
+				const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
+				const size_t byteIndex  = pixelIndex * 4;
+
+				image_pixels[y * width + x] = glm::vec4(
+				    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
+				    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
+				    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
+				    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
+
+				solid_mask[y * width + x] = glm::length(image_pixels[y * width + x]) < 0.1 ? 1 : 0;
+			}
+		}
+		free(data);
 	}
 	ed::EditorContext *m_Context = nullptr;
 	void               StartNodeEditor()
@@ -169,7 +194,7 @@ class ImguiRenderer
 		imageViewsToRecover.clear();
 		layoutPatternsToRecover.clear();
 	}
-	template<typename DrawFn>
+	template <typename DrawFn>
 	void RenderDebuggerTab(const char *title, DrawFn drawFn)
 	{
 		if (ImGui::BeginTabItem(title))
@@ -253,7 +278,137 @@ class ImguiRenderer
 			return;
 		}
 
-		bool paramsChanged = false;
+		bool        paramsChanged        = false;
+		static bool simulationActionFail = false;
+		auto        runSimulationAction  = [](CodeCuda::C_Res result) {
+            simulationActionFail = result != CodeCuda::C_Res::OK;
+		};
+
+		ImGui::SeparatorText("Controls");
+		if (ImGui::Button("Restart Simulation"))
+		{
+			runSimulationAction(CodeCuda::C_RestartSimulation());
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Load Image as Smoke"))
+		{
+			if (!image_pixels.empty())
+			{
+				runSimulationAction(CodeCuda::C_MapImageToSmoke(width, height, 4,
+				                                                image_pixels.data()));
+			}
+			else
+			{
+				simulationActionFail = true;
+			}
+		}
+
+		if (ImGui::Button("Load solid Mask"))
+		{
+			if (!solid_mask.empty())
+			{
+				runSimulationAction(CodeCuda::C_MapSolidMask(width, height,
+				                                             solid_mask.data()));
+			}
+			else
+			{
+				simulationActionFail = true;
+			}
+		}
+
+		static int randomVelocityScale = 10;
+		ImGui::SetNextItemWidth(160.0f);
+		ImGui::DragInt("Random Velocity Scale", &randomVelocityScale, 1.0f, 1, 1000, "%d",
+		               ImGuiSliderFlags_AlwaysClamp);
+		if (ImGui::Button("Add Random Velocity"))
+		{
+			runSimulationAction(CodeCuda::C_AddRandomVelocity(randomVelocityScale));
+		}
+
+		ImGui::SeparatorText("Viewport Tool");
+		static int   fluidTool                   = 0;
+		static int   fluidBrushRadius            = 25;
+		static float fluidSmokeColor[3]          = {0.15f, 0.05f, 0.25f};
+		static float fluidVelocityStrength       = 0.2f;
+		static float fluidRadialVelocityStrength = 1.0f;
+		static bool  fluidToolEnabled            = true;
+
+		const char *fluidTools[] = {"Smoke", "Velocity", "Add Solid", "Erase Solid", "Radial Velocity"};
+		ImGui::Checkbox("Enabled", &fluidToolEnabled);
+		ImGui::Combo("Tool", &fluidTool, fluidTools, IM_ARRAYSIZE(fluidTools));
+
+		const int maxSimulationDimension =
+		    CodeCuda::s_width > CodeCuda::s_height ? CodeCuda::s_width : CodeCuda::s_height;
+		const int maxBrushRadius = maxSimulationDimension > 0 ? maxSimulationDimension : 1;
+		ImGui::DragInt("Brush Radius", &fluidBrushRadius, 1.0f, 1, maxBrushRadius, "%d",
+		               ImGuiSliderFlags_AlwaysClamp);
+
+		if (fluidTool == 0)
+		{
+			ImGui::ColorEdit3("Smoke Color", fluidSmokeColor);
+		}
+		else if (fluidTool == 1)
+		{
+			ImGui::DragFloat("Velocity Strength", &fluidVelocityStrength, 0.01f, 0.0f, 10.0f,
+			                 "%.2f", ImGuiSliderFlags_AlwaysClamp);
+		}
+		else if (fluidTool == 4)
+		{
+			ImGui::DragFloat("Radial Strength", &fluidRadialVelocityStrength, 0.05f,
+			                 -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+		}
+
+		ImGui::TextWrapped("Hold right mouse over the viewport to apply the selected tool.");
+		ImGui::TextDisabled("Shortcuts: L loads the image, M adds solid, N erases solid.");
+
+		const ImVec2 mousePosition = ImGui::GetMousePos();
+		const bool   mouseOverViewport =
+		    mousePosition.x >= 0.0f && mousePosition.x <= 1023.0f &&
+		    mousePosition.y >= 0.0f && mousePosition.y <= 1023.0f;
+		if (fluidToolEnabled && mouseOverViewport && !ImGui::GetIO().WantCaptureMouse &&
+		    ImGui::IsMouseDown(ImGuiMouseButton_Right))
+		{
+			const float u         = glm::clamp(mousePosition.x / 1023.0f, 0.0f, 1.0f);
+			const float v         = glm::clamp(1.0f - mousePosition.y / 1023.0f, 0.0f, 1.0f);
+			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
+			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::s_height - 1));
+
+			switch (fluidTool)
+			{
+				case 0:
+					runSimulationAction(CodeCuda::C_AddSmoke(xPosition, yPosition, fluidBrushRadius,
+					                                         fluidSmokeColor[0], fluidSmokeColor[1],
+					                                         fluidSmokeColor[2]));
+					break;
+				case 1:
+				{
+					const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+					const float  velocityX  = mouseDelta.x * static_cast<float>(CodeCuda::s_width) / 1023.0f;
+					const float  velocityY  = mouseDelta.y * static_cast<float>(CodeCuda::s_height) / 1023.0f;
+					runSimulationAction(CodeCuda::C_AddVelocity(xPosition, yPosition, fluidBrushRadius,
+					                                            velocityX * fluidVelocityStrength,
+					                                            -velocityY * fluidVelocityStrength));
+					break;
+				}
+				case 2:
+					runSimulationAction(CodeCuda::C_SetSolid(xPosition, yPosition, fluidBrushRadius, true));
+					break;
+				case 3:
+					runSimulationAction(CodeCuda::C_SetSolid(xPosition, yPosition, fluidBrushRadius, false));
+					break;
+				case 4:
+					runSimulationAction(CodeCuda::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
+					                                                  fluidRadialVelocityStrength));
+					break;
+				default:
+					break;
+			}
+		}
+		if (simulationActionFail)
+		{
+			ImGui::TextDisabled("The last simulation action failed.");
+		}
 
 		ImGui::SeparatorText("Resolution");
 		static int  resolutionWidth         = CodeCuda::s_width;
@@ -267,12 +422,12 @@ class ImguiRenderer
 			resolutionHeight = CodeCuda::s_height;
 		}
 
-		const bool widthChanged = ImGui::DragInt("Width", &resolutionWidth, 1.0f, 1, 4096, "%d",
-		                                         ImGuiSliderFlags_AlwaysClamp);
-		const bool widthActive  = ImGui::IsItemActive();
+		const bool widthChanged  = ImGui::DragInt("Width", &resolutionWidth, 1.0f, 1, 4096, "%d",
+		                                          ImGuiSliderFlags_AlwaysClamp);
+		const bool widthActive   = ImGui::IsItemActive();
 		const bool heightChanged = ImGui::DragInt("Height", &resolutionHeight, 1.0f, 1, 4096, "%d",
 		                                          ImGuiSliderFlags_AlwaysClamp);
-		const bool heightActive = ImGui::IsItemActive();
+		const bool heightActive  = ImGui::IsItemActive();
 		resolutionChangePending |= widthChanged || heightChanged;
 
 		if (resolutionChangePending && !widthActive && !heightActive)
@@ -291,15 +446,13 @@ class ImguiRenderer
 		                                  ImGuiSliderFlags_AlwaysClamp);
 		paramsChanged |= ImGui::DragFloat("SOR Weight", &fluidSimParams.weight_sor, 0.01f, 0.0f, 2.0f, "%.3f",
 		                                  ImGuiSliderFlags_AlwaysClamp);
-		
-		paramsChanged |= ImGui::DragFloat("Velocity Dissipation", &fluidSimParams.velocity_dissipation, 0.01f, 0.0f, 1.0f, "%.3f",
-										  ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragFloat("Smoke Dissipation", &fluidSimParams.smoke_dissipation, 0.01f, 0.0f, 1.0f, "%.3f",
-										  ImGuiSliderFlags_AlwaysClamp);
-		
-		int timeStepDenominator = fluidSimParams.dt > 0.0f
-		                            ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f)
-		                            : 120;
+
+		paramsChanged |= ImGui::DragFloat("Velocity Dissipation", &fluidSimParams.velocity_dissipation, 0.01f, 0.0f, 0.2f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragFloat("Smoke Dissipation", &fluidSimParams.smoke_dissipation, 0.01f, 0.0f, 0.2f, "%.3f",
+		                                  ImGuiSliderFlags_AlwaysClamp);
+
+		int timeStepDenominator = fluidSimParams.dt > 0.0f ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f) : 120;
 		if (ImGui::DragInt("Time Step", &timeStepDenominator, 1.0f, 1, 10000, "1 / %d",
 		                   ImGuiSliderFlags_AlwaysClamp))
 		{
@@ -401,8 +554,8 @@ class ImguiRenderer
 
 	void DisplayEngineInfo()
 	{
-		auto *queueWorkerManager = core->queueWorkerManager.get();
-		const int engineQueueCount = static_cast<int>(queueWorkerManager->workersQueues.size());
+		auto     *queueWorkerManager = core->queueWorkerManager.get();
+		const int engineQueueCount   = static_cast<int>(queueWorkerManager->workersQueues.size());
 		ImGui::Text("Engine queues: %d", engineQueueCount);
 
 		ImGui::SeparatorText("Queue Members");
@@ -630,13 +783,13 @@ class ImguiRenderer
 			selectedBatchIdx = 0;
 		}
 
-		std::vector<std::string> queueNames;
+		std::vector<std::string>   queueNames;
 		std::map<std::string, int> queueLaneByName;
 		std::map<std::string, int> queueBatchCount;
 		std::map<std::string, int> queueNodeCount;
-		int totalNodeCount   = 0;
-		int activeNodeCount  = 0;
-		int emptyBatchCount  = 0;
+		int                        totalNodeCount  = 0;
+		int                        activeNodeCount = 0;
+		int                        emptyBatchCount = 0;
 		for (const auto &batch : renderGraph->sortedQueueBatches)
 		{
 			if (!queueLaneByName.contains(batch.queueName))
@@ -688,11 +841,11 @@ class ImguiRenderer
 		const ImU32 textColor     = IM_COL32(232, 232, 238, 255);
 		const ImU32 mutedColor    = IM_COL32(175, 178, 188, 255);
 
-		const float labelWidth  = 150.0f;
-		const float laneHeight  = 94.0f;
-		const float batchGap    = 18.0f;
-		const float batchHeight = 62.0f;
-		const float nodeHeight  = 20.0f;
+		const float  labelWidth  = 150.0f;
+		const float  laneHeight  = 94.0f;
+		const float  batchGap    = 18.0f;
+		const float  batchHeight = 62.0f;
+		const float  nodeHeight  = 20.0f;
 		const ImVec2 padding(18.0f, 18.0f);
 
 		float timelineWidth = labelWidth + padding.x * 2.0f;
@@ -708,7 +861,7 @@ class ImguiRenderer
 
 		for (int lane = 0; lane < queueNames.size(); ++lane)
 		{
-			float y = origin.y + padding.y + lane * laneHeight;
+			float  y = origin.y + padding.y + lane * laneHeight;
 			ImVec2 laneMin(origin.x + padding.x, y);
 			ImVec2 laneMax(origin.x + timelineWidth - padding.x, y + laneHeight - 12.0f);
 			drawList->AddRectFilled(laneMin, laneMax, laneFill, 6.0f);
@@ -748,10 +901,10 @@ class ImguiRenderer
 				float nodeX = minPos.x + 9.0f;
 				for (int nodeIdx = 0; nodeIdx < batch.sortedNodes.size(); ++nodeIdx)
 				{
-					RenderGraphNode *node = batch.sortedNodes[nodeIdx];
-					float chipWidth = std::min(96.0f, std::max(48.0f, (batchWidth - 18.0f) / static_cast<float>(batch.sortedNodes.size()) - 4.0f));
-					ImVec2 chipMin(nodeX, minPos.y + 41.0f);
-					ImVec2 chipMax(nodeX + chipWidth, chipMin.y + nodeHeight);
+					RenderGraphNode *node      = batch.sortedNodes[nodeIdx];
+					float            chipWidth = std::min(96.0f, std::max(48.0f, (batchWidth - 18.0f) / static_cast<float>(batch.sortedNodes.size()) - 4.0f));
+					ImVec2           chipMin(nodeX, minPos.y + 41.0f);
+					ImVec2           chipMax(nodeX + chipWidth, chipMin.y + nodeHeight);
 					drawList->AddRectFilled(chipMin, chipMax, node && node->active ? nodeFill : inactiveFill, 4.0f);
 					drawList->AddRect(chipMin, chipMax, IM_COL32(120, 124, 138, 160), 4.0f);
 					std::string nodeLabel = node ? node->passName : "null";
@@ -858,7 +1011,6 @@ class ImguiRenderer
 
 	void PaintingInfo()
 	{
-
 		ImGui::SliderInt("Brush Radius", &flatRenderer->paintingPc.radius, 1, 100);
 
 		static float color[4] = {1.0f, 1.0f, 1.0f, 1.0};
@@ -879,11 +1031,9 @@ class ImguiRenderer
 			std::string name = "radianceStorage_" + std::to_string(i);
 			ResourcesManager::GetInstance()->RequestStorageImageClear(name);
 		}
-
 	}
 	void AnimatorInfo()
 	{
-
 		int i = 0;
 		for (const auto &animatorPair : RenderingResManager::GetInstance()->animatorsNames)
 		{
@@ -909,7 +1059,6 @@ class ImguiRenderer
 				ImGui::SliderInt(frameIndexLabelName.c_str(), &animator->animatorInfo.currentFrame, 1, animator->animatorInfo.frameCount);
 			}
 		}
-
 	}
 
 	void RCascadesInfo()
@@ -992,9 +1141,9 @@ class ImguiRenderer
 			flatRenderer->materialIndexSelected = materialSelected;
 		}
 		DisplayMaterial(flatRenderer->backgroundMaterials.at(flatRenderer->materialIndexSelected));
-		
+
 		PaintingInfo();
-		
+
 		AnimatorInfo();
 	}
 
@@ -1155,6 +1304,10 @@ class ImguiRenderer
 	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
 	std::vector<LayoutPatterns>      layoutPatternsToRecover;
 	std::vector<ImageView *>         imageViewsToRecover;
+
+	std::vector<glm::vec4> image_pixels = {};
+	std::vector<int>       solid_mask   = {};
+	int                    width, height, channels;
 };
 inline void ImguiRenderer::DisplayRenderGraphDag()
 {
@@ -1384,7 +1537,7 @@ inline void ImguiRenderer::DisplayRenderGraphDag()
 	if (!selectedNodeName.empty() && nodeByName.contains(selectedNodeName))
 	{
 		RenderGraphNode *selectedNode = nodeByName.at(selectedNodeName);
-		GPUPipeline      *shaderNode   = selectedNode->GPUPipelineRef;
+		GPUPipeline     *shaderNode   = selectedNode->GPUPipelineRef;
 
 		ImGui::SeparatorText("Selected Node");
 		if (ImGui::BeginTable("selected_render_graph_node", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))

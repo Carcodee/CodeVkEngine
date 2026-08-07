@@ -114,7 +114,6 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
 
 
   float alpha = show ? 1.0 : 0.0;
-
   uint y_write = 1024 - y;
   OutImage[uint2(x, y_write)] = float4(value, 1.0);
 }

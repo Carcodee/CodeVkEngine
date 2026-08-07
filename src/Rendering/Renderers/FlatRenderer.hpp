@@ -5,7 +5,6 @@
 
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
-#include "CodeCuda.cuh"
 namespace Rendering
 {
 using namespace ENGINE;
@@ -159,27 +158,6 @@ class FlatRenderer : public BaseRenderer
 		cudaPI->BuildCUDAPipeline();
 
 		auto cudaNode = renderGraph->AddCudaPass(cudaPI, "CudaNode");
-
-		std::string resourcesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath();
-		std::string fileName      = resourcesPath + "\\Images\\computer.png";
-		stbi_uc    *pixelsData    = stbi_load(fileName.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-		void       *data          = (void *) pixelsData;
-		image_pixels.resize(width * height);
-		for (int y = 0; y < height; ++y)
-		{
-			for (int x = 0; x < width; ++x)
-			{
-				const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
-				const size_t byteIndex  = pixelIndex * 4;
-
-				image_pixels[y * width + x] = glm::vec4(
-				    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
-				    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
-				    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
-				    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
-			}
-		}
-		free(data);
 		//
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
@@ -401,49 +379,47 @@ class FlatRenderer : public BaseRenderer
 		    [this]() {
 			    glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 			    auto     &renderNode = renderGraph->renderNodes.at("CudaNode");
-			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
-			    {
-				    int x = mouseInput.x;
-				    int y = mouseInput.y;
+			    int       x          = mouseInput.x;
+			    int       y          = mouseInput.y;
 
-				    float u = float(x) / 1023.0f;
-				    float v = 1.0f - float(y) / 1023.0f;
+			    float u = float(x) / 1023.0f;
+			    float v = 1.0f - float(y) / 1023.0f;
 
-				    int x_final = int(u * float(CodeCuda::s_width - 1));
-				    int y_final = int(v * float(CodeCuda::s_height - 1));
-
-				    CodeCuda::C_SetSolid(x_final, y_final, 20, true);
-			    }
+			    int x_final = int(u * float(CodeCuda::s_width - 1));
+			    int y_final = int(v * float(CodeCuda::s_height - 1));
 
 			    int r = CodeCuda::s_height / 12;
-			    if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
-			    {
-				    AddSmokePretty(renderNode->CUDAPipeline->context, mouseInput);
-			    }
-			    if (ImGui::IsKeyPressed(ImGuiKey_M, false))
-			    {
-				    CodeCuda::C_MapImageToSmoke(width, height, 4, image_pixels.data());
-			    }
+			 if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_1))
+			 {
+				 AddSmokePretty(renderNode->CUDAPipeline->context, mouseInput);
+			 }
+			 //    if (ImGui::IsKeyPressed(ImGuiKey_L, false))
+			 //    {
+				//     CodeCuda::C_MapImageToSmoke(width, height, 4, image_pixels.data());
+			 //    }
+		  //   	if (ImGui::IsKeyPressed(ImGuiKey_M, true))
+		  //   	{
+				// 	CodeCuda::C_SetSolid(x_final, y_final, 25, true);
+				// }
+				// if (ImGui::IsKeyPressed(ImGuiKey_N, true))
+			 //    {
+				//     CodeCuda::C_SetSolid(x_final, y_final, 25, false);
+			 //    }
 
-			    if (ImGui::IsKeyPressed(ImGuiKey_N, true))
-			    {
-			    }
-		    	
-		    	
-		    	int x_base = 2;
-				int run    = 1;
-				int y_base = CodeCuda::s_height / 2;
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f, renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f, renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f, renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base + r, r, 0.005f, 0.060f, 0.050f, renderNode->CUDAPipeline->context);
+			    int x_base = 2;
+			    int run    = 1;
+			    int y_base = CodeCuda::s_height / 2;
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base + r, r, 0.005f, 0.060f, 0.050f, renderNode->CUDAPipeline->context);
 
-				CodeCuda::C_AddSmokeGPU(x_base, y_base, r, 0.015f, 0.065f, 0.025f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base, r, 0.015f, 0.065f, 0.025f, renderNode->CUDAPipeline->context);
 
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - r, r, 0.050f, 0.060f, 0.010f, renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f, renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f, renderNode->CUDAPipeline->context);
-				CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - r, r, 0.050f, 0.060f, 0.010f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f, renderNode->CUDAPipeline->context);
+			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f, renderNode->CUDAPipeline->context);
 
 			    lastMousePos = mouseInput;
 		    });
@@ -683,8 +659,6 @@ class FlatRenderer : public BaseRenderer
 	RadianceCascadesConfigs rConfigs{};
 	ProbesGenPc             probesGenPc;
 	CascadesInfo            cascadesInfo;
-	std::vector<glm::vec4>  image_pixels = {};
-	int                     width, height, channels;
 };
 }        // namespace Rendering
 #endif        // FLATRENDERER_HPP
