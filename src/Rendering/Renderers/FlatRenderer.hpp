@@ -409,17 +409,17 @@ class FlatRenderer : public BaseRenderer
 			    int x_base = 2;
 			    int run    = 1;
 			    int y_base = CodeCuda::s_height / 2;
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f, renderNode->CUDAPipeline->context);
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f, renderNode->CUDAPipeline->context);
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f, renderNode->CUDAPipeline->context);
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base + r, r, 0.005f, 0.060f, 0.050f, renderNode->CUDAPipeline->context);
-
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base, r, 0.015f, 0.065f, 0.025f, renderNode->CUDAPipeline->context);
-
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base - r, r, 0.050f, 0.060f, 0.010f, renderNode->CUDAPipeline->context);
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f, renderNode->CUDAPipeline->context);
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f, renderNode->CUDAPipeline->context);
-			    CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 4), r, 0.045f, 0.010f, 0.070f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 3), r, 0.015f, 0.020f, 0.080f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base + (r * 2), r, 0.010f, 0.045f, 0.070f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base + r, r, 0.005f, 0.060f, 0.050f, renderNode->CUDAPipeline->context);
+			    //
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base, r, 0.015f, 0.065f, 0.025f, renderNode->CUDAPipeline->context);
+			    //
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base - r, r, 0.050f, 0.060f, 0.010f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 2), r, 0.075f, 0.045f, 0.008f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 3), r, 0.080f, 0.020f, 0.005f, renderNode->CUDAPipeline->context);
+			    // CodeCuda::C_AddSmokeGPU(x_base, y_base - (r * 4), r, 0.070f, 0.008f, 0.020f, renderNode->CUDAPipeline->context);
 
 			    lastMousePos = mouseInput;
 		    });

@@ -117,7 +117,7 @@ class ImguiRenderer
 		m_Context           = ed::CreateEditor(&config);
 
 		std::string resourcesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath();
-		std::string fileName      = resourcesPath + "\\Images\\f1.png";
+		std::string fileName      = resourcesPath + "\\Images\\f3.png";
 		stbi_uc    *pixelsData    = stbi_load(fileName.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 		void       *data          = (void *) pixelsData;
 		image_pixels.resize(width * height);
@@ -135,7 +135,7 @@ class ImguiRenderer
 				    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
 				    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
 
-				solid_mask[y * width + x] = glm::length(image_pixels[y * width + x]) < 0.1 ? 1 : 0;
+				solid_mask[y * width + x] = image_pixels[y * width + x].w > 0.5 ? 1 : 0;
 			}
 		}
 		free(data);
@@ -327,14 +327,16 @@ class ImguiRenderer
 		}
 
 		ImGui::SeparatorText("Viewport Tool");
-		static int   fluidTool                   = 0;
-		static int   fluidBrushRadius            = 25;
-		static float fluidSmokeColor[3]          = {0.15f, 0.05f, 0.25f};
-		static float fluidVelocityStrength       = 0.2f;
-		static float fluidRadialVelocityStrength = 1.0f;
-		static bool  fluidToolEnabled            = true;
+		static int   fluidTool                        = 0;
+		static int   fluidBrushRadius                 = 25;
+		static float fluidSmokeColor[3]               = {0.15f, 0.05f, 0.25f};
+		static float fluidVelocityStrength            = 0.2f;
+		static float fluidRadialVelocityStrength      = 1.0f;
+		static float fluidEmitterVelocityDirection[2] = {1.0f, 0.0f};
+		static float fluidEmitterColor[3]             = {0.15f, 0.05f, 0.25f};
+		static bool  fluidToolEnabled                 = true;
 
-		const char *fluidTools[] = {"Smoke", "Velocity", "Add Solid", "Erase Solid", "Radial Velocity"};
+		const char *fluidTools[] = {"Smoke", "Velocity", "Add Solid", "Erase Solid", "Radial Velocity", "Add Emitter"};
 		ImGui::Checkbox("Enabled", &fluidToolEnabled);
 		ImGui::Combo("Tool", &fluidTool, fluidTools, IM_ARRAYSIZE(fluidTools));
 
@@ -357,6 +359,12 @@ class ImguiRenderer
 		{
 			ImGui::DragFloat("Radial Strength", &fluidRadialVelocityStrength, 0.05f,
 			                 -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+		}
+		else if (fluidTool == 5)
+		{
+			ImGui::DragFloat2("Emitter speed", fluidEmitterVelocityDirection, 0.05f,
+			                  -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::ColorEdit3("Emitter Smoke Color", fluidEmitterColor);
 		}
 
 		ImGui::TextWrapped("Hold right mouse over the viewport to apply the selected tool.");
@@ -401,6 +409,13 @@ class ImguiRenderer
 					runSimulationAction(CodeCuda::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
 					                                                  fluidRadialVelocityStrength));
 					break;
+				case 5:
+				{
+					glm::vec3 col = glm::make_vec3(fluidEmitterColor);
+					glm::vec2 vel = glm::make_vec2(fluidEmitterVelocityDirection);
+					emitters.emplace_back(emitter{col, vel, fluidBrushRadius, xPosition, yPosition});
+					break;
+				}
 				default:
 					break;
 			}
@@ -408,6 +423,18 @@ class ImguiRenderer
 		if (simulationActionFail)
 		{
 			ImGui::TextDisabled("The last simulation action failed.");
+		}
+		auto cudaNode = renderGraph->GetNode("CudaNode");
+		for (auto emitter : emitters)
+		{
+			runSimulationAction(CodeCuda::C_AddVelocityGPU(emitter.xPos, emitter.yPos, emitter.radius,
+			                                            emitter.velocity.x,
+			                                            emitter.velocity.y, cudaNode->CUDAPipeline->context));
+
+			runSimulationAction(CodeCuda::C_AddSmokeGPU(emitter.xPos, emitter.yPos, emitter.radius,
+			                                         emitter.color.x,
+			                                         emitter.color.y,
+			                                         emitter.color.z, cudaNode->CUDAPipeline->context));
 		}
 
 		ImGui::SeparatorText("Resolution");
@@ -1308,6 +1335,15 @@ class ImguiRenderer
 	std::vector<glm::vec4> image_pixels = {};
 	std::vector<int>       solid_mask   = {};
 	int                    width, height, channels;
+	struct emitter
+	{
+		glm::vec3 color;
+		glm::vec2 velocity;
+		int       radius;
+		int       xPos;
+		int       yPos;
+	};
+	std::vector<emitter> emitters;
 };
 inline void ImguiRenderer::DisplayRenderGraphDag()
 {

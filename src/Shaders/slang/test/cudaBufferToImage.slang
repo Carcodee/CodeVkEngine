@@ -99,9 +99,11 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   float3 valueInterp = ColorMapSpeed(length(value));
   float max_col = max(valueInterp.x, (max(valueInterp.y, valueInterp.z)));
 
-
   bool show = false;
-  if (length(value) < 0.1 && length(value) > 0.005) {
+  if(length(value) <= 0.00001) {
+    show = true;
+  }
+  if (length(value) < 0.1 && length(value) > 0.05) {
     show = true;
   }
   if (length(value) > 0.25 && length(value) < 0.8) {
@@ -112,8 +114,15 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
     show = false;
   }
 
-
   float alpha = show ? 1.0 : 0.0;
-  uint y_write = 1024 - y;
-  OutImage[uint2(x, y_write)] = float4(value, 1.0);
+float density = max(value.r, max(value.g, value.b));
+
+// Much softer smoke opacity
+alpha = 1.0f - exp(-density * 0.25f);
+
+// Optional cap so it never becomes completely opaque
+alpha = min(alpha, 0.45f);
+
+    OutImage[uint2(x, 1024 - y)] = float4(value, 1.0);
+ // OutImage[uint2(x, y_write)] = float4(value, alpha);
 }
