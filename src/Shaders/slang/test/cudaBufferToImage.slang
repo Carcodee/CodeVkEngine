@@ -115,7 +115,13 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   }
 
   float alpha = show ? 1.0 : 0.0;
-float density = max(value.r, max(value.g, value.b));
+  float density = max(value.r, max(value.g, value.b));
+  if (density < 0) {
+    valueInterp = 1.0;
+    value = float3(0.0, 1.0, 0.0);
+  };
+  
+  
 
 // Much softer smoke opacity
 alpha = 1.0f - exp(-density * 0.25f);

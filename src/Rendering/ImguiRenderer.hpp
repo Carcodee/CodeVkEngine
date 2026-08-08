@@ -409,6 +409,19 @@ class ImguiRenderer
 					runSimulationAction(CodeCuda::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
 					                                                  fluidRadialVelocityStrength));
 					break;
+				default:
+					break;
+			}
+		}
+		if (fluidToolEnabled && mouseOverViewport && !ImGui::GetIO().WantCaptureMouse &&
+		    ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		{
+			const float u         = glm::clamp(mousePosition.x / 1023.0f, 0.0f, 1.0f);
+			const float v         = glm::clamp(1.0f - mousePosition.y / 1023.0f, 0.0f, 1.0f);
+			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
+			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::s_height - 1));
+			switch (fluidTool)
+			{
 				case 5:
 				{
 					glm::vec3 col = glm::make_vec3(fluidEmitterColor);
@@ -436,7 +449,51 @@ class ImguiRenderer
 			                                         emitter.color.y,
 			                                         emitter.color.z, cudaNode->CUDAPipeline->context));
 		}
+		ImGui::SeparatorText("Emitters");
 
+		int emitterToRemove = -1;
+
+		for (int i = 0; i < emitters.size(); ++i)
+		{
+			ImGui::PushID(i);
+
+			auto& emitter = emitters[i];
+
+			if (ImGui::TreeNode("Emitter", "Emitter %d", i))
+			{
+				ImGui::DragInt("X", &emitter.xPos, 1.0f, 0, CodeCuda::s_width - 1);
+				ImGui::DragInt("Y", &emitter.yPos, 1.0f, 0, CodeCuda::s_height - 1);
+
+				ImGui::DragInt(
+					"Radius",
+					&emitter.radius,
+					1.0f,
+					1,
+					std::max(CodeCuda::s_width, CodeCuda::s_height));
+
+				ImGui::DragFloat2(
+					"Velocity",
+					&emitter.velocity.x,
+					0.05f,
+					-10.0f,
+					10.0f);
+
+				ImGui::ColorEdit3(
+					"Color",
+					&emitter.color.x);
+
+				if (ImGui::Button("Remove"))
+					emitterToRemove = i;
+
+				ImGui::TreePop();
+			}
+
+			ImGui::PopID();
+		}
+
+		if (emitterToRemove >= 0)
+			emitters.erase(emitters.begin() + emitterToRemove);
+		
 		ImGui::SeparatorText("Resolution");
 		static int  resolutionWidth         = CodeCuda::s_width;
 		static int  resolutionHeight        = CodeCuda::s_height;
