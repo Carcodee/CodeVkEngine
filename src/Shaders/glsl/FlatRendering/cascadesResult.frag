@@ -137,7 +137,7 @@ void main() {
 
     if(simulationImage.w > 0.9){
     }
-//    outColor = vec4(simulationImage.xyz, simulationImage.w);
+    outColor = vec4(simulationImage.xyz, simulationImage.w);
     
 
 }
