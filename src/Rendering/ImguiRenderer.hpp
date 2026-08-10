@@ -118,27 +118,6 @@ class ImguiRenderer
 
 		std::string resourcesPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath();
 		std::string fileName      = resourcesPath + "\\Images\\f3.png";
-		stbi_uc    *pixelsData    = stbi_load(fileName.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-		void       *data          = (void *) pixelsData;
-		image_pixels.resize(width * height);
-		solid_mask.resize(width * height);
-		for (int y = 0; y < height; ++y)
-		{
-			for (int x = 0; x < width; ++x)
-			{
-				const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
-				const size_t byteIndex  = pixelIndex * 4;
-
-				image_pixels[y * width + x] = glm::vec4(
-				    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
-				    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
-				    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
-				    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
-
-				solid_mask[y * width + x] = image_pixels[y * width + x].w > 0.5 ? 1 : 0;
-			}
-		}
-		free(data);
 	}
 	ed::EditorContext *m_Context = nullptr;
 	void               StartNodeEditor()
@@ -290,30 +269,173 @@ class ImguiRenderer
 			runSimulationAction(CodeCuda::C_RestartSimulation());
 		}
 
-		ImGui::SameLine();
-		if (ImGui::Button("Load Image as Smoke"))
+		std::string resourcesPath =
+		    SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\Images";
+
+		static std::vector<std::string> imagePaths;
+		static std::string              selectedImagePath;
+		static char                     searchBuffer[128] = {};
+
+		if (imagePaths.empty())
 		{
-			if (!image_pixels.empty())
+			for (const auto &dir : std::filesystem::directory_iterator(resourcesPath))
+			{
+				if (dir.is_regular_file())
+				{
+					imagePaths.emplace_back(dir.path().string());
+				}
+			}
+		}
+
+		// ------------------------------------------------------------
+		// Images Section
+		// ------------------------------------------------------------
+
+		ImGui::SeparatorText("Images");
+
+		ImGui::SetNextItemWidth(-1.0f);
+		ImGui::InputTextWithHint(
+		    "##ImageSearch",
+		    "Search images...",
+		    searchBuffer,
+		    sizeof(searchBuffer));
+
+		ImGui::Spacing();
+
+		const float sectionHeight = 260.0f;
+
+		if (ImGui::BeginChild(
+		        "##ImagesSection",
+		        ImVec2(0.0f, sectionHeight),
+		        ImGuiChildFlags_Borders,
+		        ImGuiWindowFlags_AlwaysVerticalScrollbar))
+		{
+			for (int i = 0; i < static_cast<int>(imagePaths.size()); ++i)
+			{
+				const std::string &path = imagePaths[i];
+
+				const std::string filename =
+				    std::filesystem::path(path).filename().string();
+
+				// Search filter
+				if (searchBuffer[0] != '\0')
+				{
+					if (filename.find(searchBuffer) == std::string::npos)
+						continue;
+				}
+
+				ImGui::PushID(i);
+
+				const bool selected = selectedImagePath == path;
+
+				// Full-width selectable row
+				const float rowHeight = 32.0f;
+
+				if (ImGui::Selectable(
+				        "##ImageRow",
+				        selected,
+				        ImGuiSelectableFlags_AllowOverlap,
+				        ImVec2(0.0f, rowHeight)))
+				{
+					selectedImagePath = path;
+				}
+
+				// Render contents over the selectable row
+				ImGui::SameLine();
+
+				const ImVec2 rowMin = ImGui::GetItemRectMin();
+
+				ImGui::SetCursorScreenPos(
+				    ImVec2(
+				        rowMin.x + 8.0f,
+				        rowMin.y + 7.0f));
+
+				ImGui::TextUnformatted(filename.c_str());
+
+				// Tooltip with full path
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("%s", path.c_str());
+				}
+
+				// Load button aligned right
+				const float buttonWidth = 60.0f;
+
+				ImGui::SetCursorScreenPos(
+				    ImVec2(
+				        ImGui::GetWindowPos().x +
+				            ImGui::GetWindowContentRegionMax().x -
+				            buttonWidth - 8.0f,
+
+				        rowMin.y + 4.0f));
+
+				if (ImGui::Button("Load", ImVec2(buttonWidth, 24.0f)))
+				{
+					selectedImagePath = path;
+
+					stbi_uc *pixelsData = stbi_load(selectedImagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+					void    *data       = (void *) pixelsData;
+					image_pixels.resize(width * height);
+					solid_mask.resize(width * height);
+					for (int y = 0; y < height; ++y)
+					{
+						for (int x = 0; x < width; ++x)
+						{
+							const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
+							const size_t byteIndex  = pixelIndex * 4;
+
+							image_pixels[y * width + x] = glm::vec4(
+							    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
+							    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
+							    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
+							    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
+
+							solid_mask[y * width + x] = image_pixels[y * width + x].w > 0.5 ? 1 : 0;
+						}
+					}
+					free(data);
+				}
+
+				ImGui::PopID();
+			}
+		}
+
+		ImGui::EndChild();
+
+		// ------------------------------------------------------------
+		// Selected image info
+		// ------------------------------------------------------------
+		
+		if (!selectedImagePath.empty())
+		{
+			ImGui::Spacing();
+
+			ImGui::TextDisabled("Selected:");
+
+			ImGui::SameLine();
+
+			ImGui::TextUnformatted(
+			    std::filesystem::path(selectedImagePath)
+			        .filename()
+			        .string()
+			        .c_str());
+		}
+		
+		ImGui::SameLine();
+		if (!image_pixels.empty())
+		{
+			if (ImGui::Button("Load Image as Smoke"))
 			{
 				runSimulationAction(CodeCuda::C_MapImageToSmoke(width, height, 4,
 				                                                image_pixels.data()));
 			}
-			else
-			{
-				simulationActionFail = true;
-			}
 		}
-
-		if (ImGui::Button("Load solid Mask"))
+		if (!solid_mask.empty())
 		{
-			if (!solid_mask.empty())
+			if (ImGui::Button("Use solid Mask"))
 			{
 				runSimulationAction(CodeCuda::C_MapSolidMask(width, height,
 				                                             solid_mask.data()));
-			}
-			else
-			{
-				simulationActionFail = true;
 			}
 		}
 
@@ -550,7 +672,7 @@ class ImguiRenderer
 		paramsChanged |= ImGui::DragFloat("Viscosity", &fluidSimParams.viscosity, 0.01f, 0.0f, 100.0f, "%.3f",
 		                                  ImGuiSliderFlags_AlwaysClamp);
 		paramsChanged |= ImGui::DragFloat("Smoke Diffuse Coef", &fluidSimParams.smoke_diffuse_coef, 0.01f, 0.0f, 100.0f, "%.3f",
-										  ImGuiSliderFlags_AlwaysClamp);
+		                                  ImGuiSliderFlags_AlwaysClamp);
 
 		ImGui::SeparatorText("Solver");
 		paramsChanged |= ImGui::DragInt("GPU Iterations", &fluidSimParams.total_iter_gpu, 1.0f, 1, 10000, "%d",

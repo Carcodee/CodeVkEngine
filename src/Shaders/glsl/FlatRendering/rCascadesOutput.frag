@@ -96,7 +96,7 @@ vec4 CastInterval(vec2 intervalStart, vec2 intervalEnd, int cascadeIndex, vec2 f
             sampleCount++;
         }
         if(simulationCol.w > 0.1){
-            accumulatedRadiance += float3(simulationCol.xyz) * 0.01;
+            accumulatedRadiance += vec4(simulationCol.xyz, 1.0f) * 0.02;
             sampleCount++;
         }
 
