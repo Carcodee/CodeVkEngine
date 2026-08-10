@@ -289,11 +289,12 @@ class FlatRenderer : public BaseRenderer
 	}
 	void AddSmokePretty(CodeCuda::CodeCudaContext *context, glm::vec2 mouseInput)
 	{
-		auto RandomPrettyColor = []() -> glm::vec3 {
+		auto RandomPrettyColor = []() -> glm::vec4 {
 			// Muted random colors, avoiding values that are too bright.
-			return glm::vec3(
+			return glm::vec4(
 			    glm::linearRand(0.02f, 0.35f),
 			    glm::linearRand(0.02f, 0.35f),
+			    glm::linearRand(0.05f, 0.45f),
 			    glm::linearRand(0.05f, 0.45f));
 		};
 
@@ -308,7 +309,7 @@ class FlatRenderer : public BaseRenderer
             1,
             int(glm::ceil(distance / sampleSpacing)));
 
-		glm::vec3 newColor = RandomPrettyColor();
+		glm::vec4 newColor = RandomPrettyColor();
 
 		for (int i = 1; i <= sampleCount; ++i)
 		{
@@ -322,7 +323,7 @@ class FlatRenderer : public BaseRenderer
 			// Smooth color interpolation along the line.
 			float smoothT = t * t * (3.0f - 2.0f * t);
 
-			glm::vec3 interpolatedColor = glm::mix(
+			glm::vec4 interpolatedColor = glm::mix(
 			    lastColor,
 			    newColor,
 			    smoothT);
@@ -364,14 +365,16 @@ class FlatRenderer : public BaseRenderer
 			    r,
 			    interpolatedColor.r,
 			    interpolatedColor.g,
-			    interpolatedColor.b, context);
+			    interpolatedColor.b,
+			    interpolatedColor.a,
+			    context);
 		}
 
 		lastColor = newColor;
 	}
 
 	glm::vec2 lastMousePos = glm::vec2(0.0, 0.0);
-	glm::vec3 lastColor    = glm::vec3(0.15f, 0.05f, 0.25f);
+	glm::vec4 lastColor    = glm::vec4(0.15f, 0.05f, 0.25f, 1.0f);
 
 	void SetRenderOperation() override
 	{

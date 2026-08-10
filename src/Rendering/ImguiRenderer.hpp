@@ -329,11 +329,11 @@ class ImguiRenderer
 		ImGui::SeparatorText("Viewport Tool");
 		static int   fluidTool                        = 0;
 		static int   fluidBrushRadius                 = 25;
-		static float fluidSmokeColor[3]               = {0.15f, 0.05f, 0.25f};
+		static float fluidSmokeColor[4]               = {0.15f, 0.05f, 0.25f, 1.0f};
 		static float fluidVelocityStrength            = 0.2f;
 		static float fluidRadialVelocityStrength      = 1.0f;
 		static float fluidEmitterVelocityDirection[2] = {1.0f, 0.0f};
-		static float fluidEmitterColor[3]             = {0.15f, 0.05f, 0.25f};
+		static float fluidEmitterColor[4]             = {0.15f, 0.05f, 0.25f, 1.0f};
 		static bool  fluidToolEnabled                 = true;
 
 		const char *fluidTools[] = {"Smoke", "Velocity", "Add Solid", "Erase Solid", "Radial Velocity", "Add Emitter"};
@@ -348,7 +348,7 @@ class ImguiRenderer
 
 		if (fluidTool == 0)
 		{
-			ImGui::ColorEdit3("Smoke Color", fluidSmokeColor);
+			ImGui::ColorEdit4("Smoke Color", fluidSmokeColor);
 		}
 		else if (fluidTool == 1)
 		{
@@ -364,7 +364,7 @@ class ImguiRenderer
 		{
 			ImGui::DragFloat2("Emitter speed", fluidEmitterVelocityDirection, 0.05f,
 			                  -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-			ImGui::ColorEdit3("Emitter Smoke Color", fluidEmitterColor);
+			ImGui::ColorEdit4("Emitter Smoke Color", fluidEmitterColor);
 		}
 
 		ImGui::TextWrapped("Hold right mouse over the viewport to apply the selected tool.");
@@ -387,7 +387,7 @@ class ImguiRenderer
 				case 0:
 					runSimulationAction(CodeCuda::C_AddSmoke(xPosition, yPosition, fluidBrushRadius,
 					                                         fluidSmokeColor[0], fluidSmokeColor[1],
-					                                         fluidSmokeColor[2]));
+					                                         fluidSmokeColor[2], fluidSmokeColor[3]));
 					break;
 				case 1:
 				{
@@ -424,7 +424,7 @@ class ImguiRenderer
 			{
 				case 5:
 				{
-					glm::vec3 col = glm::make_vec3(fluidEmitterColor);
+					glm::vec4 col = glm::make_vec4(fluidEmitterColor);
 					glm::vec2 vel = glm::make_vec2(fluidEmitterVelocityDirection);
 					emitters.emplace_back(emitter{col, vel, fluidBrushRadius, xPosition, yPosition});
 					break;
@@ -441,13 +441,13 @@ class ImguiRenderer
 		for (auto emitter : emitters)
 		{
 			runSimulationAction(CodeCuda::C_AddVelocityGPU(emitter.xPos, emitter.yPos, emitter.radius,
-			                                            emitter.velocity.x,
-			                                            emitter.velocity.y, cudaNode->CUDAPipeline->context));
+			                                               emitter.velocity.x,
+			                                               emitter.velocity.y, cudaNode->CUDAPipeline->context));
 
 			runSimulationAction(CodeCuda::C_AddSmokeGPU(emitter.xPos, emitter.yPos, emitter.radius,
-			                                         emitter.color.x,
-			                                         emitter.color.y,
-			                                         emitter.color.z, cudaNode->CUDAPipeline->context));
+			                                            emitter.color.x,
+			                                            emitter.color.y,
+			                                            emitter.color.z, emitter.color.w, cudaNode->CUDAPipeline->context));
 		}
 		ImGui::SeparatorText("Emitters");
 
@@ -457,7 +457,7 @@ class ImguiRenderer
 		{
 			ImGui::PushID(i);
 
-			auto& emitter = emitters[i];
+			auto &emitter = emitters[i];
 
 			if (ImGui::TreeNode("Emitter", "Emitter %d", i))
 			{
@@ -465,22 +465,22 @@ class ImguiRenderer
 				ImGui::DragInt("Y", &emitter.yPos, 1.0f, 0, CodeCuda::s_height - 1);
 
 				ImGui::DragInt(
-					"Radius",
-					&emitter.radius,
-					1.0f,
-					1,
-					std::max(CodeCuda::s_width, CodeCuda::s_height));
+				    "Radius",
+				    &emitter.radius,
+				    1.0f,
+				    1,
+				    std::max(CodeCuda::s_width, CodeCuda::s_height));
 
 				ImGui::DragFloat2(
-					"Velocity",
-					&emitter.velocity.x,
-					0.05f,
-					-10.0f,
-					10.0f);
+				    "Velocity",
+				    &emitter.velocity.x,
+				    0.05f,
+				    -10.0f,
+				    10.0f);
 
 				ImGui::ColorEdit3(
-					"Color",
-					&emitter.color.x);
+				    "Color",
+				    &emitter.color.x);
 
 				if (ImGui::Button("Remove"))
 					emitterToRemove = i;
@@ -493,7 +493,7 @@ class ImguiRenderer
 
 		if (emitterToRemove >= 0)
 			emitters.erase(emitters.begin() + emitterToRemove);
-		
+
 		ImGui::SeparatorText("Resolution");
 		static int  resolutionWidth         = CodeCuda::s_width;
 		static int  resolutionHeight        = CodeCuda::s_height;
@@ -549,6 +549,8 @@ class ImguiRenderer
 		                                  ImGuiSliderFlags_AlwaysClamp);
 		paramsChanged |= ImGui::DragFloat("Viscosity", &fluidSimParams.viscosity, 0.01f, 0.0f, 100.0f, "%.3f",
 		                                  ImGuiSliderFlags_AlwaysClamp);
+		paramsChanged |= ImGui::DragFloat("Smoke Diffuse Coef", &fluidSimParams.smoke_diffuse_coef, 0.01f, 0.0f, 100.0f, "%.3f",
+										  ImGuiSliderFlags_AlwaysClamp);
 
 		ImGui::SeparatorText("Solver");
 		paramsChanged |= ImGui::DragInt("GPU Iterations", &fluidSimParams.total_iter_gpu, 1.0f, 1, 10000, "%d",
@@ -1394,7 +1396,7 @@ class ImguiRenderer
 	int                    width, height, channels;
 	struct emitter
 	{
-		glm::vec3 color;
+		glm::vec4 color;
 		glm::vec2 velocity;
 		int       radius;
 		int       xPos;

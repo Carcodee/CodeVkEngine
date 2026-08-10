@@ -2094,14 +2094,6 @@ class RenderGraph
 			{
 				node->Execute(node->GetCurrCmd());
 			}
-			// else
-			// {
-			// 	std::string           name = node->passName;
-			// 	std::function<void()> nodeTask([name, queueNodesBatch, this] {
-			// 		renderNodes.at(name)->Execute(queueNodesBatch.commandBuffer);
-			// 	});
-			// 	queueRef->taskThreat.AddPreRenderingTask(nodeTask);
-			// }
 			allPassesNames.push_back(node->passName);
 			profiler->EndProfilerCpuSpot("Pass: " + renderNode->passName);
 		}

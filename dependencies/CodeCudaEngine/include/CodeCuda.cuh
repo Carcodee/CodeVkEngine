@@ -68,12 +68,12 @@ namespace CodeCuda
     C_Res C_MapSolidMask(int w_source, int h_source, int* data);
     C_Res C_MapVectorFieldUV(int w_source, int h_source, int element_offset, void* data);
     C_Res C_AddVelocity(int x_pos, int y_pos, int radius, float vel_x, float vel_y);
-    C_Res C_AddSmoke(int x_pos, int y_pos, int radius, float value_x, float value_y, float value_z);
+    C_Res C_AddSmoke(int x_pos, int y_pos, int radius, float value_x, float value_y, float value_z, float density);
     C_Res C_SetSolid(int x_pos, int y_pos, int radius, bool solid);
     C_Res C_AddRadialVelocity(int x_pos, int y_pos, int radius, float scale);
     C_Res C_AddVelocityGPU(int x_pos, int y_pos, int radius, float vel_x, float vel_y,
                            CodeCudaContext *code_cuda_context);
-    C_Res C_AddSmokeGPU(int x_pos, int y_pos, int radius, float val_x, float val_y, float val_z,
+    C_Res C_AddSmokeGPU(int x_pos, int y_pos, int radius, float val_x, float val_y, float val_z, float density,
                         CodeCudaContext *code_cuda_context);
     C_Res C_SetSimulationParams(const sim_params *params);
     C_Res C_GetSimulationParams(sim_params *params);

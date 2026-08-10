@@ -86,12 +86,13 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   uint x = dtid.x;
   uint y = dtid.y;
   uint pixelIndex = y * 1024 + x;
-  uint baseIndex = pixelIndex * 3;
+  uint baseIndex = pixelIndex * 4;
 
-  float3 value = float3(
+  float4 value = float4(
       SimulationBuffer[baseIndex + 0],
       SimulationBuffer[baseIndex + 1],
-      SimulationBuffer[baseIndex + 2]
+      SimulationBuffer[baseIndex + 2],
+      SimulationBuffer[baseIndex + 3],
   );
 
   float2 uv = float2(float(x)/1023.0f, float(y)/1023.0f);
@@ -116,19 +117,20 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
 
   float alpha = show ? 1.0 : 0.0;
   float density = max(value.r, max(value.g, value.b));
+  
+  
+
+    // Much softer smoke opacity
+  alpha = 1.0f - exp(-density * 0.25f);
+
   if (density < 0) {
-    valueInterp = 1.0;
-    value = float3(0.0, 1.0, 0.0);
+      valueInterp = 1.0;
+      value = float4(0.0, 0.1, 0.0, 1.0);
+      alpha = 1.0;
   };
+  // Optional cap so it never becomes completely opaque
   
-  
-
-// Much softer smoke opacity
-alpha = 1.0f - exp(-density * 0.25f);
-
-// Optional cap so it never becomes completely opaque
-alpha = min(alpha, 0.45f);
-
-    OutImage[uint2(x, 1024 - y)] = float4(value, 1.0);
+  alpha = min(alpha, 0.45f);
+  OutImage[uint2(x, 1024 - y)] = float4(value.xyz * value.w, 1.0f);
  // OutImage[uint2(x, y_write)] = float4(value, alpha);
 }

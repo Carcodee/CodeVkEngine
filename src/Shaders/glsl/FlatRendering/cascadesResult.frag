@@ -135,7 +135,7 @@ void main() {
         outColor = paintingImage * paintingImage.w;
     }
 
-    if(simulationImage.w > 0.1){
+    if(simulationImage.w > 0.9){
         outColor = simulationImage;
     }
     
