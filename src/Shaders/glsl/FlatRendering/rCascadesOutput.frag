@@ -54,7 +54,7 @@ vec4 CastInterval(vec2 intervalStart, vec2 intervalEnd, int cascadeIndex, vec2 f
     int sampleCount = 0;
     vec2 pos = intervalStart;
 
-    for (int i = 0; i < maxSteps; i++){
+    for (int i = 0; i < 1; i++){
         vec2 textCoordPos = vec2(pos)/ vec2(fSize);
         vec4 sampleCol= imageLoad(PaintingLayers[0], ivec2(pos));
         vec4 simulationCol= imageLoad(PaintingLayers[3], ivec2(pos));

@@ -629,11 +629,29 @@ class ImguiRenderer
 
 		if (ImGui::Begin("CodeVK Engine Workspace", nullptr, rootFlags))
 		{
-			const float availableWidth = ImGui::GetContentRegionAvail().x;
-			float panelWidth = std::clamp(availableWidth * 0.36f, 380.0f, 640.0f);
-			panelWidth = std::min(panelWidth, availableWidth * 0.52f);
-			const float dividerWidth = 1.0f;
-			const float viewportWidth = std::max(1.0f, availableWidth - panelWidth - dividerWidth);
+			const ImVec2 available = ImGui::GetContentRegionAvail();
+			const float  splitterWidth = 6.0f;
+			const float  minimumPanelWidth =
+			    std::min(360.0f, std::max(220.0f, available.x * 0.45f));
+			const float maximumPanelWidth =
+			    std::max(minimumPanelWidth, available.x - 280.0f - splitterWidth);
+
+			if (inspectorPanelWidth <= 0.0f)
+			{
+				inspectorPanelWidth = available.x * 0.36f;
+			}
+			if (inspectorPanelResizing && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+			{
+				inspectorPanelWidth -= ImGui::GetIO().MouseDelta.x;
+			}
+			else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+			{
+				inspectorPanelResizing = false;
+			}
+			inspectorPanelWidth =
+			    std::clamp(inspectorPanelWidth, minimumPanelWidth, maximumPanelWidth);
+			const float viewportWidth =
+			    std::max(1.0f, available.x - inspectorPanelWidth - splitterWidth);
 
 			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.015f, 0.015f, 0.017f, 1.0f));
 			if (ImGui::BeginChild("##scene_viewport", ImVec2(viewportWidth, 0.0f),
@@ -645,10 +663,37 @@ class ImguiRenderer
 			ImGui::EndChild();
 			ImGui::PopStyleColor();
 
-			ImGui::SameLine(0.0f, dividerWidth);
+			ImGui::SameLine(0.0f, 0.0f);
+			ImGui::InvisibleButton("##inspector_splitter", ImVec2(splitterWidth, available.y),
+			                       ImGuiButtonFlags_MouseButtonLeft);
+			const bool splitterHovered = ImGui::IsItemHovered();
+			const bool splitterActive  = ImGui::IsItemActive();
+			if (splitterHovered || splitterActive || inspectorPanelResizing)
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+			}
+			if (ImGui::IsItemActivated())
+			{
+				inspectorPanelResizing = true;
+			}
+			if (splitterHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			{
+				inspectorPanelWidth = std::clamp(available.x * 0.36f,
+				                                 minimumPanelWidth, maximumPanelWidth);
+			}
+			const ImVec2 splitterMin = ImGui::GetItemRectMin();
+			const ImVec2 splitterMax = ImGui::GetItemRectMax();
+			ImGui::GetWindowDrawList()->AddRectFilled(
+			    splitterMin, splitterMax,
+			    ImGui::GetColorU32(splitterHovered || splitterActive
+			                            ? ImguiRendererUI::AccentColor()
+			                            : ImVec4(0.18f, 0.16f, 0.16f, 0.75f)));
+
+			ImGui::SameLine(0.0f, 0.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
 			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.045f, 0.042f, 0.045f, 0.98f));
-			if (ImGui::BeginChild("##docked_inspector", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None))
+			if (ImGui::BeginChild("##docked_inspector", ImVec2(inspectorPanelWidth, 0.0f),
+			                      ImGuiChildFlags_None))
 			{
 				RenderApplicationHeader();
 				ImGui::Spacing();
@@ -702,11 +747,15 @@ class ImguiRenderer
 			simulationActionFail = result != CodeCuda::C_Res::OK;
 		};
 
-		ImGui::SeparatorText("Controls");
-		if (ImGui::Button("Restart Simulation"))
+		ImGui::TextDisabled("Grid: %d x %d", CodeCuda::s_width, CodeCuda::s_height);
+		const float quickControlWidth =
+		    (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+		if (ImGui::Button("Restart simulation", ImVec2(quickControlWidth, 30.0f)))
 		{
 			runSimulationAction(CodeCuda::C_RestartSimulation());
 		}
+		ImGui::SameLine();
+		paramsChanged |= ImGui::Checkbox("GPU simulation", &fluidSimParams.gpu_sim);
 
 		std::string resourcesPath =
 		    SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\Images";
@@ -738,7 +787,9 @@ class ImguiRenderer
 			imagesScanned = true;
 		}
 
-		ImGui::SeparatorText("Images");
+		if (ImGui::CollapsingHeader("Image import###fluid_image_import"))
+		{
+		ImGui::TextDisabled("Load an image as smoke density or a solid mask.");
 
 		ImGui::SetNextItemWidth(-1.0f);
 		ImGui::InputTextWithHint(
@@ -886,15 +937,9 @@ class ImguiRenderer
 				                                             solid_mask.data()));
 			}
 		}
+		}
 
 		static int randomVelocityScale = 10;
-		ImGui::SetNextItemWidth(160.0f);
-		ImGui::DragInt("Random Velocity Scale", &randomVelocityScale, 1.0f, 1, 1000, "%d",
-		               ImGuiSliderFlags_AlwaysClamp);
-		if (ImGui::Button("Add Random Velocity"))
-		{
-			runSimulationAction(CodeCuda::C_AddRandomVelocity(randomVelocityScale));
-		}
 
 		ImGui::SeparatorText("Viewport Tool");
 		static int   fluidTool                        = 0;
@@ -907,43 +952,89 @@ class ImguiRenderer
 		static bool  fluidToolEnabled                 = true;
 
 		const char *fluidTools[] = {"Smoke", "Velocity", "Add Solid", "Erase Solid", "Radial Velocity", "Add Emitter"};
-		ImGui::Checkbox("Enabled", &fluidToolEnabled);
-		ImGui::Combo("Tool", &fluidTool, fluidTools, IM_ARRAYSIZE(fluidTools));
 
 		const int maxSimulationDimension =
 		    CodeCuda::s_width > CodeCuda::s_height ? CodeCuda::s_width : CodeCuda::s_height;
 		const int maxBrushRadius = maxSimulationDimension > 0 ? maxSimulationDimension : 1;
-		ImGui::DragInt("Brush Radius", &fluidBrushRadius, 1.0f, 1, maxBrushRadius, "%d",
-		               ImGuiSliderFlags_AlwaysClamp);
 
-		if (fluidTool == 0)
+		if (ImGui::BeginTable("##fluid_tool_properties", 2,
+		                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
 		{
-			ImGui::ColorEdit4("Smoke Color", fluidSmokeColor);
-		}
-		else if (fluidTool == 1)
-		{
-			ImGui::DragFloat("Velocity Strength", &fluidVelocityStrength, 0.01f, 0.0f, 10.0f,
-			                 "%.2f", ImGuiSliderFlags_AlwaysClamp);
-		}
-		else if (fluidTool == 4)
-		{
-			ImGui::DragFloat("Radial Strength", &fluidRadialVelocityStrength, 0.05f,
-			                 -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-		}
-		else if (fluidTool == 5)
-		{
-			ImGui::DragFloat2("Emitter speed", fluidEmitterVelocityDirection, 0.05f,
-			                  -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-			ImGui::ColorEdit4("Emitter Smoke Color", fluidEmitterColor);
+			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+			auto beginProperty = [](const char *label) {
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::TextUnformatted(label);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::SetNextItemWidth(-1.0f);
+			};
+
+			beginProperty("Enabled");
+			ImGui::Checkbox("##fluid_tool_enabled", &fluidToolEnabled);
+			beginProperty("Tool");
+			ImGui::Combo("##fluid_tool", &fluidTool, fluidTools, IM_ARRAYSIZE(fluidTools));
+			beginProperty("Brush radius");
+			ImGui::DragInt("##fluid_brush_radius", &fluidBrushRadius, 1.0f, 1,
+			               maxBrushRadius, "%d px", ImGuiSliderFlags_AlwaysClamp);
+
+			if (fluidTool == 0)
+			{
+				beginProperty("Smoke color");
+				ImGui::ColorEdit4("##fluid_smoke_color", fluidSmokeColor);
+			}
+			else if (fluidTool == 1)
+			{
+				beginProperty("Velocity strength");
+				ImGui::DragFloat("##fluid_velocity_strength", &fluidVelocityStrength,
+				                 0.01f, 0.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			}
+			else if (fluidTool == 4)
+			{
+				beginProperty("Radial strength");
+				ImGui::DragFloat("##fluid_radial_strength", &fluidRadialVelocityStrength,
+				                 0.05f, -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			}
+			else if (fluidTool == 5)
+			{
+				beginProperty("Emitter velocity");
+				ImGui::DragFloat2("##fluid_emitter_velocity", fluidEmitterVelocityDirection,
+				                  0.05f, -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+				beginProperty("Emitter color");
+				ImGui::ColorEdit4("##fluid_emitter_color", fluidEmitterColor);
+			}
+
+			beginProperty("Random force");
+			const float addButtonWidth = 42.0f;
+			ImGui::SetNextItemWidth(std::max(60.0f, ImGui::GetContentRegionAvail().x -
+			                                          addButtonWidth - ImGui::GetStyle().ItemSpacing.x));
+			ImGui::DragInt("##random_velocity_scale", &randomVelocityScale, 1.0f, 1,
+			               1000, "%d", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::SameLine();
+			if (ImGui::Button("Add", ImVec2(addButtonWidth, 0.0f)))
+			{
+				runSimulationAction(CodeCuda::C_AddRandomVelocity(randomVelocityScale));
+			}
+			ImGui::EndTable();
 		}
 
-		ImGui::TextWrapped("Hold right mouse over the viewport to apply the selected tool.");
-		ImGui::TextDisabled("Shortcuts: L loads the image, M adds solid, N erases solid.");
+		ImGui::TextDisabled("Right-click and drag over the viewport to apply the selected tool.");
 
 		const ImVec2 mousePosition = ImGui::GetMousePos();
 		const float  viewportWidth  = std::max(1.0f, sceneViewportMax.x - sceneViewportMin.x);
 		const float  viewportHeight = std::max(1.0f, sceneViewportMax.y - sceneViewportMin.y);
 		const bool   mouseOverViewport = sceneViewportValid && sceneViewportHovered;
+		if (fluidToolEnabled && mouseOverViewport)
+		{
+			const float radiusPixels = std::max(
+			    2.0f, fluidBrushRadius * 0.5f *
+			              (viewportWidth / std::max(1, CodeCuda::s_width) +
+			               viewportHeight / std::max(1, CodeCuda::s_height)));
+			ImGui::GetForegroundDrawList()->AddCircle(
+			    mousePosition, radiusPixels,
+			    ImGui::GetColorU32(ImguiRendererUI::AccentColor()), 48, 1.5f);
+		}
 		if (fluidToolEnabled && mouseOverViewport &&
 		    ImGui::IsMouseDown(ImGuiMouseButton_Right))
 		{
@@ -1011,64 +1102,70 @@ class ImguiRenderer
 		{
 			ImGui::TextDisabled("The last simulation action failed.");
 		}
-		auto cudaNode = renderGraph->GetNode("CudaNode");
-		for (auto emitter : emitters)
+		if (!emitters.empty())
 		{
-			runSimulationAction(CodeCuda::C_AddVelocityGPU(emitter.xPos, emitter.yPos, emitter.radius,
-			                                               emitter.velocity.x,
-			                                               emitter.velocity.y, cudaNode->CUDAPipeline->context));
-
-			runSimulationAction(CodeCuda::C_AddSmokeGPU(emitter.xPos, emitter.yPos, emitter.radius,
-			                                            emitter.color.x,
-			                                            emitter.color.y,
-			                                            emitter.color.z, emitter.color.w, cudaNode->CUDAPipeline->context));
-		}
-		ImGui::SeparatorText("Emitters");
-
-		int emitterToRemove = -1;
-
-		for (int i = 0; i < emitters.size(); ++i)
-		{
-			ImGui::PushID(i);
-
-			auto &emitter = emitters[i];
-
-			if (ImGui::TreeNode("Emitter", "Emitter %d", i))
+			auto *cudaNode = renderGraph->GetNode("CudaNode");
+			if (!cudaNode || !cudaNode->CUDAPipeline || !cudaNode->CUDAPipeline->context)
 			{
-				ImGui::DragInt("X", &emitter.xPos, 1.0f, 0, CodeCuda::s_width - 1);
-				ImGui::DragInt("Y", &emitter.yPos, 1.0f, 0, CodeCuda::s_height - 1);
+				simulationActionFail = true;
+			}
+			else
+			{
+				for (const auto &activeEmitter : emitters)
+				{
+					runSimulationAction(CodeCuda::C_AddVelocityGPU(
+					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
+					    activeEmitter.velocity.x, activeEmitter.velocity.y,
+					    cudaNode->CUDAPipeline->context));
+					runSimulationAction(CodeCuda::C_AddSmokeGPU(
+					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
+					    activeEmitter.color.x, activeEmitter.color.y,
+					    activeEmitter.color.z, activeEmitter.color.w,
+					    cudaNode->CUDAPipeline->context));
+				}
+			}
+		}
 
-				ImGui::DragInt(
-				    "Radius",
-				    &emitter.radius,
-				    1.0f,
-				    1,
-				    std::max(CodeCuda::s_width, CodeCuda::s_height));
+		const std::string emitterSectionLabel =
+		    "Emitters (" + std::to_string(emitters.size()) + ")###fluid_emitters";
+		if (ImGui::CollapsingHeader(emitterSectionLabel.c_str()))
+		{
+			if (emitters.empty())
+			{
+				ImGui::TextDisabled("Choose Add Emitter, then right-click the viewport.");
+			}
+			int emitterToRemove = -1;
 
-				ImGui::DragFloat2(
-				    "Velocity",
-				    &emitter.velocity.x,
-				    0.05f,
-				    -10.0f,
-				    10.0f);
+			for (int i = 0; i < static_cast<int>(emitters.size()); ++i)
+			{
+				ImGui::PushID(i);
+				auto &activeEmitter = emitters[i];
 
-				ImGui::ColorEdit3(
-				    "Color",
-				    &emitter.color.x);
+				if (ImGui::TreeNode("Emitter", "Emitter %d", i + 1))
+				{
+					ImGui::DragInt("X", &activeEmitter.xPos, 1.0f, 0, CodeCuda::s_width - 1);
+					ImGui::DragInt("Y", &activeEmitter.yPos, 1.0f, 0, CodeCuda::s_height - 1);
+					ImGui::DragInt("Radius", &activeEmitter.radius, 1.0f, 1,
+					               std::max(CodeCuda::s_width, CodeCuda::s_height));
+					ImGui::DragFloat2("Velocity", &activeEmitter.velocity.x, 0.05f,
+					                  -10.0f, 10.0f);
+					ImGui::ColorEdit4("Color", &activeEmitter.color.x);
 
-				if (ImGui::Button("Remove"))
-					emitterToRemove = i;
-
-				ImGui::TreePop();
+					if (ImGui::Button("Remove emitter"))
+					{
+						emitterToRemove = i;
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
 			}
 
-			ImGui::PopID();
+			if (emitterToRemove >= 0)
+			{
+				emitters.erase(emitters.begin() + emitterToRemove);
+			}
 		}
 
-		if (emitterToRemove >= 0)
-			emitters.erase(emitters.begin() + emitterToRemove);
-
-		ImGui::SeparatorText("Resolution");
 		static int  resolutionWidth         = CodeCuda::s_width;
 		static int  resolutionHeight        = CodeCuda::s_height;
 		static bool resolutionChangePending = false;
@@ -1080,12 +1177,39 @@ class ImguiRenderer
 			resolutionHeight = CodeCuda::s_height;
 		}
 
-		const bool widthChanged  = ImGui::DragInt("Width", &resolutionWidth, 1.0f, 1, 4096, "%d",
-		                                          ImGuiSliderFlags_AlwaysClamp);
-		const bool widthActive   = ImGui::IsItemActive();
-		const bool heightChanged = ImGui::DragInt("Height", &resolutionHeight, 1.0f, 1, 4096, "%d",
-		                                          ImGuiSliderFlags_AlwaysClamp);
-		const bool heightActive  = ImGui::IsItemActive();
+		auto beginSettingsProperty = [](const char *label) {
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextUnformatted(label);
+			ImGui::TableSetColumnIndex(1);
+			ImGui::SetNextItemWidth(-1.0f);
+		};
+
+		bool widthChanged = false;
+		bool widthActive = false;
+		bool heightChanged = false;
+		bool heightActive = false;
+		if (ImGui::CollapsingHeader("Resolution###fluid_resolution"))
+		{
+			if (ImGui::BeginTable("##fluid_resolution_properties", 2,
+			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
+			{
+				ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+				beginSettingsProperty("Width");
+				widthChanged = ImGui::DragInt("##fluid_resolution_width", &resolutionWidth,
+				                              1.0f, 1, 4096, "%d",
+				                              ImGuiSliderFlags_AlwaysClamp);
+				widthActive = ImGui::IsItemActive();
+				beginSettingsProperty("Height");
+				heightChanged = ImGui::DragInt("##fluid_resolution_height", &resolutionHeight,
+				                               1.0f, 1, 4096, "%d",
+				                               ImGuiSliderFlags_AlwaysClamp);
+				heightActive = ImGui::IsItemActive();
+				ImGui::EndTable();
+			}
+		}
 		resolutionChangePending |= widthChanged || heightChanged;
 
 		if (resolutionChangePending && !widthActive && !heightActive)
@@ -1096,43 +1220,88 @@ class ImguiRenderer
 		}
 		if (resolutionUpdateFailed)
 		{
-			ImGui::TextDisabled("Unable to update fluid simulation resolution.");
+			ImGui::TextColored(ImVec4(0.95f, 0.38f, 0.42f, 1.0f),
+			                   "Unable to update fluid simulation resolution.");
 		}
 
-		ImGui::SeparatorText("Simulation");
-		paramsChanged |= ImGui::DragFloat("Density", &fluidSimParams.density, 0.01f, 0.001f, 100.0f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragFloat("SOR Weight", &fluidSimParams.weight_sor, 0.01f, 0.0f, 2.0f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-
-		paramsChanged |= ImGui::DragFloat("Velocity Dissipation", &fluidSimParams.velocity_dissipation, 0.01f, 0.0f, 0.2f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragFloat("Smoke Dissipation", &fluidSimParams.smoke_dissipation, 0.01f, 0.0f, 0.2f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-
-		int timeStepDenominator = fluidSimParams.dt > 0.0f ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f) : 120;
-		if (ImGui::DragInt("Time Step", &timeStepDenominator, 1.0f, 1, 10000, "1 / %d",
-		                   ImGuiSliderFlags_AlwaysClamp))
+		if (ImGui::CollapsingHeader("Simulation###fluid_simulation",
+		                            ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			fluidSimParams.dt = 1.0f / static_cast<float>(timeStepDenominator);
-			paramsChanged     = true;
-		}
-		paramsChanged |= ImGui::DragFloat("Gravity", &fluidSimParams.g, 0.01f, -100.0f, 100.0f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragFloat("Wind Speed", &fluidSimParams.wind_speed, 0.01f, -100.0f, 100.0f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragFloat("Viscosity", &fluidSimParams.viscosity, 0.01f, 0.0f, 100.0f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragFloat("Smoke Diffuse Coef", &fluidSimParams.smoke_diffuse_coef, 0.01f, 0.0f, 100.0f, "%.3f",
-		                                  ImGuiSliderFlags_AlwaysClamp);
+			if (ImGui::BeginTable("##fluid_simulation_properties", 2,
+			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
+			{
+				ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+				beginSettingsProperty("Density");
+				paramsChanged |= ImGui::DragFloat("##fluid_density", &fluidSimParams.density,
+				                                  0.01f, 0.001f, 100.0f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("Velocity dissipation");
+				paramsChanged |= ImGui::DragFloat("##fluid_velocity_dissipation",
+				                                  &fluidSimParams.velocity_dissipation,
+				                                  0.001f, 0.0f, 0.2f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("Smoke dissipation");
+				paramsChanged |= ImGui::DragFloat("##fluid_smoke_dissipation",
+				                                  &fluidSimParams.smoke_dissipation,
+				                                  0.001f, 0.0f, 0.2f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
 
-		ImGui::SeparatorText("Solver");
-		paramsChanged |= ImGui::DragInt("GPU Iterations", &fluidSimParams.total_iter_gpu, 1.0f, 1, 10000, "%d",
-		                                ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::DragInt("CPU Iterations", &fluidSimParams.total_iter_cpu, 1.0f, 1, 10000, "%d",
-		                                ImGuiSliderFlags_AlwaysClamp);
-		paramsChanged |= ImGui::Checkbox("Debug", &fluidSimParams.debug);
-		paramsChanged |= ImGui::Checkbox("GPU Simulation", &fluidSimParams.gpu_sim);
+				int timeStepDenominator = fluidSimParams.dt > 0.0f
+				                              ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f)
+				                              : 120;
+				beginSettingsProperty("Time step");
+				if (ImGui::DragInt("##fluid_time_step", &timeStepDenominator, 1.0f,
+				                   1, 10000, "1 / %d", ImGuiSliderFlags_AlwaysClamp))
+				{
+					fluidSimParams.dt = 1.0f / static_cast<float>(timeStepDenominator);
+					paramsChanged = true;
+				}
+				beginSettingsProperty("Gravity");
+				paramsChanged |= ImGui::DragFloat("##fluid_gravity", &fluidSimParams.g,
+				                                  0.01f, -100.0f, 100.0f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("Wind speed");
+				paramsChanged |= ImGui::DragFloat("##fluid_wind_speed", &fluidSimParams.wind_speed,
+				                                  0.01f, -100.0f, 100.0f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("Viscosity");
+				paramsChanged |= ImGui::DragFloat("##fluid_viscosity", &fluidSimParams.viscosity,
+				                                  0.01f, 0.0f, 100.0f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("Smoke diffusion");
+				paramsChanged |= ImGui::DragFloat("##fluid_smoke_diffusion",
+				                                  &fluidSimParams.smoke_diffuse_coef,
+				                                  0.01f, 0.0f, 100.0f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				ImGui::EndTable();
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Solver###fluid_solver"))
+		{
+			if (ImGui::BeginTable("##fluid_solver_properties", 2,
+			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
+			{
+				ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+				beginSettingsProperty("SOR weight");
+				paramsChanged |= ImGui::DragFloat("##fluid_sor_weight", &fluidSimParams.weight_sor,
+				                                  0.01f, 0.0f, 2.0f, "%.3f",
+				                                  ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("GPU iterations");
+				paramsChanged |= ImGui::DragInt("##fluid_gpu_iterations",
+				                                &fluidSimParams.total_iter_gpu, 1.0f,
+				                                1, 10000, "%d", ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("CPU iterations");
+				paramsChanged |= ImGui::DragInt("##fluid_cpu_iterations",
+				                                &fluidSimParams.total_iter_cpu, 1.0f,
+				                                1, 10000, "%d", ImGuiSliderFlags_AlwaysClamp);
+				beginSettingsProperty("Debug output");
+				paramsChanged |= ImGui::Checkbox("##fluid_debug", &fluidSimParams.debug);
+				ImGui::EndTable();
+			}
+		}
 
 		if (paramsChanged && CodeCuda::C_SetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
 		{
@@ -2034,6 +2203,8 @@ class ImguiRenderer
 	bool                                                  sceneViewportHovered = false;
 	ImVec2                                                sceneViewportMin{};
 	ImVec2                                                sceneViewportMax{};
+	float                                                 inspectorPanelWidth = 0.0f;
+	bool                                                  inspectorPanelResizing = false;
 
 	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
 	std::vector<LayoutPatterns>      layoutPatternsToRecover;
