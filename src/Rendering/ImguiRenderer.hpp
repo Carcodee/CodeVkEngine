@@ -9,6 +9,209 @@
 namespace Rendering
 {
 namespace ed = ax::NodeEditor;
+
+namespace ImguiRendererUI
+{
+struct Fonts
+{
+	ImFont *body    = nullptr;
+	ImFont *caption = nullptr;
+	ImFont *heading = nullptr;
+	ImFont *strong  = nullptr;
+};
+
+inline ImVec4 WithAlpha(const ImVec4 &color, float alpha)
+{
+	return ImVec4(color.x, color.y, color.z, alpha);
+}
+
+inline ImVec4 AccentColor()
+{
+	return ImVec4(1.00f, 0.32f, 0.08f, 1.00f);
+}
+
+inline ImVec4 SuccessColor()
+{
+	return ImVec4(0.78f, 0.82f, 0.74f, 1.00f);
+}
+
+inline ImVec4 SelectionColor()
+{
+	return ImVec4(0.94f, 0.93f, 0.91f, 1.00f);
+}
+
+inline ImVec4 InkColor()
+{
+	return ImVec4(0.075f, 0.070f, 0.072f, 1.00f);
+}
+
+inline ImVec4 RaisedSurfaceColor()
+{
+	return ImVec4(0.095f, 0.087f, 0.088f, 0.92f);
+}
+
+inline Fonts ConfigureFonts(const std::string &resourcesPath)
+{
+	const std::string fontsPath  = resourcesPath + "\\Fonts\\Open_Sans\\static\\";
+	const std::string regularTtf = fontsPath + "OpenSans-Regular.ttf";
+	const std::string boldTtf    = fontsPath + "OpenSans-Bold.ttf";
+
+	ImGuiIO &io = ImGui::GetIO();
+	io.Fonts->Clear();
+
+	Fonts fonts{};
+	if (std::filesystem::exists(regularTtf))
+	{
+		fonts.body    = io.Fonts->AddFontFromFileTTF(regularTtf.c_str(), 16.0f);
+		fonts.caption = io.Fonts->AddFontFromFileTTF(regularTtf.c_str(), 13.0f);
+	}
+	if (!fonts.body)
+	{
+		fonts.body = io.Fonts->AddFontDefault();
+	}
+	if (!fonts.caption)
+	{
+		fonts.caption = fonts.body;
+	}
+
+	if (std::filesystem::exists(boldTtf))
+	{
+		fonts.heading = io.Fonts->AddFontFromFileTTF(boldTtf.c_str(), 22.0f);
+		fonts.strong  = io.Fonts->AddFontFromFileTTF(boldTtf.c_str(), 16.0f);
+	}
+	if (!fonts.heading)
+	{
+		fonts.heading = fonts.body;
+	}
+	if (!fonts.strong)
+	{
+		fonts.strong = fonts.body;
+	}
+
+	io.FontDefault = fonts.body;
+	io.Fonts->Build();
+	return fonts;
+}
+
+inline void ApplyModernTheme()
+{
+	ImGuiStyle &style = ImGui::GetStyle();
+	ImGui::StyleColorsDark(&style);
+
+	style.WindowPadding             = ImVec2(9.0f, 9.0f);
+	style.FramePadding              = ImVec2(9.0f, 6.0f);
+	style.CellPadding               = ImVec2(9.0f, 7.0f);
+	style.ItemSpacing               = ImVec2(8.0f, 7.0f);
+	style.ItemInnerSpacing          = ImVec2(7.0f, 5.0f);
+	style.TouchExtraPadding         = ImVec2(0.0f, 0.0f);
+	style.IndentSpacing             = 18.0f;
+	style.ScrollbarSize             = 9.0f;
+	style.GrabMinSize               = 9.0f;
+	style.WindowBorderSize          = 0.0f;
+	style.ChildBorderSize           = 0.0f;
+	style.PopupBorderSize           = 1.0f;
+	style.FrameBorderSize           = 0.0f;
+	style.TabBorderSize             = 0.0f;
+	style.WindowRounding            = 12.0f;
+	style.ChildRounding             = 9.0f;
+	style.FrameRounding             = 7.0f;
+	style.PopupRounding             = 9.0f;
+	style.ScrollbarRounding         = 10.0f;
+	style.GrabRounding              = 8.0f;
+	style.TabRounding               = 7.0f;
+	style.SeparatorTextBorderSize   = 0.0f;
+	style.SeparatorTextAlign        = ImVec2(0.0f, 0.5f);
+	style.SeparatorTextPadding      = ImVec2(0.0f, 11.0f);
+	style.SelectableTextAlign       = ImVec2(0.0f, 0.5f);
+	style.WindowTitleAlign          = ImVec2(0.0f, 0.5f);
+	style.WindowMenuButtonPosition  = ImGuiDir_None;
+	style.ColorButtonPosition       = ImGuiDir_Right;
+
+	const ImVec4 accent       = AccentColor();
+	const ImVec4 text         = ImVec4(0.90f, 0.89f, 0.88f, 1.00f);
+	const ImVec4 textMuted    = ImVec4(0.50f, 0.47f, 0.47f, 1.00f);
+	const ImVec4 canvas       = ImVec4(0.055f, 0.050f, 0.052f, 0.88f);
+	const ImVec4 surface      = ImVec4(0.045f, 0.042f, 0.045f, 0.91f);
+	const ImVec4 surfaceHigh  = RaisedSurfaceColor();
+	const ImVec4 interaction  = ImVec4(0.145f, 0.132f, 0.132f, 1.00f);
+	const ImVec4 border       = ImVec4(0.28f, 0.24f, 0.23f, 0.38f);
+	ImVec4       *colors      = style.Colors;
+
+	colors[ImGuiCol_Text]                 = text;
+	colors[ImGuiCol_TextDisabled]         = textMuted;
+	colors[ImGuiCol_WindowBg]             = canvas;
+	colors[ImGuiCol_ChildBg]              = surface;
+	colors[ImGuiCol_PopupBg]              = surface;
+	colors[ImGuiCol_Border]               = border;
+	colors[ImGuiCol_BorderShadow]         = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	colors[ImGuiCol_FrameBg]              = surfaceHigh;
+	colors[ImGuiCol_FrameBgHovered]       = interaction;
+	colors[ImGuiCol_FrameBgActive]        = WithAlpha(accent, 0.22f);
+	colors[ImGuiCol_TitleBg]              = surface;
+	colors[ImGuiCol_TitleBgActive]        = surface;
+	colors[ImGuiCol_TitleBgCollapsed]     = surface;
+	colors[ImGuiCol_MenuBarBg]            = surface;
+	colors[ImGuiCol_ScrollbarBg]          = ImVec4(0.03f, 0.028f, 0.03f, 0.35f);
+	colors[ImGuiCol_ScrollbarGrab]        = ImVec4(0.28f, 0.25f, 0.25f, 0.82f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.34f, 0.32f, 0.92f);
+	colors[ImGuiCol_ScrollbarGrabActive]  = WithAlpha(accent, 0.78f);
+	colors[ImGuiCol_CheckMark]            = accent;
+	colors[ImGuiCol_SliderGrab]           = WithAlpha(accent, 0.78f);
+	colors[ImGuiCol_SliderGrabActive]     = accent;
+	colors[ImGuiCol_Button]               = surfaceHigh;
+	colors[ImGuiCol_ButtonHovered]        = interaction;
+	colors[ImGuiCol_ButtonActive]         = WithAlpha(accent, 0.26f);
+	colors[ImGuiCol_Header]               = surfaceHigh;
+	colors[ImGuiCol_HeaderHovered]        = interaction;
+	colors[ImGuiCol_HeaderActive]         = WithAlpha(accent, 0.24f);
+	colors[ImGuiCol_Separator]            = border;
+	colors[ImGuiCol_SeparatorHovered]     = WithAlpha(accent, 0.65f);
+	colors[ImGuiCol_SeparatorActive]      = accent;
+	colors[ImGuiCol_ResizeGrip]           = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	colors[ImGuiCol_ResizeGripHovered]    = WithAlpha(accent, 0.65f);
+	colors[ImGuiCol_ResizeGripActive]     = accent;
+	colors[ImGuiCol_Tab]                  = surface;
+	colors[ImGuiCol_TabHovered]           = interaction;
+	colors[ImGuiCol_TabSelected]          = WithAlpha(accent, 0.22f);
+	colors[ImGuiCol_TabDimmed]            = canvas;
+	colors[ImGuiCol_TabDimmedSelected]    = surfaceHigh;
+	colors[ImGuiCol_PlotLines]            = accent;
+	colors[ImGuiCol_PlotLinesHovered]     = ImVec4(1.00f, 0.58f, 0.30f, 1.00f);
+	colors[ImGuiCol_PlotHistogram]        = accent;
+	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.58f, 0.30f, 1.00f);
+	colors[ImGuiCol_TableHeaderBg]        = surfaceHigh;
+	colors[ImGuiCol_TableBorderStrong]    = border;
+	colors[ImGuiCol_TableBorderLight]     = WithAlpha(border, 0.50f);
+	colors[ImGuiCol_TableRowBg]           = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	colors[ImGuiCol_TableRowBgAlt]        = ImVec4(1.0f, 1.0f, 1.0f, 0.025f);
+	colors[ImGuiCol_TextSelectedBg]       = WithAlpha(accent, 0.30f);
+	colors[ImGuiCol_NavHighlight]         = accent;
+	colors[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.01f, 0.015f, 0.025f, 0.76f);
+}
+
+inline bool NavigationItem(const char *label, bool selected)
+{
+	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.08f, 0.5f));
+	ImGui::PushStyleColor(ImGuiCol_Text, selected ? InkColor() : ImGui::GetStyleColorVec4(ImGuiCol_Text));
+	ImGui::PushStyleColor(ImGuiCol_Button, selected ? SelectionColor() : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, selected ? SelectionColor() : RaisedSurfaceColor());
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+	                      selected ? ImVec4(0.83f, 0.81f, 0.79f, 1.0f) : WithAlpha(AccentColor(), 0.20f));
+	const bool pressed = ImGui::Button(label, ImVec2(ImGui::GetContentRegionAvail().x, 34.0f));
+	ImGui::PopStyleColor(4);
+	ImGui::PopStyleVar();
+
+	if (selected)
+	{
+		const ImVec2 min = ImGui::GetItemRectMin();
+		const ImVec2 max = ImGui::GetItemRectMax();
+		ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(max.x - 14.0f, (min.y + max.y) * 0.5f),
+		                                             3.0f, ImGui::GetColorU32(AccentColor()));
+	}
+	return pressed;
+}
+}        // namespace ImguiRendererUI
+
 class ImguiRenderer
 {
   public:
@@ -94,6 +297,7 @@ class ImguiRenderer
 		initInfo.PhysicalDevice            = core->physicalDevice;
 		initInfo.Device                    = core->logicalDevice.get();
 		initInfo.Queue                     = core->queueWorkerManager->GetWorkerQueue("UI")->workerQueue;
+		initInfo.QueueFamily               = core->queueWorkerManager->GetWorkerQueue("UI")->familyIndex;
 		initInfo.DescriptorPool            = descriptorAllocator.pool.get();
 		initInfo.MinImageCount             = 3;
 		initInfo.ImageCount                = 3;
@@ -101,8 +305,8 @@ class ImguiRenderer
 
 		initInfo.PipelineRenderingCreateInfo                         = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
 		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount    = 1;
-		VkFormat swapchainFormat                                     = static_cast<VkFormat>(core->swapchainRef->GetFormat());
-		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &swapchainFormat;
+		imguiSwapchainFormat                                         = static_cast<VkFormat>(core->swapchainRef->GetFormat());
+		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &imguiSwapchainFormat;
 
 		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -122,20 +326,9 @@ class ImguiRenderer
 	ed::EditorContext *m_Context = nullptr;
 	void               StartNodeEditor()
 	{
-		auto &io = ImGui::GetIO();
-
-		ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-
-		ImGui::Separator();
-
 		ed::SetCurrentEditor(m_Context);
-
-		static bool firstFrame = true;
 		nodeEditor.Init(renderGraph, windowProvider);
 		nodeEditor.Draw();
-
-		firstFrame = false;
-
 		ed::SetCurrentEditor(nullptr);
 	}
 
@@ -173,69 +366,248 @@ class ImguiRenderer
 		imageViewsToRecover.clear();
 		layoutPatternsToRecover.clear();
 	}
-	template <typename DrawFn>
-	void RenderDebuggerTab(const char *title, DrawFn drawFn)
+	enum class DebuggerPage
 	{
-		if (ImGui::BeginTabItem(title))
+		RenderGraph,
+		Engine,
+		Textures,
+		FluidSimulation,
+		ClusterRenderer,
+		RadianceCascades,
+		GaussianSplatting,
+		Profiler
+	};
+
+	struct DebuggerPageInfo
+	{
+		const char *title;
+		const char *description;
+	};
+
+	DebuggerPageInfo GetDebuggerPageInfo() const
+	{
+		switch (activePage)
 		{
-			if (ImGui::BeginChild(title, ImVec2(0.0f, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar))
+			case DebuggerPage::RenderGraph:
+				return {"Render graph", "Inspect passes, resources, and node connections."};
+			case DebuggerPage::Engine:
+				return {"Engine overview", "Queues, execution order, and runtime scheduling."};
+			case DebuggerPage::Textures:
+				return {"Texture inspector", "Browse images currently registered with the renderer."};
+			case DebuggerPage::FluidSimulation:
+				return {"Fluid simulation", "Control simulation inputs, tools, emitters, and solver parameters."};
+			case DebuggerPage::ClusterRenderer:
+				return {"Cluster renderer", "Lighting, culling, camera, and render-node controls."};
+			case DebuggerPage::RadianceCascades:
+				return {"Radiance cascades", "Configure cascades, materials, lighting, and painting."};
+			case DebuggerPage::GaussianSplatting:
+				return {"Gaussian splatting", "Inspect splat data, scale, camera, and sort state."};
+			case DebuggerPage::Profiler:
+				return {"Performance", "Review CPU and GPU timing for the current frame."};
+		}
+		return {"Engine", "Runtime tools and diagnostics."};
+	}
+
+	void RenderApplicationHeader()
+	{
+		const ImGuiIO &io = ImGui::GetIO();
+		if (ImGui::BeginChild("##application_header", ImVec2(0.0f, 54.0f), ImGuiChildFlags_None,
+		                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			if (ImGui::BeginTable("##application_header_layout", 4,
+			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings |
+			                          ImGuiTableFlags_NoPadOuterX))
 			{
-				drawFn();
+				ImGui::TableSetupColumn("Workspace", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+				ImGui::TableSetupColumn("Frame rate", ImGuiTableColumnFlags_WidthFixed, 112.0f);
+				ImGui::TableSetupColumn("Frame time", ImGuiTableColumnFlags_WidthFixed, 112.0f);
+				ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 76.0f);
+				ImGui::TableNextRow();
+
+				ImGui::TableSetColumnIndex(0);
+				ImGui::PushFont(fonts.strong);
+				ImGui::TextUnformatted("CODEVK");
+				ImGui::PopFont();
+				ImGui::SameLine();
+				ImGui::TextColored(ImguiRendererUI::AccentColor(), "RENDERER");
+				ImGui::PushFont(fonts.caption);
+				ImGui::TextDisabled("ENGINE TOOLS");
+				ImGui::PopFont();
+
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushFont(fonts.caption);
+				ImGui::TextDisabled("FRAME RATE");
+				ImGui::PopFont();
+				ImGui::PushFont(fonts.strong);
+				ImGui::Text("%.0f FPS", io.Framerate);
+				ImGui::PopFont();
+
+				ImGui::TableSetColumnIndex(2);
+				ImGui::PushFont(fonts.caption);
+				ImGui::TextDisabled("FRAME TIME");
+				ImGui::PopFont();
+				ImGui::PushFont(fonts.strong);
+				ImGui::Text("%.2f ms", io.Framerate > 0.0f ? 1000.0f / io.Framerate : 0.0f);
+				ImGui::PopFont();
+
+				ImGui::TableSetColumnIndex(3);
+				ImGui::PushFont(fonts.caption);
+				ImGui::TextDisabled("STATUS");
+				ImGui::PopFont();
+				ImGui::TextColored(ImguiRendererUI::AccentColor(), "ACTIVE");
+				ImGui::EndTable();
 			}
-			ImGui::EndChild();
-			ImGui::EndTabItem();
+
+			ImGui::SetCursorScreenPos(ImGui::GetWindowPos());
+			ImGui::InvisibleButton("##window_drag_area", ImGui::GetWindowSize(),
+			                       ImGuiButtonFlags_MouseButtonLeft);
+			draggingDebuggerWindow = ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
+		}
+		ImGui::EndChild();
+	}
+
+	void RenderSidebar()
+	{
+		auto navigate = [this](const char *label, DebuggerPage page) {
+			if (ImguiRendererUI::NavigationItem(label, activePage == page))
+			{
+				activePage = page;
+			}
+		};
+
+		ImGui::PushFont(fonts.caption);
+		ImGui::TextDisabled("WORKSPACE");
+		ImGui::PopFont();
+		navigate("Render graph", DebuggerPage::RenderGraph);
+		navigate("Engine overview", DebuggerPage::Engine);
+		navigate("Texture inspector", DebuggerPage::Textures);
+		navigate("Fluid simulation", DebuggerPage::FluidSimulation);
+
+		if (clusterRenderer || flatRenderer || gsRenderer)
+		{
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::PushFont(fonts.caption);
+			ImGui::TextDisabled("RENDERERS");
+			ImGui::PopFont();
+		}
+		if (clusterRenderer)
+		{
+			navigate("Cluster lighting", DebuggerPage::ClusterRenderer);
+		}
+		if (flatRenderer)
+		{
+			navigate("Radiance cascades", DebuggerPage::RadianceCascades);
+		}
+		if (gsRenderer)
+		{
+			navigate("Gaussian splatting", DebuggerPage::GaussianSplatting);
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+		ImGui::PushFont(fonts.caption);
+		ImGui::TextDisabled("DIAGNOSTICS");
+		ImGui::PopFont();
+		navigate("Performance", DebuggerPage::Profiler);
+	}
+
+	void RenderActivePage()
+	{
+		switch (activePage)
+		{
+			case DebuggerPage::RenderGraph:
+				StartNodeEditor();
+				break;
+			case DebuggerPage::Engine:
+				DisplayEngineInfo();
+				break;
+			case DebuggerPage::Textures:
+				DisplayAllTextures();
+				break;
+			case DebuggerPage::FluidSimulation:
+				FluidSimInfo();
+				break;
+			case DebuggerPage::ClusterRenderer:
+				if (clusterRenderer)
+				{
+					ClusterRendererInfo();
+				}
+				break;
+			case DebuggerPage::RadianceCascades:
+				if (flatRenderer)
+				{
+					RCascadesInfo();
+				}
+				break;
+			case DebuggerPage::GaussianSplatting:
+				if (gsRenderer)
+				{
+					GSRendererInfo();
+				}
+				break;
+			case DebuggerPage::Profiler:
+				RenderGraphProfiler();
+				break;
 		}
 	}
+
 	void RenderDebuggerWindow()
 	{
 		ImGuiIO &io = ImGui::GetIO();
-		ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * 0.45f, io.DisplaySize.y * 0.9f), ImGuiCond_FirstUseEver);
-		if (ImGui::Begin("Engine Debugger"))
+		const ImGuiViewport *mainViewport = ImGui::GetMainViewport();
+		if (draggingDebuggerWindow && ImGui::IsMouseDown(ImGuiMouseButton_Left))
 		{
-			if (ImGui::BeginTabBar("engine_debugger_tabs", ImGuiTabBarFlags_Reorderable))
+			debuggerWindowPosition.x += io.MouseDelta.x;
+			debuggerWindowPosition.y += io.MouseDelta.y;
+			ImGui::SetNextWindowPos(debuggerWindowPosition, ImGuiCond_Always);
+		}
+		else if (!debuggerWindowPositionInitialized)
+		{
+			ImGui::SetNextWindowPos(ImVec2(mainViewport->WorkPos.x + mainViewport->WorkSize.x * 0.5f,
+			                                 mainViewport->WorkPos.y + mainViewport->WorkSize.y * 0.5f),
+			                        ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+		}
+		ImGui::SetNextWindowSize(ImVec2(mainViewport->WorkSize.x * 0.78f, mainViewport->WorkSize.y * 0.88f),
+		                         ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowBgAlpha(0.72f);
+
+		if (ImGui::Begin("CodeVK Engine Console", nullptr,
+		                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse))
+		{
+			debuggerWindowPosition            = ImGui::GetWindowPos();
+			debuggerWindowPositionInitialized = true;
+			RenderApplicationHeader();
+			ImGui::Spacing();
+
+			const float sidebarWidth = 190.0f;
+			if (ImGui::BeginChild("##navigation", ImVec2(sidebarWidth, 0.0f), ImGuiChildFlags_Borders))
 			{
-				RenderDebuggerTab("Node Editor", [this]() {
-					StartNodeEditor();
-				});
-
-				RenderDebuggerTab("Engine Info", [this]() {
-					DisplayEngineInfo();
-				});
-
-				RenderDebuggerTab("Images Loaded", [this]() {
-					DisplayAllTextures();
-				});
-
-				if (clusterRenderer)
-				{
-					RenderDebuggerTab("Cluster Renderer", [this]() {
-						ClusterRendererInfo();
-					});
-				}
-				if (flatRenderer)
-				{
-					RenderDebuggerTab("Radiance Cascades", [this]() {
-						RCascadesInfo();
-					});
-				}
-
-				RenderDebuggerTab("Fluid Simulation Info", [this]() {
-					FluidSimInfo();
-				});
-
-				if (gsRenderer)
-				{
-					RenderDebuggerTab("GS Renderer", [this]() {
-						GSRendererInfo();
-					});
-				}
-
-				RenderDebuggerTab("Profiler", [this]() {
-					RenderGraphProfiler();
-				});
-
-				ImGui::EndTabBar();
+				RenderSidebar();
 			}
+			ImGui::EndChild();
+
+			ImGui::SameLine();
+			if (ImGui::BeginChild("##workspace", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders))
+			{
+				const DebuggerPageInfo pageInfo = GetDebuggerPageInfo();
+				ImGui::PushFont(fonts.heading);
+				ImGui::TextUnformatted(pageInfo.title);
+				ImGui::PopFont();
+				ImGui::TextDisabled("%s", pageInfo.description);
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				if (ImGui::BeginChild("##page_content", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None,
+				                      ImGuiWindowFlags_HorizontalScrollbar))
+				{
+					RenderActivePage();
+				}
+				ImGui::EndChild();
+			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 	}
@@ -260,7 +632,7 @@ class ImguiRenderer
 		bool        paramsChanged        = false;
 		static bool simulationActionFail = false;
 		auto        runSimulationAction  = [](CodeCuda::C_Res result) {
-            simulationActionFail = result != CodeCuda::C_Res::OK;
+			simulationActionFail = result != CodeCuda::C_Res::OK;
 		};
 
 		ImGui::SeparatorText("Controls");
@@ -275,21 +647,29 @@ class ImguiRenderer
 		static std::vector<std::string> imagePaths;
 		static std::string              selectedImagePath;
 		static char                     searchBuffer[128] = {};
+		static bool                     imagesScanned     = false;
+		static bool                     imageLoadFailed   = false;
 
-		if (imagePaths.empty())
+		if (!imagesScanned)
 		{
-			for (const auto &dir : std::filesystem::directory_iterator(resourcesPath))
+			std::error_code scanError;
+			if (std::filesystem::exists(resourcesPath, scanError))
 			{
-				if (dir.is_regular_file())
+				for (const auto &dir : std::filesystem::directory_iterator(resourcesPath, scanError))
 				{
-					imagePaths.emplace_back(dir.path().string());
+					if (scanError)
+					{
+						break;
+					}
+					if (dir.is_regular_file())
+					{
+						imagePaths.emplace_back(dir.path().string());
+					}
 				}
 			}
+			std::sort(imagePaths.begin(), imagePaths.end());
+			imagesScanned = true;
 		}
-
-		// ------------------------------------------------------------
-		// Images Section
-		// ------------------------------------------------------------
 
 		ImGui::SeparatorText("Images");
 
@@ -317,7 +697,6 @@ class ImguiRenderer
 				const std::string filename =
 				    std::filesystem::path(path).filename().string();
 
-				// Search filter
 				if (searchBuffer[0] != '\0')
 				{
 					if (filename.find(searchBuffer) == std::string::npos)
@@ -328,7 +707,6 @@ class ImguiRenderer
 
 				const bool selected = selectedImagePath == path;
 
-				// Full-width selectable row
 				const float rowHeight = 32.0f;
 
 				if (ImGui::Selectable(
@@ -340,7 +718,6 @@ class ImguiRenderer
 					selectedImagePath = path;
 				}
 
-				// Render contents over the selectable row
 				ImGui::SameLine();
 
 				const ImVec2 rowMin = ImGui::GetItemRectMin();
@@ -352,13 +729,11 @@ class ImguiRenderer
 
 				ImGui::TextUnformatted(filename.c_str());
 
-				// Tooltip with full path
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::SetTooltip("%s", path.c_str());
 				}
 
-				// Load button aligned right
 				const float buttonWidth = 60.0f;
 
 				ImGui::SetCursorScreenPos(
@@ -374,26 +749,35 @@ class ImguiRenderer
 					selectedImagePath = path;
 
 					stbi_uc *pixelsData = stbi_load(selectedImagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-					void    *data       = (void *) pixelsData;
-					image_pixels.resize(width * height);
-					solid_mask.resize(width * height);
-					for (int y = 0; y < height; ++y)
+					imageLoadFailed     = pixelsData == nullptr;
+					if (!pixelsData)
 					{
-						for (int x = 0; x < width; ++x)
-						{
-							const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
-							const size_t byteIndex  = pixelIndex * 4;
-
-							image_pixels[y * width + x] = glm::vec4(
-							    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
-							    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
-							    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
-							    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
-
-							solid_mask[y * width + x] = image_pixels[y * width + x].w > 0.5 ? 1 : 0;
-						}
+						image_pixels.clear();
+						solid_mask.clear();
 					}
-					free(data);
+					else
+					{
+						image_pixels.resize(static_cast<size_t>(width) * height);
+						solid_mask.resize(static_cast<size_t>(width) * height);
+						for (int y = 0; y < height; ++y)
+						{
+							for (int x = 0; x < width; ++x)
+							{
+								const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
+								const size_t byteIndex  = pixelIndex * 4;
+
+								image_pixels[static_cast<size_t>(y) * width + x] = glm::vec4(
+								    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
+								    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
+								    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
+								    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
+
+								solid_mask[static_cast<size_t>(y) * width + x] =
+								    image_pixels[static_cast<size_t>(y) * width + x].w > 0.5f ? 1 : 0;
+							}
+						}
+						stbi_image_free(pixelsData);
+					}
 				}
 
 				ImGui::PopID();
@@ -402,26 +786,22 @@ class ImguiRenderer
 
 		ImGui::EndChild();
 
-		// ------------------------------------------------------------
-		// Selected image info
-		// ------------------------------------------------------------
-		
 		if (!selectedImagePath.empty())
 		{
 			ImGui::Spacing();
-
 			ImGui::TextDisabled("Selected:");
-
 			ImGui::SameLine();
-
 			ImGui::TextUnformatted(
 			    std::filesystem::path(selectedImagePath)
 			        .filename()
 			        .string()
 			        .c_str());
 		}
-		
-		ImGui::SameLine();
+		if (imageLoadFailed)
+		{
+			ImGui::TextColored(ImVec4(0.95f, 0.38f, 0.42f, 1.0f), "The selected image could not be loaded.");
+		}
+
 		if (!image_pixels.empty())
 		{
 			if (ImGui::Button("Load Image as Smoke"))
@@ -432,7 +812,8 @@ class ImguiRenderer
 		}
 		if (!solid_mask.empty())
 		{
-			if (ImGui::Button("Use solid Mask"))
+			ImGui::SameLine();
+			if (ImGui::Button("Use Solid Mask"))
 			{
 				runSimulationAction(CodeCuda::C_MapSolidMask(width, height,
 				                                             solid_mask.data()));
@@ -690,69 +1071,8 @@ class ImguiRenderer
 
 	void SetStyle()
 	{
-		std::string fontPath = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\Fonts";
-
-		std::string lightOpenSans   = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\Fonts\\Open_Sans\\static\\OpenSans-Light.ttf";
-		std::string regularOpenSans = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\Fonts\\Open_Sans\\static\\OpenSans-Regular.ttf";
-		std::string boldOpenSans    = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\Fonts\\Open_Sans\\static\\OpenSans-Bold.ttf";
-		ImGuiIO    &io              = ImGui::GetIO();
-
-		io.Fonts->Clear();
-		io.Fonts->AddFontFromFileTTF(lightOpenSans.c_str(), 16);
-		io.Fonts->AddFontFromFileTTF(regularOpenSans.c_str(), 16);
-		io.Fonts->AddFontFromFileTTF(lightOpenSans.c_str(), 32);
-		io.Fonts->AddFontFromFileTTF(regularOpenSans.c_str(), 11);
-		io.Fonts->AddFontFromFileTTF(boldOpenSans.c_str(), 11);
-		io.Fonts->Build();
-
-		ImGuiStyle *style = &ImGui::GetStyle();
-
-		style->WindowPadding     = ImVec2(15, 15);
-		style->WindowRounding    = 5.0f;
-		style->FramePadding      = ImVec2(5, 5);
-		style->FrameRounding     = 4.0f;
-		style->ItemSpacing       = ImVec2(12, 8);
-		style->ItemInnerSpacing  = ImVec2(8, 6);
-		style->IndentSpacing     = 25.0f;
-		style->ScrollbarSize     = 15.0f;
-		style->ScrollbarRounding = 9.0f;
-		style->GrabMinSize       = 5.0f;
-		style->GrabRounding      = 3.0f;
-
-		style->Colors[ImGuiCol_Text]                 = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
-		style->Colors[ImGuiCol_TextDisabled]         = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-		style->Colors[ImGuiCol_WindowBg]             = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-		style->Colors[ImGuiCol_PopupBg]              = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
-		style->Colors[ImGuiCol_Border]               = ImVec4(0.80f, 0.80f, 0.83f, 0.88f);
-		style->Colors[ImGuiCol_BorderShadow]         = ImVec4(0.92f, 0.91f, 0.88f, 0.00f);
-		style->Colors[ImGuiCol_FrameBg]              = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-		style->Colors[ImGuiCol_FrameBgHovered]       = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-		style->Colors[ImGuiCol_FrameBgActive]        = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-		style->Colors[ImGuiCol_TitleBg]              = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-		style->Colors[ImGuiCol_TitleBgCollapsed]     = ImVec4(1.00f, 0.98f, 0.95f, 0.75f);
-		style->Colors[ImGuiCol_TitleBgActive]        = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
-		style->Colors[ImGuiCol_MenuBarBg]            = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-		style->Colors[ImGuiCol_ScrollbarBg]          = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-		style->Colors[ImGuiCol_ScrollbarGrab]        = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-		style->Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-		style->Colors[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-		style->Colors[ImGuiCol_CheckMark]            = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-		style->Colors[ImGuiCol_SliderGrab]           = ImVec4(0.80f, 0.80f, 0.83f, 0.31f);
-		style->Colors[ImGuiCol_SliderGrabActive]     = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-		style->Colors[ImGuiCol_Button]               = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-		style->Colors[ImGuiCol_ButtonHovered]        = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-		style->Colors[ImGuiCol_ButtonActive]         = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-		style->Colors[ImGuiCol_Header]               = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-		style->Colors[ImGuiCol_HeaderHovered]        = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-		style->Colors[ImGuiCol_HeaderActive]         = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-		style->Colors[ImGuiCol_ResizeGrip]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-		style->Colors[ImGuiCol_ResizeGripHovered]    = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
-		style->Colors[ImGuiCol_ResizeGripActive]     = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-		style->Colors[ImGuiCol_PlotLines]            = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
-		style->Colors[ImGuiCol_PlotLinesHovered]     = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-		style->Colors[ImGuiCol_PlotHistogram]        = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
-		style->Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-		style->Colors[ImGuiCol_TextSelectedBg]       = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
+		ImguiRendererUI::ApplyModernTheme();
+		fonts = ImguiRendererUI::ConfigureFonts(SYSTEMS::OS::GetInstance()->GetEngineResourcesPath());
 	}
 	void DisplayGeneralEngineInfo()
 	{
@@ -760,14 +1080,59 @@ class ImguiRenderer
 		DisplayAllTextures();
 	}
 
+	void RenderMetricCard(const char *id, const char *label, const std::string &value)
+	{
+		ImGui::PushID(id);
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImguiRendererUI::RaisedSurfaceColor());
+		if (ImGui::BeginChild("##metric", ImVec2(0.0f, 62.0f), ImGuiChildFlags_None,
+		                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			ImGui::PushFont(fonts.caption);
+			ImGui::TextDisabled("%s", label);
+			ImGui::PopFont();
+			ImGui::PushFont(fonts.strong);
+			ImGui::TextUnformatted(value.c_str());
+			ImGui::PopFont();
+		}
+		ImGui::EndChild();
+		ImGui::PopStyleColor();
+		ImGui::PopID();
+	}
+
 	void DisplayEngineInfo()
 	{
 		auto     *queueWorkerManager = core->queueWorkerManager.get();
 		const int engineQueueCount   = static_cast<int>(queueWorkerManager->workersQueues.size());
-		ImGui::Text("Engine queues: %d", engineQueueCount);
+		const int renderNodeCount    = static_cast<int>(renderGraph->sortedByDepNodes.size());
+		const int queueBatchCount    = static_cast<int>(renderGraph->sortedQueueBatches.size());
+		int       activeNodeCount    = 0;
+		for (const auto *node : renderGraph->sortedByDepNodes)
+		{
+			if (node && node->active)
+			{
+				activeNodeCount++;
+			}
+		}
+
+		if (ImGui::BeginTable("engine_summary", 4,
+		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+		{
+			ImGui::TableNextColumn();
+			RenderMetricCard("queues", "QUEUES", std::to_string(engineQueueCount));
+			ImGui::TableNextColumn();
+			RenderMetricCard("passes", "RENDER PASSES", std::to_string(renderNodeCount));
+			ImGui::TableNextColumn();
+			RenderMetricCard("active", "ACTIVE PASSES", std::to_string(activeNodeCount));
+			ImGui::TableNextColumn();
+			RenderMetricCard("batches", "QUEUE BATCHES", std::to_string(queueBatchCount));
+			ImGui::EndTable();
+		}
 
 		ImGui::SeparatorText("Queue Members");
-		if (ImGui::BeginTable("engine_queue_members", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+		if (ImGui::BeginTable("engine_queue_members", 8,
+		                      ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH |
+		                          ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable |
+		                          ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit))
 		{
 			ImGui::TableSetupColumn("Name");
 			ImGui::TableSetupColumn("Family");
@@ -804,10 +1169,32 @@ class ImguiRenderer
 		}
 
 		ImGui::SeparatorText("Sorted Node Order");
-		for (int i = 0; i < renderGraph->sortedByDepNodes.size(); ++i)
+		if (ImGui::BeginTable("sorted_node_order", 4,
+		                      ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH |
+		                          ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
 		{
-			auto *node = renderGraph->sortedByDepNodes[i];
-			ImGui::Text("%02d. %s | queue: %s | active: %s", i, node->passName.c_str(), node->workerQueueName.c_str(), node->active ? "true" : "false");
+			ImGui::TableSetupColumn("Order", ImGuiTableColumnFlags_WidthFixed, 64.0f);
+			ImGui::TableSetupColumn("Pass", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("Queue", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthFixed, 84.0f);
+			ImGui::TableHeadersRow();
+			for (int i = 0; i < renderGraph->sortedByDepNodes.size(); ++i)
+			{
+				auto *node = renderGraph->sortedByDepNodes[i];
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("%02d", i);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextUnformatted(node ? node->passName.c_str() : "Unavailable");
+				ImGui::TableSetColumnIndex(2);
+				ImGui::TextUnformatted(node ? node->workerQueueName.c_str() : "-");
+				ImGui::TableSetColumnIndex(3);
+				const bool nodeActive = node && node->active;
+				ImGui::TextColored(nodeActive ? ImguiRendererUI::SuccessColor()
+				                              : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled),
+				                   "%s", nodeActive ? "Active" : "Inactive");
+			}
+			ImGui::EndTable();
 		}
 
 		DisplayRenderGraphDag();
@@ -1033,21 +1420,21 @@ class ImguiRenderer
 		            emptyBatchCount);
 
 		const ImU32 queueColors[] = {
-		    IM_COL32(72, 113, 153, 255),
-		    IM_COL32(92, 133, 96, 255),
-		    IM_COL32(153, 117, 72, 255),
-		    IM_COL32(126, 96, 153, 255),
-		    IM_COL32(153, 82, 88, 255),
-		    IM_COL32(74, 138, 132, 255),
+		    IM_COL32(119, 69, 48, 255),
+		    IM_COL32(93, 85, 69, 255),
+		    IM_COL32(88, 70, 77, 255),
+		    IM_COL32(74, 83, 82, 255),
+		    IM_COL32(112, 82, 52, 255),
+		    IM_COL32(96, 72, 65, 255),
 		};
-		const ImU32 laneFill      = IM_COL32(24, 24, 29, 255);
-		const ImU32 laneBorder    = IM_COL32(72, 74, 84, 180);
-		const ImU32 selectedColor = IM_COL32(110, 185, 230, 255);
-		const ImU32 nodeFill      = IM_COL32(30, 35, 42, 255);
-		const ImU32 inactiveFill  = IM_COL32(50, 43, 48, 255);
-		const ImU32 emptyFill     = IM_COL32(48, 44, 37, 255);
-		const ImU32 textColor     = IM_COL32(232, 232, 238, 255);
-		const ImU32 mutedColor    = IM_COL32(175, 178, 188, 255);
+		const ImU32 laneFill      = IM_COL32(18, 17, 18, 245);
+		const ImU32 laneBorder    = IM_COL32(84, 75, 73, 125);
+		const ImU32 selectedColor = IM_COL32(255, 82, 20, 255);
+		const ImU32 nodeFill      = IM_COL32(36, 32, 33, 255);
+		const ImU32 inactiveFill  = IM_COL32(49, 40, 41, 255);
+		const ImU32 emptyFill     = IM_COL32(47, 41, 34, 255);
+		const ImU32 textColor     = IM_COL32(235, 231, 228, 255);
+		const ImU32 mutedColor    = IM_COL32(151, 143, 141, 255);
 
 		const float  labelWidth  = 150.0f;
 		const float  laneHeight  = 94.0f;
@@ -1114,7 +1501,7 @@ class ImguiRenderer
 					ImVec2           chipMin(nodeX, minPos.y + 41.0f);
 					ImVec2           chipMax(nodeX + chipWidth, chipMin.y + nodeHeight);
 					drawList->AddRectFilled(chipMin, chipMax, node && node->active ? nodeFill : inactiveFill, 4.0f);
-					drawList->AddRect(chipMin, chipMax, IM_COL32(120, 124, 138, 160), 4.0f);
+					drawList->AddRect(chipMin, chipMax, IM_COL32(118, 104, 101, 130), 4.0f);
 					std::string nodeLabel = node ? node->passName : "null";
 					if (nodeLabel.size() > 10)
 					{
@@ -1449,18 +1836,18 @@ class ImguiRenderer
 	{
 		AddAllImages();
 		static char textBuff[256] = "";
-		ImGui::InputText("Filter: ", textBuff, 256);
+		ImGui::SetNextItemWidth(-1.0f);
+		ImGui::InputTextWithHint("##texture_filter", "Filter textures by name...", textBuff, 256);
 		std::string input(textBuff);
 
-		UI::TextureViewer textureViewer;
-		int               size = 400;
+		std::vector<ImageView *> visibleImages;
 		for (auto &image : renderGraph->resourcesManager->imageViews)
 		{
 			if (!input.empty() && image->name.find(input) == std::string::npos)
 			{
 				continue;
 			}
-			ImageView *imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID) dsetsArrays->GetDsetByName(image->name), {size, size});
+			visibleImages.push_back(image.get());
 		}
 		for (auto &image : renderGraph->resourcesManager->storageImgsViews)
 		{
@@ -1472,7 +1859,7 @@ class ImguiRenderer
 			{
 				continue;
 			}
-			ImageView *imageViewRef = textureViewer.DisplayTexture(image->name, image.get(), (ImTextureID) dsetsArrays->GetDsetByName(image->name), {size, size});
+			visibleImages.push_back(image.get());
 		}
 		for (auto &image : renderGraph->resourcesManager->imageShippers)
 		{
@@ -1484,21 +1871,83 @@ class ImguiRenderer
 			{
 				continue;
 			}
-			ImageView *imageViewRef = textureViewer.DisplayTexture(image->imageView->name, image->imageView.get(),
-			                                                       (ImTextureID) dsetsArrays->GetDsetByName(
-			                                                           image->imageView->name),
-			                                                       {size, size});
+			visibleImages.push_back(image->imageView.get());
+		}
+
+		ImGui::TextDisabled("%d texture%s visible", static_cast<int>(visibleImages.size()),
+		                    visibleImages.size() == 1 ? "" : "s");
+		ImGui::Spacing();
+
+		if (visibleImages.empty())
+		{
+			ImGui::TextDisabled("No textures match the current filter.");
+			return;
+		}
+
+		const float availableWidth = ImGui::GetContentRegionAvail().x;
+		const float minimumCardWidth = 190.0f;
+		const float columnSpacing = ImGui::GetStyle().ItemSpacing.x;
+		const int   columnCount = std::max(1, static_cast<int>((availableWidth + columnSpacing) /
+		                                                     (minimumCardWidth + columnSpacing)));
+		const float cardWidth = (availableWidth - columnSpacing * static_cast<float>(columnCount - 1)) /
+		                        static_cast<float>(columnCount);
+		const float previewSize = std::min(220.0f, std::max(96.0f, cardWidth - 24.0f));
+
+		if (ImGui::BeginTable("texture_card_grid", columnCount,
+		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+		{
+			for (ImageView *imageView : visibleImages)
+			{
+				ImGui::TableNextColumn();
+				ImGui::PushID(imageView);
+				ImGui::PushStyleColor(ImGuiCol_ChildBg, ImguiRendererUI::RaisedSurfaceColor());
+				if (ImGui::BeginChild("##texture_card", ImVec2(0.0f, previewSize + 68.0f),
+				                      ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar))
+				{
+					ImGui::PushFont(fonts.strong);
+					ImGui::TextUnformatted(imageView->name.c_str());
+					ImGui::PopFont();
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("%s", imageView->name.c_str());
+					}
+
+					const glm::uvec2 dimensions = imageView->imageData->GetImageSize();
+					ImGui::TextDisabled("%u x %u", dimensions.x, dimensions.y);
+					const float previewOffset = std::max(0.0f, (ImGui::GetContentRegionAvail().x - previewSize) * 0.5f);
+					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + previewOffset);
+					ImGui::Image(
+					    (ImTextureID) dsetsArrays->GetDsetByName(imageView->name),
+					    ImVec2(previewSize, previewSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("%s\n%u x %u", imageView->name.c_str(), dimensions.x, dimensions.y);
+					}
+				}
+				ImGui::EndChild();
+				ImGui::PopStyleColor();
+				ImGui::PopID();
+			}
+			ImGui::EndTable();
 		}
 	}
 	void Destroy()
 	{
+		if (m_Context)
+		{
+			ed::DestroyEditor(m_Context);
+			m_Context = nullptr;
+		}
 		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 	}
 
 	vk::CommandBuffer  *currCommandBuffer = nullptr;
 	DynamicRenderPass   dynamicRenderPass;
 	WindowProvider     *windowProvider;
 	DescriptorAllocator descriptorAllocator;
+	VkFormat            imguiSwapchainFormat = VK_FORMAT_UNDEFINED;
 	Core               *core;
 	RenderGraph        *renderGraph;
 
@@ -1508,6 +1957,11 @@ class ImguiRenderer
 	GSRenderer                                           *gsRenderer      = nullptr;
 	ImGuiUtils::ProfilersWindow                           profilersWindow{};
 	UI::RG_NodeEditor                                     nodeEditor;
+	ImguiRendererUI::Fonts                                fonts{};
+	DebuggerPage                                          activePage = DebuggerPage::RenderGraph;
+	bool                                                  draggingDebuggerWindow = false;
+	bool                                                  debuggerWindowPositionInitialized = false;
+	ImVec2                                                debuggerWindowPosition{};
 
 	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
 	std::vector<LayoutPatterns>      layoutPatternsToRecover;
@@ -1665,8 +2119,8 @@ inline void ImguiRenderer::DisplayRenderGraphDag()
 		}
 	}
 
-	const ImU32 edgeColor      = IM_COL32(130, 140, 170, 180);
-	const ImU32 edgeArrowColor = IM_COL32(170, 180, 220, 220);
+	const ImU32 edgeColor      = IM_COL32(126, 108, 103, 160);
+	const ImU32 edgeArrowColor = IM_COL32(176, 145, 135, 205);
 	for (auto *node : graphNodes)
 	{
 		if (!node || !nodeMinByName.contains(node->passName))
@@ -1691,15 +2145,15 @@ inline void ImguiRenderer::DisplayRenderGraphDag()
 		}
 	}
 
-	const ImU32 activeFill          = IM_COL32(38, 55, 65, 255);
-	const ImU32 inactiveFill        = IM_COL32(42, 38, 44, 255);
-	const ImU32 selectedFill        = IM_COL32(56, 76, 92, 255);
+	const ImU32 activeFill          = IM_COL32(50, 42, 40, 255);
+	const ImU32 inactiveFill        = IM_COL32(38, 34, 36, 255);
+	const ImU32 selectedFill        = IM_COL32(76, 45, 34, 255);
 	const ImU32 warningFill         = IM_COL32(80, 54, 36, 255);
-	const ImU32 borderColor         = IM_COL32(150, 155, 170, 220);
-	const ImU32 selectedBorderColor = IM_COL32(110, 185, 230, 255);
+	const ImU32 borderColor         = IM_COL32(125, 111, 107, 185);
+	const ImU32 selectedBorderColor = IM_COL32(255, 82, 20, 255);
 	const ImU32 warningColor        = IM_COL32(245, 172, 95, 255);
-	const ImU32 textColor           = IM_COL32(230, 230, 235, 255);
-	const ImU32 mutedColor          = IM_COL32(175, 175, 185, 255);
+	const ImU32 textColor           = IM_COL32(235, 231, 228, 255);
+	const ImU32 mutedColor          = IM_COL32(151, 143, 141, 255);
 	for (auto *node : graphNodes)
 	{
 		if (!node || !nodeMinByName.contains(node->passName))
