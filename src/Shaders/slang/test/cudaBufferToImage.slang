@@ -131,6 +131,6 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   // Optional cap so it never becomes completely opaque
   
   alpha = min(alpha, 0.45f);
-  OutImage[uint2(x, 1024 - y)] = float4(value.xyz * value.w, 1.0);
+  OutImage[uint2(x, 1024 - y)] = float4(value.xyz * value.w,1.0);
  // OutImage[uint2(x, y_write)] = float4(value, alpha);
 }

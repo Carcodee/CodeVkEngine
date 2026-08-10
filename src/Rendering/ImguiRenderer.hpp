@@ -458,60 +458,50 @@ class ImguiRenderer
 				ImGui::EndTable();
 			}
 
-			ImGui::SetCursorScreenPos(ImGui::GetWindowPos());
-			ImGui::InvisibleButton("##window_drag_area", ImGui::GetWindowSize(),
-			                       ImGuiButtonFlags_MouseButtonLeft);
-			draggingDebuggerWindow = ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left);
 		}
 		ImGui::EndChild();
 	}
 
 	void RenderSidebar()
 	{
+		const DebuggerPageInfo activePageInfo = GetDebuggerPageInfo();
 		auto navigate = [this](const char *label, DebuggerPage page) {
-			if (ImguiRendererUI::NavigationItem(label, activePage == page))
+			const bool selected = activePage == page;
+			if (ImGui::Selectable(label, selected))
 			{
 				activePage = page;
+			}
+			if (selected)
+			{
+				ImGui::SetItemDefaultFocus();
 			}
 		};
 
 		ImGui::PushFont(fonts.caption);
 		ImGui::TextDisabled("WORKSPACE");
 		ImGui::PopFont();
-		navigate("Render graph", DebuggerPage::RenderGraph);
-		navigate("Engine overview", DebuggerPage::Engine);
-		navigate("Texture inspector", DebuggerPage::Textures);
-		navigate("Fluid simulation", DebuggerPage::FluidSimulation);
-
-		if (clusterRenderer || flatRenderer || gsRenderer)
+		ImGui::SetNextItemWidth(-1.0f);
+		if (ImGui::BeginCombo("##workspace_page", activePageInfo.title))
 		{
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
-			ImGui::PushFont(fonts.caption);
-			ImGui::TextDisabled("RENDERERS");
-			ImGui::PopFont();
+			navigate("Render graph", DebuggerPage::RenderGraph);
+			navigate("Engine overview", DebuggerPage::Engine);
+			navigate("Texture inspector", DebuggerPage::Textures);
+			navigate("Fluid simulation", DebuggerPage::FluidSimulation);
+			if (clusterRenderer)
+			{
+				navigate("Cluster lighting", DebuggerPage::ClusterRenderer);
+			}
+			if (flatRenderer)
+			{
+				navigate("Radiance cascades", DebuggerPage::RadianceCascades);
+			}
+			if (gsRenderer)
+			{
+				navigate("Gaussian splatting", DebuggerPage::GaussianSplatting);
+			}
+			navigate("Performance", DebuggerPage::Profiler);
+			ImGui::EndCombo();
 		}
-		if (clusterRenderer)
-		{
-			navigate("Cluster lighting", DebuggerPage::ClusterRenderer);
-		}
-		if (flatRenderer)
-		{
-			navigate("Radiance cascades", DebuggerPage::RadianceCascades);
-		}
-		if (gsRenderer)
-		{
-			navigate("Gaussian splatting", DebuggerPage::GaussianSplatting);
-		}
-
-		ImGui::Spacing();
-		ImGui::Separator();
-		ImGui::Spacing();
-		ImGui::PushFont(fonts.caption);
-		ImGui::TextDisabled("DIAGNOSTICS");
-		ImGui::PopFont();
-		navigate("Performance", DebuggerPage::Profiler);
 	}
 
 	void RenderActivePage()
@@ -554,44 +544,117 @@ class ImguiRenderer
 		}
 	}
 
+	void RenderSceneViewport()
+	{
+		sceneViewportValid   = false;
+		sceneViewportHovered = false;
+
+		ImageView *sceneImage = nullptr;
+		if (renderGraph && renderGraph->resourcesManager)
+		{
+			sceneImage = renderGraph->resourcesManager->GetImageViewFromName("bf");
+		}
+
+		if (!sceneImage || !sceneImage->imageData)
+		{
+			const ImVec2 available = ImGui::GetContentRegionAvail();
+			const char  *message   = "Viewport image 'bf' is unavailable";
+			const ImVec2 textSize  = ImGui::CalcTextSize(message);
+			ImGui::SetCursorPos(ImVec2(
+			    std::max(0.0f, (available.x - textSize.x) * 0.5f),
+			    std::max(0.0f, (available.y - textSize.y) * 0.5f)));
+			ImGui::TextDisabled("%s", message);
+			return;
+		}
+
+		AddImage("bf", sceneImage);
+
+		const ImVec2 available = ImGui::GetContentRegionAvail();
+		const glm::uvec2 imageExtent = sceneImage->imageData->GetImageSize();
+		if (available.x <= 1.0f || available.y <= 1.0f || imageExtent.x == 0 || imageExtent.y == 0)
+		{
+			return;
+		}
+
+		const float scale = std::min(
+		    available.x / static_cast<float>(imageExtent.x),
+		    available.y / static_cast<float>(imageExtent.y));
+		const ImVec2 imageSize(
+		    static_cast<float>(imageExtent.x) * scale,
+		    static_cast<float>(imageExtent.y) * scale);
+		const ImVec2 cursor = ImGui::GetCursorPos();
+		ImGui::SetCursorPos(ImVec2(
+		    cursor.x + (available.x - imageSize.x) * 0.5f,
+		    cursor.y + (available.y - imageSize.y) * 0.5f));
+
+		ImGui::Image(
+		    (ImTextureID) dsetsArrays->GetDsetByName("bf"), imageSize,
+		    ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+
+		sceneViewportMin     = ImGui::GetItemRectMin();
+		sceneViewportMax     = ImGui::GetItemRectMax();
+		sceneViewportValid   = true;
+		sceneViewportHovered = ImGui::IsItemHovered();
+
+		ImDrawList *drawList = ImGui::GetWindowDrawList();
+		const ImU32 borderColor = ImGui::GetColorU32(
+		    sceneViewportHovered ? ImguiRendererUI::AccentColor()
+		                         : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
+		drawList->AddRect(sceneViewportMin, sceneViewportMax, borderColor, 4.0f, 0,
+		                  sceneViewportHovered ? 2.0f : 1.0f);
+
+		const ImVec2 badgeMin(sceneViewportMin.x + 12.0f, sceneViewportMin.y + 12.0f);
+		const ImVec2 badgeMax(badgeMin.x + 122.0f, badgeMin.y + 27.0f);
+		drawList->AddRectFilled(badgeMin, badgeMax, IM_COL32(18, 17, 18, 220), 6.0f);
+		drawList->AddCircleFilled(ImVec2(badgeMin.x + 13.0f, badgeMin.y + 13.5f), 3.0f,
+		                          ImGui::GetColorU32(ImguiRendererUI::AccentColor()));
+		drawList->AddText(ImVec2(badgeMin.x + 23.0f, badgeMin.y + 5.0f),
+		                  IM_COL32(232, 229, 226, 255), "VIEWPORT  /  bf");
+	}
+
 	void RenderDebuggerWindow()
 	{
-		ImGuiIO &io = ImGui::GetIO();
 		const ImGuiViewport *mainViewport = ImGui::GetMainViewport();
-		if (draggingDebuggerWindow && ImGui::IsMouseDown(ImGuiMouseButton_Left))
-		{
-			debuggerWindowPosition.x += io.MouseDelta.x;
-			debuggerWindowPosition.y += io.MouseDelta.y;
-			ImGui::SetNextWindowPos(debuggerWindowPosition, ImGuiCond_Always);
-		}
-		else if (!debuggerWindowPositionInitialized)
-		{
-			ImGui::SetNextWindowPos(ImVec2(mainViewport->WorkPos.x + mainViewport->WorkSize.x * 0.5f,
-			                                 mainViewport->WorkPos.y + mainViewport->WorkSize.y * 0.5f),
-			                        ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-		}
-		ImGui::SetNextWindowSize(ImVec2(mainViewport->WorkSize.x * 0.78f, mainViewport->WorkSize.y * 0.88f),
-		                         ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowBgAlpha(0.72f);
+		ImGui::SetNextWindowPos(mainViewport->WorkPos, ImGuiCond_Always);
+		ImGui::SetNextWindowSize(mainViewport->WorkSize, ImGuiCond_Always);
+		ImGui::SetNextWindowViewport(mainViewport->ID);
 
-		if (ImGui::Begin("CodeVK Engine Console", nullptr,
-		                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse))
-		{
-			debuggerWindowPosition            = ImGui::GetWindowPos();
-			debuggerWindowPositionInitialized = true;
-			RenderApplicationHeader();
-			ImGui::Spacing();
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.024f, 0.026f, 1.0f));
+		const ImGuiWindowFlags rootFlags =
+		    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+		    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+		    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-			const float sidebarWidth = 190.0f;
-			if (ImGui::BeginChild("##navigation", ImVec2(sidebarWidth, 0.0f), ImGuiChildFlags_Borders))
+		if (ImGui::Begin("CodeVK Engine Workspace", nullptr, rootFlags))
+		{
+			const float availableWidth = ImGui::GetContentRegionAvail().x;
+			float panelWidth = std::clamp(availableWidth * 0.36f, 380.0f, 640.0f);
+			panelWidth = std::min(panelWidth, availableWidth * 0.52f);
+			const float dividerWidth = 1.0f;
+			const float viewportWidth = std::max(1.0f, availableWidth - panelWidth - dividerWidth);
+
+			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.015f, 0.015f, 0.017f, 1.0f));
+			if (ImGui::BeginChild("##scene_viewport", ImVec2(viewportWidth, 0.0f),
+			                      ImGuiChildFlags_None,
+			                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 			{
-				RenderSidebar();
+				RenderSceneViewport();
 			}
 			ImGui::EndChild();
+			ImGui::PopStyleColor();
 
-			ImGui::SameLine();
-			if (ImGui::BeginChild("##workspace", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders))
+			ImGui::SameLine(0.0f, dividerWidth);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
+			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.045f, 0.042f, 0.045f, 0.98f));
+			if (ImGui::BeginChild("##docked_inspector", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None))
 			{
+				RenderApplicationHeader();
+				ImGui::Spacing();
+				RenderSidebar();
+				ImGui::Spacing();
+
 				const DebuggerPageInfo pageInfo = GetDebuggerPageInfo();
 				ImGui::PushFont(fonts.heading);
 				ImGui::TextUnformatted(pageInfo.title);
@@ -608,8 +671,12 @@ class ImguiRenderer
 				ImGui::EndChild();
 			}
 			ImGui::EndChild();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
 		}
 		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(2);
 	}
 	void RenderGraphProfiler()
 	{
@@ -874,14 +941,16 @@ class ImguiRenderer
 		ImGui::TextDisabled("Shortcuts: L loads the image, M adds solid, N erases solid.");
 
 		const ImVec2 mousePosition = ImGui::GetMousePos();
-		const bool   mouseOverViewport =
-		    mousePosition.x >= 0.0f && mousePosition.x <= 1023.0f &&
-		    mousePosition.y >= 0.0f && mousePosition.y <= 1023.0f;
-		if (fluidToolEnabled && mouseOverViewport && !ImGui::GetIO().WantCaptureMouse &&
+		const float  viewportWidth  = std::max(1.0f, sceneViewportMax.x - sceneViewportMin.x);
+		const float  viewportHeight = std::max(1.0f, sceneViewportMax.y - sceneViewportMin.y);
+		const bool   mouseOverViewport = sceneViewportValid && sceneViewportHovered;
+		if (fluidToolEnabled && mouseOverViewport &&
 		    ImGui::IsMouseDown(ImGuiMouseButton_Right))
 		{
-			const float u         = glm::clamp(mousePosition.x / 1023.0f, 0.0f, 1.0f);
-			const float v         = glm::clamp(1.0f - mousePosition.y / 1023.0f, 0.0f, 1.0f);
+			const float u = glm::clamp(
+			    (mousePosition.x - sceneViewportMin.x) / viewportWidth, 0.0f, 1.0f);
+			const float v = glm::clamp(
+			    1.0f - (mousePosition.y - sceneViewportMin.y) / viewportHeight, 0.0f, 1.0f);
 			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
 			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::s_height - 1));
 
@@ -895,8 +964,8 @@ class ImguiRenderer
 				case 1:
 				{
 					const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
-					const float  velocityX  = mouseDelta.x * static_cast<float>(CodeCuda::s_width) / 1023.0f;
-					const float  velocityY  = mouseDelta.y * static_cast<float>(CodeCuda::s_height) / 1023.0f;
+					const float  velocityX  = mouseDelta.x * static_cast<float>(CodeCuda::s_width) / viewportWidth;
+					const float  velocityY  = mouseDelta.y * static_cast<float>(CodeCuda::s_height) / viewportHeight;
 					runSimulationAction(CodeCuda::C_AddVelocity(xPosition, yPosition, fluidBrushRadius,
 					                                            velocityX * fluidVelocityStrength,
 					                                            -velocityY * fluidVelocityStrength));
@@ -916,11 +985,13 @@ class ImguiRenderer
 					break;
 			}
 		}
-		if (fluidToolEnabled && mouseOverViewport && !ImGui::GetIO().WantCaptureMouse &&
+		if (fluidToolEnabled && mouseOverViewport &&
 		    ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 		{
-			const float u         = glm::clamp(mousePosition.x / 1023.0f, 0.0f, 1.0f);
-			const float v         = glm::clamp(1.0f - mousePosition.y / 1023.0f, 0.0f, 1.0f);
+			const float u = glm::clamp(
+			    (mousePosition.x - sceneViewportMin.x) / viewportWidth, 0.0f, 1.0f);
+			const float v = glm::clamp(
+			    1.0f - (mousePosition.y - sceneViewportMin.y) / viewportHeight, 0.0f, 1.0f);
 			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
 			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::s_height - 1));
 			switch (fluidTool)
@@ -1959,9 +2030,10 @@ class ImguiRenderer
 	UI::RG_NodeEditor                                     nodeEditor;
 	ImguiRendererUI::Fonts                                fonts{};
 	DebuggerPage                                          activePage = DebuggerPage::RenderGraph;
-	bool                                                  draggingDebuggerWindow = false;
-	bool                                                  debuggerWindowPositionInitialized = false;
-	ImVec2                                                debuggerWindowPosition{};
+	bool                                                  sceneViewportValid = false;
+	bool                                                  sceneViewportHovered = false;
+	ImVec2                                                sceneViewportMin{};
+	ImVec2                                                sceneViewportMax{};
 
 	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
 	std::vector<LayoutPatterns>      layoutPatternsToRecover;
