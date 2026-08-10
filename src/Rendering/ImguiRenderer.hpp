@@ -732,6 +732,65 @@ class ImguiRenderer
 		profilersWindow.RenderContent();
 	}
 
+	void AddSmokePretty(CodeCuda::CodeCudaContext *context, const glm::vec2 mousePosition)
+	{
+		if (!context || CodeCuda::s_width <= 0 || CodeCuda::s_height <= 0)
+		{
+			return;
+		}
+
+		auto randomPrettyColor = []() {
+			return glm::vec4(
+			    glm::linearRand(0.02f, 0.35f),
+			    glm::linearRand(0.02f, 0.35f),
+			    glm::linearRand(0.05f, 0.45f),
+			    glm::linearRand(0.05f, 0.45f));
+		};
+
+		const int radius = std::max(1, CodeCuda::s_height / 46);
+		if (!prettySmokeStrokeActive)
+		{
+			prettySmokeLastMousePosition = mousePosition;
+			prettySmokeLastColor         = randomPrettyColor();
+			prettySmokeStrokeActive      = true;
+		}
+
+		const glm::vec2 mouseDelta = mousePosition - prettySmokeLastMousePosition;
+		const float     distance   = glm::length(mouseDelta);
+		const float     sampleSpacing = std::max(1.0f, static_cast<float>(radius) * 0.35f);
+		const int       sampleCount = std::max(1, static_cast<int>(glm::ceil(distance / sampleSpacing)));
+		const glm::vec4 newColor    = randomPrettyColor();
+
+		for (int sample = 1; sample <= sampleCount; ++sample)
+		{
+			const float     t = static_cast<float>(sample) / static_cast<float>(sampleCount);
+			const glm::vec2 interpolatedPosition =
+			    glm::mix(prettySmokeLastMousePosition, mousePosition, t);
+			const float     smoothT = t * t * (3.0f - 2.0f * t);
+			const glm::vec4 interpolatedColor =
+			    glm::mix(prettySmokeLastColor, newColor, smoothT);
+
+			const float u = glm::clamp(interpolatedPosition.x / 1023.0f, 0.0f, 1.0f);
+			const float v = glm::clamp(interpolatedPosition.y / 1023.0f, 0.0f, 1.0f);
+			const int   x = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
+			const int   y = static_cast<int>((1.0f - v) * static_cast<float>(CodeCuda::s_height - 1));
+
+			const glm::vec2 simulationDelta(
+			    mouseDelta.x * static_cast<float>(CodeCuda::s_width) / 1023.0f,
+			    mouseDelta.y * static_cast<float>(CodeCuda::s_height) / 1023.0f);
+
+			CodeCuda::C_AddVelocityGPU(x, y, radius,
+			                           simulationDelta.x * 0.2f,
+			                           -simulationDelta.y * 0.2f, context);
+			CodeCuda::C_AddSmokeGPU(x, y, radius,
+			                        interpolatedColor.r, interpolatedColor.g,
+			                        interpolatedColor.b, interpolatedColor.a, context);
+		}
+
+		prettySmokeLastMousePosition = mousePosition;
+		prettySmokeLastColor         = newColor;
+	}
+
 	void FluidSimInfo()
 	{
 		CodeCuda::sim_params fluidSimParams{};
@@ -951,11 +1010,61 @@ class ImguiRenderer
 		static float fluidEmitterColor[4]             = {0.15f, 0.05f, 0.25f, 1.0f};
 		static bool  fluidToolEnabled                 = true;
 
-		const char *fluidTools[] = {"Smoke", "Velocity", "Add Solid", "Erase Solid", "Radial Velocity", "Add Emitter"};
+		const char *fluidTools[] = {"Smoke", "Velocity", "Add solid", "Erase solid",
+		                            "Radial velocity", "Add emitter", "Pretty smoke"};
+		const char *fluidToolDescriptions[] = {
+		    "Paint smoke with the selected color.",
+		    "Drag to push the fluid in the cursor direction.",
+		    "Paint solid obstacles into the simulation.",
+		    "Remove solid obstacles from the simulation.",
+		    "Push fluid outward from the cursor.",
+		    "Place a persistent smoke and velocity source.",
+		    "Paint a smooth trail with changing random colors."};
 
 		const int maxSimulationDimension =
 		    CodeCuda::s_width > CodeCuda::s_height ? CodeCuda::s_width : CodeCuda::s_height;
 		const int maxBrushRadius = maxSimulationDimension > 0 ? maxSimulationDimension : 1;
+
+		ImGui::TextDisabled("Tool");
+		if (ImGui::BeginTable("##fluid_tool_selector", 2,
+		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+		{
+			for (int toolIndex = 0; toolIndex < IM_ARRAYSIZE(fluidTools); ++toolIndex)
+			{
+				ImGui::TableNextColumn();
+				ImGui::PushID(toolIndex);
+				const bool selected = fluidTool == toolIndex;
+				if (selected)
+				{
+					const ImVec4 accent = ImguiRendererUI::AccentColor();
+					ImGui::PushStyleColor(ImGuiCol_Button, accent);
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+					                      ImVec4(accent.x, accent.y, accent.z, 0.90f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+					                      ImVec4(accent.x, accent.y, accent.z, 0.78f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImguiRendererUI::InkColor());
+				}
+
+				if (ImGui::Button(fluidTools[toolIndex], ImVec2(-FLT_MIN, 30.0f)))
+				{
+					if (fluidTool != toolIndex)
+					{
+						prettySmokeStrokeActive = false;
+					}
+					fluidTool = toolIndex;
+				}
+				if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+				{
+					ImGui::SetTooltip("%s", fluidToolDescriptions[toolIndex]);
+				}
+				if (selected)
+				{
+					ImGui::PopStyleColor(4);
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndTable();
+		}
 
 		if (ImGui::BeginTable("##fluid_tool_properties", 2,
 		                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
@@ -973,11 +1082,12 @@ class ImguiRenderer
 
 			beginProperty("Enabled");
 			ImGui::Checkbox("##fluid_tool_enabled", &fluidToolEnabled);
-			beginProperty("Tool");
-			ImGui::Combo("##fluid_tool", &fluidTool, fluidTools, IM_ARRAYSIZE(fluidTools));
-			beginProperty("Brush radius");
-			ImGui::DragInt("##fluid_brush_radius", &fluidBrushRadius, 1.0f, 1,
-			               maxBrushRadius, "%d px", ImGuiSliderFlags_AlwaysClamp);
+			if (fluidTool != 6)
+			{
+				beginProperty("Brush radius");
+				ImGui::DragInt("##fluid_brush_radius", &fluidBrushRadius, 1.0f, 1,
+				               maxBrushRadius, "%d px", ImGuiSliderFlags_AlwaysClamp);
+			}
 
 			if (fluidTool == 0)
 			{
@@ -1004,6 +1114,11 @@ class ImguiRenderer
 				beginProperty("Emitter color");
 				ImGui::ColorEdit4("##fluid_emitter_color", fluidEmitterColor);
 			}
+			else if (fluidTool == 6)
+			{
+				beginProperty("Style");
+				ImGui::TextDisabled("Interpolated random color");
+			}
 
 			beginProperty("Random force");
 			const float addButtonWidth = 42.0f;
@@ -1025,10 +1140,12 @@ class ImguiRenderer
 		const float  viewportWidth  = std::max(1.0f, sceneViewportMax.x - sceneViewportMin.x);
 		const float  viewportHeight = std::max(1.0f, sceneViewportMax.y - sceneViewportMin.y);
 		const bool   mouseOverViewport = sceneViewportValid && sceneViewportHovered;
+		const int    activeBrushRadius =
+		    fluidTool == 6 ? std::max(1, CodeCuda::s_height / 46) : fluidBrushRadius;
 		if (fluidToolEnabled && mouseOverViewport)
 		{
 			const float radiusPixels = std::max(
-			    2.0f, fluidBrushRadius * 0.5f *
+			    2.0f, activeBrushRadius * 0.5f *
 			              (viewportWidth / std::max(1, CodeCuda::s_width) +
 			               viewportHeight / std::max(1, CodeCuda::s_height)));
 			ImGui::GetForegroundDrawList()->AddCircle(
@@ -1072,9 +1189,27 @@ class ImguiRenderer
 					runSimulationAction(CodeCuda::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
 					                                                  fluidRadialVelocityStrength));
 					break;
+				case 6:
+				{
+					auto *cudaNode = renderGraph ? renderGraph->GetNode("CudaNode") : nullptr;
+					if (!cudaNode || !cudaNode->CUDAPipeline || !cudaNode->CUDAPipeline->context)
+					{
+						simulationActionFail = true;
+						break;
+					}
+					AddSmokePretty(cudaNode->CUDAPipeline->context,
+					               glm::vec2(u * 1023.0f, (1.0f - v) * 1023.0f));
+					simulationActionFail = false;
+					break;
+				}
 				default:
 					break;
 			}
+		}
+		if (fluidTool != 6 || !fluidToolEnabled || !mouseOverViewport ||
+		    !ImGui::IsMouseDown(ImGuiMouseButton_Right))
+		{
+			prettySmokeStrokeActive = false;
 		}
 		if (fluidToolEnabled && mouseOverViewport &&
 		    ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -2205,6 +2340,9 @@ class ImguiRenderer
 	ImVec2                                                sceneViewportMax{};
 	float                                                 inspectorPanelWidth = 0.0f;
 	bool                                                  inspectorPanelResizing = false;
+	glm::vec2                                             prettySmokeLastMousePosition{};
+	glm::vec4                                             prettySmokeLastColor{0.15f, 0.05f, 0.25f, 1.0f};
+	bool                                                  prettySmokeStrokeActive = false;
 
 	std::unique_ptr<ImguiDsetsArray> dsetsArrays;
 	std::vector<LayoutPatterns>      layoutPatternsToRecover;
