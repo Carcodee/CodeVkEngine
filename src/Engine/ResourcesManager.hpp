@@ -357,6 +357,10 @@ class ResourcesManager : SYSTEMS::Subject
 		stagedBuffers.clear();
 		storageImgsViews.clear();
 		imageViews.clear();
+		for (int i = 0; i < imageShippers.size(); ++i)
+		{
+			imageShippers[i]->Clear();
+		}
 		imageShippers.clear();
 		images.clear();
 		samplerPool.reset();

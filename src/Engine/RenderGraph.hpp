@@ -1483,14 +1483,13 @@ class RenderGraph
 		blitterNode->EnqueueNode();
 
 		GetNode("BlitterNode")->G_SetSampler("MainTex", currentBackBuffer);
-		auto blitterTask = new std::function<void()>([this]() {
+		blitterNode->AddPreRenderingTask( new std::function<void()>([this]() {
 			// there is one thing that I may change and is that when I set the sampler from outside of the task
 			// function and I reload the shaders the ref of the sampler is gone because I reset the descriptor set, I should change that
 			GetNode("BlitterNode")->G_SetColorImageAttachmentBinding(0,currentBackBufferSwapchain);
 			GetNode("BlitterNode")->G_SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
-		});
-
-		auto blitterRenderOp = new std::function<void()>(
+		}));
+		blitterNode->G_SetRenderOperation(new std::function<void()>(
 		    [this]() {
 			    auto           renderNode = GetNode("BlitterNode");
 			    vk::DeviceSize offset     = 0;
@@ -1503,10 +1502,7 @@ class RenderGraph
 
 			    renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 			                                         0, 0);
-		    });
-
-		blitterNode->AddPreRenderingTask(blitterTask);
-		blitterNode->G_SetRenderOperation(blitterRenderOp);
+		    }));
 		return blitterNode;
 	}
 

@@ -54,6 +54,8 @@ void CreateRenderers(ENGINE::Core* core, WindowProvider* windowProvider, std::ma
 }
 void run(WindowProvider* windowProvider)
 {
+	CodeCuda::C_InitEngine();
+	
     int imageCount = 3;
 
     ENGINE::WindowDesc windowDesc = {};
@@ -82,7 +84,6 @@ void run(WindowProvider* windowProvider)
     
     renderGraph->CreateResManager();
 	
-    
 	Rendering::RenderingResManager* renderingResManager = Rendering::RenderingResManager::GetInstance();
     // Rendering::ModelLoader::GetInstance(core.get());
     
@@ -192,6 +193,8 @@ void run(WindowProvider* windowProvider)
     renderGraph->SerializeAll();
     ENGINE::ResourcesManager::GetInstance()->DestroyResources();
     windowProvider->DestroyWindow();
+	
+	CodeCuda::C_ShutDownEngine();
 }
 
 int main()

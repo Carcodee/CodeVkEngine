@@ -107,6 +107,7 @@ namespace CodeCuda
         float time_step = 1.0f / 30.0f;
 
     private:
+        int id = -1;
         kernel_launcher kernel_launcher;
         cpu_launcher cpu_launcher;
         cudaExternalSemaphore_t external_semaphore = {};
@@ -142,9 +143,9 @@ namespace CodeCuda
         C_Res C_SetSimulationResolution(int w, int h);
     }
 
-    class CodeCudaExecutor
-    {
-    };
+    C_Res C_InitEngine();
+    C_Res C_ShutDownEngine();
+    inline int contexts_id_count = 0;
 
     namespace CodeBenchmarking
     {

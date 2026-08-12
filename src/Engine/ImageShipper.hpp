@@ -12,15 +12,22 @@ namespace ENGINE
 {
     struct ImageShipper 
     {
-        void SetDataFromPath(std::string path)
+        bool SetDataFromPath(const std::string &path)
         {
-            int width, height, channels;
+            int width = 0, height = 0, channels = 0;
             stbi_uc* pixelsData = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			if (!pixelsData)
+			{
+				data      = nullptr;
+				size      = 0;
+				imageSize = {};
+				return false;
+			}
         	//4 - 1 byte per channel - R G B A
             size = width * height * 4;
             data = static_cast<void*>(pixelsData);
             imageSize = {width, height};
-            
+			return true;
         }
 
         void SetDataRaw(void* data, int width, int height, vk::DeviceSize size)
@@ -67,6 +74,38 @@ namespace ENGINE
             }
             this->sampler = sampler;
         }
+    	void BuildCPUImage(std::string name, int32_t id, bool flipY = false)
+        {
+            assert(this->data && "variable \"data\" is not set or is invalid");
+        	imageCPU.resize(static_cast<size_t>(imageSize.x) * imageSize.y);
+	        	const auto *dataAsBytes = static_cast<const stbi_uc *>(data);
+        	for (int y = 0; y < imageSize.y; ++y)
+        	{
+        		for (int x = 0; x < imageSize.x; ++x)
+        		{
+        			size_t yTrue = flipY ? imageSize.y - 1 - y : y;
+        			const size_t pixelIndex =yTrue * imageSize.x + x;
+        			const size_t byteIndex  = pixelIndex * 4;
+
+	        			imageCPU[static_cast<size_t>(y) * imageSize.x + x] = glm::vec4(
+						static_cast<float>(dataAsBytes[byteIndex + 0]) / 255.0f,
+						static_cast<float>(dataAsBytes[byteIndex + 1]) / 255.0f,
+						static_cast<float>(dataAsBytes[byteIndex + 2]) / 255.0f,
+						static_cast<float>(dataAsBytes[byteIndex + 3]) / 255.0f);
+        		}
+        	}
+        	
+        	if (data)
+        	{
+        		free(this->data);
+        		data = nullptr;
+        	}
+        }
+    	
+    	std::vector<glm::vec4> ShipImageCPU()
+        {
+        	return std::move(imageCPU);
+        }
 
         std::unique_ptr<Image> ShipImage()
         {
@@ -79,20 +118,21 @@ namespace ENGINE
         
         void Clear()
         {
-            if (imageView){imageView.release();}
-            if (image){image.release();}
             if (data)
             {
                 free(this->data);
+				data = nullptr;
             }
         }
-
+    	
+    	std::vector<glm::vec4> imageCPU;
+    	
         std::unique_ptr<Image> image;
         std::unique_ptr<ImageView> imageView;
-        Sampler* sampler;
-        void* data;
-        glm::vec2 imageSize;
-        vk::DeviceSize size;
+        Sampler* sampler = nullptr;
+        void* data = nullptr;
+        glm::vec2 imageSize{};
+        vk::DeviceSize size = 0;
     };
     
 }

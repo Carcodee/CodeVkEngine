@@ -98,44 +98,44 @@ inline void ApplyModernTheme()
 	ImGuiStyle &style = ImGui::GetStyle();
 	ImGui::StyleColorsDark(&style);
 
-	style.WindowPadding             = ImVec2(9.0f, 9.0f);
-	style.FramePadding              = ImVec2(9.0f, 6.0f);
-	style.CellPadding               = ImVec2(9.0f, 7.0f);
-	style.ItemSpacing               = ImVec2(8.0f, 7.0f);
-	style.ItemInnerSpacing          = ImVec2(7.0f, 5.0f);
-	style.TouchExtraPadding         = ImVec2(0.0f, 0.0f);
-	style.IndentSpacing             = 18.0f;
-	style.ScrollbarSize             = 9.0f;
-	style.GrabMinSize               = 9.0f;
-	style.WindowBorderSize          = 0.0f;
-	style.ChildBorderSize           = 0.0f;
-	style.PopupBorderSize           = 1.0f;
-	style.FrameBorderSize           = 0.0f;
-	style.TabBorderSize             = 0.0f;
-	style.WindowRounding            = 12.0f;
-	style.ChildRounding             = 9.0f;
-	style.FrameRounding             = 7.0f;
-	style.PopupRounding             = 9.0f;
-	style.ScrollbarRounding         = 10.0f;
-	style.GrabRounding              = 8.0f;
-	style.TabRounding               = 7.0f;
-	style.SeparatorTextBorderSize   = 0.0f;
-	style.SeparatorTextAlign        = ImVec2(0.0f, 0.5f);
-	style.SeparatorTextPadding      = ImVec2(0.0f, 11.0f);
-	style.SelectableTextAlign       = ImVec2(0.0f, 0.5f);
-	style.WindowTitleAlign          = ImVec2(0.0f, 0.5f);
-	style.WindowMenuButtonPosition  = ImGuiDir_None;
-	style.ColorButtonPosition       = ImGuiDir_Right;
+	style.WindowPadding            = ImVec2(9.0f, 9.0f);
+	style.FramePadding             = ImVec2(9.0f, 6.0f);
+	style.CellPadding              = ImVec2(9.0f, 7.0f);
+	style.ItemSpacing              = ImVec2(8.0f, 7.0f);
+	style.ItemInnerSpacing         = ImVec2(7.0f, 5.0f);
+	style.TouchExtraPadding        = ImVec2(0.0f, 0.0f);
+	style.IndentSpacing            = 18.0f;
+	style.ScrollbarSize            = 9.0f;
+	style.GrabMinSize              = 9.0f;
+	style.WindowBorderSize         = 0.0f;
+	style.ChildBorderSize          = 0.0f;
+	style.PopupBorderSize          = 1.0f;
+	style.FrameBorderSize          = 0.0f;
+	style.TabBorderSize            = 0.0f;
+	style.WindowRounding           = 12.0f;
+	style.ChildRounding            = 9.0f;
+	style.FrameRounding            = 7.0f;
+	style.PopupRounding            = 9.0f;
+	style.ScrollbarRounding        = 10.0f;
+	style.GrabRounding             = 8.0f;
+	style.TabRounding              = 7.0f;
+	style.SeparatorTextBorderSize  = 0.0f;
+	style.SeparatorTextAlign       = ImVec2(0.0f, 0.5f);
+	style.SeparatorTextPadding     = ImVec2(0.0f, 11.0f);
+	style.SelectableTextAlign      = ImVec2(0.0f, 0.5f);
+	style.WindowTitleAlign         = ImVec2(0.0f, 0.5f);
+	style.WindowMenuButtonPosition = ImGuiDir_None;
+	style.ColorButtonPosition      = ImGuiDir_Right;
 
-	const ImVec4 accent       = AccentColor();
-	const ImVec4 text         = ImVec4(0.90f, 0.89f, 0.88f, 1.00f);
-	const ImVec4 textMuted    = ImVec4(0.50f, 0.47f, 0.47f, 1.00f);
-	const ImVec4 canvas       = ImVec4(0.055f, 0.050f, 0.052f, 0.88f);
-	const ImVec4 surface      = ImVec4(0.045f, 0.042f, 0.045f, 0.91f);
-	const ImVec4 surfaceHigh  = RaisedSurfaceColor();
-	const ImVec4 interaction  = ImVec4(0.145f, 0.132f, 0.132f, 1.00f);
-	const ImVec4 border       = ImVec4(0.28f, 0.24f, 0.23f, 0.38f);
-	ImVec4       *colors      = style.Colors;
+	const ImVec4 accent      = AccentColor();
+	const ImVec4 text        = ImVec4(0.90f, 0.89f, 0.88f, 1.00f);
+	const ImVec4 textMuted   = ImVec4(0.50f, 0.47f, 0.47f, 1.00f);
+	const ImVec4 canvas      = ImVec4(0.055f, 0.050f, 0.052f, 0.88f);
+	const ImVec4 surface     = ImVec4(0.045f, 0.042f, 0.045f, 0.91f);
+	const ImVec4 surfaceHigh = RaisedSurfaceColor();
+	const ImVec4 interaction = ImVec4(0.145f, 0.132f, 0.132f, 1.00f);
+	const ImVec4 border      = ImVec4(0.28f, 0.24f, 0.23f, 0.38f);
+	ImVec4      *colors      = style.Colors;
 
 	colors[ImGuiCol_Text]                 = text;
 	colors[ImGuiCol_TextDisabled]         = textMuted;
@@ -206,7 +206,7 @@ inline bool NavigationItem(const char *label, bool selected)
 		const ImVec2 min = ImGui::GetItemRectMin();
 		const ImVec2 max = ImGui::GetItemRectMax();
 		ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(max.x - 14.0f, (min.y + max.y) * 0.5f),
-		                                             3.0f, ImGui::GetColorU32(AccentColor()));
+		                                            3.0f, ImGui::GetColorU32(AccentColor()));
 	}
 	return pressed;
 }
@@ -334,11 +334,22 @@ class ImguiRenderer
 
 	void RenderFrame(vk::CommandBuffer commandBuffer, vk::ImageView &imageView)
 	{
-		currCommandBuffer = &commandBuffer;
+		currCommandBuffer                = &commandBuffer;
 		static bool simulationActionFail = false;
 		auto        runSimulationAction  = [](CodeCuda::C_Res result) {
-			simulationActionFail = result != CodeCuda::C_Res::OK;
+            simulationActionFail = result != CodeCuda::C_Res::OK;
 		};
+		if (!colorAnimator.stop)
+		{
+			if (const std::vector<glm::vec4> *frame = colorAnimator.UseCPUFrame())
+			{
+				runSimulationAction(CodeCuda::FluidSimulation::C_MapImageToSmoke(
+				    static_cast<int>(colorAnimator.animatorInfo.spriteSizePx.x),
+				    static_cast<int>(colorAnimator.animatorInfo.spriteSizePx.y),
+				    4,
+				    const_cast<glm::vec4 *>(frame->data())));
+			}
+		}
 		if (!emitters.empty())
 		{
 			auto *cudaNode = renderGraph->GetNode("CudaNode");
@@ -351,14 +362,14 @@ class ImguiRenderer
 				for (const auto &activeEmitter : emitters)
 				{
 					runSimulationAction(CodeCuda::FluidSimulation::C_AddVelocityGPU(
-						activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
-						activeEmitter.velocity.x, activeEmitter.velocity.y,
-						cudaNode->CUDAPipeline->context));
+					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
+					    activeEmitter.velocity.x, activeEmitter.velocity.y,
+					    cudaNode->CUDAPipeline->context));
 					runSimulationAction(CodeCuda::FluidSimulation::C_AddSmokeGPU(
-						activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
-						activeEmitter.color.x, activeEmitter.color.y,
-						activeEmitter.color.z, activeEmitter.color.w,
-						cudaNode->CUDAPipeline->context));
+					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
+					    activeEmitter.color.x, activeEmitter.color.y,
+					    activeEmitter.color.z, activeEmitter.color.w,
+					    cudaNode->CUDAPipeline->context));
 				}
 			}
 		}
@@ -368,7 +379,7 @@ class ImguiRenderer
 		RenderDebuggerWindow();
 
 		ImGui::Render();
-		ENGINE::AttachmentInfo attachmentInfo = ENGINE::GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad);
+		ENGINE::AttachmentInfo attachmentInfo = ENGINE::GetColorAttachmentInfo(BlendConfigs::B_OPAQUE, glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad);
 		attachmentInfo.attachmentInfo.setImageView(imageView);
 
 		std::vector<vk::RenderingAttachmentInfo> attachmentInfos = {attachmentInfo.attachmentInfo};
@@ -484,7 +495,6 @@ class ImguiRenderer
 				ImGui::TextColored(ImguiRendererUI::AccentColor(), "ACTIVE");
 				ImGui::EndTable();
 			}
-
 		}
 		ImGui::EndChild();
 	}
@@ -492,16 +502,16 @@ class ImguiRenderer
 	void RenderSidebar()
 	{
 		const DebuggerPageInfo activePageInfo = GetDebuggerPageInfo();
-		auto navigate = [this](const char *label, DebuggerPage page) {
-			const bool selected = activePage == page;
-			if (ImGui::Selectable(label, selected))
-			{
-				activePage = page;
-			}
-			if (selected)
-			{
-				ImGui::SetItemDefaultFocus();
-			}
+		auto                   navigate       = [this](const char *label, DebuggerPage page) {
+            const bool selected = activePage == page;
+            if (ImGui::Selectable(label, selected))
+            {
+                activePage = page;
+            }
+            if (selected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
 		};
 
 		ImGui::PushFont(fonts.caption);
@@ -569,7 +579,6 @@ class ImguiRenderer
 				RenderGraphProfiler();
 				break;
 		}
-		
 	}
 
 	void RenderSceneViewport()
@@ -597,7 +606,7 @@ class ImguiRenderer
 
 		AddImage("bf", sceneImage);
 
-		const ImVec2 available = ImGui::GetContentRegionAvail();
+		const ImVec2     available   = ImGui::GetContentRegionAvail();
 		const glm::uvec2 imageExtent = sceneImage->imageData->GetImageSize();
 		if (available.x <= 1.0f || available.y <= 1.0f || imageExtent.x == 0 || imageExtent.y == 0)
 		{
@@ -624,10 +633,9 @@ class ImguiRenderer
 		sceneViewportValid   = true;
 		sceneViewportHovered = ImGui::IsItemHovered();
 
-		ImDrawList *drawList = ImGui::GetWindowDrawList();
+		ImDrawList *drawList    = ImGui::GetWindowDrawList();
 		const ImU32 borderColor = ImGui::GetColorU32(
-		    sceneViewportHovered ? ImguiRendererUI::AccentColor()
-		                         : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
+		    sceneViewportHovered ? ImguiRendererUI::AccentColor() : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
 		drawList->AddRect(sceneViewportMin, sceneViewportMax, borderColor, 4.0f, 0,
 		                  sceneViewportHovered ? 2.0f : 1.0f);
 
@@ -657,7 +665,7 @@ class ImguiRenderer
 
 		if (ImGui::Begin("CodeVK Engine Workspace", nullptr, rootFlags))
 		{
-			const ImVec2 available = ImGui::GetContentRegionAvail();
+			const ImVec2 available     = ImGui::GetContentRegionAvail();
 			const float  splitterWidth = 6.0f;
 			const float  minimumPanelWidth =
 			    std::min(360.0f, std::max(220.0f, available.x * 0.45f));
@@ -713,9 +721,7 @@ class ImguiRenderer
 			const ImVec2 splitterMax = ImGui::GetItemRectMax();
 			ImGui::GetWindowDrawList()->AddRectFilled(
 			    splitterMin, splitterMax,
-			    ImGui::GetColorU32(splitterHovered || splitterActive
-			                            ? ImguiRendererUI::AccentColor()
-			                            : ImVec4(0.18f, 0.16f, 0.16f, 0.75f)));
+			    ImGui::GetColorU32(splitterHovered || splitterActive ? ImguiRendererUI::AccentColor() : ImVec4(0.18f, 0.16f, 0.16f, 0.75f)));
 
 			ImGui::SameLine(0.0f, 0.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
@@ -783,11 +789,11 @@ class ImguiRenderer
 			prettySmokeStrokeActive      = true;
 		}
 
-		const glm::vec2 mouseDelta = mousePosition - prettySmokeLastMousePosition;
-		const float     distance   = glm::length(mouseDelta);
+		const glm::vec2 mouseDelta    = mousePosition - prettySmokeLastMousePosition;
+		const float     distance      = glm::length(mouseDelta);
 		const float     sampleSpacing = std::max(1.0f, static_cast<float>(radius) * 0.35f);
-		const int       sampleCount = std::max(1, static_cast<int>(glm::ceil(distance / sampleSpacing)));
-		const glm::vec4 newColor    = randomPrettyColor();
+		const int       sampleCount   = std::max(1, static_cast<int>(glm::ceil(distance / sampleSpacing)));
+		const glm::vec4 newColor      = randomPrettyColor();
 
 		for (int sample = 1; sample <= sampleCount; ++sample)
 		{
@@ -808,11 +814,11 @@ class ImguiRenderer
 			    mouseDelta.y * static_cast<float>(CodeCuda::FluidSimulation::s_height) / 1023.0f);
 
 			CodeCuda::FluidSimulation::C_AddVelocityGPU(x, y, radius,
-			                           simulationDelta.x * 0.2f,
-			                           -simulationDelta.y * 0.2f, context);
+			                                            simulationDelta.x * 0.2f,
+			                                            -simulationDelta.y * 0.2f, context);
 			CodeCuda::FluidSimulation::C_AddSmokeGPU(x, y, radius,
-			                        interpolatedColor.r, interpolatedColor.g,
-			                        interpolatedColor.b, interpolatedColor.a, context);
+			                                         interpolatedColor.r, interpolatedColor.g,
+			                                         interpolatedColor.b, interpolatedColor.a, context);
 		}
 
 		prettySmokeLastMousePosition = mousePosition;
@@ -831,7 +837,7 @@ class ImguiRenderer
 		bool        paramsChanged        = false;
 		static bool simulationActionFail = false;
 		auto        runSimulationAction  = [](CodeCuda::C_Res result) {
-			simulationActionFail = result != CodeCuda::C_Res::OK;
+            simulationActionFail = result != CodeCuda::C_Res::OK;
 		};
 
 		ImGui::TextDisabled("Grid: %d x %d", CodeCuda::FluidSimulation::s_width, CodeCuda::FluidSimulation::s_height);
@@ -852,6 +858,56 @@ class ImguiRenderer
 		static char                     searchBuffer[128] = {};
 		static bool                     imagesScanned     = false;
 		static bool                     imageLoadFailed   = false;
+		static std::vector<std::string> sequenceFolderPaths;
+		static std::string              selectedSequenceFolderPath;
+		static int                      sequenceFrameSpacing = 1;
+		static bool                     sequenceFoldersScanned = false;
+		static bool                     sequenceLoadFailed     = false;
+
+		auto scanSequenceFolders = [&]() {
+			sequenceFolderPaths.clear();
+			const std::filesystem::path engineResourcesPath =
+			    SYSTEMS::OS::GetInstance()->GetAssetsPath() + "\\Animations";
+			std::error_code scanError;
+			for (std::filesystem::recursive_directory_iterator iterator(engineResourcesPath, scanError), end;
+			     iterator != end && !scanError;
+			     iterator.increment(scanError))
+			{
+				if (!iterator->is_directory())
+				{
+					continue;
+				}
+
+				bool containsImages = false;
+				std::error_code folderError;
+				for (const auto &entry : std::filesystem::directory_iterator(iterator->path(), folderError))
+				{
+					if (folderError)
+					{
+						break;
+					}
+					if (!entry.is_regular_file())
+					{
+						continue;
+					}
+					std::string extension = entry.path().extension().string();
+					std::transform(extension.begin(), extension.end(), extension.begin(),
+					               [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+					containsImages = extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
+					                 extension == ".bmp" || extension == ".tga";
+					if (containsImages)
+					{
+						break;
+					}
+				}
+				if (containsImages)
+				{
+					sequenceFolderPaths.emplace_back(iterator->path().string());
+				}
+			}
+			std::sort(sequenceFolderPaths.begin(), sequenceFolderPaths.end());
+			sequenceFoldersScanned = true;
+		};
 
 		if (!imagesScanned)
 		{
@@ -873,157 +929,252 @@ class ImguiRenderer
 			std::sort(imagePaths.begin(), imagePaths.end());
 			imagesScanned = true;
 		}
+		if (!sequenceFoldersScanned)
+		{
+			scanSequenceFolders();
+		}
 
 		if (ImGui::CollapsingHeader("Image import###fluid_image_import"))
 		{
-		ImGui::TextDisabled("Load an image as smoke density or a solid mask.");
+			ImGui::TextDisabled("Load an image as smoke density or a solid mask.");
 
-		ImGui::SetNextItemWidth(-1.0f);
-		ImGui::InputTextWithHint(
-		    "##ImageSearch",
-		    "Search images...",
-		    searchBuffer,
-		    sizeof(searchBuffer));
+			ImGui::SetNextItemWidth(-1.0f);
+			ImGui::InputTextWithHint(
+			    "##ImageSearch",
+			    "Search images...",
+			    searchBuffer,
+			    sizeof(searchBuffer));
 
-		ImGui::Spacing();
-
-		const float sectionHeight = 260.0f;
-
-		if (ImGui::BeginChild(
-		        "##ImagesSection",
-		        ImVec2(0.0f, sectionHeight),
-		        ImGuiChildFlags_Borders,
-		        ImGuiWindowFlags_AlwaysVerticalScrollbar))
-		{
-			for (int i = 0; i < static_cast<int>(imagePaths.size()); ++i)
-			{
-				const std::string &path = imagePaths[i];
-
-				const std::string filename =
-				    std::filesystem::path(path).filename().string();
-
-				if (searchBuffer[0] != '\0')
-				{
-					if (filename.find(searchBuffer) == std::string::npos)
-						continue;
-				}
-
-				ImGui::PushID(i);
-
-				const bool selected = selectedImagePath == path;
-
-				const float rowHeight = 32.0f;
-
-				if (ImGui::Selectable(
-				        "##ImageRow",
-				        selected,
-				        ImGuiSelectableFlags_AllowOverlap,
-				        ImVec2(0.0f, rowHeight)))
-				{
-					selectedImagePath = path;
-				}
-
-				ImGui::SameLine();
-
-				const ImVec2 rowMin = ImGui::GetItemRectMin();
-
-				ImGui::SetCursorScreenPos(
-				    ImVec2(
-				        rowMin.x + 8.0f,
-				        rowMin.y + 7.0f));
-
-				ImGui::TextUnformatted(filename.c_str());
-
-				if (ImGui::IsItemHovered())
-				{
-					ImGui::SetTooltip("%s", path.c_str());
-				}
-
-				const float buttonWidth = 60.0f;
-
-				ImGui::SetCursorScreenPos(
-				    ImVec2(
-				        ImGui::GetWindowPos().x +
-				            ImGui::GetWindowContentRegionMax().x -
-				            buttonWidth - 8.0f,
-
-				        rowMin.y + 4.0f));
-
-				if (ImGui::Button("Load", ImVec2(buttonWidth, 24.0f)))
-				{
-					selectedImagePath = path;
-
-					stbi_uc *pixelsData = stbi_load(selectedImagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-					imageLoadFailed     = pixelsData == nullptr;
-					if (!pixelsData)
-					{
-						image_pixels.clear();
-						solid_mask.clear();
-					}
-					else
-					{
-						image_pixels.resize(static_cast<size_t>(width) * height);
-						solid_mask.resize(static_cast<size_t>(width) * height);
-						for (int y = 0; y < height; ++y)
-						{
-							for (int x = 0; x < width; ++x)
-							{
-								const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
-								const size_t byteIndex  = pixelIndex * 4;
-
-								image_pixels[static_cast<size_t>(y) * width + x] = glm::vec4(
-								    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
-								    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
-								    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
-								    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
-
-								solid_mask[static_cast<size_t>(y) * width + x] =
-								    image_pixels[static_cast<size_t>(y) * width + x].w > 0.5f ? 1 : 0;
-							}
-						}
-						stbi_image_free(pixelsData);
-					}
-				}
-
-				ImGui::PopID();
-			}
-		}
-
-		ImGui::EndChild();
-
-		if (!selectedImagePath.empty())
-		{
 			ImGui::Spacing();
-			ImGui::TextDisabled("Selected:");
-			ImGui::SameLine();
-			ImGui::TextUnformatted(
-			    std::filesystem::path(selectedImagePath)
-			        .filename()
-			        .string()
-			        .c_str());
-		}
-		if (imageLoadFailed)
-		{
-			ImGui::TextColored(ImVec4(0.95f, 0.38f, 0.42f, 1.0f), "The selected image could not be loaded.");
-		}
 
-		if (!image_pixels.empty())
-		{
-			if (ImGui::Button("Load Image as Smoke"))
+			const float sectionHeight = 260.0f;
+
+			if (ImGui::BeginChild(
+			        "##ImagesSection",
+			        ImVec2(0.0f, sectionHeight),
+			        ImGuiChildFlags_Borders,
+			        ImGuiWindowFlags_AlwaysVerticalScrollbar))
 			{
-				runSimulationAction(CodeCuda::FluidSimulation::C_MapImageToSmoke(width, height, 4,
-				                                                image_pixels.data()));
+				for (int i = 0; i < static_cast<int>(imagePaths.size()); ++i)
+				{
+					const std::string &path = imagePaths[i];
+
+					const std::string filename =
+					    std::filesystem::path(path).filename().string();
+
+					if (searchBuffer[0] != '\0')
+					{
+						if (filename.find(searchBuffer) == std::string::npos)
+							continue;
+					}
+
+					ImGui::PushID(i);
+
+					const bool selected = selectedImagePath == path;
+
+					const float rowHeight = 32.0f;
+
+					if (ImGui::Selectable(
+					        "##ImageRow",
+					        selected,
+					        ImGuiSelectableFlags_AllowOverlap,
+					        ImVec2(0.0f, rowHeight)))
+					{
+						selectedImagePath = path;
+					}
+
+					ImGui::SameLine();
+
+					const ImVec2 rowMin = ImGui::GetItemRectMin();
+
+					ImGui::SetCursorScreenPos(
+					    ImVec2(
+					        rowMin.x + 8.0f,
+					        rowMin.y + 7.0f));
+
+					ImGui::TextUnformatted(filename.c_str());
+
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("%s", path.c_str());
+					}
+
+					const float buttonWidth = 60.0f;
+
+					ImGui::SetCursorScreenPos(
+					    ImVec2(
+					        ImGui::GetWindowPos().x +
+					            ImGui::GetWindowContentRegionMax().x -
+					            buttonWidth - 8.0f,
+
+					        rowMin.y + 4.0f));
+
+					if (ImGui::Button("Load", ImVec2(buttonWidth, 24.0f)))
+					{
+						selectedImagePath = path;
+
+						stbi_uc *pixelsData = stbi_load(selectedImagePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+						imageLoadFailed     = pixelsData == nullptr;
+						if (!pixelsData)
+						{
+							image_pixels.clear();
+							solid_mask.clear();
+						}
+						else
+						{
+							image_pixels.resize(static_cast<size_t>(width) * height);
+							solid_mask.resize(static_cast<size_t>(width) * height);
+							for (int y = 0; y < height; ++y)
+							{
+								for (int x = 0; x < width; ++x)
+								{
+									const size_t pixelIndex = static_cast<size_t>(height - 1 - y) * width + x;
+									const size_t byteIndex  = pixelIndex * 4;
+
+									image_pixels[static_cast<size_t>(y) * width + x] = glm::vec4(
+									    static_cast<float>(pixelsData[byteIndex + 0]) / 255.0f,
+									    static_cast<float>(pixelsData[byteIndex + 1]) / 255.0f,
+									    static_cast<float>(pixelsData[byteIndex + 2]) / 255.0f,
+									    static_cast<float>(pixelsData[byteIndex + 3]) / 255.0f);
+
+									solid_mask[static_cast<size_t>(y) * width + x] =
+									    image_pixels[static_cast<size_t>(y) * width + x].w > 0.5f ? 1 : 0;
+								}
+							}
+							stbi_image_free(pixelsData);
+						}
+					}
+
+					ImGui::PopID();
+				}
 			}
-		}
-		if (!solid_mask.empty())
-		{
+
+			ImGui::EndChild();
+
+			if (!selectedImagePath.empty())
+			{
+				ImGui::Spacing();
+				ImGui::TextDisabled("Selected:");
+				ImGui::SameLine();
+				ImGui::TextUnformatted(
+				    std::filesystem::path(selectedImagePath)
+				        .filename()
+				        .string()
+				        .c_str());
+			}
+			if (imageLoadFailed)
+			{
+				ImGui::TextColored(ImVec4(0.95f, 0.38f, 0.42f, 1.0f), "The selected image could not be loaded.");
+			}
+
+			if (!image_pixels.empty())
+			{
+				if (ImGui::Button("Load Image as Smoke"))
+				{
+					runSimulationAction(CodeCuda::FluidSimulation::C_MapImageToSmoke(width, height, 4,
+					                                                                 image_pixels.data()));
+				}
+			}
+			if (!solid_mask.empty())
+			{
+				ImGui::SameLine();
+				if (ImGui::Button("Use Solid Mask"))
+				{
+					runSimulationAction(CodeCuda::FluidSimulation::C_MapSolidMask(width, height,
+					                                                              solid_mask.data()));
+				}
+			}
+
+			ImGui::SeparatorText("Color frame sequence");
+			ImGui::TextDisabled("Load a folder of color frames from the animation assets path.");
+			if (ImGui::Button("Refresh folders"))
+			{
+				scanSequenceFolders();
+			}
+
+			if (ImGui::BeginChild(
+			        "##ColorSequenceFolders",
+			        ImVec2(0.0f, 180.0f),
+			        ImGuiChildFlags_Borders,
+			        ImGuiWindowFlags_AlwaysVerticalScrollbar))
+			{
+				const std::filesystem::path animationsPath =
+				    SYSTEMS::OS::GetInstance()->GetAssetsPath() + "\\Animations";
+				for (int i = 0; i < static_cast<int>(sequenceFolderPaths.size()); ++i)
+				{
+					const std::string &folderPath = sequenceFolderPaths[i];
+					std::error_code relativePathError;
+					const std::string folderLabel =
+					    std::filesystem::relative(folderPath, animationsPath, relativePathError).string();
+
+					ImGui::PushID(i);
+					const bool selected = selectedSequenceFolderPath == folderPath;
+					if (ImGui::Selectable(folderLabel.c_str(), selected, ImGuiSelectableFlags_AllowOverlap,
+					                      ImVec2(0.0f, 32.0f)))
+					{
+						selectedSequenceFolderPath = folderPath;
+					}
+
+					const ImVec2 rowMin      = ImGui::GetItemRectMin();
+					const float  buttonWidth = 60.0f;
+					ImGui::SetCursorScreenPos(ImVec2(
+					    ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x - buttonWidth - 8.0f,
+					    rowMin.y + 4.0f));
+					if (ImGui::Button("Load", ImVec2(buttonWidth, 24.0f)))
+					{
+						selectedSequenceFolderPath = folderPath;
+						colorAnimator.LoadFramesCPU(selectedSequenceFolderPath, true);
+						colorAnimator.frameSpacing = sequenceFrameSpacing;
+						colorAnimator.stop         = true;
+						sequenceLoadFailed = colorAnimator.imagesFramesCPU.empty();
+					}
+					ImGui::PopID();
+				}
+			}
+			ImGui::EndChild();
+
+			if (sequenceLoadFailed)
+			{
+				ImGui::TextColored(ImVec4(0.95f, 0.38f, 0.42f, 1.0f),
+				                   "No loadable, consistently sized frames were found in that folder.");
+			}
+
+			const bool sequenceLoaded = !colorAnimator.imagesFramesCPU.empty();
+			if (sequenceLoaded)
+			{
+				ImGui::Text("Frames: %d | Size: %u x %u | Current: %d",
+				            colorAnimator.animatorInfo.frameCount,
+				            colorAnimator.animatorInfo.spriteSizePx.x,
+				            colorAnimator.animatorInfo.spriteSizePx.y,
+				            colorAnimator.animatorInfo.currentFrame + 1);
+			}
+			ImGui::SliderInt("Frame spacing##ColorSequence", &sequenceFrameSpacing, 1, 120);
+			colorAnimator.frameSpacing = sequenceFrameSpacing;
+
+			if (!sequenceLoaded)
+			{
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Play##ColorSequence"))
+			{
+				colorAnimator.stop = false;
+			}
 			ImGui::SameLine();
-			if (ImGui::Button("Use Solid Mask"))
+			if (ImGui::Button("Stop##ColorSequence"))
 			{
-				runSimulationAction(CodeCuda::FluidSimulation::C_MapSolidMask(width, height,
-				                                             solid_mask.data()));
+				colorAnimator.stop = true;
 			}
-		}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear##ColorSequence"))
+			{
+				colorAnimator.ClearCPU();
+				sequenceLoadFailed = false;
+			}
+			if (!sequenceLoaded)
+			{
+				ImGui::EndDisabled();
+			}
+
 		}
 
 		static int randomVelocityScale = 10;
@@ -1038,8 +1189,8 @@ class ImguiRenderer
 		static float fluidEmitterColor[4]             = {0.15f, 0.05f, 0.25f, 1.0f};
 		static bool  fluidToolEnabled                 = true;
 
-		const char *fluidTools[] = {"Smoke", "Velocity", "Add solid", "Erase solid",
-		                            "Radial velocity", "Add emitter", "Pretty smoke"};
+		const char *fluidTools[]            = {"Smoke", "Velocity", "Add solid", "Erase solid",
+		                                       "Radial velocity", "Add emitter", "Pretty smoke"};
 		const char *fluidToolDescriptions[] = {
 		    "Paint smoke with the selected color.",
 		    "Drag to push the fluid in the cursor direction.",
@@ -1151,7 +1302,7 @@ class ImguiRenderer
 			beginProperty("Random force");
 			const float addButtonWidth = 42.0f;
 			ImGui::SetNextItemWidth(std::max(60.0f, ImGui::GetContentRegionAvail().x -
-			                                          addButtonWidth - ImGui::GetStyle().ItemSpacing.x));
+			                                            addButtonWidth - ImGui::GetStyle().ItemSpacing.x));
 			ImGui::DragInt("##random_velocity_scale", &randomVelocityScale, 1.0f, 1,
 			               1000, "%d", ImGuiSliderFlags_AlwaysClamp);
 			ImGui::SameLine();
@@ -1164,12 +1315,12 @@ class ImguiRenderer
 
 		ImGui::TextDisabled("Right-click and drag over the viewport to apply the selected tool.");
 
-		const ImVec2 mousePosition = ImGui::GetMousePos();
-		const float  viewportWidth  = std::max(1.0f, sceneViewportMax.x - sceneViewportMin.x);
-		const float  viewportHeight = std::max(1.0f, sceneViewportMax.y - sceneViewportMin.y);
+		const ImVec2 mousePosition     = ImGui::GetMousePos();
+		const float  viewportWidth     = std::max(1.0f, sceneViewportMax.x - sceneViewportMin.x);
+		const float  viewportHeight    = std::max(1.0f, sceneViewportMax.y - sceneViewportMin.y);
 		const bool   mouseOverViewport = sceneViewportValid && sceneViewportHovered;
 		const int    activeBrushRadius =
-		    fluidTool == 6 ? std::max(1, CodeCuda::FluidSimulation::s_height / 46) : fluidBrushRadius;
+            fluidTool == 6 ? std::max(1, CodeCuda::FluidSimulation::s_height / 46) : fluidBrushRadius;
 		if (fluidToolEnabled && mouseOverViewport)
 		{
 			const float radiusPixels = std::max(
@@ -1187,15 +1338,15 @@ class ImguiRenderer
 			    (mousePosition.x - sceneViewportMin.x) / viewportWidth, 0.0f, 1.0f);
 			const float v = glm::clamp(
 			    1.0f - (mousePosition.y - sceneViewportMin.y) / viewportHeight, 0.0f, 1.0f);
-			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
-			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
+			const int xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
+			const int yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
 
 			switch (fluidTool)
 			{
 				case 0:
 					runSimulationAction(CodeCuda::FluidSimulation::C_AddSmoke(xPosition, yPosition, fluidBrushRadius,
-					                                         fluidSmokeColor[0], fluidSmokeColor[1],
-					                                         fluidSmokeColor[2], fluidSmokeColor[3]));
+					                                                          fluidSmokeColor[0], fluidSmokeColor[1],
+					                                                          fluidSmokeColor[2], fluidSmokeColor[3]));
 					break;
 				case 1:
 				{
@@ -1203,8 +1354,8 @@ class ImguiRenderer
 					const float  velocityX  = mouseDelta.x * static_cast<float>(CodeCuda::FluidSimulation::s_width) / viewportWidth;
 					const float  velocityY  = mouseDelta.y * static_cast<float>(CodeCuda::FluidSimulation::s_height) / viewportHeight;
 					runSimulationAction(CodeCuda::FluidSimulation::C_AddVelocity(xPosition, yPosition, fluidBrushRadius,
-					                                            velocityX * fluidVelocityStrength,
-					                                            -velocityY * fluidVelocityStrength));
+					                                                             velocityX * fluidVelocityStrength,
+					                                                             -velocityY * fluidVelocityStrength));
 					break;
 				}
 				case 2:
@@ -1215,7 +1366,7 @@ class ImguiRenderer
 					break;
 				case 4:
 					runSimulationAction(CodeCuda::FluidSimulation::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
-					                                                  fluidRadialVelocityStrength));
+					                                                                   fluidRadialVelocityStrength));
 					break;
 				case 6:
 				{
@@ -1246,8 +1397,8 @@ class ImguiRenderer
 			    (mousePosition.x - sceneViewportMin.x) / viewportWidth, 0.0f, 1.0f);
 			const float v = glm::clamp(
 			    1.0f - (mousePosition.y - sceneViewportMin.y) / viewportHeight, 0.0f, 1.0f);
-			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
-			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
+			const int xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
+			const int yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
 			switch (fluidTool)
 			{
 				case 5:
@@ -1325,11 +1476,18 @@ class ImguiRenderer
 			ImGui::TableSetColumnIndex(1);
 			ImGui::SetNextItemWidth(-1.0f);
 		};
+		auto snapDraggedResolution = [](int resolution) {
+			constexpr int resolutionStep = 32;
+			return std::clamp(
+			    ((resolution + resolutionStep / 2) / resolutionStep) * resolutionStep,
+			    resolutionStep,
+			    4096);
+		};
 
-		bool widthChanged = false;
-		bool widthActive = false;
+		bool widthChanged  = false;
+		bool widthActive   = false;
 		bool heightChanged = false;
-		bool heightActive = false;
+		bool heightActive  = false;
 		if (ImGui::CollapsingHeader("Resolution###fluid_resolution"))
 		{
 			if (ImGui::BeginTable("##fluid_resolution_properties", 2,
@@ -1339,14 +1497,22 @@ class ImguiRenderer
 				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 				beginSettingsProperty("Width");
 				widthChanged = ImGui::DragInt("##fluid_resolution_width", &resolutionWidth,
-				                              1.0f, 1, 4096, "%d",
+				                              32.0f, 1, 4096, "%d",
 				                              ImGuiSliderFlags_AlwaysClamp);
-				widthActive = ImGui::IsItemActive();
+				widthActive  = ImGui::IsItemActive();
+				if (widthChanged && widthActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+				{
+					resolutionWidth = snapDraggedResolution(resolutionWidth);
+				}
 				beginSettingsProperty("Height");
 				heightChanged = ImGui::DragInt("##fluid_resolution_height", &resolutionHeight,
-				                               1.0f, 1, 4096, "%d",
+				                               32.0f, 1, 4096, "%d",
 				                               ImGuiSliderFlags_AlwaysClamp);
-				heightActive = ImGui::IsItemActive();
+				heightActive  = ImGui::IsItemActive();
+				if (heightChanged && heightActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+				{
+					resolutionHeight = snapDraggedResolution(resolutionHeight);
+				}
 				ImGui::EndTable();
 			}
 		}
@@ -1387,15 +1553,13 @@ class ImguiRenderer
 				                                  0.001f, 0.0f, 0.2f, "%.3f",
 				                                  ImGuiSliderFlags_AlwaysClamp);
 
-				int timeStepDenominator = fluidSimParams.dt > 0.0f
-				                              ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f)
-				                              : 120;
+				int timeStepDenominator = fluidSimParams.dt > 0.0f ? static_cast<int>((1.0f / fluidSimParams.dt) + 0.5f) : 120;
 				beginSettingsProperty("Time step");
 				if (ImGui::DragInt("##fluid_time_step", &timeStepDenominator, 1.0f,
 				                   1, 10000, "1 / %d", ImGuiSliderFlags_AlwaysClamp))
 				{
 					fluidSimParams.dt = 1.0f / static_cast<float>(timeStepDenominator);
-					paramsChanged = true;
+					paramsChanged     = true;
 				}
 				beginSettingsProperty("Gravity");
 				paramsChanged |= ImGui::DragFloat("##fluid_gravity", &fluidSimParams.g,
@@ -1570,8 +1734,7 @@ class ImguiRenderer
 				ImGui::TextUnformatted(node ? node->workerQueueName.c_str() : "-");
 				ImGui::TableSetColumnIndex(3);
 				const bool nodeActive = node && node->active;
-				ImGui::TextColored(nodeActive ? ImguiRendererUI::SuccessColor()
-				                              : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled),
+				ImGui::TextColored(nodeActive ? ImguiRendererUI::SuccessColor() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled),
 				                   "%s", nodeActive ? "Active" : "Inactive");
 			}
 			ImGui::EndTable();
@@ -2264,12 +2427,12 @@ class ImguiRenderer
 			return;
 		}
 
-		const float availableWidth = ImGui::GetContentRegionAvail().x;
+		const float availableWidth   = ImGui::GetContentRegionAvail().x;
 		const float minimumCardWidth = 190.0f;
-		const float columnSpacing = ImGui::GetStyle().ItemSpacing.x;
-		const int   columnCount = std::max(1, static_cast<int>((availableWidth + columnSpacing) /
-		                                                     (minimumCardWidth + columnSpacing)));
-		const float cardWidth = (availableWidth - columnSpacing * static_cast<float>(columnCount - 1)) /
+		const float columnSpacing    = ImGui::GetStyle().ItemSpacing.x;
+		const int   columnCount      = std::max(1, static_cast<int>((availableWidth + columnSpacing) /
+		                                                            (minimumCardWidth + columnSpacing)));
+		const float cardWidth        = (availableWidth - columnSpacing * static_cast<float>(columnCount - 1)) /
 		                        static_cast<float>(columnCount);
 		const float previewSize = std::min(220.0f, std::max(96.0f, cardWidth - 24.0f));
 
@@ -2338,12 +2501,12 @@ class ImguiRenderer
 	ImGuiUtils::ProfilersWindow                           profilersWindow{};
 	UI::RG_NodeEditor                                     nodeEditor;
 	ImguiRendererUI::Fonts                                fonts{};
-	DebuggerPage                                          activePage = DebuggerPage::RenderGraph;
-	bool                                                  sceneViewportValid = false;
+	DebuggerPage                                          activePage           = DebuggerPage::RenderGraph;
+	bool                                                  sceneViewportValid   = false;
 	bool                                                  sceneViewportHovered = false;
 	ImVec2                                                sceneViewportMin{};
 	ImVec2                                                sceneViewportMax{};
-	float                                                 inspectorPanelWidth = 0.0f;
+	float                                                 inspectorPanelWidth    = 0.0f;
 	bool                                                  inspectorPanelResizing = false;
 	glm::vec2                                             prettySmokeLastMousePosition{};
 	glm::vec4                                             prettySmokeLastColor{0.15f, 0.05f, 0.25f, 1.0f};
@@ -2364,6 +2527,7 @@ class ImguiRenderer
 		int       xPos;
 		int       yPos;
 	};
+	Animator2D colorAnimator;
 	std::vector<emitter> emitters;
 };
 inline void ImguiRenderer::DisplayRenderGraphDag()

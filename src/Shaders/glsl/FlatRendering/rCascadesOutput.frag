@@ -49,15 +49,15 @@ vec4 CastInterval(vec2 intervalStart, vec2 intervalEnd, int cascadeIndex, vec2 f
     vec4 accumulatedRadiance = vec4(0.0, 0.0, 0.0, 1.0);
     float stepSize = 1.0;
     vec2 dir = normalize(intervalEnd - intervalStart) * stepSize;
-    int maxSteps = 500;
+    int maxSteps = 1;
     bool occluded = false;
     int sampleCount = 0;
     vec2 pos = intervalStart;
 
-    for (int i = 0; i < 1; i++){
+    for (int i = 0; i < maxSteps; i++){
         vec2 textCoordPos = vec2(pos)/ vec2(fSize);
         vec4 sampleCol= imageLoad(PaintingLayers[0], ivec2(pos));
-        vec4 simulationCol= imageLoad(PaintingLayers[3], ivec2(pos));
+        vec4 simulationCol= imageLoad(PaintingLayers[4], ivec2(pos));
         vec4 ocluddersFinded= imageLoad(Radiances[0], ivec2(pos));
         vec4 sampleColImage= texture(TestImage,textCoordPos);
 
