@@ -167,6 +167,7 @@ class ClusterRenderer : public BaseRenderer
 		renderGraphRef->GetNode(gBufferPassName)->G_SetRenderOperation(renderOp);
 
 		auto lSetViewTask = new std::function<void()>([this]() {
+			auto renderNode = renderGraphRef->GetNode(lightPassName);
 			lightPc.xTileCount  = cullDataPc.xTileCount;
 			lightPc.yTileCount  = cullDataPc.yTileCount;
 			lightPc.xTileSizePx = xTileSizePx;
@@ -174,8 +175,8 @@ class ClusterRenderer : public BaseRenderer
 			lightPc.zSlices     = zSlicesSize;
 
 			auto *currImage = renderGraphRef->currentBackBuffer;
-			renderGraphRef->AddColorImageResource(lightPassName, currImage);
-			renderGraphRef->GetNode(lightPassName)->G_SetFramebufferSize(windowProvider->GetWindowSize());
+			renderNode->G_SetColorImageAttachmentBinding(0, currImage);
+			renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
 		});
 		auto lRenderOp    = new std::function<void()>(
             [this]() {
@@ -371,7 +372,7 @@ class ClusterRenderer : public BaseRenderer
 		gFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
 
 		VertexInput    vertexInput = M_Vertex3D::GetVertexInput();
-		AttachmentInfo colInfo     = GetColorAttachmentInfo(
+		AttachmentInfo colInfo     = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
             glm::vec4(0.0f), vk::Format::eR32G32B32A32Sfloat);
 		AttachmentInfo depthInfo  = GetDepthAttachmentInfo();
 		auto           renderNode = renderGraphRef->AddPass(gBufferPassName);
@@ -381,18 +382,18 @@ class ClusterRenderer : public BaseRenderer
 		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
 		renderNode->G_SetVertexInput(vertexInput);
 		renderNode->G_SetPushConstantSize(sizeof(MvpPc));
-		renderNode->G_AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->G_AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->G_AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->G_AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->G_AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->G_SetDepthAttachmentOutput(depthAttachmentView->name, depthInfo);
+		renderNode->G_AddColorAttachmentOutput(0, colInfo);
+		renderNode->G_AddColorAttachmentOutput(1, colInfo);
+		renderNode->G_AddColorAttachmentOutput(2, colInfo);
+		renderNode->G_AddColorAttachmentOutput(3, colInfo);
+		renderNode->G_AddColorAttachmentOutput(4, colInfo);
+		renderNode->G_SetDepthAttachmentOutput(depthInfo);
 		renderNode->G_SetDepthConfig(DepthConfigs::D_ENABLE);
-		renderNode->G_AddColorImageResource(colAttachmentView);
-		renderNode->G_AddColorImageResource(normAttachmentView);
-		renderNode->G_AddColorImageResource(tangAttachmentView);
-		renderNode->G_AddColorImageResource(metRoughAttachmentView);
-		renderNode->G_AddColorImageResource(uvAttachmentView);
+		renderNode->G_SetColorImageAttachmentBinding(0, colAttachmentView);
+		renderNode->G_SetColorImageAttachmentBinding(1, normAttachmentView);
+		renderNode->G_SetColorImageAttachmentBinding(2, tangAttachmentView);
+		renderNode->G_SetColorImageAttachmentBinding(3, metRoughAttachmentView);
+		renderNode->G_SetColorImageAttachmentBinding(4, uvAttachmentView);
 		renderNode->G_SetDepthImageResource(depthAttachmentView);
 		renderNode->G_SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
 		renderNode->AddBufferSync({B_COMPUTE_WRITE, B_DRAW_INDIRECT});
@@ -404,7 +405,7 @@ class ClusterRenderer : public BaseRenderer
 		lVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
 		lFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\light.frag.spv", S_FRAG);
 
-		AttachmentInfo lColInfo = GetColorAttachmentInfo(
+		AttachmentInfo lColInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 
 		VertexInput lVertexInput = Vertex2D::GetVertexInput();
@@ -415,7 +416,7 @@ class ClusterRenderer : public BaseRenderer
 		lRenderNode->G_SetPushConstantSize(sizeof(LightPc));
 		lRenderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
 		lRenderNode->G_SetVertexInput(lVertexInput);
-		lRenderNode->G_AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
+		lRenderNode->G_AddColorAttachmentOutput(0, lColInfo);
 		lRenderNode->G_AddSamplerResource(colAttachmentView);
 		lRenderNode->G_AddSamplerResource(normAttachmentView);
 		lRenderNode->G_AddSamplerResource(tangAttachmentView);

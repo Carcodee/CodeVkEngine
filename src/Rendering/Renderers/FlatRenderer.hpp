@@ -200,7 +200,7 @@ class FlatRenderer : public BaseRenderer
 		importBufferNode->BuildRenderGraphNode();
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
-		AttachmentInfo colInfo     = GetColorAttachmentInfo(
+		AttachmentInfo colInfo     = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
             glm::vec4(0.0f), vk::Format::eR32G32B32A32Sfloat);
 
 		probesVertShader = renderGraph->resourcesManager->GetShader(
@@ -215,7 +215,7 @@ class FlatRenderer : public BaseRenderer
 		probesGenGPUPipeline->G_SetVertShader(probesVertShader);
 		probesGenGPUPipeline->G_SetFragShader(probesFragShader);
 		probesGenGPUPipeline->G_SetVertexInput(vertexInput);
-		probesGenGPUPipeline->G_AddColorAttachmentOutput("CascadeAttachment", colInfo, BlendConfigs::B_OPAQUE);
+		probesGenGPUPipeline->G_AddColorAttachmentOutput(0, colInfo);
 		probesGenGPUPipeline->G_BuildGPUPipeline();
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
@@ -224,7 +224,7 @@ class FlatRenderer : public BaseRenderer
 			probesGenPassNames.push_back(name);
 			auto renderNode = renderGraph->AddPass(probesGenGPUPipeline, name, "Graphics_Test");
 			renderNode->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
-			renderNode->G_AddColorImageResource(cascadesAttachmentsImagesViews[i]);
+			renderNode->G_SetColorImageAttachmentBinding(0, cascadesAttachmentsImagesViews[i]);
 			renderNode->DependsOn(paintingPassName);
 		}
 
@@ -234,7 +234,7 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv",
 		    S_FRAG);
 
-		AttachmentInfo outputColInfo = GetColorAttachmentInfo(
+		AttachmentInfo outputColInfo = GetColorAttachmentInfo(BlendConfigs::B_ALPHA_BLEND,
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 
 		auto cascadesGPUPipeline = renderGraph->AddGPUPipeline("CascadesGPUPipeline");
@@ -242,7 +242,7 @@ class FlatRenderer : public BaseRenderer
 		cascadesGPUPipeline->G_SetFragShader(fragShader);
 		cascadesGPUPipeline->G_SetPushConstantSize(sizeof(RcPc));
 		cascadesGPUPipeline->G_SetVertexInput(vertexInput);
-		cascadesGPUPipeline->G_AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
+		cascadesGPUPipeline->G_AddColorAttachmentOutput(0, outputColInfo);
 		cascadesGPUPipeline->G_BuildGPUPipeline();
 
 		auto renderNode = renderGraph->AddPass(cascadesGPUPipeline, rCascadesPassName);
@@ -252,7 +252,7 @@ class FlatRenderer : public BaseRenderer
 			renderNode->DependsOn("ProbesGen_" + std::to_string(i));
 		}
 
-		AttachmentInfo mergeColInfo = GetColorAttachmentInfo(
+		AttachmentInfo mergeColInfo = GetColorAttachmentInfo( BlendConfigs::B_OPAQUE,
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad,
 		    vk::AttachmentStoreOp::eStore);
 
@@ -264,7 +264,7 @@ class FlatRenderer : public BaseRenderer
 		shaderNode->G_SetFragShader(mergeFragShader);
 		shaderNode->G_SetPushConstantSize(sizeof(RcPc));
 		shaderNode->G_SetVertexInput(vertexInput);
-		shaderNode->G_AddColorAttachmentOutput("mergeColor", mergeColInfo, BlendConfigs::B_OPAQUE);
+		shaderNode->G_AddColorAttachmentOutput(0, mergeColInfo);
 		shaderNode->G_BuildGPUPipeline();
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
@@ -288,12 +288,15 @@ class FlatRenderer : public BaseRenderer
 		        "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv",
 		    S_FRAG);
 
+		
+		AttachmentInfo resultColInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
+			glm::vec4(0.0f), core->swapchainRef->GetFormat());
 		auto resultGPUPipeline = renderGraph->AddGPUPipeline("ResultCascadesShader");
 		resultGPUPipeline->G_SetVertShader(resultVertShader);
 		resultGPUPipeline->G_SetFragShader(resultFragShader);
 		resultGPUPipeline->G_SetVertexInput(Vertex2D::GetVertexInput());
 		resultGPUPipeline->G_SetPushConstantSize(sizeof(RcPc));
-		resultGPUPipeline->G_AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
+		resultGPUPipeline->G_AddColorAttachmentOutput(0, resultColInfo);
 
 		auto resultNode = renderGraph->AddPass(resultGPUPipeline, resultPassName, "Graphics");
 		resultNode->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
@@ -383,7 +386,8 @@ class FlatRenderer : public BaseRenderer
 			rcPc.fHeight            = rcResolutionH;
 
 			auto *currImage = renderGraph->currentBackBuffer;
-			renderGraph->AddColorImageResource(rCascadesPassName, currImage);
+			auto &renderNode = renderGraph->renderNodes.at(rCascadesPassName);
+			renderNode->G_SetColorImageAttachmentBinding(0, currImage);
 			renderGraph->GetNode(rCascadesPassName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
 		});
 		auto radianceOutputOp   = new std::function<void()>(
@@ -419,7 +423,7 @@ class FlatRenderer : public BaseRenderer
                 int         idx       = i;
                 std::string mergeName = rMergePassName + "_" + std::to_string(idx);
                 auto       *currImage = renderGraph->currentBackBuffer;
-                renderGraph->GetNode(mergeName)->G_AddColorImageResource(currImage);
+                renderGraph->GetNode(mergeName)->G_SetColorImageAttachmentBinding(0, currImage);
                 renderGraph->GetNode(mergeName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
             });
 			auto        mergeRenderOp     = new std::function<void()>(
@@ -450,7 +454,7 @@ class FlatRenderer : public BaseRenderer
 
 		auto resultTask     = new std::function<void()>([this]() {
             auto *currImage = renderGraph->currentBackBuffer;
-            renderGraph->GetNode(resultPassName)->G_AddColorImageResource(currImage);
+            renderGraph->GetNode(resultPassName)->G_SetColorImageAttachmentBinding(0, currImage);
             renderGraph->GetNode(resultPassName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
         });
 		auto resultRenderOp = new std::function<void()>(

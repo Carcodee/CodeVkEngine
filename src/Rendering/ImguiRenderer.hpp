@@ -368,7 +368,7 @@ class ImguiRenderer
 		RenderDebuggerWindow();
 
 		ImGui::Render();
-		ENGINE::AttachmentInfo attachmentInfo = ENGINE::GetColorAttachmentInfo(glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad);
+		ENGINE::AttachmentInfo attachmentInfo = ENGINE::GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad);
 		attachmentInfo.attachmentInfo.setImageView(imageView);
 
 		std::vector<vk::RenderingAttachmentInfo> attachmentInfos = {attachmentInfo.attachmentInfo};
@@ -2672,8 +2672,7 @@ inline void ImguiRenderer::DisplayRenderGraphDag()
 			addRow("Shader node", shaderNode ? shaderNode->name : "null");
 			addRow("Pipeline", shaderNode ? pipelineName(shaderNode->pipelineType) : "n/a");
 			addRow("Push constant bytes", shaderNode ? std::to_string(shaderNode->pushConstantSize) : "n/a");
-			addRow("Color attachments", shaderNode ? std::to_string(shaderNode->colAttachments.size()) : "n/a");
-			addRow("Blend configs", shaderNode ? std::to_string(shaderNode->colorBlendConfigs.size()) : "n/a");
+			addRow("Color attachments", shaderNode ? std::to_string(shaderNode->outColAttachmentsBindings.size()) : "n/a");
 			addRow("Depth attachment", shaderNode ? (shaderNode->depthAttachment.format == vk::Format::eUndefined ? "none" : "present") : "n/a");
 			addRow("Framebuffer", std::to_string(selectedNode->GetFrameBufferSize().x) + " x " + std::to_string(selectedNode->GetFrameBufferSize().y));
 			addRow("Attachment outputs", std::to_string(selectedNode->GetImageAttachmentOutputs().size()));

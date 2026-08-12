@@ -105,7 +105,7 @@ class GSRenderer : public BaseRenderer
 		//     "\\glsl\\ThirdParty\\multi_radixsort.comp");
 		// histogramNode->G_SetPushConstantSize(sizeof(PcRadixSort));
 
-		AttachmentInfo colInfo = GetColorAttachmentInfo(
+		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_ALPHA_BLEND,
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 		auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat, ENGINE::colorImageUsage);
 		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
@@ -114,7 +114,7 @@ class GSRenderer : public BaseRenderer
 		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
 		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		renderNode->G_SetPushConstantSize(sizeof(SplitMVP));
-		renderNode->G_AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_ALPHA_BLEND);
+		renderNode->G_AddColorAttachmentOutput(0, colInfo);
 		renderNode->G_SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
 		renderNode->BuildRenderGraphNode();
 
@@ -188,7 +188,7 @@ class GSRenderer : public BaseRenderer
 			    splitMvp.model = glm::identity<glm::mat4>();
 
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->G_AddColorImageResource(renderGraph->currentBackBuffer);
+			    renderNode->G_SetColorImageAttachmentBinding(0, renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {

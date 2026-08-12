@@ -493,7 +493,7 @@ struct GraphNodeRegistry
 					if (image->HasData())
 					{
 						configsAdded.at(N_IMAGE_STORAGE).added++;
-						info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData,
+						info = ENGINE::GetColorAttachmentInfo(ENGINE::B_OPAQUE, clearColData, colFormatData, loadOpData,
 						                                      storeOpData);
 						storageImages.try_emplace(graphNodeRef->globalId, image);
 					}
@@ -531,7 +531,7 @@ struct GraphNodeRegistry
 					if (image->HasData())
 					{
 						configsAdded.at(N_COL_ATTACHMENT_STRUCTURE).added++;
-						info = ENGINE::GetColorAttachmentInfo(clearColData, colFormatData, loadOpData, storeOpData);
+						info = ENGINE::GetColorAttachmentInfo(blendData, clearColData, colFormatData, loadOpData, storeOpData);
 						images.try_emplace(graphNodeRef->globalId, image);
 					}
 				}
@@ -623,7 +623,8 @@ struct GraphNodeRegistry
 				renderNode->G_SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
 				renderNode->G_SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
 				renderNode->G_SetVertexInput(*vertexInput);
-				renderNode->G_AddColorAttachmentOutput(attachmentName, info, blendData);
+				renderNode->G_AddColorAttachmentOutput(0, info);
+				int idx = 0;
 				for (auto &image : images)
 				{
 					if (!image.second->HasData())
@@ -634,7 +635,8 @@ struct GraphNodeRegistry
 					std::string        imageName = "nodeImage_" + std::to_string(image.first);
 					ENGINE::ImageView *imgView   = selfNode.renderGraph->resourcesManager->GetImageViewFromId(
                         imageId);
-					renderNode->G_AddColorImageResource(imgView);
+					renderNode->G_SetColorImageAttachmentBinding(idx,imgView);
+					idx++;
 				}
 
 				if (configsAdded.contains(N_DEPTH_STRUCTURE))

@@ -50,6 +50,8 @@ struct FrameResources
 
 struct AttachmentInfo : SYSTEMS::ISerializable<AttachmentInfo>
 {
+	
+	BlendConfigs blendConfigs = {};
 	vk::RenderingAttachmentInfo attachmentInfo = {};
 	vk::Format                  format         = vk::Format::eUndefined;
 

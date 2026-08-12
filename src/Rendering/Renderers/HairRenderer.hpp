@@ -34,7 +34,7 @@ class HairRenderer : public BaseRenderer
 
 	void CreatePipelines()
 	{
-		AttachmentInfo colInfo = GetColorAttachmentInfo(
+		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
 		    glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
 		Shader *vShader    = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairVert", ShaderStage::S_VERT, ShaderCompiler::C_GLSL);
 		Shader *fShader    = renderGraph->resourcesManager->GetOrCreateDefaultShader("HairFrag", ShaderStage::S_FRAG, ShaderCompiler::C_GLSL);
@@ -58,7 +58,7 @@ class HairRenderer : public BaseRenderer
 		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		// change this
 		//  renderNode->G_SetPushConstantSize(4);
-		renderNode->G_AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput(0, colInfo);
 		renderNode->BuildRenderGraphNode();
 	}
 
@@ -71,7 +71,7 @@ class HairRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>(
 		    [this] {
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->G_AddColorImageResource(renderGraph->currentBackBuffer);
+			    renderNode->G_SetColorImageAttachmentBinding(0, renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {

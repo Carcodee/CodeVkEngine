@@ -34,7 +34,7 @@ class GIRenderer : public BaseRenderer
 
 	void CreatePipelines()
 	{
-		AttachmentInfo colInfo = GetColorAttachmentInfo(
+		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
 		    glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
 		std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
@@ -44,7 +44,7 @@ class GIRenderer : public BaseRenderer
 		auto renderNode = renderGraph->GetTemplateNode_DF(
 		    shPassName, "shView.slang", C_GLSL);
 		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->G_AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput(0, colInfo);
 
 		renderNode->BuildRenderGraphNode();
 	}
@@ -58,7 +58,7 @@ class GIRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>([this] {
 			auto renderNode     = renderGraph->GetNode(shPassName);
 			auto currBackBuffer = renderGraph->currentBackBuffer;
-			renderNode->G_AddColorImageResource(currBackBuffer);
+			renderNode->G_SetColorImageAttachmentBinding(0, currBackBuffer);
 		});
 
 		auto shRenderOp = new std::function<void()>(

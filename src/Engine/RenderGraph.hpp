@@ -104,15 +104,12 @@ struct GPUPipeline
 
 	GraphicsPipelineConfigs                                   graphicsPipelineConfigs = {};
 	VertexInput                                               vertexInput;
-	std::vector<BlendConfigs>                                 colorBlendConfigs;
-	std::vector<AttachmentInfo>                               colAttachments;
 	AttachmentInfo                                            depthAttachment      = {};
 	AttachmentInfo                                            depthAttachmentInput = {};
 	size_t                                                    pushConstantSize     = DUMMY_PC_SIZE;
 	DepthConfigs                                              depthConfig          = D_NONE;
 	RenderNodeConfigs                                         configs              = {true, false};
-	std::unordered_map<std::string, AttachmentInfo>           outColAttachmentsProxyRef;
-	std::unordered_map<std::string, AttachmentInfo>           outDepthAttachmentProxyRef;
+	std::unordered_map<int, AttachmentInfo>           outColAttachmentsBindings;
 	std::string                                               name;
 
 	std::map<std::string, Shader *> shaders = {
@@ -199,6 +196,13 @@ struct GPUPipeline
 
 				G_SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
+			std::vector<AttachmentInfo> colAttachments;
+			colAttachments.resize(outColAttachmentsBindings.size());
+			for (auto colInfo : outColAttachmentsBindings)
+			{
+				colAttachments[colInfo.first] = colInfo.second;
+				
+			}
 
 			std::vector<vk::Format> colorFormats;
 			colorFormats.reserve(colAttachments.size());
@@ -218,6 +222,13 @@ struct GPUPipeline
 
 			pipelineLayout =
 			    core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
+			
+			std::vector<BlendConfigs> blendConfigs = {};
+			blendConfigs.resize(outColAttachmentsBindings.size());
+			for (auto colInfo : outColAttachmentsBindings)
+			{
+				blendConfigs[colInfo.first] = colInfo.second.blendConfigs;
+			}
 
 			std::unique_ptr<GraphicsPipeline> graphicsPipeline =
 			    std::make_unique<GraphicsPipeline>(
@@ -226,7 +237,7 @@ struct GPUPipeline
 			        pipelineLayout.get(),
 			        dynamicRenderPass.pipelineRenderingCreateInfo,
 			        graphicsPipelineConfigs,
-			        colorBlendConfigs,
+			        blendConfigs,
 			        depthConfig,
 			        vertexInput,
 			        pipelineCache.get());
@@ -361,6 +372,14 @@ struct GPUPipeline
 				G_SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
+			std::vector<AttachmentInfo> colAttachments;
+			colAttachments.resize(outColAttachmentsBindings.size());
+			for (auto colInfo : outColAttachmentsBindings)
+			{
+				colAttachments[colInfo.first] = colInfo.second;
+				
+			}
+			
 			std::vector<vk::Format> colorFormats;
 			colorFormats.reserve(colAttachments.size());
 
@@ -382,7 +401,13 @@ struct GPUPipeline
 
 			std::map<ShaderStage, Shader *> stages;
 			G_GetShaderStages(stages);
-
+			
+			std::vector<BlendConfigs> blendConfigs = {};
+			blendConfigs.resize(outColAttachmentsBindings.size());
+			for (auto colInfo : outColAttachmentsBindings)
+			{
+				blendConfigs[colInfo.first] = colInfo.second.blendConfigs;
+			}
 			std::unique_ptr<GraphicsPipeline> graphicsPipeline =
 			    std::make_unique<GraphicsPipeline>(
 			        core->logicalDevice.get(),
@@ -390,7 +415,7 @@ struct GPUPipeline
 			        pipelineLayout.get(),
 			        dynamicRenderPass.pipelineRenderingCreateInfo,
 			        graphicsPipelineConfigs,
-			        colorBlendConfigs,
+			        blendConfigs,
 			        depthConfig,
 			        vertexInput,
 			        pipelineCache.get());
@@ -666,26 +691,12 @@ struct GPUPipeline
 		}
 		return this;
 	}
-	GPUPipeline *G_AddColorAttachmentInput(std::string name)
-	{
-		if (!outColAttachmentsProxyRef.contains(name))
-		{
-			colAttachments.push_back(outColAttachmentsProxyRef.at(name));
-		}
-		else
-		{
-			std::cout << "Attachment input: " << "\"" << name << "\"" << " does not exist";
-		}
-		return this;
-	}
 
-	GPUPipeline *G_AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
+	GPUPipeline *G_AddColorAttachmentOutput(int binding, AttachmentInfo attachmentInfo)
 	{
-		if (!outColAttachmentsProxyRef.contains(name))
+		if (!outColAttachmentsBindings.contains(binding))
 		{
-			outColAttachmentsProxyRef.try_emplace(name, attachmentInfo);
-			colAttachments.push_back(outColAttachmentsProxyRef.at(name));
-			colorBlendConfigs.push_back(blendConfig);
+			outColAttachmentsBindings.try_emplace(binding, attachmentInfo);
 		}
 		else
 		{
@@ -693,20 +704,8 @@ struct GPUPipeline
 		}
 		return this;
 	}
-	GPUPipeline *G_SetDepthAttachmentInput(std::string name)
-	{
-		if (!outDepthAttachmentProxyRef.contains(name))
-		{
-			depthAttachment = outDepthAttachmentProxyRef.at(name);
-		}
-		else
-		{
-			std::cout << "Attachment input: " << "\"" << name << "\"" << " does not exist";
-		}
-		return this;
-	}
 
-	GPUPipeline *G_SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
+	GPUPipeline *G_SetDepthAttachmentOutput(AttachmentInfo depth)
 	{
 		depthAttachment = depth;
 		return this;
@@ -725,12 +724,10 @@ struct GPUPipeline
 		dynamicRenderPass.Reset();
 		graphicsPipelineConfigs.rasterizationConfigs = R_FILL;
 		graphicsPipelineConfigs.topologyConfigs      = T_TRIANGLE;
-		colorBlendConfigs.clear();
 		depthConfig = D_NONE;
 		vertexInput.bindingDescription.clear();
 		vertexInput.inputDescription.clear();
 		pushConstantSize = 4;
-		colAttachments.clear();
 		depthAttachment = {};
 		return this;
 	}
@@ -946,29 +943,28 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	RenderGraphNode *G_ExecutePass(vk::CommandBuffer commandBuffer)
 	{
-		assert(imagesAttachmentOutputs.size() == GPUPipelineRef->colAttachments.size() && "Not all color attachments were set");
+		assert(imagesAttachmentOutputs.size() == GPUPipelineRef->outColAttachmentsBindings.size() && "Not all color attachments were set");
 		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
 		assert(!(GPUPipelineRef->depthAttachment.format != vk::Format::eUndefined && depthImage == nullptr) && "there is no depth attachment set");
 
-		G_SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
+		G_SetFramebufferSize(imagesAttachmentOutputs.at(0)->imageData->GetImageSize());
 		GPUPipelineRef->dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
 		commandBuffer.setViewport(0, 1, &GPUPipelineRef->dynamicRenderPass.viewport);
 		commandBuffer.setScissor(0, 1, &GPUPipelineRef->dynamicRenderPass.scissor);
 
-		int                                      index = 0;
 		std::vector<vk::RenderingAttachmentInfo> attachmentInfos;
-		attachmentInfos.reserve(GPUPipelineRef->colAttachments.size());
+		attachmentInfos.resize(GPUPipelineRef->outColAttachmentsBindings.size());
+		
 		for (auto &imagePair : imagesAttachmentOutputs)
 		{
-			if (IsImageTransitionNeeded(imagePair->imageData->currentLayout, COLOR_ATTACHMENT))
+			if (IsImageTransitionNeeded(imagePair.second->imageData->currentLayout, COLOR_ATTACHMENT))
 			{
-				TransitionImage(imagePair->imageData, COLOR_ATTACHMENT,
-				                imagePair->GetSubresourceRange(), commandBuffer);
+				TransitionImage(imagePair.second->imageData, COLOR_ATTACHMENT,
+				                imagePair.second->GetSubresourceRange(), commandBuffer);
 			}
-			GPUPipelineRef->colAttachments[index].attachmentInfo.setImageView(imagePair->imageView.get());
-			GPUPipelineRef->colAttachments[index].attachmentInfo.imageLayout = imagePair->imageData->currentPattern.layout;
-			attachmentInfos.push_back(GPUPipelineRef->colAttachments[index].attachmentInfo);
-			index++;
+			attachmentInfos[imagePair.first] = (GPUPipelineRef->outColAttachmentsBindings[imagePair.first].attachmentInfo);
+			attachmentInfos[imagePair.first].setImageView(imagePair.second->imageView.get());
+			attachmentInfos[imagePair.first].imageLayout = imagePair.second->imageData->currentPattern.layout;
 		}
 		if (depthImage)
 		{
@@ -1135,26 +1131,16 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		GPUPipelineRef->G_SetGeomShader(shader);
 		return this;
 	}
-	RenderGraphNode *G_AddColorAttachmentInput(std::string name)
+
+	RenderGraphNode *G_AddColorAttachmentOutput(int binding, AttachmentInfo attachmentInfo)
 	{
-		GPUPipelineRef->G_AddColorAttachmentInput(name);
+		GPUPipelineRef->G_AddColorAttachmentOutput(binding, attachmentInfo);
 		return this;
 	}
 
-	RenderGraphNode *G_AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
+	RenderGraphNode *G_SetDepthAttachmentOutput(AttachmentInfo depth)
 	{
-		GPUPipelineRef->G_AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
-		return this;
-	}
-	RenderGraphNode *G_SetDepthAttachmentInput(std::string name)
-	{
-		GPUPipelineRef->G_SetDepthAttachmentInput(name);
-		return this;
-	}
-
-	RenderGraphNode *G_SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
-	{
-		GPUPipelineRef->G_SetDepthAttachmentOutput(name, depth);
+		GPUPipelineRef->G_SetDepthAttachmentOutput(depth);
 		return this;
 	}
 	RenderGraphNode *G_SetDepthImageResource(ImageView *imageView)
@@ -1169,13 +1155,15 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *G_AddColorImageResource(ImageView *imageView)
+	RenderGraphNode *G_SetColorImageAttachmentBinding(int binding, ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
+		assert(GPUPipelineRef->outColAttachmentsBindings.contains(binding) && "Binding specified does not exist");
 		if (!imageAttachmentsNames.contains(imageView->name))
 		{
-			imageAttachmentsNames.try_emplace(imageView->name, imagesAttachmentOutputs.size());
-			imagesAttachmentOutputs.emplace_back(imageView);
+			imageAttachmentsNames.try_emplace(imageView->name, binding);
+			assert(!imagesAttachmentOutputs.contains(binding) && "this binding was already set");
+			imagesAttachmentOutputs.try_emplace(binding, imageView);
 		}
 		else
 		{
@@ -1309,7 +1297,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return imageAttachmentsNames;
 	}
 
-	const std::vector<ImageView *> &GetImageAttachmentOutputs() const
+	const std::unordered_map<int, ImageView *> &GetImageAttachmentOutputs() const
 	{
 		return imagesAttachmentOutputs;
 	}
@@ -1350,7 +1338,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	std::vector<RenderGraphNode *> *nodesToExecuteRef;
 
 	std::unordered_map<std::string, int> imageAttachmentsNames;
-	std::vector<ImageView *>             imagesAttachmentOutputs;
+	std::unordered_map<int, ImageView *>             imagesAttachmentOutputs;
 
 	std::unordered_map<std::string, ImageView *> storageImages;
 	std::unordered_map<std::string, ImageView *> sampledImages;
@@ -1451,7 +1439,7 @@ class RenderGraph
 	RenderGraphNode *GetTemplateNode(std::string name, std::string vPath, std::string fPath)
 	{
 		AttachmentInfo colInfo = GetColorAttachmentInfo(
-		    glm::vec4(0.0f), g_32bFormat);
+		    BlendConfigs::B_OPAQUE, glm::vec4(0.0f), g_32bFormat);
 		Shader *vShader    = resourcesManager->GetShader(vPath, ShaderStage::S_VERT);
 		Shader *fShader    = resourcesManager->GetShader(fPath, ShaderStage::S_FRAG);
 		auto    renderNode = AddPass(name);
@@ -1477,9 +1465,9 @@ class RenderGraph
 	void CreateUtilityShaders()
 	{
 		auto          *blitterShader = GetTemplateGPUPipeline("BlitterPipeline", "Blitter", ShaderCompiler::C_GLSL);
-		AttachmentInfo colInfo       = GetColorAttachmentInfo(
+		AttachmentInfo colInfo       = GetColorAttachmentInfo(B_OPAQUE,
             glm::vec4(0.0f), core->swapchainRef->GetFormat());
-		blitterShader->G_AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
+		blitterShader->G_AddColorAttachmentOutput(0, colInfo);
 		blitterShader->G_BuildGPUPipeline();
 	}
 	GPUPipeline *GetBlitterShader()
@@ -1498,7 +1486,7 @@ class RenderGraph
 		auto blitterTask = new std::function<void()>([this]() {
 			// there is one thing that I may change and is that when I set the sampler from outside of the task
 			// function and I reload the shaders the ref of the sampler is gone because I reset the descriptor set, I should change that
-			GetNode("BlitterNode")->G_AddColorImageResource(currentBackBufferSwapchain);
+			GetNode("BlitterNode")->G_SetColorImageAttachmentBinding(0,currentBackBufferSwapchain);
 			GetNode("BlitterNode")->G_SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});
 
@@ -1727,34 +1715,6 @@ class RenderGraph
 			return renderNodes.at(name).get();
 		}
 		return renderNodes.at(name).get();
-	}
-
-	ImageView *AddColorImageResource(std::string passName, ImageView *imageView)
-	{
-		assert(imageView && "ImageView is null");
-		if (renderNodes.contains(passName))
-		{
-			renderNodes.at(passName)->G_AddColorImageResource(imageView);
-		}
-		else
-		{
-			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-		}
-		return imageView;
-	}
-
-	ImageView *SetDepthImageResource(std::string passName, ImageView *imageView)
-	{
-		assert(imageView && "ImageView is null");
-		if (renderNodes.contains(passName))
-		{
-			renderNodes.at(passName)->G_SetDepthImageResource(imageView);
-		}
-		else
-		{
-			std::cout << "Renderpass: " << passName << " does not exist, saving the image anyways. \n";
-		}
-		return imageView;
 	}
 
 	ImageView *AddSamplerResource(std::string passName, ImageView *imageView)

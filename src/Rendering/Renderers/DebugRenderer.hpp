@@ -58,7 +58,7 @@ class DebugRenderer : public BaseRenderer
 			                                                     shaderPath + "\\spirvGlsl\\DebugRendering\\debug.frag.spv", S_FRAG);
 
 			VertexInput    vertexInput = D_Vertex3D::GetVertexInput();
-			AttachmentInfo colInfo     = GetColorAttachmentInfo(
+			AttachmentInfo colInfo     = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
                 glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad);
 			// AttachmentInfo depthInfo = GetDepthAttachmentInfo();
 			auto renderNode = renderGraph->AddPass(mDebuggerPassName);
@@ -68,7 +68,7 @@ class DebugRenderer : public BaseRenderer
 			renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
 			renderNode->G_SetPushConstantSize(sizeof(MvpPc));
 			renderNode->G_SetVertexInput(vertexInput);
-			renderNode->G_AddColorAttachmentOutput("modelCol", colInfo, BlendConfigs::B_OPAQUE);
+			renderNode->G_AddColorAttachmentOutput(0, colInfo);
 			renderNode->G_SetGraphicsPipelineConfigs({RasterizationConfigs::R_LINE, TopologyConfigs::T_TRIANGLE});
 			renderNode->G_SetDepthConfig(DepthConfigs::D_NONE);
 			renderNode->DependsOn("light");
@@ -89,7 +89,8 @@ class DebugRenderer : public BaseRenderer
 				rawVerticesBuff = ResourcesManager::GetInstance()->SetBuffer(
 				    "debugRawVertices", sizeof(D_Vertex3D) * raw3DVertices.size(), sizeof(D_Vertex3D), raw3DVertices.data());
 				auto *currImage = renderGraph->currentBackBuffer;
-				renderGraph->AddColorImageResource(mDebuggerPassName,  currImage);
+				auto           node   = renderGraph->GetNode(mDebuggerPassName);
+				node->G_SetColorImageAttachmentBinding(0,  currImage);
 				renderGraph->GetNode(mDebuggerPassName)->G_SetFramebufferSize(windowProvider->GetWindowSize());
 			});
 			auto renderOp  = new std::function<void()>(

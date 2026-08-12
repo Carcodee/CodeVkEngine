@@ -34,10 +34,10 @@ class TemplateRenderer : public BaseRenderer
 
 	void CreatePipelines()
 	{
-		AttachmentInfo colInfo = GetColorAttachmentInfo(
-		    glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
-		Shader *vShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_VERT);
-		Shader *fShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_FRAG);
+		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
+		                                                glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
+		Shader        *vShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_VERT);
+		Shader        *fShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_FRAG);
 
 		auto       imageInfo        = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat, ENGINE::colorImageUsage);
 		ImageView *attachmentOutput = renderGraph->resourcesManager->GetImage("TemplateOutput", imageInfo, 0, 0);
@@ -50,7 +50,7 @@ class TemplateRenderer : public BaseRenderer
 		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		// change this
 		renderNode->G_SetPushConstantSize(4);
-		renderNode->G_AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput(0, colInfo);
 		// only if we want to use custom attachment
 		//  renderNode->G_AddColorImageResource("default_attachment", attachmentOutput);
 		renderNode->BuildRenderGraphNode();
@@ -65,12 +65,13 @@ class TemplateRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>(
 		    [this] {
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->G_AddColorImageResource(renderGraph->currentBackBuffer);
+			    renderNode->G_SetColorImageAttachmentBinding(0, renderGraph->currentBackBuffer);
+		    	
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {
-			    auto &renderNode = renderGraph->renderNodes.at(passName);
-			    vk::DeviceSize offset = 0;
+			    auto          &renderNode = renderGraph->renderNodes.at(passName);
+			    vk::DeviceSize offset     = 0;
 			    renderNode->GetCurrCmd().bindVertexBuffers(
 			        0, 1,
 			        &renderGraph->resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
