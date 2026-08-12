@@ -43,8 +43,8 @@ class GIRenderer : public BaseRenderer
 
 		auto renderNode = renderGraph->GetTemplateNode_DF(
 		    shPassName, "shView.slang", C_GLSL);
-		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+		renderNode->G_AddColorAttachmentOutput("shAttachment", colInfo, BlendConfigs::B_OPAQUE);
 
 		renderNode->BuildRenderGraphNode();
 	}
@@ -58,7 +58,7 @@ class GIRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>([this] {
 			auto renderNode     = renderGraph->GetNode(shPassName);
 			auto currBackBuffer = renderGraph->currentBackBuffer;
-			renderNode->AddColorImageResource(currBackBuffer);
+			renderNode->G_AddColorImageResource(currBackBuffer);
 		});
 
 		auto shRenderOp = new std::function<void()>(
@@ -75,7 +75,7 @@ class GIRenderer : public BaseRenderer
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
 		renderGraph->GetNode(shPassName)->AddPreRenderingTask(taskOp);
-		renderGraph->GetNode(shPassName)->SetRenderOperation(shRenderOp);
+		renderGraph->GetNode(shPassName)->G_SetRenderOperation(shRenderOp);
 	}
 
 	void ReloadShaders() override

@@ -24,7 +24,6 @@ enum class RenderNodeType
 	CUDA
 };
 
-
 struct RenderNodeConfigs : SYSTEMS::ISerializable<RenderNodeConfigs>
 {
 	bool automaticCache = true;
@@ -56,22 +55,33 @@ struct CUDAPipeline
 {
 	CodeCuda::CodeCudaContext *context = nullptr;
 	Core                      *core    = nullptr;
-	
+	std::string                name    = "";
+
 	CUDAPipeline() = default;
-	CUDAPipeline *BuildCUDAPipeline()
+	CUDAPipeline *C_BuildCUDAPipeline()
 	{
 		assert(context != nullptr);
 		return this;
 	}
-	CUDAPipeline *ExportBuffer(Buffer *buffer)
+	CUDAPipeline *C_ExportBuffer(Buffer *buffer)
 	{
 		assert(context);
 		assert(buffer->GetBufferHandle());
-		context->C_ImportExternalBuffer(buffer->GetBufferHandle(), buffer->deviceSize);
+		context->C_ImportExternalBuffer(buffer->GetBufferHandle(), buffer->deviceSize, buffer->stride);
 		return this;
 	}
-	CUDAPipeline *CreatePipeline()
+	CUDAPipeline *C_CreatePipeline()
 	{
+		return this;
+	}
+	CUDAPipeline *C_SetKernelFunction(std::function<void(CodeCuda::CodeCudaContext*)> funct)
+	{
+		context->C_SetKernelLauncherFunction(funct);
+		return this;
+	}
+	CUDAPipeline *C_SetPreCPUKernelFunction(std::function<void()> funct)
+	{
+		context->C_SetPreKernelFunction(funct);
 		return this;
 	}
 	~CUDAPipeline() = default;
@@ -101,7 +111,6 @@ struct GPUPipeline
 	size_t                                                    pushConstantSize     = DUMMY_PC_SIZE;
 	DepthConfigs                                              depthConfig          = D_NONE;
 	RenderNodeConfigs                                         configs              = {true, false};
-	std::unordered_map<std::string, std::unique_ptr<Shader>> *shadersProxyRef;
 	std::unordered_map<std::string, AttachmentInfo>           outColAttachmentsProxyRef;
 	std::unordered_map<std::string, AttachmentInfo>           outDepthAttachmentProxyRef;
 	std::string                                               name;
@@ -114,7 +123,7 @@ struct GPUPipeline
 	    {"tese", nullptr},
 	    {"geom", nullptr}};
 
-	GPUPipeline *RecreateResources()
+	GPUPipeline *G_RecreateResources()
 	{
 		assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
 		assert(core != nullptr && "Core is null");
@@ -122,7 +131,7 @@ struct GPUPipeline
 		pipeline.reset();
 		pipelineLayout.reset();
 
-		ReloadShaders();
+		G_ReloadShaders();
 
 		Shader *vertShader = shaders.at("vert");
 		Shader *fragShader = shaders.at("frag");
@@ -132,7 +141,7 @@ struct GPUPipeline
 		Shader *geomShader = shaders.at("geom");
 
 		std::map<ShaderStage, Shader *> stages;
-		GetShaderStages(stages);
+		G_GetShaderStages(stages);
 
 		if (fragShader && vertShader)
 		{
@@ -171,7 +180,7 @@ struct GPUPipeline
 
 				if (pushConstantSize <= 0)
 				{
-					SetPushConstantSize(DUMMY_PC_SIZE);
+					G_SetPushConstantSize(DUMMY_PC_SIZE);
 				}
 
 				auto paintingPushConstantRanges =
@@ -188,7 +197,7 @@ struct GPUPipeline
 				        .setPushConstantRanges(paintingPushConstantRanges)
 				        .setPSetLayouts(&descCache->dstLayout.get());
 
-				SetPipelineLayoutCI(paintingLayoutCreateInfo);
+				G_SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
 			std::vector<vk::Format> colorFormats;
@@ -222,8 +231,8 @@ struct GPUPipeline
 			        vertexInput,
 			        pipelineCache.get());
 
-			pipeline        = std::move(graphicsPipeline->pipelineHandle);
-			pipelineType    = vk::PipelineBindPoint::eGraphics;
+			pipeline     = std::move(graphicsPipeline->pipelineHandle);
+			pipelineType = vk::PipelineBindPoint::eGraphics;
 		}
 		else if (compShader)
 		{
@@ -236,7 +245,7 @@ struct GPUPipeline
 
 				if (pushConstantSize <= 0)
 				{
-					SetPushConstantSize(DUMMY_PC_SIZE);
+					G_SetPushConstantSize(DUMMY_PC_SIZE);
 				}
 
 				auto paintingPushConstantRanges =
@@ -251,7 +260,7 @@ struct GPUPipeline
 				        .setPushConstantRanges(paintingPushConstantRanges)
 				        .setPSetLayouts(&descCache->dstLayout.get());
 
-				SetPipelineLayoutCI(paintingLayoutCreateInfo);
+				G_SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
 			pipelineLayout =
@@ -264,8 +273,8 @@ struct GPUPipeline
 			        pipelineLayout.get(),
 			        pipelineCache.get());
 
-			pipeline        = std::move(computePipeline->pipelineHandle);
-			pipelineType    = vk::PipelineBindPoint::eCompute;
+			pipeline     = std::move(computePipeline->pipelineHandle);
+			pipelineType = vk::PipelineBindPoint::eCompute;
 		}
 		else
 		{
@@ -274,7 +283,7 @@ struct GPUPipeline
 		return this;
 	}
 
-	GPUPipeline *BuildGPUPipeline()
+	GPUPipeline *G_BuildGPUPipeline()
 	{
 		assert(&pipelineLayoutCI != nullptr && "Pipeline layout is null");
 		assert(core != nullptr && "Core is null");
@@ -332,7 +341,7 @@ struct GPUPipeline
 
 				if (pushConstantSize <= 0)
 				{
-					SetPushConstantSize(DUMMY_PC_SIZE);
+					G_SetPushConstantSize(DUMMY_PC_SIZE);
 				}
 
 				auto paintingPushConstantRanges =
@@ -349,7 +358,7 @@ struct GPUPipeline
 				        .setPushConstantRanges(paintingPushConstantRanges)
 				        .setPSetLayouts(&descCache->dstLayout.get());
 
-				SetPipelineLayoutCI(paintingLayoutCreateInfo);
+				G_SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
 			std::vector<vk::Format> colorFormats;
@@ -372,7 +381,7 @@ struct GPUPipeline
 			    core->logicalDevice->createPipelineLayoutUnique(pipelineLayoutCI);
 
 			std::map<ShaderStage, Shader *> stages;
-			GetShaderStages(stages);
+			G_GetShaderStages(stages);
 
 			std::unique_ptr<GraphicsPipeline> graphicsPipeline =
 			    std::make_unique<GraphicsPipeline>(
@@ -386,8 +395,8 @@ struct GPUPipeline
 			        vertexInput,
 			        pipelineCache.get());
 
-			pipeline        = std::move(graphicsPipeline->pipelineHandle);
-			pipelineType    = vk::PipelineBindPoint::eGraphics;
+			pipeline     = std::move(graphicsPipeline->pipelineHandle);
+			pipelineType = vk::PipelineBindPoint::eGraphics;
 
 			std::cout << "Graphics pipeline created\n";
 		}
@@ -405,7 +414,7 @@ struct GPUPipeline
 
 				if (pushConstantSize <= 0)
 				{
-					SetPushConstantSize(DUMMY_PC_SIZE);
+					G_SetPushConstantSize(DUMMY_PC_SIZE);
 				}
 
 				auto paintingPushConstantRanges =
@@ -420,7 +429,7 @@ struct GPUPipeline
 				        .setPushConstantRanges(paintingPushConstantRanges)
 				        .setPSetLayouts(&descCache->dstLayout.get());
 
-				SetPipelineLayoutCI(paintingLayoutCreateInfo);
+				G_SetPipelineLayoutCI(paintingLayoutCreateInfo);
 			}
 
 			pipelineLayout =
@@ -433,8 +442,8 @@ struct GPUPipeline
 			        pipelineLayout.get(),
 			        pipelineCache.get());
 
-			pipeline        = std::move(computePipeline->pipelineHandle);
-			pipelineType    = vk::PipelineBindPoint::eCompute;
+			pipeline     = std::move(computePipeline->pipelineHandle);
+			pipelineType = vk::PipelineBindPoint::eCompute;
 
 			std::cout << "Compute pipeline created\n";
 		}
@@ -445,25 +454,25 @@ struct GPUPipeline
 		return this;
 	}
 
-	GPUPipeline *SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	GPUPipeline *G_SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetSampler(name, imageView, sampler);
 		return this;
 	}
-	GPUPipeline *SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
+	GPUPipeline *G_SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetSamplerArray(name, imageViews, samplers);
 		return this;
 	}
-	GPUPipeline *SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	GPUPipeline *G_SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetStorageImage(name, imageView, sampler);
 		return this;
 	}
-	GPUPipeline *SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
+	GPUPipeline *G_SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
 	                                  std::vector<Sampler *> *samplers = nullptr)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
@@ -471,27 +480,27 @@ struct GPUPipeline
 		return this;
 	}
 	template <typename T>
-	GPUPipeline *SetBuffer(std::string name, T &bufferData)
+	GPUPipeline *G_SetBuffer(std::string name, T &bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer<T>(name, bufferData);
 		return this;
 	}
 	template <typename T>
-	GPUPipeline *SetBuffer(std::string name, std::vector<T> &bufferData)
+	GPUPipeline *G_SetBuffer(std::string name, std::vector<T> &bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer<T>(name, bufferData);
 		return this;
 	}
-	GPUPipeline *SetBuffer(std::string name, Buffer *bufferData)
+	GPUPipeline *G_SetBuffer(std::string name, Buffer *bufferData)
 	{
 		assert(descCache && " Is not possible to set a shader value before building the node");
 		descCache->SetBuffer(name, bufferData);
 		return this;
 	}
 
-	GPUPipeline *SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
+	GPUPipeline *G_SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
 	{
 		this->pipelineLayoutCI = createInfo;
 
@@ -512,73 +521,73 @@ struct GPUPipeline
 		return this;
 	}
 
-	GPUPipeline *SetPushConstantSize(size_t size)
+	GPUPipeline *G_SetPushConstantSize(size_t size)
 	{
 		pushConstantSize = size;
 		return this;
 	}
 
-	GPUPipeline *SetGraphicsPipelineConfigs(
+	GPUPipeline *G_SetGraphicsPipelineConfigs(
 	    GraphicsPipelineConfigs graphicsPipelineConfigs)
 	{
 		this->graphicsPipelineConfigs = graphicsPipelineConfigs;
 		return this;
 	}
 
-	GPUPipeline *SetDepthConfig(DepthConfigs dephtConfig)
+	GPUPipeline *G_SetDepthConfig(DepthConfigs dephtConfig)
 	{
 		this->depthConfig = dephtConfig;
 		return this;
 	}
 
-	GPUPipeline *SetConfigs(RenderNodeConfigs configs)
+	GPUPipeline *G_SetConfigs(RenderNodeConfigs configs)
 	{
 		this->configs = configs;
 		return this;
 	}
-	GPUPipeline *SetVertexInput(VertexInput vertexInput)
+	GPUPipeline *G_SetVertexInput(VertexInput vertexInput)
 	{
 		this->vertexInput = vertexInput;
 		return this;
 	}
 
-	GPUPipeline *SetVertShader(Shader *shader)
+	GPUPipeline *G_SetVertShader(Shader *shader)
 	{
 		shaders.at("vert") = shader;
 		return this;
 	}
 
-	GPUPipeline *SetFragShader(Shader *shader)
+	GPUPipeline *G_SetFragShader(Shader *shader)
 	{
 		shaders.at("frag") = shader;
 		return this;
 	}
 
-	GPUPipeline *SetCompShader(Shader *shader)
+	GPUPipeline *G_SetCompShader(Shader *shader)
 	{
 		shaders.at("comp") = shader;
 		return this;
 	}
 
-	GPUPipeline *SetTesControlShader(Shader *shader)
+	GPUPipeline *G_SetTesControlShader(Shader *shader)
 	{
 		shaders.at("tesc") = shader;
 		return this;
 	}
 
-	GPUPipeline *SetTesEvalShader(Shader *shader)
+	GPUPipeline *G_SetTesEvalShader(Shader *shader)
 	{
 		shaders.at("tese") = shader;
 		return this;
 	}
 
-	GPUPipeline *SetGeomShader(Shader *shader)
+	GPUPipeline *G_SetGeomShader(Shader *shader)
 	{
 		shaders.at("geom") = shader;
 		return this;
 	}
 
-	bool ReloadShaders()
+	bool G_ReloadShaders()
 	{
 		Shader *vertShader = shaders.at("vert");
 		Shader *fragShader = shaders.at("frag");
@@ -617,7 +626,7 @@ struct GPUPipeline
 		return isReloaded;
 	}
 
-	GPUPipeline *GetShaderStages(std::map<ShaderStage, Shader *> &stages)
+	GPUPipeline *G_GetShaderStages(std::map<ShaderStage, Shader *> &stages)
 	{
 		Shader *vertShader = shaders.at("vert");
 		Shader *fragShader = shaders.at("frag");
@@ -657,62 +666,7 @@ struct GPUPipeline
 		}
 		return this;
 	}
-
-	GPUPipeline *SetVertShader_IMode(std::string path)
-	{
-		if (shadersProxyRef->contains(path))
-		{
-			shaders.at("vert") = shadersProxyRef->at(path).get();
-		}
-		return this;
-	}
-
-	GPUPipeline *SetFragShader_IMode(std::string path)
-	{
-		if (shadersProxyRef->contains(path))
-		{
-			shaders.at("frag") = shadersProxyRef->at(path).get();
-		}
-		return this;
-	}
-
-	GPUPipeline *SetCompShader_IMode(std::string path)
-	{
-		if (shadersProxyRef->contains(path))
-		{
-			shaders.at("comp") = shadersProxyRef->at(path).get();
-		}
-		return this;
-	}
-
-	GPUPipeline *SetTesControlShader_IMode(std::string path)
-	{
-		if (shadersProxyRef->contains(path))
-		{
-			shaders.at("tesc") = shadersProxyRef->at(path).get();
-		}
-		return this;
-	}
-
-	GPUPipeline *SetTesEvalShader_IMode(std::string path)
-	{
-		if (shadersProxyRef->contains(path))
-		{
-			shaders.at("tese") = shadersProxyRef->at(path).get();
-		}
-		return this;
-	}
-
-	GPUPipeline *SetGeomShader_IMode(std::string path)
-	{
-		if (shadersProxyRef->contains(path))
-		{
-			shaders.at("geom") = shadersProxyRef->at(path).get();
-		}
-		return this;
-	}
-
-	GPUPipeline *AddColorAttachmentInput(std::string name)
+	GPUPipeline *G_AddColorAttachmentInput(std::string name)
 	{
 		if (!outColAttachmentsProxyRef.contains(name))
 		{
@@ -725,7 +679,7 @@ struct GPUPipeline
 		return this;
 	}
 
-	GPUPipeline *AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
+	GPUPipeline *G_AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
 	{
 		if (!outColAttachmentsProxyRef.contains(name))
 		{
@@ -739,7 +693,7 @@ struct GPUPipeline
 		}
 		return this;
 	}
-	GPUPipeline *SetDepthAttachmentInput(std::string name)
+	GPUPipeline *G_SetDepthAttachmentInput(std::string name)
 	{
 		if (!outDepthAttachmentProxyRef.contains(name))
 		{
@@ -752,13 +706,13 @@ struct GPUPipeline
 		return this;
 	}
 
-	GPUPipeline *SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
+	GPUPipeline *G_SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
 	{
 		depthAttachment = depth;
 		return this;
 	}
 
-	GPUPipeline *Reset()
+	GPUPipeline *G_Reset()
 	{
 		pipeline.reset();
 		pipelineLayout.reset();
@@ -808,9 +762,9 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 		return this;
 	}
-	RenderGraphNode *RecreateResources()
+	RenderGraphNode *G_RecreateResources()
 	{
-		GPUPipelineRef->RecreateResources();
+		GPUPipelineRef->G_RecreateResources();
 		return this;
 	}
 
@@ -818,30 +772,45 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	{
 		if (GPUPipelineRef)
 		{
-			GPUPipelineRef->BuildGPUPipeline();
+			GPUPipelineRef->G_BuildGPUPipeline();
 			if (GPUPipelineRef->pipelineType == vk::PipelineBindPoint::eGraphics)
 			{
-				nodeType =RenderNodeType::GRAPHICS; 
-			}else
-			{
-				nodeType =RenderNodeType::COMPUTE; 
+				nodeType = RenderNodeType::GRAPHICS;
 			}
-		}else
+			else
+			{
+				nodeType = RenderNodeType::COMPUTE;
+			}
+		}
+		else
 		{
 			nodeType = RenderNodeType::CUDA;
-			CUDAPipeline->BuildCUDAPipeline();
+			CUDAPipeline->C_BuildCUDAPipeline();
 		}
 		return this;
 	}
+	
+	RenderGraphNode* C_SetKernelFunction(std::function<void(CodeCuda::CodeCudaContext*)> funct)
+	{
+		CUDAPipeline->C_SetKernelFunction(std::move(funct));
+		return this;
+	}
+	
+	RenderGraphNode* C_SetPreKernelFunction(std::function<void()> funct)
+	{
+		CUDAPipeline->C_SetPreCPUKernelFunction(std::move(funct));
+		return this;
+	}
+
 
 	RenderGraphNode *EnqueueNode()
 	{
 		return this;
 	}
-	
-	vk::PipelineBindPoint GetGPUPipelineType()
+
+	vk::PipelineBindPoint G_GetPipelineType()
 	{
-		assert(CUDAPipeline == nullptr &&"this call should not happen in a cuda pipeline");
+		assert(CUDAPipeline == nullptr && "this call should not happen in a cuda pipeline");
 		return GPUPipelineRef->pipelineType;
 	}
 
@@ -909,47 +878,47 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		}
 		return this;
 	}
-	RenderGraphNode *SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	RenderGraphNode *G_SetSampler(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
-		GPUPipelineRef->SetSampler(name, imageView, sampler);
+		GPUPipelineRef->G_SetSampler(name, imageView, sampler);
 		return this;
 	}
-	RenderGraphNode *SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
+	RenderGraphNode *G_SetSamplerArray(std::string name, std::vector<ImageView *> &imageViews, std::vector<Sampler *> *samplers = nullptr)
 	{
-		GPUPipelineRef->SetSamplerArray(name, imageViews, samplers);
+		GPUPipelineRef->G_SetSamplerArray(name, imageViews, samplers);
 		return this;
 	}
-	RenderGraphNode *SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
+	RenderGraphNode *G_SetStorageImage(std::string name, ImageView *imageView, Sampler *sampler = nullptr)
 	{
-		GPUPipelineRef->SetStorageImage(name, imageView, sampler);
+		GPUPipelineRef->G_SetStorageImage(name, imageView, sampler);
 		return this;
 	}
-	RenderGraphNode *SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
+	RenderGraphNode *G_SetStorageImageArray(std::string name, std::vector<ImageView *> &imageViews,
 	                                      std::vector<Sampler *> *samplers = nullptr)
 	{
-		GPUPipelineRef->SetStorageImageArray(name, imageViews, samplers);
+		GPUPipelineRef->G_SetStorageImageArray(name, imageViews, samplers);
 		return this;
 	}
 	template <typename T>
-	RenderGraphNode *SetBuffer(std::string name, T &bufferData)
+	RenderGraphNode *G_SetBuffer(std::string name, T &bufferData)
 	{
-		GPUPipelineRef->SetBuffer<T>(name, bufferData);
+		GPUPipelineRef->G_SetBuffer<T>(name, bufferData);
 		return this;
 	}
 	template <typename T>
-	RenderGraphNode *SetBuffer(std::string name, std::vector<T> &bufferData)
+	RenderGraphNode *G_SetBuffer(std::string name, std::vector<T> &bufferData)
 	{
-		GPUPipelineRef->SetBuffer<T>(name, bufferData);
+		GPUPipelineRef->G_SetBuffer<T>(name, bufferData);
 		return this;
 	}
-	RenderGraphNode *SetBuffer(std::string name, Buffer *bufferData)
+	RenderGraphNode *G_SetBuffer(std::string name, Buffer *bufferData)
 	{
-		GPUPipelineRef->SetBuffer(name, bufferData);
+		GPUPipelineRef->G_SetBuffer(name, bufferData);
 		return this;
 	}
-	RenderGraphNode *ReloadShaders()
+	RenderGraphNode *G_ReloadShaders()
 	{
-		GPUPipelineRef->ReloadShaders();
+		GPUPipelineRef->G_ReloadShaders();
 		return this;
 	}
 	RenderGraphNode *ValidateNodeType()
@@ -967,22 +936,21 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		if (GPUPipelineRef->pipelineType == vk::PipelineBindPoint::eCompute)
 		{
 			nodeType = RenderNodeType::COMPUTE;
-		}else
+		}
+		else
 		{
 			nodeType = RenderNodeType::GRAPHICS;
 		}
 		return this;
-		
 	}
-	
 
-	RenderGraphNode *ExecutePass(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *G_ExecutePass(vk::CommandBuffer commandBuffer)
 	{
 		assert(imagesAttachmentOutputs.size() == GPUPipelineRef->colAttachments.size() && "Not all color attachments were set");
 		assert(!imagesAttachmentOutputs.empty() && "No color attachaments were set");
 		assert(!(GPUPipelineRef->depthAttachment.format != vk::Format::eUndefined && depthImage == nullptr) && "there is no depth attachment set");
 
-		SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
+		G_SetFramebufferSize(imagesAttachmentOutputs[0]->imageData->GetImageSize());
 		GPUPipelineRef->dynamicRenderPass.SetViewport(frameBufferSize, frameBufferSize);
 		commandBuffer.setViewport(0, 1, &GPUPipelineRef->dynamicRenderPass.viewport);
 		commandBuffer.setScissor(0, 1, &GPUPipelineRef->dynamicRenderPass.scissor);
@@ -1030,7 +998,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *ExecuteCompute(vk::CommandBuffer commandBuffer)
+	RenderGraphNode *G_ExecuteCompute(vk::CommandBuffer commandBuffer)
 	{
 		TransitionImages(commandBuffer);
 		SyncBuffers(commandBuffer);
@@ -1042,8 +1010,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		(*renderOperations)();
 		return this;
 	}
-	
-	RenderGraphNode *ExecuteCuda(vk::CommandBuffer commandBuffer)
+
+	RenderGraphNode *C_Execute(vk::CommandBuffer commandBuffer)
 	{
 		TransitionImages(commandBuffer);
 		SyncBuffers(commandBuffer);
@@ -1064,13 +1032,13 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		switch (nodeType)
 		{
 			case RenderNodeType::GRAPHICS:
-				ExecutePass(commandBuffer);
+				G_ExecutePass(commandBuffer);
 				break;
 			case RenderNodeType::COMPUTE:
-				ExecuteCompute(commandBuffer);
+				G_ExecuteCompute(commandBuffer);
 				break;
 			case RenderNodeType::CUDA:
-				ExecuteCuda(commandBuffer);
+				C_Execute(commandBuffer);
 				break;
 			default:
 				assert(false && "Unsuported pipeline type");
@@ -1079,19 +1047,19 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *SetVertexInput(VertexInput vertexInput)
+	RenderGraphNode *G_SetVertexInput(VertexInput vertexInput)
 	{
-		this->GPUPipelineRef->SetVertexInput(vertexInput);
+		this->GPUPipelineRef->G_SetVertexInput(vertexInput);
 		return this;
 	}
 
-	RenderGraphNode *SetFramebufferSize(glm::uvec2 size)
+	RenderGraphNode *G_SetFramebufferSize(glm::uvec2 size)
 	{
 		this->frameBufferSize = size;
 		return this;
 	}
 
-	RenderGraphNode *SetRenderOperation(std::function<void()> *renderOperations)
+	RenderGraphNode *G_SetRenderOperation(std::function<void()> *renderOperations)
 	{
 		assert(GPUPipelineRef != nullptr && "Render operations are only for gpu pipelines");
 		if (this->renderOperations)
@@ -1108,125 +1076,88 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
+	RenderGraphNode *G_SetPipelineLayoutCI(vk::PipelineLayoutCreateInfo createInfo)
 	{
-		GPUPipelineRef->SetPipelineLayoutCI(createInfo);
+		GPUPipelineRef->G_SetPipelineLayoutCI(createInfo);
 		return this;
 	}
 
-	RenderGraphNode *SetPushConstantSize(size_t size)
+	RenderGraphNode *G_SetPushConstantSize(size_t size)
 	{
-		GPUPipelineRef->SetPushConstantSize(size);
+		GPUPipelineRef->G_SetPushConstantSize(size);
 		return this;
 	}
 
-	RenderGraphNode *SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
+	RenderGraphNode *G_SetGraphicsPipelineConfigs(GraphicsPipelineConfigs graphicsPipelineConfigs)
 	{
-		GPUPipelineRef->SetGraphicsPipelineConfigs(graphicsPipelineConfigs);
+		GPUPipelineRef->G_SetGraphicsPipelineConfigs(graphicsPipelineConfigs);
 		return this;
 	}
 
-	RenderGraphNode *SetDepthConfig(DepthConfigs dephtConfig)
+	RenderGraphNode *G_SetDepthConfig(DepthConfigs dephtConfig)
 	{
-		GPUPipelineRef->SetDepthConfig(dephtConfig);
+		GPUPipelineRef->G_SetDepthConfig(dephtConfig);
 		return this;
 	}
 
-	RenderGraphNode *SetVertShader(Shader *shader)
+	RenderGraphNode *G_SetVertShader(Shader *shader)
 	{
-		GPUPipelineRef->SetVertShader(shader);
+		GPUPipelineRef->G_SetVertShader(shader);
 		return this;
 	}
 
-	RenderGraphNode *SetFragShader(Shader *shader)
+	RenderGraphNode *G_SetFragShader(Shader *shader)
 	{
-		GPUPipelineRef->SetFragShader(shader);
+		GPUPipelineRef->G_SetFragShader(shader);
 		return this;
 	}
 
-	RenderGraphNode *SetCompShader(Shader *shader)
+	RenderGraphNode *G_SetCompShader(Shader *shader)
 	{
-		GPUPipelineRef->SetCompShader(shader);
+		GPUPipelineRef->G_SetCompShader(shader);
 		return this;
 	}
 
-	RenderGraphNode *SetTesControlShader(Shader *shader)
+	RenderGraphNode *G_SetTesControlShader(Shader *shader)
 	{
-		GPUPipelineRef->SetTesControlShader(shader);
+		GPUPipelineRef->G_SetTesControlShader(shader);
 		return this;
 	}
 
-	RenderGraphNode *SetTesEvalShader(Shader *shader)
+	RenderGraphNode *G_SetTesEvalShader(Shader *shader)
 	{
-		GPUPipelineRef->SetTesEvalShader(shader);
+		GPUPipelineRef->G_SetTesEvalShader(shader);
 		return this;
 	}
 
-	RenderGraphNode *SetGeomShader(Shader *shader)
+	RenderGraphNode *G_SetGeomShader(Shader *shader)
 	{
-		GPUPipelineRef->SetGeomShader(shader);
+		GPUPipelineRef->G_SetGeomShader(shader);
+		return this;
+	}
+	RenderGraphNode *G_AddColorAttachmentInput(std::string name)
+	{
+		GPUPipelineRef->G_AddColorAttachmentInput(name);
 		return this;
 	}
 
-	RenderGraphNode *SetVertShader_IMode(std::string path)
+	RenderGraphNode *G_AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
 	{
-		GPUPipelineRef->SetVertShader_IMode(path);
+		GPUPipelineRef->G_AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
+		return this;
+	}
+	RenderGraphNode *G_SetDepthAttachmentInput(std::string name)
+	{
+		GPUPipelineRef->G_SetDepthAttachmentInput(name);
 		return this;
 	}
 
-	RenderGraphNode *SetFragShader_IMode(std::string path)
+	RenderGraphNode *G_SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
 	{
-		GPUPipelineRef->SetFragShader_IMode(path);
+		GPUPipelineRef->G_SetDepthAttachmentOutput(name, depth);
 		return this;
 	}
-
-	RenderGraphNode *SetCompShader_IMode(std::string path)
-	{
-		GPUPipelineRef->SetCompShader_IMode(path);
-		return this;
-	}
-
-	RenderGraphNode *SetTesControlShader_IMode(std::string path)
-	{
-		GPUPipelineRef->SetTesControlShader_IMode(path);
-		return this;
-	}
-
-	RenderGraphNode *SetTesEvalShader_IMode(std::string path)
-	{
-		GPUPipelineRef->SetTesEvalShader_IMode(path);
-		return this;
-	}
-
-	RenderGraphNode *SetGeomShader_IMode(std::string path)
-	{
-		GPUPipelineRef->SetGeomShader_IMode(path);
-		return this;
-	}
-
-	RenderGraphNode *AddColorAttachmentInput(std::string name)
-	{
-		GPUPipelineRef->AddColorAttachmentInput(name);
-		return this;
-	}
-
-	RenderGraphNode *AddColorAttachmentOutput(std::string name, AttachmentInfo attachmentInfo, BlendConfigs blendConfig)
-	{
-		GPUPipelineRef->AddColorAttachmentOutput(name, attachmentInfo, blendConfig);
-		return this;
-	}
-	RenderGraphNode *SetDepthAttachmentInput(std::string name)
-	{
-		GPUPipelineRef->SetDepthAttachmentInput(name);
-		return this;
-	}
-
-	RenderGraphNode *SetDepthAttachmentOutput(std::string name, AttachmentInfo depth)
-	{
-		GPUPipelineRef->SetDepthAttachmentOutput(name, depth);
-		return this;
-	}
-	RenderGraphNode *SetDepthImageResource(ImageView *imageView)
+	RenderGraphNode *G_SetDepthImageResource(ImageView *imageView)
 	{
 		this->depthImage = imageView;
 		return this;
@@ -1238,7 +1169,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *AddColorImageResource(ImageView *imageView)
+	RenderGraphNode *G_AddColorImageResource(ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
 		if (!imageAttachmentsNames.contains(imageView->name))
@@ -1253,7 +1184,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *AddSamplerResource(ImageView *imageView)
+	RenderGraphNode *G_AddSamplerResource(ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
 		if (!sampledImages.contains(imageView->name))
@@ -1267,7 +1198,7 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		return this;
 	}
 
-	RenderGraphNode *AddStorageResource(ImageView *imageView)
+	RenderGraphNode *G_AddStorageResource(ImageView *imageView)
 	{
 		assert(imageView && "Name does not exist or image view is null");
 		if (!storageImages.contains(imageView->name))
@@ -1326,14 +1257,14 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 		assert(currCmd != nullptr && "Cmd must be valid");
 		return currCmd;
 	}
-	RenderGraphNode *SetConfigs(RenderNodeConfigs configs)
+	RenderGraphNode *G_SetConfigs(RenderNodeConfigs configs)
 	{
-		GPUPipelineRef->SetConfigs(configs);
+		GPUPipelineRef->G_SetConfigs(configs);
 		return this;
 	}
-	RenderGraphNode *Reset()
+	RenderGraphNode *G_Reset()
 	{
-		GPUPipelineRef->Reset();
+		GPUPipelineRef->G_Reset();
 		active          = false;
 		frameBufferSize = {0, 0};
 		workerQueueName = "Graphics";
@@ -1351,8 +1282,8 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 
 	// unused
 
-	GPUPipeline *GPUPipelineRef  = nullptr;
-	CUDAPipeline *CUDAPipeline = nullptr;
+	GPUPipeline  *GPUPipelineRef = nullptr;
+	CUDAPipeline *CUDAPipeline   = nullptr;
 
 	bool           waitForResourcesCreation = false;
 	RenderNodeType nodeType                 = RenderNodeType::NONE;
@@ -1427,7 +1358,7 @@ struct QueueNodesBatch
 	vk::CommandBuffer              commandBuffer;
 	int                            id;
 	int                            poolIdUsed;
-	void ExecuteCUDA(Core* core)
+	void                           ExecuteCUDA(Core *core)
 	{
 		auto queueRef = core->queueWorkerManager->GetWorkerQueue(queueName);
 		for (int i = 0; i < sortedNodes.size(); ++i)
@@ -1453,15 +1384,13 @@ class RenderGraph
 	bool       debugUI = true;
 
 	std::unordered_map<std::string, std::unique_ptr<GPUPipeline>>     gpuPipelines;
-	std::unordered_map<std::string, std::unique_ptr<CUDAPipeline>>     cudaPipelines;
+	std::unordered_map<std::string, std::unique_ptr<CUDAPipeline>>    cudaPipelines;
 	std::unordered_map<std::string, std::unique_ptr<RenderGraphNode>> renderNodes;
 	// todo
 	std::vector<RenderGraphNode *> nodesToExecute;
 	std::vector<RenderGraphNode *> sequentialRenderNodes;
 	std::vector<RenderGraphNode *> sortedByDepNodes;
 
-	std::unordered_map<std::string, std::unique_ptr<Shader>>          shadersProxy;
-	std::unordered_map<std::string, std::unique_ptr<DescriptorCache>> descCachesProxy;
 	std::vector<QueueNodesBatch>                                      sortedQueueBatches;
 
 	RenderGraph(Core *core)
@@ -1482,10 +1411,10 @@ class RenderGraph
 		Shader *vShader     = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_VERT, compiler);
 		Shader *fShader     = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_FRAG, compiler);
 		auto    gpuPipeline = AddGPUPipeline(name);
-		gpuPipeline->SetConfigs({true});
-		gpuPipeline->SetVertShader(vShader);
-		gpuPipeline->SetFragShader(fShader);
-		gpuPipeline->SetVertexInput(Vertex2D::GetVertexInput());
+		gpuPipeline->G_SetConfigs({true});
+		gpuPipeline->G_SetVertShader(vShader);
+		gpuPipeline->G_SetFragShader(fShader);
+		gpuPipeline->G_SetVertexInput(Vertex2D::GetVertexInput());
 		return gpuPipeline;
 	}
 
@@ -1494,10 +1423,10 @@ class RenderGraph
 		Shader *vShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_VERT, compiler);
 		Shader *fShader    = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_FRAG, compiler);
 		auto    renderNode = AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetVertShader(vShader);
-		renderNode->SetFragShader(fShader);
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		renderNode->G_SetConfigs({true});
+		renderNode->G_SetVertShader(vShader);
+		renderNode->G_SetFragShader(fShader);
+		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		return renderNode;
 	}
 
@@ -1505,8 +1434,8 @@ class RenderGraph
 	{
 		Shader *shader     = resourcesManager->GetOrCreateDefaultShader(shaderName, ShaderStage::S_COMP, compiler);
 		auto    renderNode = AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetCompShader(shader);
+		renderNode->G_SetConfigs({true});
+		renderNode->G_SetCompShader(shader);
 		return renderNode;
 	}
 	RenderGraphNode *GetTemplateNode(std::string name, std::string vPath, std::string fPath)
@@ -1516,12 +1445,12 @@ class RenderGraph
 		Shader *vShader    = resourcesManager->GetShader(vPath, ShaderStage::S_VERT);
 		Shader *fShader    = resourcesManager->GetShader(fPath, ShaderStage::S_FRAG);
 		auto    renderNode = AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetVertShader(vShader);
-		renderNode->SetFragShader(fShader);
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		renderNode->G_SetConfigs({true});
+		renderNode->G_SetVertShader(vShader);
+		renderNode->G_SetFragShader(fShader);
+		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		// change this
-		renderNode->SetPushConstantSize(4);
+		renderNode->G_SetPushConstantSize(4);
 		return renderNode;
 	}
 
@@ -1529,10 +1458,10 @@ class RenderGraph
 	{
 		Shader *shader     = resourcesManager->GetShader(path, ShaderStage::S_COMP);
 		auto    renderNode = AddPass(name);
-		renderNode->SetConfigs({true});
-		renderNode->SetCompShader(shader);
+		renderNode->G_SetConfigs({true});
+		renderNode->G_SetCompShader(shader);
 		// change this
-		renderNode->SetPushConstantSize(4);
+		renderNode->G_SetPushConstantSize(4);
 		return renderNode;
 	}
 	void CreateUtilityShaders()
@@ -1540,8 +1469,8 @@ class RenderGraph
 		auto          *blitterShader = GetTemplateGPUPipeline("BlitterPipeline", "Blitter", ShaderCompiler::C_GLSL);
 		AttachmentInfo colInfo       = GetColorAttachmentInfo(
             glm::vec4(0.0f), core->swapchainRef->GetFormat());
-		blitterShader->AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
-		blitterShader->BuildGPUPipeline();
+		blitterShader->G_AddColorAttachmentOutput("BF_SwapChain", colInfo, B_OPAQUE);
+		blitterShader->G_BuildGPUPipeline();
 	}
 	GPUPipeline *GetBlitterShader()
 	{
@@ -1555,12 +1484,12 @@ class RenderGraph
 		blitterNode->BuildRenderGraphNode();
 		blitterNode->EnqueueNode();
 
-		GetNode("BlitterNode")->SetSampler("MainTex", currentBackBuffer);
+		GetNode("BlitterNode")->G_SetSampler("MainTex", currentBackBuffer);
 		auto blitterTask = new std::function<void()>([this]() {
 			// there is one thing that I may change and is that when I set the sampler from outside of the task
 			// function and I reload the shaders the ref of the sampler is gone because I reset the descriptor set, I should change that
-			GetNode("BlitterNode")->AddColorImageResource(currentBackBufferSwapchain);
-			GetNode("BlitterNode")->SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
+			GetNode("BlitterNode")->G_AddColorImageResource(currentBackBufferSwapchain);
+			GetNode("BlitterNode")->G_SetFramebufferSize(currentBackBufferSwapchain->imageData->GetImageSize());
 		});
 
 		auto blitterRenderOp = new std::function<void()>(
@@ -1579,7 +1508,7 @@ class RenderGraph
 		    });
 
 		blitterNode->AddPreRenderingTask(blitterTask);
-		blitterNode->SetRenderOperation(blitterRenderOp);
+		blitterNode->G_SetRenderOperation(blitterRenderOp);
 		return blitterNode;
 	}
 
@@ -1625,8 +1554,6 @@ class RenderGraph
 	{
 		resourcesManager  = ResourcesManager::GetInstance();
 		currentBackBuffer = resourcesManager->GetImageViewFromName("bf");
-
-
 	}
 
 	RenderGraphNode *GetNode(std::string name)
@@ -1652,7 +1579,7 @@ class RenderGraph
 		assert(gpuPipeline != nullptr && "gpu pipeline is null");
 		return gpuPipeline;
 	}
-	
+
 	CUDAPipeline *GetCUDAPipeline(std::string name)
 	{
 		if (!cudaPipelines.contains(name))
@@ -1663,12 +1590,12 @@ class RenderGraph
 		assert(cudaPI != nullptr && "cuda pipeline is null");
 		return cudaPI;
 	}
+	// used in cases shaders in case we want to reuse shaders with different dsets
 	GPUPipeline *AddGPUPipeline(std::string name)
 	{
 		if (!gpuPipelines.contains(name))
 		{
 			auto gpuPipeline             = std::make_unique<GPUPipeline>();
-			gpuPipeline->shadersProxyRef = &shadersProxy;
 			gpuPipeline->core            = core;
 			gpuPipeline->name            = name;
 			gpuPipelines.try_emplace(name, std::move(gpuPipeline));
@@ -1679,16 +1606,18 @@ class RenderGraph
 		assert(gpuPipeline != nullptr && "Pipeline is null");
 		return gpuPipeline;
 	}
-	
+
+	// Used in cases we want to have multiple independent cuda pipelines
 	CUDAPipeline *AddCUDAPipeline(std::string name)
 	{
 		if (!cudaPipelines.contains(name))
 		{
-			auto cudaPipeline             = std::make_unique<CUDAPipeline>();
-			auto queueRef = core->queueWorkerManager->GetWorkerQueue("CUDA");
+			auto cudaPipeline     = std::make_unique<CUDAPipeline>();
+			auto queueRef         = core->queueWorkerManager->GetWorkerQueue("CUDA");
 			cudaPipeline->context = new CodeCuda::CodeCudaContext();
 			cudaPipeline->context->C_InitFromExternalDevice(core->deviceUUID.data(), VK_UUID_SIZE);
 			cudaPipeline->context->C_ImportExternalSemaphore(queueRef->GetExportableHandle());
+			cudaPipeline->name = name;
 			cudaPipelines.try_emplace(name, std::move(cudaPipeline));
 			return cudaPipelines.at(name).get();
 		}
@@ -1697,14 +1626,19 @@ class RenderGraph
 		assert(cudaPipeline != nullptr && "Pipeline is null");
 		return cudaPipeline;
 	}
-	
+
 	RenderGraphNode *AddCudaPass(CUDAPipeline *pipeline, std::string name, std::string workerQueueName = "CUDA")
 	{
 		if (!renderNodes.contains(name))
 		{
-			assert(pipeline != nullptr && "Pipeline is null");
+			assert(pipeline);
+			if (!cudaPipelines.contains(pipeline->name))
+			{
+				AddCUDAPipeline("CUDA_PIPELINE_"+name);
+				SYSTEMS::Logger::GetInstance()->Log("CUDA Pipeline was created (CUDA_PIPELINE_"+name + ")");
+			}
 			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
-			renderGraphNode->CUDAPipeline    = pipeline;
+			renderGraphNode->CUDAPipeline      = pipeline;
 			renderGraphNode->passName          = name;
 			renderGraphNode->core              = core;
 			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
@@ -1712,7 +1646,27 @@ class RenderGraph
 			renderGraphNode->workerQueueName   = workerQueueName;
 			renderGraphNode->active            = true;
 			renderGraphNode->path              = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
-									name + ".json";
+			                        name + ".json";
+			renderNodes.try_emplace(name, std::move(renderGraphNode));
+			sequentialRenderNodes.push_back(renderNodes.at(name).get());
+			return renderNodes.at(name).get();
+		}
+		return renderNodes.at(name).get();
+	}
+	RenderGraphNode *AddCudaPass(std::string name, std::string workerQueueName = "CUDA")
+	{
+		if (!renderNodes.contains(name))
+		{
+			auto renderGraphNode               = std::make_unique<RenderGraphNode>();
+			renderGraphNode->CUDAPipeline      = AddCUDAPipeline("CUDA_PIPELINE_" + name);
+			renderGraphNode->passName          = name;
+			renderGraphNode->core              = core;
+			renderGraphNode->nodesToExecuteRef = &nodesToExecute;
+			renderGraphNode->resManagerRef     = resourcesManager;
+			renderGraphNode->workerQueueName   = workerQueueName;
+			renderGraphNode->active            = true;
+			renderGraphNode->path              = SYSTEMS::OS::GetInstance()->GetEngineResourcesPath() + "\\RenderNodes\\pass_" +
+			                        name + ".json";
 			renderNodes.try_emplace(name, std::move(renderGraphNode));
 			sequentialRenderNodes.push_back(renderNodes.at(name).get());
 			return renderNodes.at(name).get();
@@ -1765,25 +1719,12 @@ class RenderGraph
 		return renderNodes.at(name).get();
 	}
 
-	DescriptorCache *AddDescCache(std::string name)
-	{
-		if (descCachesProxy.contains(name))
-		{
-			return descCachesProxy.at(name).get();
-		}
-		else
-		{
-			descCachesProxy.try_emplace(name, std::make_unique<DescriptorCache>(core));
-			return descCachesProxy.at(name).get();
-		}
-	}
-
 	ImageView *AddColorImageResource(std::string passName, ImageView *imageView)
 	{
 		assert(imageView && "ImageView is null");
 		if (renderNodes.contains(passName))
 		{
-			renderNodes.at(passName)->AddColorImageResource(imageView);
+			renderNodes.at(passName)->G_AddColorImageResource(imageView);
 		}
 		else
 		{
@@ -1797,7 +1738,7 @@ class RenderGraph
 		assert(imageView && "ImageView is null");
 		if (renderNodes.contains(passName))
 		{
-			renderNodes.at(passName)->SetDepthImageResource(imageView);
+			renderNodes.at(passName)->G_SetDepthImageResource(imageView);
 		}
 		else
 		{
@@ -1811,7 +1752,7 @@ class RenderGraph
 		assert(imageView && "ImageView is null");
 		if (renderNodes.contains(passName))
 		{
-			renderNodes.at(passName)->AddSamplerResource(imageView);
+			renderNodes.at(passName)->G_AddSamplerResource(imageView);
 		}
 		else
 		{
@@ -1825,7 +1766,7 @@ class RenderGraph
 		assert(imageView && "ImageView is null");
 		if (renderNodes.contains(passName))
 		{
-			renderNodes.at(passName)->AddStorageResource(imageView);
+			renderNodes.at(passName)->G_AddStorageResource(imageView);
 		}
 		else
 		{
@@ -1863,7 +1804,7 @@ class RenderGraph
 		{
 			if (node.second->GPUPipelineRef)
 			{
-				node.second->RecreateResources();
+				node.second->G_RecreateResources();
 			}
 		}
 		SYSTEMS::Logger::GetInstance()->LogMessage("Graphics Pipelines Recreated");
@@ -1952,9 +1893,10 @@ class RenderGraph
 			return;
 		}
 		int batchIdx = 0;
-		
-		//if the first queue is cuda we need to add a "bridge sync point with image adquire semaphore"
-		if(sortedNodes[0]->workerQueueName == "CUDA"){
+
+		// if the first queue is cuda we need to add a "bridge sync point with image adquire semaphore"
+		if (sortedNodes[0]->workerQueueName == "CUDA")
+		{
 			int               poolCmdId = 0;
 			auto             *queueRef  = core->queueWorkerManager->GetWorkerQueue("Graphics");
 			vk::CommandBuffer cmd       = queueRef->RequestQueueCmd(poolCmdId);
@@ -1978,8 +1920,9 @@ class RenderGraph
 				batches.back().sortedNodes.emplace_back(sortedNodes[i]);
 			}
 		}
-		//if the first queue is cuda we need to add a "bridge sync point with rendering finished semaphore"
-		if(sortedNodes.back()->workerQueueName == "CUDA"){
+		// if the first queue is cuda we need to add a "bridge sync point with rendering finished semaphore"
+		if (sortedNodes.back()->workerQueueName == "CUDA")
+		{
 			int               poolCmdId = 0;
 			auto             *queueRef  = core->queueWorkerManager->GetWorkerQueue("Graphics");
 			vk::CommandBuffer cmd       = queueRef->RequestQueueCmd(poolCmdId);
@@ -2103,7 +2046,7 @@ class RenderGraph
 		Profiler::GetInstance()->AddProfilerCpuSpot(legit::Colors::belizeHole, "Rendergraph prepare cpu");
 		resourcesManager->UpdateBuffers();
 		resourcesManager->UpdateImages();
-		for (auto node :sequentialRenderNodes)
+		for (auto node : sequentialRenderNodes)
 		{
 			node->ValidateNodeType();
 		}
@@ -2136,7 +2079,7 @@ class RenderGraph
 
 	~RenderGraph()
 	{
-		for (auto& pi : cudaPipelines)
+		for (auto &pi : cudaPipelines)
 		{
 			pi.second->context->C_Shutdown();
 		}

@@ -5,6 +5,7 @@
 
 #ifndef FLATRENDERER_HPP
 #define FLATRENDERER_HPP
+#include "CodeCuda.cuh"
 namespace Rendering
 {
 using namespace ENGINE;
@@ -28,7 +29,7 @@ class FlatRenderer : public BaseRenderer
 		cascadesInfo.probeSizePx        = 2;
 		cascadesInfo.intervalCount      = 2;
 		cascadesInfo.baseIntervalLength = 1;
-		auto imageInfo                  = Image::CreateInfo2d(renderGraph->currentBackBuffer->imageData->GetImageSize(), 1, 1,
+		auto imageInfo                  = Image::CreateInfo2d(glm::uvec2(rcResolutionW, rcResolutionH), 1, 1,
 		                                                      ENGINE::g_32bFormat,
 		                                                      vk::ImageUsageFlagBits::eColorAttachment |
 		                                                          vk::ImageUsageFlagBits::eSampled);
@@ -50,7 +51,7 @@ class FlatRenderer : public BaseRenderer
 
 		paintingPc.radius = 20;
 
-		auto       storageImageInfo = ENGINE::Image::CreateInfo2d(renderGraph->currentBackBuffer->imageData->GetImageSize(), 1, 1,
+		auto       storageImageInfo = ENGINE::Image::CreateInfo2d(glm::uvec2(rcResolutionW, rcResolutionH), 1, 1,
 		                                                          ENGINE::g_32bFormat,
 		                                                          vk::ImageUsageFlagBits::eStorage |
 		                                                              vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
@@ -135,12 +136,12 @@ class FlatRenderer : public BaseRenderer
 	{
 		quadVertBufferRef = ResourcesManager::GetInstance()->GetStageBuffer(
 		                                                       "QuadRcVertices", vk::BufferUsageFlagBits::eVertexBuffer,
-		                                                       sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
+		                                                       sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(), sizeof(Vertex2D),
 		                                                       Vertex2D::GetQuadVertices().data())
 		                        ->deviceBuffer.get();
 		quadIndexBufferRef = ResourcesManager::GetInstance()->GetStageBuffer(
 		                                                        "QuadRcIndices", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                        sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),
+		                                                        sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),sizeof(uint32_t),
 		                                                        Vertex2D::GetQuadIndices().data())
 		                         ->deviceBuffer.get();
 	}
@@ -151,11 +152,13 @@ class FlatRenderer : public BaseRenderer
 		std::string shaderPath    = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
 		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * 1024 * 1024, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * rcResolutionW * rcResolutionH, sizeof(float) * 4,nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
 
 		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
-		cudaPI->ExportBuffer(cudaBuffer);
-		cudaPI->BuildCUDAPipeline();
+		cudaPI->C_ExportBuffer(cudaBuffer);
+		cudaPI->C_SetKernelFunction(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(0).GetKernelFunct());
+		cudaPI->C_BuildCUDAPipeline();
+		
 
 		auto cudaNode = renderGraph->AddCudaPass(cudaPI, "CudaNode");
 		//
@@ -163,24 +166,24 @@ class FlatRenderer : public BaseRenderer
 		paintCompShader = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\paintingGen.slang", S_COMP);
 		auto *paintingGPUPipeline = renderGraph->AddGPUPipeline("PaintingCompute");
-		paintingGPUPipeline->SetCompShader(paintCompShader);
-		paintingGPUPipeline->SetPushConstantSize(sizeof(PaintingPc));
-		paintingGPUPipeline->BuildGPUPipeline();
+		paintingGPUPipeline->G_SetCompShader(paintCompShader);
+		paintingGPUPipeline->G_SetPushConstantSize(sizeof(PaintingPc));
+		paintingGPUPipeline->G_BuildGPUPipeline();
 
 		auto *paintingNode = renderGraph->AddPass(paintingGPUPipeline, paintingPassName, "Graphics");
-		paintingNode->AddStorageResource(paintingLayers[0]);
-		paintingNode->AddStorageResource(paintingLayers[1]);
-		paintingNode->AddStorageResource(paintingLayers[2]);
+		paintingNode->G_AddStorageResource(paintingLayers[0]);
+		paintingNode->G_AddStorageResource(paintingLayers[1]);
+		paintingNode->G_AddStorageResource(paintingLayers[2]);
 
 		auto cudaBufferImports = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\cudaBufferToImage.slang", S_COMP);
 
 		auto *cudaImportBuffersNode = renderGraph->AddGPUPipeline("CudaBufferImporter");
-		cudaImportBuffersNode->SetCompShader(cudaBufferImports);
-		cudaImportBuffersNode->BuildGPUPipeline();
+		cudaImportBuffersNode->G_SetCompShader(cudaBufferImports);
+		cudaImportBuffersNode->G_BuildGPUPipeline();
 
 		auto *importBufferNode = renderGraph->AddPass(cudaImportBuffersNode, "CudaBufferImporterNode");
-		importBufferNode->AddStorageResource(paintingLayers[3]);
+		importBufferNode->G_AddStorageResource(paintingLayers[3]);
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
 		AttachmentInfo colInfo     = GetColorAttachmentInfo(
@@ -193,21 +196,21 @@ class FlatRenderer : public BaseRenderer
 		    S_FRAG);
 
 		auto probesGenGPUPipeline = renderGraph->AddGPUPipeline("ProbesGenShader");
-		probesGenGPUPipeline->SetConfigs({true});
-		probesGenGPUPipeline->SetPushConstantSize(sizeof(PaintingPc));
-		probesGenGPUPipeline->SetVertShader(probesVertShader);
-		probesGenGPUPipeline->SetFragShader(probesFragShader);
-		probesGenGPUPipeline->SetVertexInput(vertexInput);
-		probesGenGPUPipeline->AddColorAttachmentOutput("CascadeAttachment", colInfo, BlendConfigs::B_OPAQUE);
-		probesGenGPUPipeline->BuildGPUPipeline();
+		probesGenGPUPipeline->G_SetConfigs({true});
+		probesGenGPUPipeline->G_SetPushConstantSize(sizeof(PaintingPc));
+		probesGenGPUPipeline->G_SetVertShader(probesVertShader);
+		probesGenGPUPipeline->G_SetFragShader(probesFragShader);
+		probesGenGPUPipeline->G_SetVertexInput(vertexInput);
+		probesGenGPUPipeline->G_AddColorAttachmentOutput("CascadeAttachment", colInfo, BlendConfigs::B_OPAQUE);
+		probesGenGPUPipeline->G_BuildGPUPipeline();
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
 			std::string name = "ProbesGen_" + std::to_string(i);
 			probesGenPassNames.push_back(name);
 			auto renderNode = renderGraph->AddPass(probesGenGPUPipeline, name, "Graphics_Test");
-			renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
-			renderNode->AddColorImageResource(cascadesAttachmentsImagesViews[i]);
+			renderNode->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
+			renderNode->G_AddColorImageResource(cascadesAttachmentsImagesViews[i]);
 			renderNode->DependsOn(paintingPassName);
 		}
 
@@ -221,15 +224,15 @@ class FlatRenderer : public BaseRenderer
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 
 		auto cascadesGPUPipeline = renderGraph->AddGPUPipeline("CascadesGPUPipeline");
-		cascadesGPUPipeline->SetVertShader(vertShader);
-		cascadesGPUPipeline->SetFragShader(fragShader);
-		cascadesGPUPipeline->SetPushConstantSize(sizeof(RcPc));
-		cascadesGPUPipeline->SetVertexInput(vertexInput);
-		cascadesGPUPipeline->AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
-		cascadesGPUPipeline->BuildGPUPipeline();
+		cascadesGPUPipeline->G_SetVertShader(vertShader);
+		cascadesGPUPipeline->G_SetFragShader(fragShader);
+		cascadesGPUPipeline->G_SetPushConstantSize(sizeof(RcPc));
+		cascadesGPUPipeline->G_SetVertexInput(vertexInput);
+		cascadesGPUPipeline->G_AddColorAttachmentOutput("rColor", outputColInfo, BlendConfigs::B_ALPHA_BLEND);
+		cascadesGPUPipeline->G_BuildGPUPipeline();
 
 		auto renderNode = renderGraph->AddPass(cascadesGPUPipeline, rCascadesPassName);
-		renderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
+		renderNode->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
 			renderNode->DependsOn("ProbesGen_" + std::to_string(i));
@@ -243,20 +246,20 @@ class FlatRenderer : public BaseRenderer
 		mergeFragShader = renderGraph->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_FRAG);
 
 		auto shaderNode = renderGraph->AddGPUPipeline("MergeShader");
-		shaderNode->SetVertShader(mergeVertShader);
-		shaderNode->SetFragShader(mergeFragShader);
-		shaderNode->SetPushConstantSize(sizeof(RcPc));
-		shaderNode->SetVertexInput(vertexInput);
-		shaderNode->AddColorAttachmentOutput("mergeColor", mergeColInfo, BlendConfigs::B_OPAQUE);
-		shaderNode->BuildGPUPipeline();
+		shaderNode->G_SetVertShader(mergeVertShader);
+		shaderNode->G_SetFragShader(mergeFragShader);
+		shaderNode->G_SetPushConstantSize(sizeof(RcPc));
+		shaderNode->G_SetVertexInput(vertexInput);
+		shaderNode->G_AddColorAttachmentOutput("mergeColor", mergeColInfo, BlendConfigs::B_OPAQUE);
+		shaderNode->G_BuildGPUPipeline();
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
 			std::string name            = rMergePassName + "_" + std::to_string(i);
 			auto        mergeRenderNode = renderGraph->AddPass(shaderNode, name, "Graphics");
-			mergeRenderNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
-			mergeRenderNode->AddStorageResource(radiancesImages[i]);
-			mergeRenderNode->AddStorageResource(radiancesImages[i + 1]);
+			mergeRenderNode->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
+			mergeRenderNode->G_AddStorageResource(radiancesImages[i]);
+			mergeRenderNode->G_AddStorageResource(radiancesImages[i + 1]);
 			mergeRenderNode->DependsOn(rCascadesPassName);
 			if (i < cascadesInfo.cascadeCount - 2)
 			{
@@ -272,14 +275,14 @@ class FlatRenderer : public BaseRenderer
 		    S_FRAG);
 
 		auto resultGPUPipeline = renderGraph->AddGPUPipeline("ResultCascadesShader");
-		resultGPUPipeline->SetVertShader(resultVertShader);
-		resultGPUPipeline->SetFragShader(resultFragShader);
-		resultGPUPipeline->SetVertexInput(Vertex2D::GetVertexInput());
-		resultGPUPipeline->SetPushConstantSize(sizeof(RcPc));
-		resultGPUPipeline->AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
+		resultGPUPipeline->G_SetVertShader(resultVertShader);
+		resultGPUPipeline->G_SetFragShader(resultFragShader);
+		resultGPUPipeline->G_SetVertexInput(Vertex2D::GetVertexInput());
+		resultGPUPipeline->G_SetPushConstantSize(sizeof(RcPc));
+		resultGPUPipeline->G_AddColorAttachmentOutput("resultColor", outputColInfo, BlendConfigs::B_OPAQUE);
 
 		auto resultNode = renderGraph->AddPass(resultGPUPipeline, resultPassName, "Graphics");
-		resultNode->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
+		resultNode->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
 		resultNode->DependsOn(rMergePassName + "_" + std::to_string(0));
 		resultNode->BuildRenderGraphNode();
 	}
@@ -305,24 +308,25 @@ class FlatRenderer : public BaseRenderer
 			    // }
 
 			    auto &renderNode = renderGraph->renderNodes.at(paintingPassName);
-			    renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
+			    renderNode->G_SetStorageImageArray("PaintingLayers", paintingLayers);
 			    renderNode->GetCurrCmd().pushConstants(renderNode->GPUPipelineRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
 			                                           0, sizeof(PaintingPc), &paintingPc);
 			    renderNode->GetCurrCmd().dispatch(paintingPc.radius, paintingPc.radius, 1);
 		    });
 
-		renderGraph->GetNode(paintingPassName)->SetRenderOperation(paintingRenderOP);
+		renderGraph->GetNode(paintingPassName)->G_SetRenderOperation(paintingRenderOP);
 
 		auto importCudaBufferNodeOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at("CudaBufferImporterNode");
-			    renderNode->SetStorageImage("OutImage", paintingLayers[3]);
-			    renderNode->SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
-			    renderNode->GetCurrCmd().dispatch(1024, 1024, 1);
+			    renderNode->G_SetStorageImage("OutImage", paintingLayers[3]);
+			    renderNode->G_SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
+		    	
+			    renderNode->GetCurrCmd().dispatch((rcResolutionW + rcResolutionW - 1)/8, (rcResolutionH + rcResolutionH - 1)/8, 1);
 		    });
 
-		renderGraph->GetNode("CudaBufferImporterNode")->SetRenderOperation(importCudaBufferNodeOp);
+		renderGraph->GetNode("CudaBufferImporterNode")->G_SetRenderOperation(importCudaBufferNodeOp);
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
@@ -351,7 +355,7 @@ class FlatRenderer : public BaseRenderer
 				                                             vk::IndexType::eUint32);
 				    renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 			    });
-			renderGraph->GetNode(probesGenPassNames[i])->SetRenderOperation(probesGenOp);
+			renderGraph->GetNode(probesGenPassNames[i])->G_SetRenderOperation(probesGenOp);
 		}
 
 		auto radianceOutputTask = new std::function<void()>([this]() {
@@ -359,23 +363,23 @@ class FlatRenderer : public BaseRenderer
 			rcPc.probeSizePx        = cascadesInfo.probeSizePx;
 			rcPc.intervalCount      = cascadesInfo.intervalCount;
 			rcPc.baseIntervalLength = cascadesInfo.baseIntervalLength;
-			rcPc.fWidth             = renderGraph->currentBackBuffer->imageData->GetImageSize().x;
-			rcPc.fHeight            = renderGraph->currentBackBuffer->imageData->GetImageSize().y;
+			rcPc.fWidth             = rcResolutionW;
+			rcPc.fHeight            = rcResolutionH;
 
 			auto *currImage = renderGraph->currentBackBuffer;
 			renderGraph->AddColorImageResource(rCascadesPassName, currImage);
-			renderGraph->GetNode(rCascadesPassName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
+			renderGraph->GetNode(rCascadesPassName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
 		});
 		auto radianceOutputOp   = new std::function<void()>(
             [this]() {
                 auto &renderNode = renderGraph->renderNodes.at(rCascadesPassName);
-                renderNode->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
-                renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
-                renderNode->SetStorageImageArray("Radiances", radiancesImages);
-                renderNode->SetSampler("TestImage", testImage->imageView.get());
-                renderNode->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
-                renderNode->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
-                renderNode->SetSamplerArray("MatTextures",
+			    renderNode->G_SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
+			    renderNode->G_SetStorageImageArray("PaintingLayers", paintingLayers);
+			    renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
+			    renderNode->G_SetSampler("TestImage", testImage->imageView.get());
+			    renderNode->G_SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
+			    renderNode->G_SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
+			    renderNode->G_SetSamplerArray("MatTextures",
 			                                  backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 
                 vk::DeviceSize offset = 0;
@@ -389,7 +393,7 @@ class FlatRenderer : public BaseRenderer
                 renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 			                                           0, 0);
             });
-		renderGraph->GetNode(rCascadesPassName)->SetRenderOperation(radianceOutputOp);
+		renderGraph->GetNode(rCascadesPassName)->G_SetRenderOperation(radianceOutputOp);
 		renderGraph->GetNode(rCascadesPassName)->AddPreRenderingTask(radianceOutputTask);
 
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
@@ -399,16 +403,16 @@ class FlatRenderer : public BaseRenderer
                 int         idx       = i;
                 std::string mergeName = rMergePassName + "_" + std::to_string(idx);
                 auto       *currImage = renderGraph->currentBackBuffer;
-                renderGraph->GetNode(mergeName)->AddColorImageResource(currImage);
-                renderGraph->GetNode(mergeName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
+				renderGraph->GetNode(mergeName)->G_AddColorImageResource(currImage);
+				renderGraph->GetNode(mergeName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
             });
 			auto        mergeRenderOp     = new std::function<void()>(
                 [this, i]() {
                     int         idx        = i;
                     std::string mergeName  = rMergePassName + "_" + std::to_string(idx);
                     auto       &renderNode = renderGraph->renderNodes.at(mergeName);
-                    renderNode->SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
-                    renderNode->SetStorageImageArray("Radiances", radiancesImages);
+				    renderNode->G_SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
+				    renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
 
                     rcPc.cascadeIndex = idx;
 
@@ -424,27 +428,27 @@ class FlatRenderer : public BaseRenderer
                     renderNode->GetCurrCmd().drawIndexed(Vertex2D::GetQuadIndices().size(), 1, 0,
 				                                                    0, 0);
                 });
-			renderGraph->GetNode(mergeNameCascades)->SetRenderOperation(mergeRenderOp);
+			renderGraph->GetNode(mergeNameCascades)->G_SetRenderOperation(mergeRenderOp);
 			renderGraph->GetNode(mergeNameCascades)->AddPreRenderingTask(mergeTask);
 		}
 
 		auto resultTask     = new std::function<void()>([this]() {
             auto *currImage = renderGraph->currentBackBuffer;
-            renderGraph->GetNode(resultPassName)->AddColorImageResource(currImage);
-            renderGraph->GetNode(resultPassName)->SetFramebufferSize(renderGraph->currentBackBuffer->imageData->GetImageSize());
+			renderGraph->GetNode(resultPassName)->G_AddColorImageResource(currImage);
+			renderGraph->GetNode(resultPassName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
         });
 		auto resultRenderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(resultPassName);
-			    renderNode->SetStorageImageArray("PaintingLayers", paintingLayers);
-			    renderNode->SetStorageImageArray("Radiances", radiancesImages);
-			    renderNode->SetSampler("TestImage", testImage->imageView.get());
-			    renderNode->SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
-			    renderNode->SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
-			    renderNode->SetSamplerArray("MatTextures",
+			    renderNode->G_SetStorageImageArray("PaintingLayers", paintingLayers);
+			    renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
+			    renderNode->G_SetSampler("TestImage", testImage->imageView.get());
+			    renderNode->G_SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
+			    renderNode->G_SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
+			    renderNode->G_SetSamplerArray("MatTextures",
 			                                backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
-			    renderNode->SetBuffer("LightInfo", light);
-			    renderNode->SetBuffer("RConfigs", rConfigs);
+			    renderNode->G_SetBuffer("LightInfo", light);
+			    renderNode->G_SetBuffer("RConfigs", rConfigs);
 
 			    vk::DeviceSize offset = 0;
 			    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
@@ -458,29 +462,29 @@ class FlatRenderer : public BaseRenderer
 			                                         0, 0);
 			    testSpriteAnim->UseFrame();
 		    });
-		renderGraph->GetNode(resultPassName)->SetRenderOperation(resultRenderOp);
+		renderGraph->GetNode(resultPassName)->G_SetRenderOperation(resultRenderOp);
 		renderGraph->GetNode(resultPassName)->AddPreRenderingTask(resultTask);
 	}
 
 	void ReloadShaders() override
 	{
 		auto *paintingNode = renderGraph->GetNode(paintingPassName);
-		paintingNode->RecreateResources();
+		paintingNode->G_RecreateResources();
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
 			auto *genNode = renderGraph->GetNode(probesGenPassNames[i]);
-			genNode->RecreateResources();
+			genNode->G_RecreateResources();
 		}
 		auto *outputNode = renderGraph->GetNode(rCascadesPassName);
-		outputNode->RecreateResources();
+		outputNode->G_RecreateResources();
 		for (int i = cascadesInfo.cascadeCount - 2; i >= 0; i--)
 		{
 			std::string name      = rMergePassName + "_" + std::to_string(i);
 			auto       *mergeNode = renderGraph->GetNode(name);
-			mergeNode->RecreateResources();
+			mergeNode->G_RecreateResources();
 		}
 		auto *resultNode = renderGraph->GetNode(resultPassName);
-		resultNode->RecreateResources();
+		resultNode->G_RecreateResources();
 	}
 
 	Core           *core;
@@ -524,6 +528,8 @@ class FlatRenderer : public BaseRenderer
 	RadianceCascadesConfigs rConfigs{};
 	ProbesGenPc             probesGenPc;
 	CascadesInfo            cascadesInfo;
+	int rcResolutionW = 1024;
+	int rcResolutionH = 1024;
 };
 }        // namespace Rendering
 #endif        // FLATRENDERER_HPP

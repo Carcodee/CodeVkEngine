@@ -63,14 +63,14 @@ class DebugRenderer : public BaseRenderer
 			// AttachmentInfo depthInfo = GetDepthAttachmentInfo();
 			auto renderNode = renderGraph->AddPass(mDebuggerPassName);
 
-			renderNode->SetVertShader(modelVShader.get());
-			renderNode->SetFragShader(modelFShader.get());
-			renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-			renderNode->SetPushConstantSize(sizeof(MvpPc));
-			renderNode->SetVertexInput(vertexInput);
-			renderNode->AddColorAttachmentOutput("modelCol", colInfo, BlendConfigs::B_OPAQUE);
-			renderNode->SetGraphicsPipelineConfigs({RasterizationConfigs::R_LINE, TopologyConfigs::T_TRIANGLE});
-			renderNode->SetDepthConfig(DepthConfigs::D_NONE);
+			renderNode->G_SetVertShader(modelVShader.get());
+			renderNode->G_SetFragShader(modelFShader.get());
+			renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+			renderNode->G_SetPushConstantSize(sizeof(MvpPc));
+			renderNode->G_SetVertexInput(vertexInput);
+			renderNode->G_AddColorAttachmentOutput("modelCol", colInfo, BlendConfigs::B_OPAQUE);
+			renderNode->G_SetGraphicsPipelineConfigs({RasterizationConfigs::R_LINE, TopologyConfigs::T_TRIANGLE});
+			renderNode->G_SetDepthConfig(DepthConfigs::D_NONE);
 			renderNode->DependsOn("light");
 			renderNode->BuildRenderGraphNode();
 		}
@@ -87,10 +87,10 @@ class DebugRenderer : public BaseRenderer
 				SetViewCamera();
 				CreateFrustumVertices();
 				rawVerticesBuff = ResourcesManager::GetInstance()->SetBuffer(
-				    "debugRawVertices", sizeof(D_Vertex3D) * raw3DVertices.size(), raw3DVertices.data());
+				    "debugRawVertices", sizeof(D_Vertex3D) * raw3DVertices.size(), sizeof(D_Vertex3D), raw3DVertices.data());
 				auto *currImage = renderGraph->currentBackBuffer;
 				renderGraph->AddColorImageResource(mDebuggerPassName,  currImage);
-				renderGraph->GetNode(mDebuggerPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
+				renderGraph->GetNode(mDebuggerPassName)->G_SetFramebufferSize(windowProvider->GetWindowSize());
 			});
 			auto renderOp  = new std::function<void()>(
                 [this]() {
@@ -110,7 +110,7 @@ class DebugRenderer : public BaseRenderer
                 });
 
 			renderGraph->GetNode(mDebuggerPassName)->AddPreRenderingTask(debugTask);
-			renderGraph->GetNode(mDebuggerPassName)->SetRenderOperation(renderOp);
+			renderGraph->GetNode(mDebuggerPassName)->G_SetRenderOperation(renderOp);
 		}
 	}
 	void ReloadShaders() override
@@ -118,7 +118,7 @@ class DebugRenderer : public BaseRenderer
 		auto node = renderGraph->GetNode(mDebuggerPassName);
 		if (node)
 		{
-			node->RecreateResources();
+			node->G_RecreateResources();
 		}
 	}
 	void SetViewCamera()

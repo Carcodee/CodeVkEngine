@@ -12,16 +12,16 @@ namespace ENGINE
     {
     public:
         StagedBuffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::BufferUsageFlags usage,
-                     vk::DeviceSize size)
+                     vk::DeviceSize size, vk::DeviceSize stride)
         {
             stagingBuffer = std::make_unique<ENGINE::Buffer>(physicalDevice, logicalDevice,
                                                              vk::BufferUsageFlagBits::eTransferSrc,
                                                              vk::MemoryPropertyFlagBits::eHostVisible |
                                                              vk::MemoryPropertyFlagBits::eHostCoherent,
-                                                             size);
+                                                             size, stride);
             deviceBuffer = std::make_unique<ENGINE::Buffer>(physicalDevice, logicalDevice,
                                                             usage | vk::BufferUsageFlagBits::eTransferDst,
-                                                            vk::MemoryPropertyFlagBits::eDeviceLocal, size);
+                                                            vk::MemoryPropertyFlagBits::eDeviceLocal, size, stride);
             this->size = size;
         }
 

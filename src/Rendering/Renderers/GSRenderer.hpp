@@ -57,7 +57,7 @@ class GSRenderer : public BaseRenderer
 		indirectBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(ENGINE::ResourcesManager::BufferParams{
 		    "gsIndirectDraw", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
 		    vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data()});
+		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), sizeof(ENGINE::DrawIndirectIndexedCmd),indexedCmds.data()});
 	}
 	void ReSort()
 	{
@@ -74,19 +74,19 @@ class GSRenderer : public BaseRenderer
 			indexedCmds.emplace_back(indirectCmd);
 		}
 		indirectBuffer = ENGINE::ResourcesManager::GetInstance()->SetBuffer(
-		    "gsIndirectDraw", sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), indexedCmds.data());
+		    "gsIndirectDraw", sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), sizeof(ENGINE::DrawIndirectIndexedCmd), indexedCmds.data());
 	}
 
 	void CreateBuffers()
 	{
 		gsPointsVertexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
 		                                                              "gsPointsVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
-		                                                              sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),
+		                                                              sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),sizeof(Vertex2D),
 		                                                              Vertex2D::GetQuadVertices().data())
 		                           ->deviceBuffer.get();
 		gsPointsIndexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
 		                                                             "gsPointsIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                             sizeof(Vertex2D) * Vertex2D::GetQuadIndices().size(),
+		                                                             sizeof(Vertex2D) * Vertex2D::GetQuadIndices().size(),sizeof(Vertex2D),
 		                                                             Vertex2D::GetQuadIndices().data())
 		                          ->deviceBuffer.get();
 	}
@@ -97,13 +97,13 @@ class GSRenderer : public BaseRenderer
 		//     "histogramPass",
 		//     SYSTEMS::OS::GetInstance()->shadersPath.string() +
 		//     "\\glsl\\ThirdParty\\multi_radixsort_histograms.comp");
-		// histogramNode->SetPushConstantSize(sizeof(PcHistogram));
+		// histogramNode->G_SetPushConstantSize(sizeof(PcHistogram));
 		//
 		// auto radixSortNode = RenderingResManager::GetInstance()->GetTemplateComputeNode(
 		//     "radixSortPass",
 		//     SYSTEMS::OS::GetInstance()->shadersPath.string() +
 		//     "\\glsl\\ThirdParty\\multi_radixsort.comp");
-		// histogramNode->SetPushConstantSize(sizeof(PcRadixSort));
+		// histogramNode->G_SetPushConstantSize(sizeof(PcRadixSort));
 
 		AttachmentInfo colInfo = GetColorAttachmentInfo(
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
@@ -111,20 +111,20 @@ class GSRenderer : public BaseRenderer
 		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
 
 		auto renderNode = renderGraph->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
-		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
-		renderNode->SetPushConstantSize(sizeof(SplitMVP));
-		renderNode->AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_ALPHA_BLEND);
-		renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
+		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
+		renderNode->G_SetPushConstantSize(sizeof(SplitMVP));
+		renderNode->G_AddColorAttachmentOutput("DisplayAttachment", colInfo, BlendConfigs::B_ALPHA_BLEND);
+		renderNode->G_SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
 		renderNode->BuildRenderGraphNode();
 
-		renderNode->SetBuffer("GSScale", gaussians.scales);
-		renderNode->SetBuffer("GSRot", gaussians.rots);
-		renderNode->SetBuffer("GSPos", gaussians.pos);
-		renderNode->SetBuffer("GSCols", gaussians.cols);
-		renderNode->SetBuffer("GSAlphas", gaussians.alphas);
-		renderNode->SetBuffer("HFov", gaussians.hFovFocal);
-		renderNode->SetBuffer("GSShs", gaussians.shCoefs);
+		renderNode->G_SetBuffer("GSScale", gaussians.scales);
+		renderNode->G_SetBuffer("GSRot", gaussians.rots);
+		renderNode->G_SetBuffer("GSPos", gaussians.pos);
+		renderNode->G_SetBuffer("GSCols", gaussians.cols);
+		renderNode->G_SetBuffer("GSAlphas", gaussians.alphas);
+		renderNode->G_SetBuffer("HFov", gaussians.hFovFocal);
+		renderNode->G_SetBuffer("GSShs", gaussians.shCoefs);
 	}
 
 	void RecreateSwapChainResources() override
@@ -159,7 +159,7 @@ class GSRenderer : public BaseRenderer
 		//     });
 		//
 		// renderGraph->GetNode("histogramPass")->AddPreRenderingTask(hTaskOp);
-		// renderGraph->GetNode("histogramPass")->SetRenderOperation(hRenderOp);
+		// renderGraph->GetNode("histogramPass")->G_SetRenderOperation(hRenderOp);
 		//
 		// auto rRenderOp = new std::function<void()>(
 		//     [this]()
@@ -180,7 +180,7 @@ class GSRenderer : public BaseRenderer
 		//             0, sizeof(PcRadixSort), &pcRadixSort);
 		//     });
 		//
-		// renderGraph->GetNode("radixSortPass")->SetRenderOperation(rRenderOp);
+		// renderGraph->GetNode("radixSortPass")->G_SetRenderOperation(rRenderOp);
 
 		auto taskOp = new std::function<void()>(
 		    [this] {
@@ -188,13 +188,13 @@ class GSRenderer : public BaseRenderer
 			    splitMvp.model = glm::identity<glm::mat4>();
 
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->AddColorImageResource(renderGraph->currentBackBuffer);
+			    renderNode->G_AddColorImageResource(renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at(passName);
 
-			    renderNode->SetBuffer("GSConfigs", gsConfigsPc);
+			    renderNode->G_SetBuffer("GSConfigs", gsConfigsPc);
 
 			    vk::DeviceSize offset = 0;
 
@@ -222,7 +222,7 @@ class GSRenderer : public BaseRenderer
 			        gaussians.pos.size(),
 			        stride);
 		    });
-		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
+		renderGraph->GetNode(passName)->G_SetRenderOperation(renderOp);
 		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
 	}
 

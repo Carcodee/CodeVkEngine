@@ -46,19 +46,19 @@ class HairRenderer : public BaseRenderer
 		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
 
 		auto renderNode = renderGraph->AddPass(passName);
-		renderNode->SetConfigs({true});
-		renderNode->SetVertShader(vShader);
-		renderNode->SetFragShader(fShader);
-		renderNode->SetGeomShader(gShader);
-		renderNode->SetTesControlShader(tescShader);
-		renderNode->SetTesEvalShader(teseShader);
-		renderNode->SetGraphicsPipelineConfigs(GraphicsPipelineConfigs{
+		renderNode->G_SetConfigs({true});
+		renderNode->G_SetVertShader(vShader);
+		renderNode->G_SetFragShader(fShader);
+		renderNode->G_SetGeomShader(gShader);
+		renderNode->G_SetTesControlShader(tescShader);
+		renderNode->G_SetTesEvalShader(teseShader);
+		renderNode->G_SetGraphicsPipelineConfigs(GraphicsPipelineConfigs{
 		    RasterizationConfigs::R_FILL, TopologyConfigs::T_PATCH_LIST});
-		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		// change this
-		//  renderNode->SetPushConstantSize(4);
-		renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
+		//  renderNode->G_SetPushConstantSize(4);
+		renderNode->G_AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
 		renderNode->BuildRenderGraphNode();
 	}
 
@@ -71,7 +71,7 @@ class HairRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>(
 		    [this] {
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->AddColorImageResource(renderGraph->currentBackBuffer);
+			    renderNode->G_AddColorImageResource(renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {
@@ -86,7 +86,7 @@ class HairRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().drawIndexed(
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
+		renderGraph->GetNode(passName)->G_SetRenderOperation(renderOp);
 		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
 	}
 

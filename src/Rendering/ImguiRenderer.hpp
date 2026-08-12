@@ -734,7 +734,7 @@ class ImguiRenderer
 
 	void AddSmokePretty(CodeCuda::CodeCudaContext *context, const glm::vec2 mousePosition)
 	{
-		if (!context || CodeCuda::s_width <= 0 || CodeCuda::s_height <= 0)
+		if (!context || CodeCuda::FluidSimulation::s_width <= 0 || CodeCuda::FluidSimulation::s_height <= 0)
 		{
 			return;
 		}
@@ -747,7 +747,7 @@ class ImguiRenderer
 			    glm::linearRand(0.05f, 0.45f));
 		};
 
-		const int radius = std::max(1, CodeCuda::s_height / 46);
+		const int radius = std::max(1, CodeCuda::FluidSimulation::s_height / 46);
 		if (!prettySmokeStrokeActive)
 		{
 			prettySmokeLastMousePosition = mousePosition;
@@ -772,17 +772,17 @@ class ImguiRenderer
 
 			const float u = glm::clamp(interpolatedPosition.x / 1023.0f, 0.0f, 1.0f);
 			const float v = glm::clamp(interpolatedPosition.y / 1023.0f, 0.0f, 1.0f);
-			const int   x = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
-			const int   y = static_cast<int>((1.0f - v) * static_cast<float>(CodeCuda::s_height - 1));
+			const int   x = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
+			const int   y = static_cast<int>((1.0f - v) * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
 
 			const glm::vec2 simulationDelta(
-			    mouseDelta.x * static_cast<float>(CodeCuda::s_width) / 1023.0f,
-			    mouseDelta.y * static_cast<float>(CodeCuda::s_height) / 1023.0f);
+			    mouseDelta.x * static_cast<float>(CodeCuda::FluidSimulation::s_width) / 1023.0f,
+			    mouseDelta.y * static_cast<float>(CodeCuda::FluidSimulation::s_height) / 1023.0f);
 
-			CodeCuda::C_AddVelocityGPU(x, y, radius,
+			CodeCuda::FluidSimulation::C_AddVelocityGPU(x, y, radius,
 			                           simulationDelta.x * 0.2f,
 			                           -simulationDelta.y * 0.2f, context);
-			CodeCuda::C_AddSmokeGPU(x, y, radius,
+			CodeCuda::FluidSimulation::C_AddSmokeGPU(x, y, radius,
 			                        interpolatedColor.r, interpolatedColor.g,
 			                        interpolatedColor.b, interpolatedColor.a, context);
 		}
@@ -793,8 +793,8 @@ class ImguiRenderer
 
 	void FluidSimInfo()
 	{
-		CodeCuda::sim_params fluidSimParams{};
-		if (CodeCuda::C_GetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
+		CodeCuda::FluidSimulation::sim_params fluidSimParams{};
+		if (CodeCuda::FluidSimulation::C_GetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
 		{
 			ImGui::TextDisabled("Unable to read fluid simulation parameters.");
 			return;
@@ -806,12 +806,12 @@ class ImguiRenderer
 			simulationActionFail = result != CodeCuda::C_Res::OK;
 		};
 
-		ImGui::TextDisabled("Grid: %d x %d", CodeCuda::s_width, CodeCuda::s_height);
+		ImGui::TextDisabled("Grid: %d x %d", CodeCuda::FluidSimulation::s_width, CodeCuda::FluidSimulation::s_height);
 		const float quickControlWidth =
 		    (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
 		if (ImGui::Button("Restart simulation", ImVec2(quickControlWidth, 30.0f)))
 		{
-			runSimulationAction(CodeCuda::C_RestartSimulation());
+			runSimulationAction(CodeCuda::FluidSimulation::C_RestartSimulation());
 		}
 		ImGui::SameLine();
 		paramsChanged |= ImGui::Checkbox("GPU simulation", &fluidSimParams.gpu_sim);
@@ -983,7 +983,7 @@ class ImguiRenderer
 		{
 			if (ImGui::Button("Load Image as Smoke"))
 			{
-				runSimulationAction(CodeCuda::C_MapImageToSmoke(width, height, 4,
+				runSimulationAction(CodeCuda::FluidSimulation::C_MapImageToSmoke(width, height, 4,
 				                                                image_pixels.data()));
 			}
 		}
@@ -992,7 +992,7 @@ class ImguiRenderer
 			ImGui::SameLine();
 			if (ImGui::Button("Use Solid Mask"))
 			{
-				runSimulationAction(CodeCuda::C_MapSolidMask(width, height,
+				runSimulationAction(CodeCuda::FluidSimulation::C_MapSolidMask(width, height,
 				                                             solid_mask.data()));
 			}
 		}
@@ -1022,7 +1022,7 @@ class ImguiRenderer
 		    "Paint a smooth trail with changing random colors."};
 
 		const int maxSimulationDimension =
-		    CodeCuda::s_width > CodeCuda::s_height ? CodeCuda::s_width : CodeCuda::s_height;
+		    CodeCuda::FluidSimulation::s_width > CodeCuda::FluidSimulation::s_height ? CodeCuda::FluidSimulation::s_width : CodeCuda::FluidSimulation::s_height;
 		const int maxBrushRadius = maxSimulationDimension > 0 ? maxSimulationDimension : 1;
 
 		ImGui::TextDisabled("Tool");
@@ -1129,7 +1129,7 @@ class ImguiRenderer
 			ImGui::SameLine();
 			if (ImGui::Button("Add", ImVec2(addButtonWidth, 0.0f)))
 			{
-				runSimulationAction(CodeCuda::C_AddRandomVelocity(randomVelocityScale));
+				runSimulationAction(CodeCuda::FluidSimulation::C_AddRandomVelocity(randomVelocityScale));
 			}
 			ImGui::EndTable();
 		}
@@ -1141,13 +1141,13 @@ class ImguiRenderer
 		const float  viewportHeight = std::max(1.0f, sceneViewportMax.y - sceneViewportMin.y);
 		const bool   mouseOverViewport = sceneViewportValid && sceneViewportHovered;
 		const int    activeBrushRadius =
-		    fluidTool == 6 ? std::max(1, CodeCuda::s_height / 46) : fluidBrushRadius;
+		    fluidTool == 6 ? std::max(1, CodeCuda::FluidSimulation::s_height / 46) : fluidBrushRadius;
 		if (fluidToolEnabled && mouseOverViewport)
 		{
 			const float radiusPixels = std::max(
 			    2.0f, activeBrushRadius * 0.5f *
-			              (viewportWidth / std::max(1, CodeCuda::s_width) +
-			               viewportHeight / std::max(1, CodeCuda::s_height)));
+			              (viewportWidth / std::max(1, CodeCuda::FluidSimulation::s_width) +
+			               viewportHeight / std::max(1, CodeCuda::FluidSimulation::s_height)));
 			ImGui::GetForegroundDrawList()->AddCircle(
 			    mousePosition, radiusPixels,
 			    ImGui::GetColorU32(ImguiRendererUI::AccentColor()), 48, 1.5f);
@@ -1159,34 +1159,34 @@ class ImguiRenderer
 			    (mousePosition.x - sceneViewportMin.x) / viewportWidth, 0.0f, 1.0f);
 			const float v = glm::clamp(
 			    1.0f - (mousePosition.y - sceneViewportMin.y) / viewportHeight, 0.0f, 1.0f);
-			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
-			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::s_height - 1));
+			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
+			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
 
 			switch (fluidTool)
 			{
 				case 0:
-					runSimulationAction(CodeCuda::C_AddSmoke(xPosition, yPosition, fluidBrushRadius,
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddSmoke(xPosition, yPosition, fluidBrushRadius,
 					                                         fluidSmokeColor[0], fluidSmokeColor[1],
 					                                         fluidSmokeColor[2], fluidSmokeColor[3]));
 					break;
 				case 1:
 				{
 					const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
-					const float  velocityX  = mouseDelta.x * static_cast<float>(CodeCuda::s_width) / viewportWidth;
-					const float  velocityY  = mouseDelta.y * static_cast<float>(CodeCuda::s_height) / viewportHeight;
-					runSimulationAction(CodeCuda::C_AddVelocity(xPosition, yPosition, fluidBrushRadius,
+					const float  velocityX  = mouseDelta.x * static_cast<float>(CodeCuda::FluidSimulation::s_width) / viewportWidth;
+					const float  velocityY  = mouseDelta.y * static_cast<float>(CodeCuda::FluidSimulation::s_height) / viewportHeight;
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddVelocity(xPosition, yPosition, fluidBrushRadius,
 					                                            velocityX * fluidVelocityStrength,
 					                                            -velocityY * fluidVelocityStrength));
 					break;
 				}
 				case 2:
-					runSimulationAction(CodeCuda::C_SetSolid(xPosition, yPosition, fluidBrushRadius, true));
+					runSimulationAction(CodeCuda::FluidSimulation::C_SetSolid(xPosition, yPosition, fluidBrushRadius, true));
 					break;
 				case 3:
-					runSimulationAction(CodeCuda::C_SetSolid(xPosition, yPosition, fluidBrushRadius, false));
+					runSimulationAction(CodeCuda::FluidSimulation::C_SetSolid(xPosition, yPosition, fluidBrushRadius, false));
 					break;
 				case 4:
-					runSimulationAction(CodeCuda::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddRadialVelocity(xPosition, yPosition, fluidBrushRadius,
 					                                                  fluidRadialVelocityStrength));
 					break;
 				case 6:
@@ -1218,8 +1218,8 @@ class ImguiRenderer
 			    (mousePosition.x - sceneViewportMin.x) / viewportWidth, 0.0f, 1.0f);
 			const float v = glm::clamp(
 			    1.0f - (mousePosition.y - sceneViewportMin.y) / viewportHeight, 0.0f, 1.0f);
-			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::s_width - 1));
-			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::s_height - 1));
+			const int   xPosition = static_cast<int>(u * static_cast<float>(CodeCuda::FluidSimulation::s_width - 1));
+			const int   yPosition = static_cast<int>(v * static_cast<float>(CodeCuda::FluidSimulation::s_height - 1));
 			switch (fluidTool)
 			{
 				case 5:
@@ -1248,11 +1248,11 @@ class ImguiRenderer
 			{
 				for (const auto &activeEmitter : emitters)
 				{
-					runSimulationAction(CodeCuda::C_AddVelocityGPU(
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddVelocityGPU(
 					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
 					    activeEmitter.velocity.x, activeEmitter.velocity.y,
 					    cudaNode->CUDAPipeline->context));
-					runSimulationAction(CodeCuda::C_AddSmokeGPU(
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddSmokeGPU(
 					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
 					    activeEmitter.color.x, activeEmitter.color.y,
 					    activeEmitter.color.z, activeEmitter.color.w,
@@ -1278,10 +1278,10 @@ class ImguiRenderer
 
 				if (ImGui::TreeNode("Emitter", "Emitter %d", i + 1))
 				{
-					ImGui::DragInt("X", &activeEmitter.xPos, 1.0f, 0, CodeCuda::s_width - 1);
-					ImGui::DragInt("Y", &activeEmitter.yPos, 1.0f, 0, CodeCuda::s_height - 1);
+					ImGui::DragInt("X", &activeEmitter.xPos, 1.0f, 0, CodeCuda::FluidSimulation::s_width - 1);
+					ImGui::DragInt("Y", &activeEmitter.yPos, 1.0f, 0, CodeCuda::FluidSimulation::s_height - 1);
 					ImGui::DragInt("Radius", &activeEmitter.radius, 1.0f, 1,
-					               std::max(CodeCuda::s_width, CodeCuda::s_height));
+					               std::max(CodeCuda::FluidSimulation::s_width, CodeCuda::FluidSimulation::s_height));
 					ImGui::DragFloat2("Velocity", &activeEmitter.velocity.x, 0.05f,
 					                  -10.0f, 10.0f);
 					ImGui::ColorEdit4("Color", &activeEmitter.color.x);
@@ -1301,15 +1301,15 @@ class ImguiRenderer
 			}
 		}
 
-		static int  resolutionWidth         = CodeCuda::s_width;
-		static int  resolutionHeight        = CodeCuda::s_height;
+		static int  resolutionWidth         = CodeCuda::FluidSimulation::s_width;
+		static int  resolutionHeight        = CodeCuda::FluidSimulation::s_height;
 		static bool resolutionChangePending = false;
 		static bool resolutionUpdateFailed  = false;
 
 		if (!resolutionChangePending)
 		{
-			resolutionWidth  = CodeCuda::s_width;
-			resolutionHeight = CodeCuda::s_height;
+			resolutionWidth  = CodeCuda::FluidSimulation::s_width;
+			resolutionHeight = CodeCuda::FluidSimulation::s_height;
 		}
 
 		auto beginSettingsProperty = [](const char *label) {
@@ -1350,7 +1350,7 @@ class ImguiRenderer
 		if (resolutionChangePending && !widthActive && !heightActive)
 		{
 			resolutionUpdateFailed =
-			    CodeCuda::C_SetSimulationResolution(resolutionWidth, resolutionHeight) != CodeCuda::C_Res::OK;
+			    CodeCuda::FluidSimulation::C_SetSimulationResolution(resolutionWidth, resolutionHeight) != CodeCuda::C_Res::OK;
 			resolutionChangePending = false;
 		}
 		if (resolutionUpdateFailed)
@@ -1438,7 +1438,7 @@ class ImguiRenderer
 			}
 		}
 
-		if (paramsChanged && CodeCuda::C_SetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
+		if (paramsChanged && CodeCuda::FluidSimulation::C_SetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
 		{
 			ImGui::TextDisabled("Unable to update fluid simulation parameters.");
 		}

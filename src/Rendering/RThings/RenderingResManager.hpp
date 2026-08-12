@@ -209,9 +209,9 @@ class RenderingResManager
 					for (int i = 0; i < vertexCount; ++i)
 					{
 						ENGINE::M_Vertex3D vertex{};
-						glm::vec3  pos = glm::make_vec3(&posBuff[i * 3]);
-						vertex.pos     = pos;
-						vertex.normal  = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
+						glm::vec3          pos = glm::make_vec3(&posBuff[i * 3]);
+						vertex.pos             = pos;
+						vertex.normal          = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
 						// not passing vec4 tangents at the moment
 						glm::vec4 tangent = tangentsBuff ? glm::make_vec4(&tangentsBuff[i * 4]) : glm::vec4(0.0f);
 						vertex.tangent    = tangentsBuff ? glm::vec3(tangent.x, tangent.y, tangent.z) * tangent.w : glm::vec3(0.0f);
@@ -362,9 +362,9 @@ class RenderingResManager
 					for (int i = 0; i < vertexCount; ++i)
 					{
 						ENGINE::M_Vertex3D vertex{};
-						glm::vec3  pos = glm::make_vec3(&posBuff[i * 3]);
-						vertex.pos     = pos;
-						vertex.normal  = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
+						glm::vec3          pos = glm::make_vec3(&posBuff[i * 3]);
+						vertex.pos             = pos;
+						vertex.normal          = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
 						// not passing vec4 tangents at the moment
 						glm::vec4 tangent = tangentsBuff ? glm::make_vec4(&tangentsBuff[i * 4]) : glm::vec4(0.0f);
 						vertex.tangent    = tangentsBuff ? glm::vec3(tangent.x, tangent.y, tangent.z) * tangent.w : glm::vec3(0.0f);
@@ -605,11 +605,11 @@ class RenderingResManager
 		std::string indexBuffName = "IndexBuff_" + std::to_string(model->id);
 		model->vertBuffer         = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
             vertBuffName, vk::BufferUsageFlagBits::eVertexBuffer,
-            sizeof(ENGINE::M_Vertex3D) * model->vertices.size(),
+            sizeof(ENGINE::M_Vertex3D) * model->vertices.size(), sizeof(ENGINE::M_Vertex3D),
             model->vertices.data());
 		model->indexBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
 		    indexBuffName, vk::BufferUsageFlagBits::eIndexBuffer,
-		    sizeof(uint32_t) * model->indices.size(),
+		    sizeof(uint32_t) * model->indices.size(), sizeof(uint32_t),
 		    model->indices.data());
 
 		return model;
@@ -666,7 +666,7 @@ class RenderingResManager
 		indirectDrawBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(ENGINE::ResourcesManager::BufferParams{
 		    "IndirectCmds", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
 		    vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(), indirectDrawsCmdInfos.data()});
+		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(), sizeof(ENGINE::DrawIndirectIndexedCmd), indirectDrawsCmdInfos.data()});
 	}
 
 	void UpdateResources()
@@ -702,7 +702,7 @@ class RenderingResManager
 		}
 		indirectDrawBuffer = ENGINE::ResourcesManager::GetInstance()->SetBuffer(
 		    "IndirectCmds", sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(),
-		    indirectDrawsCmdInfos.data());
+		    sizeof(ENGINE::DrawIndirectIndexedCmd), indirectDrawsCmdInfos.data());
 	}
 
 	Model *PushModelToIndirectBatch(std::string name)
@@ -727,7 +727,6 @@ class RenderingResManager
 		return model;
 	}
 
-
 	std::map<std::string, int> materialsNames;
 	std::map<std::string, int> modelsNames;
 	std::map<std::string, int> texturesNames;
@@ -743,8 +742,7 @@ class RenderingResManager
 	std::vector<ENGINE::DrawIndirectIndexedCmd> indirectDrawsCmdInfos;
 	int                                         cullCount = 0;
 
-	RenderingResManager()
-	{
+	RenderingResManager() {
 	};
 	~RenderingResManager() = default;
 

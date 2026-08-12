@@ -279,6 +279,7 @@ namespace ENGINE
             resourcesManagerRef->SetBuffer(
                 name,
                 sizeof(T) * bufferData.size(),
+                sizeof(T),
                 bufferData.data());
             
         }
@@ -294,6 +295,7 @@ namespace ENGINE
             //     &bufferData);
             resourcesManagerRef->SetBuffer(
                 name,
+                sizeof(T),
                 sizeof(T),
                 &bufferData);
         }

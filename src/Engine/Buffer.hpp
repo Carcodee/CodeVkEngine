@@ -52,7 +52,7 @@ class Buffer
 	}
 
 	Buffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::BufferUsageFlags bufferUsageFlags,
-	       vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize,
+	       vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize, vk::DeviceSize stride,
 	        void *data = nullptr, bool isExternal = false)
 	{
 		this->logicalDevice    = logicalDevice;
@@ -60,6 +60,7 @@ class Buffer
 		this->deviceSize       = deviceSize;
 		this->usageFlags       = bufferUsageFlags;
 		this->isExternal = isExternal;
+		this->stride = stride;
 		this->memPropertyFlags = memPropertyFlags;
 		auto bufferCreateInfo  = vk::BufferCreateInfo()
 		                            .setSize(deviceSize)
@@ -142,6 +143,7 @@ class Buffer
 	vk::UniqueDeviceMemory   deviceMemHandle;
 	vk::DeviceSize           deviceSize;
 	vk::DeviceSize           alignment;
+	vk::DeviceSize           stride;
 	vk::DeviceSize           offset = 0;
 	vk::BufferUsageFlags     usageFlags;
 	vk::MemoryPropertyFlags  memPropertyFlags;

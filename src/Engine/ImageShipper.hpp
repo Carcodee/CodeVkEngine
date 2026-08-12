@@ -47,7 +47,7 @@ namespace ENGINE
             auto commandBuffer = commandExecutor->BeginCommandBuffer();
             std::unique_ptr<Buffer> stagedBuffer = std::make_unique<Buffer>(core->physicalDevice, core->logicalDevice.get(), vk::BufferUsageFlagBits::eTransferSrc,
                                                     vk::MemoryPropertyFlagBits::eHostVisible |
-                                                    vk::MemoryPropertyFlagBits::eHostCoherent, size);
+                                                    vk::MemoryPropertyFlagBits::eHostCoherent, size, 0);
             
             void* bufferMemBlock = stagedBuffer->Map();
             memcpy(bufferMemBlock, this->data, size);

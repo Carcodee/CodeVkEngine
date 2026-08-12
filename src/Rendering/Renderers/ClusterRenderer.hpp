@@ -28,13 +28,13 @@ class ClusterRenderer : public BaseRenderer
 
 	void SetRenderOperation() override
 	{
-		renderGraphRef->GetNode(meshCullPassName)->SetRenderOperation(new std::function<void()>([this]() {
+		renderGraphRef->GetNode(meshCullPassName)->G_SetRenderOperation(new std::function<void()>([this]() {
 			auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
-			renderNode->SetBuffer("IndirectCmds",
+			renderNode->G_SetBuffer("IndirectCmds",
 			                      RenderingResManager::GetInstance()->indirectDrawBuffer);
-			renderNode->SetBuffer("MeshesSpheres", meshesSpheresCompact);
-			renderNode->SetBuffer("CamProps", cPropsUbo);
-			renderNode->SetBuffer("CullInfo", camFrustum);
+			renderNode->G_SetBuffer("MeshesSpheres", meshesSpheresCompact);
+			renderNode->G_SetBuffer("CamProps", cPropsUbo);
+			renderNode->G_SetBuffer("CullInfo", camFrustum);
 			renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
 		}));
 		renderGraphRef->GetNode(meshCullPassName)->AddPreRenderingTask(new std::function<void()>([this]() {
@@ -86,10 +86,10 @@ class ClusterRenderer : public BaseRenderer
 		auto cullRenderOp = new std::function<void()>(
 		    [this]() {
 			    auto &renderNode = renderGraphRef->renderNodes.at(computePassName);
-			    renderNode->SetBuffer("PointLights", pointLights);
-			    renderNode->SetBuffer("LightMap", lightsMap);
-			    renderNode->SetBuffer("LightIndices", lightsIndices);
-			    renderNode->SetBuffer("CameraProperties", cPropsUbo);
+			    renderNode->G_SetBuffer("PointLights", pointLights);
+			    renderNode->G_SetBuffer("LightMap", lightsMap);
+			    renderNode->G_SetBuffer("LightIndices", lightsIndices);
+			    renderNode->G_SetBuffer("CameraProperties", cPropsUbo);
 			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->GPUPipelineRef->pipelineLayout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
 			                                           0, sizeof(ScreenDataPc), &cullDataPc);
@@ -98,7 +98,7 @@ class ClusterRenderer : public BaseRenderer
 		    });
 
 		renderGraphRef->GetNode(computePassName)->AddPreRenderingTask(cullTask);
-		renderGraphRef->GetNode(computePassName)->SetRenderOperation(cullRenderOp);
+		renderGraphRef->GetNode(computePassName)->G_SetRenderOperation(cullRenderOp);
 
 		auto renderOp = new std::function<void()>(
 		    [this]() {
@@ -133,10 +133,10 @@ class ClusterRenderer : public BaseRenderer
 			    }
 			    auto renderNode = renderGraphRef->GetNode(gBufferPassName);
 
-			    renderGraphRef->GetNode(gBufferPassName)->SetSamplerArray("textures", textures);
-			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MaterialsPacked", materials);
-			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshMaterialsIds", meshMatIds);
-			    renderGraphRef->GetNode(gBufferPassName)->SetBuffer("MeshesModelMatrices", modelMats);
+			    renderGraphRef->GetNode(gBufferPassName)->G_SetSamplerArray("textures", textures);
+			    renderGraphRef->GetNode(gBufferPassName)->G_SetBuffer("MaterialsPacked", materials);
+			    renderGraphRef->GetNode(gBufferPassName)->G_SetBuffer("MeshMaterialsIds", meshMatIds);
+			    renderGraphRef->GetNode(gBufferPassName)->G_SetBuffer("MeshesModelMatrices", modelMats);
 
 			    pc.projView = camera.matrices.perspective * camera.matrices.view;
 			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->GPUPipelineRef->pipelineLayout.get(),
@@ -164,7 +164,7 @@ class ClusterRenderer : public BaseRenderer
 			    }
 		    });
 
-		renderGraphRef->GetNode(gBufferPassName)->SetRenderOperation(renderOp);
+		renderGraphRef->GetNode(gBufferPassName)->G_SetRenderOperation(renderOp);
 
 		auto lSetViewTask = new std::function<void()>([this]() {
 			lightPc.xTileCount  = cullDataPc.xTileCount;
@@ -175,24 +175,24 @@ class ClusterRenderer : public BaseRenderer
 
 			auto *currImage = renderGraphRef->currentBackBuffer;
 			renderGraphRef->AddColorImageResource(lightPassName, currImage);
-			renderGraphRef->GetNode(lightPassName)->SetFramebufferSize(windowProvider->GetWindowSize());
+			renderGraphRef->GetNode(lightPassName)->G_SetFramebufferSize(windowProvider->GetWindowSize());
 		});
 		auto lRenderOp    = new std::function<void()>(
             [this]() {
                 auto renderNode = renderGraphRef->GetNode(lightPassName);
                 renderGraphRef->resourcesManager->RequestStorageImageClear("specularHolderStorage");
-                renderNode->SetSampler("gCol", colAttachmentView);
-                renderNode->SetSampler("gNormals", normAttachmentView);
-                renderNode->SetSampler("gTang", tangAttachmentView);
-                renderNode->SetSampler("gDepth", depthAttachmentView);
-                renderNode->SetSampler("gMetRoughness", metRoughAttachmentView);
-                renderNode->SetSampler("gMeshUV", uvAttachmentView);
+			    renderNode->G_SetSampler("gCol", colAttachmentView);
+			    renderNode->G_SetSampler("gNormals", normAttachmentView);
+			    renderNode->G_SetSampler("gTang", tangAttachmentView);
+			    renderNode->G_SetSampler("gDepth", depthAttachmentView);
+			    renderNode->G_SetSampler("gMetRoughness", metRoughAttachmentView);
+			    renderNode->G_SetSampler("gMeshUV", uvAttachmentView);
 
-                renderNode->SetStorageImage("specularHolder", specularHolder);
-                renderNode->SetBuffer("CameraProperties", cPropsUbo);
-                renderNode->SetBuffer("PointLights", pointLights);
-                renderNode->SetBuffer("LightMap", lightsMap);
-                renderNode->SetBuffer("LightIndices", lightsIndices);
+			    renderNode->G_SetStorageImage("specularHolder", specularHolder);
+			    renderNode->G_SetBuffer("CameraProperties", cPropsUbo);
+			    renderNode->G_SetBuffer("PointLights", pointLights);
+			    renderNode->G_SetBuffer("LightMap", lightsMap);
+			    renderNode->G_SetBuffer("LightIndices", lightsIndices);
                 vk::DeviceSize offset = 0;
                 renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
                 renderNode->GetCurrCmd().bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
@@ -205,7 +205,7 @@ class ClusterRenderer : public BaseRenderer
             });
 
 		renderGraphRef->GetNode(lightPassName)->AddPreRenderingTask(lSetViewTask);
-		renderGraphRef->GetNode(lightPassName)->SetRenderOperation(lRenderOp);
+		renderGraphRef->GetNode(lightPassName)->G_SetRenderOperation(lRenderOp);
 	}
 
 	void ReloadShaders() override
@@ -215,10 +215,10 @@ class ClusterRenderer : public BaseRenderer
 		auto *cRenderNode     = renderGraphRef->GetNode(computePassName);
 		auto *meshCRenderNode = renderGraphRef->GetNode(meshCullPassName);
 
-		gRenderNode->RecreateResources();
-		renderNode->RecreateResources();
-		cRenderNode->RecreateResources();
-		meshCRenderNode->RecreateResources();
+		gRenderNode->G_RecreateResources();
+		renderNode->G_RecreateResources();
+		cRenderNode->G_RecreateResources();
+		meshCRenderNode->G_RecreateResources();
 	}
 
 	void CreateResources()
@@ -335,12 +335,12 @@ class ClusterRenderer : public BaseRenderer
 		lVertexBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
 		    "lVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
 		    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		    sizeof(Vertex2D) * quadVert.size(), quadVert.data()});
+		    sizeof(Vertex2D) * quadVert.size(), sizeof(Vertex2D),quadVert.data()});
 
 		lIndexBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
 		    "lIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
 		    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		    sizeof(uint32_t) * quadIndices.size(), quadIndices.data()});
+		    sizeof(uint32_t) * quadIndices.size(),sizeof(Vertex2D), quadIndices.data()});
 	}
 
 	void CreatePipelines()
@@ -353,7 +353,7 @@ class ClusterRenderer : public BaseRenderer
 		cullMeshesCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\meshCull.comp.spv", S_COMP);
 
 		auto *meshCullRenderNode = renderGraphRef->AddPass(meshCullPassName);
-		meshCullRenderNode->SetCompShader(cullMeshesCompShader);
+		meshCullRenderNode->G_SetCompShader(cullMeshesCompShader);
 		meshCullRenderNode->BuildRenderGraphNode();
 
 		// Cull pass//
@@ -361,8 +361,8 @@ class ClusterRenderer : public BaseRenderer
 		cullCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\lightCulling.comp.spv", S_COMP);
 
 		auto *cullRenderNode = renderGraphRef->AddPass(computePassName);
-		cullRenderNode->SetCompShader(cullCompShader);
-		cullRenderNode->SetPushConstantSize(sizeof(ScreenDataPc));
+		cullRenderNode->G_SetCompShader(cullCompShader);
+		cullRenderNode->G_SetPushConstantSize(sizeof(ScreenDataPc));
 		cullRenderNode->BuildRenderGraphNode();
 
 		// gbuffer
@@ -376,25 +376,25 @@ class ClusterRenderer : public BaseRenderer
 		AttachmentInfo depthInfo  = GetDepthAttachmentInfo();
 		auto           renderNode = renderGraphRef->AddPass(gBufferPassName);
 
-		renderNode->SetVertShader(gVertShader);
-		renderNode->SetFragShader(gFragShader);
-		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->SetVertexInput(vertexInput);
-		renderNode->SetPushConstantSize(sizeof(MvpPc));
-		renderNode->AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
-		renderNode->SetDepthAttachmentOutput(depthAttachmentView->name, depthInfo);
-		renderNode->SetDepthConfig(DepthConfigs::D_ENABLE);
-		renderNode->AddColorImageResource(colAttachmentView);
-		renderNode->AddColorImageResource(normAttachmentView);
-		renderNode->AddColorImageResource(tangAttachmentView);
-		renderNode->AddColorImageResource(metRoughAttachmentView);
-		renderNode->AddColorImageResource(uvAttachmentView);
-		renderNode->SetDepthImageResource(depthAttachmentView);
-		renderNode->SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
+		renderNode->G_SetVertShader(gVertShader);
+		renderNode->G_SetFragShader(gFragShader);
+		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+		renderNode->G_SetVertexInput(vertexInput);
+		renderNode->G_SetPushConstantSize(sizeof(MvpPc));
+		renderNode->G_AddColorAttachmentOutput("gColor", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput("gNorm", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput("gTang", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput("gMetRoughness", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_AddColorAttachmentOutput("gUVs", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_SetDepthAttachmentOutput(depthAttachmentView->name, depthInfo);
+		renderNode->G_SetDepthConfig(DepthConfigs::D_ENABLE);
+		renderNode->G_AddColorImageResource(colAttachmentView);
+		renderNode->G_AddColorImageResource(normAttachmentView);
+		renderNode->G_AddColorImageResource(tangAttachmentView);
+		renderNode->G_AddColorImageResource(metRoughAttachmentView);
+		renderNode->G_AddColorImageResource(uvAttachmentView);
+		renderNode->G_SetDepthImageResource(depthAttachmentView);
+		renderNode->G_SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
 		renderNode->AddBufferSync({B_COMPUTE_WRITE, B_DRAW_INDIRECT});
 		renderNode->DependsOn(meshCullPassName);
 		renderNode->BuildRenderGraphNode();
@@ -410,19 +410,19 @@ class ClusterRenderer : public BaseRenderer
 		VertexInput lVertexInput = Vertex2D::GetVertexInput();
 
 		auto lRenderNode = renderGraphRef->AddPass(lightPassName);
-		lRenderNode->SetVertShader(lVertShader);
-		lRenderNode->SetFragShader(lFragShader);
-		lRenderNode->SetPushConstantSize(sizeof(LightPc));
-		lRenderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		lRenderNode->SetVertexInput(lVertexInput);
-		lRenderNode->AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
-		lRenderNode->AddSamplerResource(colAttachmentView);
-		lRenderNode->AddSamplerResource(normAttachmentView);
-		lRenderNode->AddSamplerResource(tangAttachmentView);
-		lRenderNode->AddSamplerResource(metRoughAttachmentView);
-		lRenderNode->AddSamplerResource(uvAttachmentView);
-		lRenderNode->AddSamplerResource(depthAttachmentView);
-		lRenderNode->AddStorageResource(specularHolder);
+		lRenderNode->G_SetVertShader(lVertShader);
+		lRenderNode->G_SetFragShader(lFragShader);
+		lRenderNode->G_SetPushConstantSize(sizeof(LightPc));
+		lRenderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+		lRenderNode->G_SetVertexInput(lVertexInput);
+		lRenderNode->G_AddColorAttachmentOutput("lColor", lColInfo, BlendConfigs::B_OPAQUE);
+		lRenderNode->G_AddSamplerResource(colAttachmentView);
+		lRenderNode->G_AddSamplerResource(normAttachmentView);
+		lRenderNode->G_AddSamplerResource(tangAttachmentView);
+		lRenderNode->G_AddSamplerResource(metRoughAttachmentView);
+		lRenderNode->G_AddSamplerResource(uvAttachmentView);
+		lRenderNode->G_AddSamplerResource(depthAttachmentView);
+		lRenderNode->G_AddStorageResource(specularHolder);
 		lRenderNode->DependsOn(computePassName);
 		lRenderNode->BuildRenderGraphNode();
 	}

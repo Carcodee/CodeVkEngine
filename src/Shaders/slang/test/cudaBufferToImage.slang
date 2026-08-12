@@ -79,7 +79,7 @@ float3 ColorMapSpeed(float speed)
 );
 }
 // Entry point for compute shader
-[numthreads(1, 1, 1)]
+[numthreads(8, 8, 1)]
 void mainCS(uint3 dtid : SV_DispatchThreadID) {
   // Calculate position
 
@@ -132,5 +132,6 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   
   alpha = min(alpha, 0.45f);
   OutImage[uint2(x, 1024 - y)] = float4(value.xyz * value.w,1.0);
+ // OutImage[uint2(x, 1024 - y)] = float4(valueInterp.xyz * value.w,1.0);
  // OutImage[uint2(x, y_write)] = float4(value, alpha);
 }

@@ -28,6 +28,7 @@ class ResourcesManager : SYSTEMS::Subject
 	{
 		ResState state;
 		size_t   size;
+		size_t   stride;
 		void    *data;
 	};
 	struct ImgCreateConfigs
@@ -53,6 +54,7 @@ class ResourcesManager : SYSTEMS::Subject
 	{
 		std::string             name;
 		size_t                  size;
+		size_t                  stride;
 		void                   *data;
 		vk::BufferUsageFlags    bufferUsageFlags;
 		vk::MemoryPropertyFlags memPropertyFlags;
@@ -77,6 +79,7 @@ class ResourcesManager : SYSTEMS::Subject
 		vk::BufferUsageFlags    bufferUsageFlags;
 		vk::MemoryPropertyFlags memPropertyFlags;
 		vk::DeviceSize          deviceSize;
+		vk::DeviceSize          stride;
 		void                   *data       = nullptr;
 		BufferType              isExternal = BufferType::INTERNAL;
 	};
@@ -170,18 +173,18 @@ class ResourcesManager : SYSTEMS::Subject
 	}
 
 	int BatchBuffer(std::string name, vk::BufferUsageFlags bufferUsageFlags,
-	                vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize, void *data = nullptr)
+	                vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize, vk::DeviceSize stride, void *data = nullptr)
 	{
 		if (bufferNames.contains(name))
 		{
 			return bufferNames.at(name);
 		}
 		int32_t id = buffers.size();
-		bufferBatchInfos.push_back({name, deviceSize, data, bufferUsageFlags, memPropertyFlags});
+		bufferBatchInfos.push_back({name, deviceSize, stride, data, bufferUsageFlags, memPropertyFlags});
 		bufferNames.try_emplace(name, id);
 		return id;
 	}
-	
+
 	ImageView *SetOrCreateImage(std::string name, vk::ImageCreateInfo imageInfo, int baseMipLevel, int baseArrayLayer)
 	{
 		assert(core != nullptr && "core must be set");
@@ -206,7 +209,6 @@ class ResourcesManager : SYSTEMS::Subject
 			return imageViews[id].get();
 		}
 	}
-	
 
 	ImageView *GetImage(std::string name, vk::ImageCreateInfo imageInfo, int baseMipLevel, int baseArrayLayer)
 	{
@@ -258,15 +260,15 @@ class ResourcesManager : SYSTEMS::Subject
 			return GetBuffFromName(params.name);
 		}
 
-		auto buffer = std::make_unique<Buffer>(core->physicalDevice, core->logicalDevice.get(), params.bufferUsageFlags, params.memPropertyFlags, params.deviceSize, params.data, params.isExternal == BufferType::EXTERNAL);
+		auto buffer = std::make_unique<Buffer>(core->physicalDevice, core->logicalDevice.get(), params.bufferUsageFlags, params.memPropertyFlags, params.deviceSize, params.stride, params.data, params.isExternal == BufferType::EXTERNAL);
 
 		bufferNames.try_emplace(params.name, (int32_t) buffers.size());
 		buffers.emplace_back(std::move(buffer));
-		buffersState.push_back({VALID, params.deviceSize, params.data});
+		buffersState.push_back({VALID, params.deviceSize, params.stride, params.data});
 		return buffers.back().get();
 	}
 
-	StagedBuffer *GetStageBuffer(std::string name, vk::BufferUsageFlags bufferUsageFlags, vk::DeviceSize deviceSize,
+	StagedBuffer *GetStageBuffer(std::string name, vk::BufferUsageFlags bufferUsageFlags, vk::DeviceSize deviceSize, vk::DeviceSize stride,
 	                             void *data = nullptr)
 	{
 		assert(core != nullptr && "core must be set");
@@ -276,7 +278,7 @@ class ResourcesManager : SYSTEMS::Subject
 		}
 
 		auto buffer = std::make_unique<StagedBuffer>(
-		    core->physicalDevice, core->logicalDevice.get(), bufferUsageFlags, deviceSize);
+		    core->physicalDevice, core->logicalDevice.get(), bufferUsageFlags, deviceSize, stride);
 
 		if (data != nullptr)
 		{
@@ -294,7 +296,7 @@ class ResourcesManager : SYSTEMS::Subject
 		return stagedBuffers.back().get();
 	}
 
-	Buffer *SetBuffer(std::string name, vk::DeviceSize deviceSize, void *data)
+	Buffer *SetBuffer(std::string name, vk::DeviceSize deviceSize, vk::DeviceSize stride, void *data)
 	{
 		assert(core != nullptr && "core must be set");
 		assert(bufferNames.contains(name) && "Buffer dont exist");
@@ -303,7 +305,7 @@ class ResourcesManager : SYSTEMS::Subject
 		Buffer *bufferRef = buffers.at(bufferNames.at(name)).get();
 		if (deviceSize > bufferRef->deviceSize)
 		{
-			buffersState.at(bufferNames.at(name)) = {INVALID, deviceSize, data};
+			buffersState.at(bufferNames.at(name)) = {INVALID, deviceSize, stride, data};
 			invalidateBuffers                     = true;
 		}
 		else
@@ -324,7 +326,7 @@ class ResourcesManager : SYSTEMS::Subject
 		return buffers.at(bufferNames.at(name)).get();
 	}
 
-	StagedBuffer *SetStageBuffer(std::string name, vk::DeviceSize deviceSize, void *data)
+	StagedBuffer *SetStageBuffer(std::string name, vk::DeviceSize deviceSize, vk::DeviceSize stride, void *data)
 	{
 		// todo
 		assert(core != nullptr && "core must be set");
@@ -333,7 +335,7 @@ class ResourcesManager : SYSTEMS::Subject
 
 		if (deviceSize > stagedBuffers.at(stagedBufferNames.at(name))->size)
 		{
-			stagedBuffersState.at(stagedBufferNames.at(name)) = {INVALID, deviceSize, data};
+			stagedBuffersState.at(stagedBufferNames.at(name)) = {INVALID, deviceSize, stride, data};
 			invalidateBuffers                                 = true;
 		}
 		else
@@ -370,7 +372,7 @@ class ResourcesManager : SYSTEMS::Subject
 	{
 		for (auto &buffer : bufferBatchInfos)
 		{
-			GetBuffer(BufferParams{buffer.name, buffer.bufferUsageFlags, buffer.memPropertyFlags, buffer.size, buffer.data});
+			GetBuffer(BufferParams{buffer.name, buffer.bufferUsageFlags, buffer.memPropertyFlags, buffer.size, buffer.stride, buffer.data});
 		}
 		bufferBatchInfos.clear();
 		for (auto &shaderUpdate : shaderUpdateInfos)
@@ -412,7 +414,7 @@ class ResourcesManager : SYSTEMS::Subject
 			BufferUpdateInfo &bufferUpdateInfo = buffersState.at(name.second);
 			if (bufferUpdateInfo.state == INVALID)
 			{
-				buffers.at(bufferNames.at(name.first)).reset(new Buffer(core->physicalDevice, core->logicalDevice.get(), buffers.at(name.second)->usageFlags, buffers.at(name.second)->memPropertyFlags, bufferUpdateInfo.size, bufferUpdateInfo.data));
+				buffers.at(bufferNames.at(name.first)).reset(new Buffer(core->physicalDevice, core->logicalDevice.get(), buffers.at(name.second)->usageFlags, buffers.at(name.second)->memPropertyFlags, bufferUpdateInfo.size, bufferUpdateInfo.stride, bufferUpdateInfo.data));
 				bufferUpdateInfo.state = VALID;
 			}
 		}
@@ -423,7 +425,7 @@ class ResourcesManager : SYSTEMS::Subject
 			BufferUpdateInfo &bufferUpdateInfo = stagedBuffersState.at(name.second);
 			if (bufferUpdateInfo.state == INVALID)
 			{
-				stagedBuffers.at(stagedBufferNames.at(name.first)).reset(new StagedBuffer(core->physicalDevice, core->logicalDevice.get(), stagedBuffers.at(name.second)->deviceBuffer->usageFlags, bufferUpdateInfo.size));
+				stagedBuffers.at(stagedBufferNames.at(name.first)).reset(new StagedBuffer(core->physicalDevice, core->logicalDevice.get(), stagedBuffers.at(name.second)->deviceBuffer->usageFlags, bufferUpdateInfo.size, bufferUpdateInfo.stride));
 				StagedBuffer *buffer    = GetStagedBuffFromName(name.first);
 				void         *mappedMem = buffer->Map();
 				memcpy(mappedMem, bufferUpdateInfo.data, bufferUpdateInfo.size);
@@ -632,7 +634,6 @@ class ResourcesManager : SYSTEMS::Subject
 			return DsetsInfo{dsets.back().get(), id};
 		}
 	}
-	
 
 	void DeallocateDset(int id)
 	{
@@ -782,12 +783,12 @@ class ResourcesManager : SYSTEMS::Subject
 		ENGINE::Buffer *quadVertBuffer = GetStageBuffer(
 		                                     "quad_default", vk::BufferUsageFlagBits::eVertexBuffer,
 		                                     sizeof(ENGINE::Vertex2D) * ENGINE::Vertex2D::GetQuadVertices().size(),
-		                                     ENGINE::Vertex2D::GetQuadVertices().data())
+		                                     sizeof(ENGINE::Vertex2D), ENGINE::Vertex2D::GetQuadVertices().data())
 		                                     ->deviceBuffer.get();
 
 		ENGINE::Buffer *quadIndexBuffer = GetStageBuffer(
 		                                      "quad_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                      sizeof(uint32_t) * ENGINE::Vertex2D::GetQuadIndices().size(),
+		                                      sizeof(uint32_t) * ENGINE::Vertex2D::GetQuadIndices().size(), sizeof(uint32_t),
 		                                      ENGINE::Vertex2D::GetQuadIndices().data())
 		                                      ->deviceBuffer.get();
 	}

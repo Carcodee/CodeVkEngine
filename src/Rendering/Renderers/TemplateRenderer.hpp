@@ -43,16 +43,16 @@ class TemplateRenderer : public BaseRenderer
 		ImageView *attachmentOutput = renderGraph->resourcesManager->GetImage("TemplateOutput", imageInfo, 0, 0);
 
 		auto renderNode = renderGraph->AddPass(passName);
-		renderNode->SetConfigs({true});
-		renderNode->SetVertShader(vShader);
-		renderNode->SetFragShader(fShader);
-		renderNode->SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->SetVertexInput(Vertex2D::GetVertexInput());
+		renderNode->G_SetConfigs({true});
+		renderNode->G_SetVertShader(vShader);
+		renderNode->G_SetFragShader(fShader);
+		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
 		// change this
-		renderNode->SetPushConstantSize(4);
-		renderNode->AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
+		renderNode->G_SetPushConstantSize(4);
+		renderNode->G_AddColorAttachmentOutput("default_attachment", colInfo, BlendConfigs::B_OPAQUE);
 		// only if we want to use custom attachment
-		//  renderNode->AddColorImageResource("default_attachment", attachmentOutput);
+		//  renderNode->G_AddColorImageResource("default_attachment", attachmentOutput);
 		renderNode->BuildRenderGraphNode();
 	}
 
@@ -65,7 +65,7 @@ class TemplateRenderer : public BaseRenderer
 		auto taskOp = new std::function<void()>(
 		    [this] {
 			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->AddColorImageResource(renderGraph->currentBackBuffer);
+			    renderNode->G_AddColorImageResource(renderGraph->currentBackBuffer);
 		    });
 		auto renderOp = new std::function<void()>(
 		    [this]() {
@@ -80,7 +80,7 @@ class TemplateRenderer : public BaseRenderer
 			    renderNode->GetCurrCmd().drawIndexed(
 			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(passName)->SetRenderOperation(renderOp);
+		renderGraph->GetNode(passName)->G_SetRenderOperation(renderOp);
 		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
 	}
 

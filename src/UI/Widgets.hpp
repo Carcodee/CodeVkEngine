@@ -609,21 +609,21 @@ struct GraphNodeRegistry
 				std::string        imageName = "nodeImage_" + std::to_string(image.first);
 				ENGINE::ImageView *imgView   = selfNode.renderGraph->resourcesManager->GetStorageFromId(
                     imageId);
-				renderNode->AddStorageResource(imgView);
+				renderNode->G_AddStorageResource(imgView);
 			}
 			if (configsAdded.contains(N_COMP_SHADER))
 			{
-				renderNode->SetCompShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
+				renderNode->G_SetCompShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(compId));
 			}
 			else
 			{
 				assert(vertId > -1 && "Vert id invalid");
 				assert(fragId > -1 && "Frag Id invalid");
 				assert(vertexInput && "invalid vertex input");
-				renderNode->SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
-				renderNode->SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
-				renderNode->SetVertexInput(*vertexInput);
-				renderNode->AddColorAttachmentOutput(attachmentName, info, blendData);
+				renderNode->G_SetVertShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(vertId));
+				renderNode->G_SetFragShader(selfNode.renderGraph->resourcesManager->GetShaderFromId(fragId));
+				renderNode->G_SetVertexInput(*vertexInput);
+				renderNode->G_AddColorAttachmentOutput(attachmentName, info, blendData);
 				for (auto &image : images)
 				{
 					if (!image.second->HasData())
@@ -634,7 +634,7 @@ struct GraphNodeRegistry
 					std::string        imageName = "nodeImage_" + std::to_string(image.first);
 					ENGINE::ImageView *imgView   = selfNode.renderGraph->resourcesManager->GetImageViewFromId(
                         imageId);
-					renderNode->AddColorImageResource(imgView);
+					renderNode->G_AddColorImageResource(imgView);
 				}
 
 				if (configsAdded.contains(N_DEPTH_STRUCTURE))
@@ -642,13 +642,13 @@ struct GraphNodeRegistry
 					if (depthImage->HasData())
 					{
 						std::string imageName = depthImage->GetData<std::string>();
-						renderNode->SetDepthImageResource(
+						renderNode->G_SetDepthImageResource(
 						    selfNode.renderGraph->resourcesManager->GetImageViewFromName(
 						        imageName));
 					}
 				}
 
-				renderNode->SetConfigs(ENGINE::RenderNodeConfigs{true});
+				renderNode->G_SetConfigs(ENGINE::RenderNodeConfigs{true});
 				renderNode->BuildRenderGraphNode();
 				renderNode->active = false;
 				selfNode.valid     = true;
