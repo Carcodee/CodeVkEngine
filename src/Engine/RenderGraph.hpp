@@ -1226,6 +1226,16 @@ struct RenderGraphNode : SYSTEMS::ISerializable<RenderGraphNode>
 	}
 	// We change the image view if the name already exist when using resources
 
+	
+	RenderGraphNode *DependsOn(RenderGraphNode* node)
+	{
+		if (!dependencies.contains(node->passName))
+		{
+			dependencies.insert(node->passName);
+			SYSTEMS::Logger::GetInstance()->LogMessage("Renderpass: (" + this->passName + ") Depends On-> (" + node->passName + ")");
+		}
+		return this;
+	}
 	RenderGraphNode *DependsOn(std::string dependency)
 	{
 		if (!dependencies.contains(dependency))

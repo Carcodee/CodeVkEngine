@@ -58,12 +58,14 @@ class FlatRenderer : public BaseRenderer
 		ImageView *lightLayer       = ResourcesManager::GetInstance()->GetImage("PaintingLayer", storageImageInfo, 0, 0);
 		ImageView *occluderLayer    = ResourcesManager::GetInstance()->GetImage(
             "OccluderLayer", storageImageInfo, 0, 0);
-		ImageView *debugLayer    = ResourcesManager::GetInstance()->GetImage("DebugRaysLayer", storageImageInfo, 0, 0);
-		ImageView *fluidSimLayer = ResourcesManager::GetInstance()->GetImage("FluidSimLayer", storageImageInfo, 0, 0);
+		ImageView *debugLayer        = ResourcesManager::GetInstance()->GetImage("DebugRaysLayer", storageImageInfo, 0, 0);
+		ImageView *fluidSimLayer     = ResourcesManager::GetInstance()->GetImage("FluidSimLayer", storageImageInfo, 0, 0);
+		ImageView *fluidSimLayerInfo = ResourcesManager::GetInstance()->GetImage("FluidSimInfoLayer", storageImageInfo, 0, 0);
 		paintingLayers.push_back(lightLayer);
 		paintingLayers.push_back(occluderLayer);
 		paintingLayers.push_back(debugLayer);
 		paintingLayers.push_back(fluidSimLayer);
+		paintingLayers.push_back(fluidSimLayerInfo);
 
 		for (int i = 0; i < cascadesInfo.cascadeCount; ++i)
 		{
@@ -141,7 +143,7 @@ class FlatRenderer : public BaseRenderer
 		                        ->deviceBuffer.get();
 		quadIndexBufferRef = ResourcesManager::GetInstance()->GetStageBuffer(
 		                                                        "QuadRcIndices", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                        sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(),sizeof(uint32_t),
+		                                                        sizeof(uint32_t) * Vertex2D::GetQuadIndices().size(), sizeof(uint32_t),
 		                                                        Vertex2D::GetQuadIndices().data())
 		                         ->deviceBuffer.get();
 	}
@@ -152,15 +154,26 @@ class FlatRenderer : public BaseRenderer
 		std::string shaderPath    = SYSTEMS::OS::GetInstance()->GetShadersPath();
 
 		auto cudaBuffer = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
-		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * rcResolutionW * rcResolutionH, sizeof(float) * 4,nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
+		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * rcResolutionW * rcResolutionH, sizeof(float) * 4, nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
 
-		auto cudaPI = renderGraph->AddCUDAPipeline("CudaTest");
-		cudaPI->C_ExportBuffer(cudaBuffer);
-		cudaPI->C_SetKernelFunction(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(0).GetKernelFunct());
-		cudaPI->C_BuildCUDAPipeline();
-		
+		auto cudaBufferVel = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+		    "CudaBufferVel", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * rcResolutionW * rcResolutionH, sizeof(float), nullptr, ENGINE::ResourcesManager::BufferType::EXTERNAL});
 
+		auto cudaPI = renderGraph->AddCUDAPipeline("CudaCopySmoke");
+		cudaPI
+		    ->C_ExportBuffer(cudaBuffer)
+		    ->C_SetKernelFunction(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(0).GetKernelFunct())
+		    ->C_BuildCUDAPipeline();
 		auto cudaNode = renderGraph->AddCudaPass(cudaPI, "CudaNode");
+
+		auto cudaPI_Vel = renderGraph->AddCUDAPipeline("CudaCopyVel");
+		cudaPI_Vel
+		    ->C_ExportBuffer(cudaBufferVel)
+		    ->C_SetKernelFunction(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(1).GetKernelFunct())
+		    ->C_BuildCUDAPipeline();
+
+		auto cudaVel = renderGraph->AddCudaPass(cudaPI_Vel, "CudaVelNode");
+
 		//
 
 		paintCompShader = renderGraph->resourcesManager->GetShader(
@@ -178,12 +191,13 @@ class FlatRenderer : public BaseRenderer
 		auto cudaBufferImports = renderGraph->resourcesManager->GetShader(
 		    shaderPath + "\\slang\\test\\cudaBufferToImage.slang", S_COMP);
 
-		auto *cudaImportBuffersNode = renderGraph->AddGPUPipeline("CudaBufferImporter");
-		cudaImportBuffersNode->G_SetCompShader(cudaBufferImports);
-		cudaImportBuffersNode->G_BuildGPUPipeline();
-
-		auto *importBufferNode = renderGraph->AddPass(cudaImportBuffersNode, "CudaBufferImporterNode");
+		auto *importBufferNode = renderGraph->AddPass("CudaBufferImporterNode");
+		importBufferNode->G_SetCompShader(cudaBufferImports);
 		importBufferNode->G_AddStorageResource(paintingLayers[3]);
+		importBufferNode->G_AddStorageResource(paintingLayers[4]);
+		importBufferNode->DependsOn(cudaNode);
+		importBufferNode->DependsOn(cudaVel);
+		importBufferNode->BuildRenderGraphNode();
 
 		VertexInput    vertexInput = Vertex2D::GetVertexInput();
 		AttachmentInfo colInfo     = GetColorAttachmentInfo(
@@ -321,9 +335,11 @@ class FlatRenderer : public BaseRenderer
 		    [this]() {
 			    auto &renderNode = renderGraph->renderNodes.at("CudaBufferImporterNode");
 			    renderNode->G_SetStorageImage("OutImage", paintingLayers[3]);
+			    renderNode->G_SetStorageImage("OutImageSimulationInfo", paintingLayers[4]);
 			    renderNode->G_SetBuffer("SimulationBuffer", renderGraph->resourcesManager->GetBuffFromName("CudaBuffer"));
-		    	
-			    renderNode->GetCurrCmd().dispatch((rcResolutionW + rcResolutionW - 1)/8, (rcResolutionH + rcResolutionH - 1)/8, 1);
+			    renderNode->G_SetBuffer("SimulationBufferInfo", renderGraph->resourcesManager->GetBuffFromName("CudaBufferVel"));
+
+			    renderNode->GetCurrCmd().dispatch((rcResolutionW + rcResolutionW - 1) / 8, (rcResolutionH + rcResolutionH - 1) / 8, 1);
 		    });
 
 		renderGraph->GetNode("CudaBufferImporterNode")->G_SetRenderOperation(importCudaBufferNodeOp);
@@ -373,14 +389,14 @@ class FlatRenderer : public BaseRenderer
 		auto radianceOutputOp   = new std::function<void()>(
             [this]() {
                 auto &renderNode = renderGraph->renderNodes.at(rCascadesPassName);
-			    renderNode->G_SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
-			    renderNode->G_SetStorageImageArray("PaintingLayers", paintingLayers);
-			    renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
-			    renderNode->G_SetSampler("TestImage", testImage->imageView.get());
-			    renderNode->G_SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
-			    renderNode->G_SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
-			    renderNode->G_SetSamplerArray("MatTextures",
-			                                  backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
+                renderNode->G_SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
+                renderNode->G_SetStorageImageArray("PaintingLayers", paintingLayers);
+                renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
+                renderNode->G_SetSampler("TestImage", testImage->imageView.get());
+                renderNode->G_SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
+                renderNode->G_SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
+                renderNode->G_SetSamplerArray("MatTextures",
+			                                    backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 
                 vk::DeviceSize offset = 0;
                 renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &quadVertBufferRef->bufferHandle.get(), &offset);
@@ -403,16 +419,16 @@ class FlatRenderer : public BaseRenderer
                 int         idx       = i;
                 std::string mergeName = rMergePassName + "_" + std::to_string(idx);
                 auto       *currImage = renderGraph->currentBackBuffer;
-				renderGraph->GetNode(mergeName)->G_AddColorImageResource(currImage);
-				renderGraph->GetNode(mergeName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
+                renderGraph->GetNode(mergeName)->G_AddColorImageResource(currImage);
+                renderGraph->GetNode(mergeName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
             });
 			auto        mergeRenderOp     = new std::function<void()>(
                 [this, i]() {
                     int         idx        = i;
                     std::string mergeName  = rMergePassName + "_" + std::to_string(idx);
                     auto       &renderNode = renderGraph->renderNodes.at(mergeName);
-				    renderNode->G_SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
-				    renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
+                    renderNode->G_SetSamplerArray("Cascades", cascadesAttachmentsImagesViews);
+                    renderNode->G_SetStorageImageArray("Radiances", radiancesImages);
 
                     rcPc.cascadeIndex = idx;
 
@@ -434,8 +450,8 @@ class FlatRenderer : public BaseRenderer
 
 		auto resultTask     = new std::function<void()>([this]() {
             auto *currImage = renderGraph->currentBackBuffer;
-			renderGraph->GetNode(resultPassName)->G_AddColorImageResource(currImage);
-			renderGraph->GetNode(resultPassName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
+            renderGraph->GetNode(resultPassName)->G_AddColorImageResource(currImage);
+            renderGraph->GetNode(resultPassName)->G_SetFramebufferSize(glm::uvec2(rcResolutionW, rcResolutionH));
         });
 		auto resultRenderOp = new std::function<void()>(
 		    [this]() {
@@ -446,7 +462,7 @@ class FlatRenderer : public BaseRenderer
 			    renderNode->G_SetSamplerArray("SpriteAnims", testSpriteAnim->imagesFrames);
 			    renderNode->G_SetBuffer("SpriteInfo", testSpriteAnim->animatorInfo);
 			    renderNode->G_SetSamplerArray("MatTextures",
-			                                backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
+			                                  backgroundMaterials.at(materialIndexSelected)->ConvertTexturesToVec());
 			    renderNode->G_SetBuffer("LightInfo", light);
 			    renderNode->G_SetBuffer("RConfigs", rConfigs);
 
@@ -528,8 +544,8 @@ class FlatRenderer : public BaseRenderer
 	RadianceCascadesConfigs rConfigs{};
 	ProbesGenPc             probesGenPc;
 	CascadesInfo            cascadesInfo;
-	int rcResolutionW = 1024;
-	int rcResolutionH = 1024;
+	int                     rcResolutionW = 1024;
+	int                     rcResolutionH = 1024;
 };
 }        // namespace Rendering
 #endif        // FLATRENDERER_HPP

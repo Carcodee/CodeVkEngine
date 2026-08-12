@@ -335,6 +335,33 @@ class ImguiRenderer
 	void RenderFrame(vk::CommandBuffer commandBuffer, vk::ImageView &imageView)
 	{
 		currCommandBuffer = &commandBuffer;
+		static bool simulationActionFail = false;
+		auto        runSimulationAction  = [](CodeCuda::C_Res result) {
+			simulationActionFail = result != CodeCuda::C_Res::OK;
+		};
+		if (!emitters.empty())
+		{
+			auto *cudaNode = renderGraph->GetNode("CudaNode");
+			if (!cudaNode || !cudaNode->CUDAPipeline || !cudaNode->CUDAPipeline->context)
+			{
+				simulationActionFail = true;
+			}
+			else
+			{
+				for (const auto &activeEmitter : emitters)
+				{
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddVelocityGPU(
+						activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
+						activeEmitter.velocity.x, activeEmitter.velocity.y,
+						cudaNode->CUDAPipeline->context));
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddSmokeGPU(
+						activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
+						activeEmitter.color.x, activeEmitter.color.y,
+						activeEmitter.color.z, activeEmitter.color.w,
+						cudaNode->CUDAPipeline->context));
+				}
+			}
+		}
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -542,6 +569,7 @@ class ImguiRenderer
 				RenderGraphProfiler();
 				break;
 		}
+		
 	}
 
 	void RenderSceneViewport()
@@ -1236,29 +1264,6 @@ class ImguiRenderer
 		if (simulationActionFail)
 		{
 			ImGui::TextDisabled("The last simulation action failed.");
-		}
-		if (!emitters.empty())
-		{
-			auto *cudaNode = renderGraph->GetNode("CudaNode");
-			if (!cudaNode || !cudaNode->CUDAPipeline || !cudaNode->CUDAPipeline->context)
-			{
-				simulationActionFail = true;
-			}
-			else
-			{
-				for (const auto &activeEmitter : emitters)
-				{
-					runSimulationAction(CodeCuda::FluidSimulation::C_AddVelocityGPU(
-					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
-					    activeEmitter.velocity.x, activeEmitter.velocity.y,
-					    cudaNode->CUDAPipeline->context));
-					runSimulationAction(CodeCuda::FluidSimulation::C_AddSmokeGPU(
-					    activeEmitter.xPos, activeEmitter.yPos, activeEmitter.radius,
-					    activeEmitter.color.x, activeEmitter.color.y,
-					    activeEmitter.color.z, activeEmitter.color.w,
-					    cudaNode->CUDAPipeline->context));
-				}
-			}
 		}
 
 		const std::string emitterSectionLabel =

@@ -2,8 +2,14 @@
 [[vk::binding(0, 0)]]
 RWTexture2D<float4> OutImage;
 
+[[vk::binding(1, 0)]]
+RWTexture2D<float4> OutImageSimulationInfo;
+
 [[vk::binding(2, 0)]]
 RWStructuredBuffer <float> SimulationBuffer;
+
+[[vk::binding(3, 0)]]
+RWStructuredBuffer <float> SimulationBufferInfo;
 float3 ColorMapSpeed(float speed)
 {
     // Based on your observed velocity:
@@ -94,10 +100,15 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
       SimulationBuffer[baseIndex + 2],
       SimulationBuffer[baseIndex + 3],
   );
+  
+  float valueVel = float(
+      SimulationBufferInfo[pixelIndex],
+  );
+
 
   float2 uv = float2(float(x)/1023.0f, float(y)/1023.0f);
   //float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
-  float3 valueInterp = ColorMapSpeed(length(value));
+  float3 valueInterp = ColorMapSpeed(valueVel);
   float max_col = max(valueInterp.x, (max(valueInterp.y, valueInterp.z)));
 
   bool show = false;
@@ -132,6 +143,7 @@ void mainCS(uint3 dtid : SV_DispatchThreadID) {
   
   alpha = min(alpha, 0.45f);
   OutImage[uint2(x, 1024 - y)] = float4(value.xyz * value.w,1.0);
+  OutImageSimulationInfo[uint2(x, 1024 - y)] = float4(valueInterp,1.0);
  // OutImage[uint2(x, 1024 - y)] = float4(valueInterp.xyz * value.w,1.0);
  // OutImage[uint2(x, y_write)] = float4(value, alpha);
 }
