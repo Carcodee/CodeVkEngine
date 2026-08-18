@@ -1185,12 +1185,13 @@ class ImguiRenderer
 		static float fluidSmokeColor[4]               = {0.15f, 0.05f, 0.25f, 1.0f};
 		static float fluidVelocityStrength            = 0.2f;
 		static float fluidRadialVelocityStrength      = 1.0f;
+		static float fluidPressureStrength            = 1.0f;
 		static float fluidEmitterVelocityDirection[2] = {1.0f, 0.0f};
 		static float fluidEmitterColor[4]             = {0.15f, 0.05f, 0.25f, 1.0f};
 		static bool  fluidToolEnabled                 = true;
 
 		const char *fluidTools[]            = {"Smoke", "Velocity", "Add solid", "Erase solid",
-		                                       "Radial velocity", "Add emitter", "Pretty smoke"};
+		                                       "Radial velocity", "Add emitter", "Pretty smoke", "Pressure"};
 		const char *fluidToolDescriptions[] = {
 		    "Paint smoke with the selected color.",
 		    "Drag to push the fluid in the cursor direction.",
@@ -1198,7 +1199,8 @@ class ImguiRenderer
 		    "Remove solid obstacles from the simulation.",
 		    "Push fluid outward from the cursor.",
 		    "Place a persistent smoke and velocity source.",
-		    "Paint a smooth trail with changing random colors."};
+		    "Paint a smooth trail with changing random colors.",
+		    "Add signed pressure inside the brush area."};
 
 		const int maxSimulationDimension =
 		    CodeCuda::FluidSimulation::s_width > CodeCuda::FluidSimulation::s_height ? CodeCuda::FluidSimulation::s_width : CodeCuda::FluidSimulation::s_height;
@@ -1298,6 +1300,12 @@ class ImguiRenderer
 				beginProperty("Style");
 				ImGui::TextDisabled("Interpolated random color");
 			}
+			else if (fluidTool == 7)
+			{
+				beginProperty("Pressure strength");
+				ImGui::DragFloat("##fluid_pressure_strength", &fluidPressureStrength,
+				                 0.05f, -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			}
 
 			beginProperty("Random force");
 			const float addButtonWidth = 42.0f;
@@ -1381,6 +1389,10 @@ class ImguiRenderer
 					simulationActionFail = false;
 					break;
 				}
+				case 7:
+					runSimulationAction(CodeCuda::FluidSimulation::C_AddPressure(
+					    xPosition, yPosition, fluidBrushRadius, fluidPressureStrength));
+					break;
 				default:
 					break;
 			}
