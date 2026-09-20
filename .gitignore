@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# CMake out-of-source builds
+cmake-build-*/
+
+# Download cache populated by setup_dependencies.ps1
+.dependency-cache/

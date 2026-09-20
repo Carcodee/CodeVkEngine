@@ -26,6 +26,8 @@
 #include <ProfilerTask.h>
 #include <vulkan/vulkan.hpp>
 
+using VulkanDispatchLoaderDynamic = VULKAN_HPP_DISPATCH_LOADER_DYNAMIC_TYPE;
+
 #include "Enums.hpp"
 #include "Structs.hpp"
 #include "UtilVk.hpp"

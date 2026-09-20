@@ -25,11 +25,7 @@ endmacro()
 ####################################################################################
 
 include(CMakeFindDependencyMacro)
-
-set(_CodeCudaEngine_CUDAToolkit_ROOT "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.8")
-file(TO_CMAKE_PATH "${_CodeCudaEngine_CUDAToolkit_ROOT}" _CodeCudaEngine_CUDAToolkit_ROOT)
-set(CUDAToolkit_ROOT "${_CodeCudaEngine_CUDAToolkit_ROOT}" CACHE PATH "CUDA toolkit used by CodeCudaEngine" FORCE)
 find_dependency(CUDAToolkit REQUIRED)
-unset(_CodeCudaEngine_CUDAToolkit_ROOT)
 
 include("${CMAKE_CURRENT_LIST_DIR}/CodeCudaEngineTargets.cmake")
+check_required_components(CodeCudaEngine)

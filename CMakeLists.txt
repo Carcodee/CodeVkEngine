@@ -1,5 +1,15 @@
 ﻿cmake_minimum_required(VERSION 3.26)
-project(CodeVkRenderer VERSION 0.0.1)
+project(CodeVkRenderer VERSION 0.0.1 LANGUAGES CXX)
+
+if(NOT MSVC)
+    message(FATAL_ERROR
+            "CodeVkRenderer requires the MSVC toolchain because its GLFW, Slang, "
+            "and CodeCudaEngine dependencies are built as Visual C++ libraries. "
+            "Select a Visual Studio toolchain instead of MinGW.")
+endif()
+
+# The bundled third-party libraries are release-runtime (/MD) binaries.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
 
 set(CMAKE_CXX_STANDARD 20)
@@ -10,10 +20,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(SOLUTION_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 message("Solution Dir is: ${SOLUTION_DIR}")
 
-find_package(Vulkan)
+find_package(Vulkan REQUIRED)
 
-list(APPEND CMAKE_PREFIX_PATH "${SOLUTION_DIR}/dependencies/CodeCudaEngine")
-find_package(CodeCudaEngine REQUIRED)
+set(CODE_CUDA_ENGINE_ROOT "${SOLUTION_DIR}/dependencies/CodeCudaEngine" CACHE PATH
+        "Installed CodeCudaEngine package prefix")
+if(NOT EXISTS "${CODE_CUDA_ENGINE_ROOT}/lib/codeCudaLib.lib")
+    message(FATAL_ERROR
+            "CodeCudaEngine has not been installed. Run setup_dependencies.ps1 "
+            "from the repository root before configuring.")
+endif()
+find_package(CodeCudaEngine CONFIG REQUIRED
+        PATHS "${CODE_CUDA_ENGINE_ROOT}"
+        NO_DEFAULT_PATH)
 
 message(STATUS "Found Vulkan in ${Vulkan_INCLUDE_DIRS}")
 message(STATUS "Found Vulkan libs in ${Vulkan_LIBRARIES}")
@@ -24,7 +42,7 @@ message(STATUS "Found Vulkan path in ${Vulkan_Base_Path}")
 set(GLFW3_LIBRARIES "${SOLUTION_DIR}/dependencies/glfw/lib-vc2022/glfw3.lib")
 
 set(GLFW3_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/glfw/include")
-set(GLM_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/glm-master/glm")
+set(GLM_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/glm-master")
 set(STB_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/stb-master")
 set(SPIRVCROSS_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/spirv-cross")
 set(TINYGLTF_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/tinygltf-release")
@@ -36,29 +54,32 @@ set(SLANG_LIBRARIES "${SOLUTION_DIR}/dependencies/Slang/lib/slang.lib")
 set(NLOHMANN_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/nlohmann")
 set(HAPPLY_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/happly-master")
 
+foreach(required_file IN ITEMS
+        "${GLFW3_LIBRARIES}"
+        "${SLANG_LIBRARIES}"
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang.dll"
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-glslang.dll")
+    if(NOT EXISTS "${required_file}")
+        message(FATAL_ERROR
+                "Required binary dependency is missing: ${required_file}. "
+                "Run setup_dependencies.ps1 from the repository root.")
+    endif()
+endforeach()
+
         
-include_directories("${Vulkan_INCLUDE_DIRS}")
-include_directories("${GLFW3_INCLUDE_DIR}")
-include_directories("${GLM_INCLUDE_DIR}")
-include_directories("${STB_INCLUDE_DIR}")
-include_directories("${SPIRVCROSS_INCLUDE_DIR}")
-include_directories("${TINYGLTF_INCLUDE_DIR}")
-include_directories("${IMGUI_INCLUDE_DIR}")
-include_directories("${PROFILER_EXT_INCLUDE_DIR}")
-include_directories("${IMGUI_NODE_INCLUDE_DIR}")
-include_directories("${SLANG_INCLUDE_DIR}")
-include_directories("${NLOHMANN_INCLUDE_DIR}")
-include_directories("${HAPPLY_INCLUDE_DIR}")
-
-
-file(GLOB_RECURSE dep_sources "${SPIRVCROSS_INCLUDE_DIR}/*.cpp" "${IMGUI_INCLUDE_DIR}/*.cpp" "${IMGUI_NODE_INCLUDE_DIR}/*.cpp")
-file(GLOB_RECURSE engine_sources "${SOLUTION_DIR}/src/*.cpp")
-file(GLOB_RECURSE engine_headers "${SOLUTION_DIR}/src/*.hpp")
+file(GLOB_RECURSE dep_sources CONFIGURE_DEPENDS
+        "${SPIRVCROSS_INCLUDE_DIR}/*.cpp"
+        "${IMGUI_INCLUDE_DIR}/*.cpp"
+        "${IMGUI_NODE_INCLUDE_DIR}/*.cpp")
+file(GLOB_RECURSE engine_sources CONFIGURE_DEPENDS "${SOLUTION_DIR}/src/*.cpp")
+file(GLOB_RECURSE engine_headers CONFIGURE_DEPENDS "${SOLUTION_DIR}/src/*.hpp")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_BUILD_TYPE Debug)
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
 
-add_executable(Engine "${SOLUTION_DIR}/src/main.cpp")
+add_executable(Engine)
 
 if(MSVC)
     target_compile_options(Engine PRIVATE /bigobj)
@@ -73,9 +94,22 @@ target_sources(Engine PRIVATE
         ${engine_headers}
         ${engine_sources})
 
-target_link_libraries(Engine
+target_include_directories(Engine PRIVATE
+        "${GLFW3_INCLUDE_DIR}"
+        "${GLM_INCLUDE_DIR}"
+        "${STB_INCLUDE_DIR}"
+        "${SPIRVCROSS_INCLUDE_DIR}"
+        "${TINYGLTF_INCLUDE_DIR}"
+        "${IMGUI_INCLUDE_DIR}"
+        "${PROFILER_EXT_INCLUDE_DIR}"
+        "${IMGUI_NODE_INCLUDE_DIR}"
+        "${SLANG_INCLUDE_DIR}"
+        "${NLOHMANN_INCLUDE_DIR}"
+        "${HAPPLY_INCLUDE_DIR}")
+
+target_link_libraries(Engine PRIVATE
         ${SLANG_LIBRARIES}
-        ${Vulkan_LIBRARIES}
+        Vulkan::Vulkan
         ${GLFW3_LIBRARIES}
         CodeCudaEngine::codeCudaLib
 )
@@ -91,9 +125,9 @@ add_custom_command(
         TARGET Engine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${SOLUTION_DIR}/dependencies/Slang/bin/slang.dll"
-        "${CMAKE_BINARY_DIR}/bin"
+        "$<TARGET_FILE_DIR:Engine>"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${SOLUTION_DIR}/dependencies/Slang/bin/slang-glslang.dll"
-        "${CMAKE_BINARY_DIR}/bin"
+        "$<TARGET_FILE_DIR:Engine>"
 )
 

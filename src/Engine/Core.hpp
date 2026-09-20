@@ -61,7 +61,7 @@ class Core
 
 	static vk::UniqueDevice CreateLogicalDevice(vk::PhysicalDevice physicalDevice, QueueFamilyIndices familyIndices, std::vector<const char *> deviceExtensions, std::vector<const char *> validationLayers);
 
-	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, vk::DispatchLoaderDynamic &loader);
+	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, VulkanDispatchLoaderDynamic> CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, VulkanDispatchLoaderDynamic &loader);
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessageCallback(
 	    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
@@ -72,8 +72,8 @@ class Core
 	friend class Swapchain;
 	friend class RenderGraph;
 
-	vk::DispatchLoaderDynamic                                               loader;
-	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> debugUtilsMessenger;
+	VulkanDispatchLoaderDynamic                                               loader;
+	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, VulkanDispatchLoaderDynamic> debugUtilsMessenger;
 };
 
 struct WorkerQueue

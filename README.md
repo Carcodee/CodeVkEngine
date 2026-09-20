@@ -227,20 +227,36 @@ The current CMake file expects several dependencies at fixed repo-relative paths
 
 ## Build
 
-From the repository root:
+Clone `CodeVkEngine` and `CodeCudaEngine` beside one another. From the
+`CodeVkEngine` repository root, install the generated and binary dependencies:
+
+```powershell
+.\setup_dependencies.ps1
+```
+
+The setup script builds `CodeCudaEngine` with MSVC and the installed CUDA
+Toolkit, then downloads hash-verified Slang 2024.17 and GLFW 3.4 Windows
+binaries. If the CUDA repository is elsewhere, pass its project directory:
+
+```powershell
+.\setup_dependencies.ps1 -CodeCudaProject "D:\src\CodeCudaEngine\project"
+```
+
+Configure and build with the Visual Studio toolchain:
 
 ```sh
-cmake -S . -B cmake-build-debug
-cmake --build cmake-build-debug --target Engine
+cmake -S . -B cmake-build-msvc -G "Visual Studio 17 2022" -A x64
+cmake --build cmake-build-msvc --target Engine --config Debug
 ```
 
 The executable is written to:
 
 ```text
-cmake-build-debug/bin/Engine.exe
+cmake-build-msvc/bin/Debug/Engine.exe
 ```
 
-If you use CLion, open the repository root and build the `Engine` target.
+If you use CLion, select its Visual Studio toolchain rather than the bundled
+MinGW toolchain, open the repository root, and build the `Engine` target.
 
 ## Shader Compilation
 

@@ -27,7 +27,7 @@ Core::Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, Win
 
 	this->instance = CreateInstance(resInstanceExtensions, validationLayers);
 
-	loader = vk::DispatchLoaderDynamic(instance.get(), vkGetInstanceProcAddr);
+	loader = VulkanDispatchLoaderDynamic(instance.get(), vkGetInstanceProcAddr);
 	loader.init();
 
 	auto properties = vk::enumerateInstanceLayerProperties();
@@ -393,7 +393,7 @@ vk::Queue Core::GetDeviceQueue(vk::Device logicalDevice, uint32_t familyIndex)
 	return logicalDevice.getQueue(familyIndex, 0);
 }
 
-vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> Core::CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, vk::DispatchLoaderDynamic &loader)
+vk::UniqueHandle<vk::DebugUtilsMessengerEXT, VulkanDispatchLoaderDynamic> Core::CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, VulkanDispatchLoaderDynamic &loader)
 {
 	auto messengerCreateInfo = vk::DebugUtilsMessengerCreateInfoEXT()
 	                               .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
