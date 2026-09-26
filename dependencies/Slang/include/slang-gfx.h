@@ -55,7 +55,7 @@ typedef int GfxCount;
 typedef size_t Size;
 typedef size_t Offset;
 
-const uint64_t kTimeoutInfinite = 0xFFFFFFFFFFFFFFFF;
+constexpr uint64_t kTimeoutInfinite{0xFFFFFFFFFFFFFFFFU};
 
 enum class StructType
 {
@@ -83,6 +83,7 @@ enum class StageType
     Callable,
     Amplification,
     Mesh,
+    Node = 15,
     CountOf,
 };
 
@@ -163,6 +164,12 @@ public:
         SeparateEntryPointCompilation
     };
 
+    enum class DownstreamLinkMode
+    {
+        None,
+        Deferred,
+    };
+
     struct Desc
     {
         // TODO: Tess doesn't like this but doesn't know what to do about it
@@ -180,6 +187,9 @@ public:
         // An array of Slang entry points. The size of the array must be `entryPointCount`.
         // Each element must define only 1 Slang EntryPoint.
         slang::IComponentType** slangEntryPoints = nullptr;
+
+        // Indicates whether the app is responsible for final downstream linking.
+        DownstreamLinkMode downstreamLinkMode = DownstreamLinkMode::None;
     };
 
     struct CreateDesc2
@@ -203,6 +213,28 @@ public:
         0x9d32d0ad, 0x915c, 0x4ffd,                        \
         {                                                  \
             0x91, 0xe2, 0x50, 0x85, 0x54, 0xa0, 0x4a, 0x76 \
+        }                                                  \
+    }
+
+/// D3D12-specific shader program extension.
+class IShaderProgramD3D12 : public ISlangUnknown
+{
+    SLANG_COM_INTERFACE(
+        0xa51fb26b,
+        0x92e2,
+        0x4de3,
+        {0xb1, 0x02, 0x4f, 0x0e, 0x8b, 0xa3, 0x45, 0x11})
+public:
+    /// Returns the program root signature as an `ID3D12RootSignature*` through
+    /// `outRootSignature`. The returned COM object is AddRef'd by the callee; the caller
+    /// owns that reference and must Release it.
+    virtual SLANG_NO_THROW Result SLANG_MCALL getRootSignature(void** outRootSignature) = 0;
+};
+#define SLANG_UUID_IShaderProgramD3D12                     \
+    {                                                      \
+        0xa51fb26b, 0x92e2, 0x4de3,                        \
+        {                                                  \
+            0xb1, 0x02, 0x4f, 0x0e, 0x8b, 0xa3, 0x45, 0x11 \
         }                                                  \
     }
 
@@ -1714,6 +1746,36 @@ struct ClearResourceViewFlags
     };
 };
 
+enum class CooperativeVectorComponentType
+{
+    Float16 = 0,
+    Float32 = 1,
+    Float64 = 2,
+    SInt8 = 3,
+    SInt16 = 4,
+    SInt32 = 5,
+    SInt64 = 6,
+    UInt8 = 7,
+    UInt16 = 8,
+    UInt32 = 9,
+    UInt64 = 10,
+    SInt8Packed = 11,
+    UInt8Packed = 12,
+    FloatE4M3 = 13,
+    FloatE5M2 = 14,
+};
+
+struct CooperativeVectorProperties
+{
+    CooperativeVectorComponentType inputType;
+    CooperativeVectorComponentType inputInterpretation;
+    CooperativeVectorComponentType matrixInterpretation;
+    CooperativeVectorComponentType biasInterpretation;
+    CooperativeVectorComponentType resultType;
+    bool transpose;
+};
+
+
 class IResourceCommandEncoder : public ICommandEncoder
 {
     // {F99A00E9-ED50-4088-8A0E-3B26755031EA}
@@ -1930,6 +1992,30 @@ public:
     virtual SLANG_NO_THROW Result SLANG_MCALL
     dispatchComputeIndirect(IBufferResource* cmdBuffer, Offset offset) = 0;
 };
+
+/// D3D12-specific compute command encoder extension.
+class IComputeCommandEncoderD3D12 : public ISlangUnknown
+{
+    SLANG_COM_INTERFACE(
+        0x177e20d4,
+        0x6bbd,
+        0x4934,
+        {0x90, 0xab, 0x35, 0x1d, 0x6a, 0x9a, 0x20, 0xc8});
+
+public:
+    /// Binds `rootObject` as compute root parameters using `program`'s D3D12 root signature
+    /// without binding an `ID3D12PipelineState`. Use this path for work-graph state objects,
+    /// which cannot use `bindPipelineWithRootObject`.
+    virtual SLANG_NO_THROW Result SLANG_MCALL
+    bindRootObjectAsCompute(IShaderProgram* program, IShaderObject* rootObject) = 0;
+};
+#define SLANG_UUID_IComputeCommandEncoderD3D12             \
+    {                                                      \
+        0x177e20d4, 0x6bbd, 0x4934,                        \
+        {                                                  \
+            0x90, 0xab, 0x35, 0x1d, 0x6a, 0x9a, 0x20, 0xc8 \
+        }                                                  \
+    }
 
 enum class AccelerationStructureCopyMode
 {
@@ -2771,6 +2857,10 @@ public:
 
     virtual SLANG_NO_THROW Result SLANG_MCALL getTextureRowAlignment(Size* outAlignment) = 0;
 
+    virtual SLANG_NO_THROW Result SLANG_MCALL getCooperativeVectorProperties(
+        CooperativeVectorProperties* properties,
+        uint32_t* propertyCount) = 0;
+
     virtual SLANG_NO_THROW Result SLANG_MCALL createShaderObject2(
         slang::ISession* slangSession,
         slang::TypeReflection* type,
@@ -2890,7 +2980,7 @@ extern "C"
 
     /// Enables debug layer. The debug layer will check all `gfx` calls and verify that uses are
     /// valid.
-    SLANG_GFX_API void SLANG_MCALL gfxEnableDebugLayer();
+    SLANG_GFX_API void SLANG_MCALL gfxEnableDebugLayer(bool enable);
 
     SLANG_GFX_API const char* SLANG_MCALL gfxGetDeviceTypeName(DeviceType type);
 }
@@ -2925,7 +3015,7 @@ struct SlangSessionExtendedDesc
 {
     StructType structType = StructType::SlangSessionExtendedDesc;
     uint32_t compilerOptionEntryCount = 0;
-    slang::CompilerOptionEntry* compilerOptionEntries = nullptr;
+    slang::CompilerOptionEntry const* compilerOptionEntries = nullptr;
 };
 
 /// Whether to enable ray tracing validation (currently only Vulkan - D3D requires app layer to use

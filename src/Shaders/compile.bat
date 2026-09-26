@@ -1,11 +1,12 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+pushd "%~dp0"
 
-set CurrentDir=%cd%
+set CurrentDir=%~dp0
 set ProjectDir=%CurrentDir%\..\..
 for %%I in ("%ProjectDir%") do set ProjectDir=%%~fI
 
 
-setlocal EnableExtensions EnableDelayedExpansion
 set CompilerExe="%VULKAN_SDK%\Bin\glslangValidator.exe"
 set SlangCompExe="%ProjectDir%\dependencies\Slang\bin\slangc.exe"
 set OptimizerConfig="OptimizerConfig.cfg"
@@ -84,5 +85,8 @@ for /r slang/ %%I in (*.slang) do (
 if defined errorfound (
     echo.
     echo Errors were found during compilation.
-    pause
+    popd
+    exit /b 1
 )
+popd
+exit /b 0

@@ -1,7 +1,12 @@
+<!--
+SPDX-FileCopyrightText: The Khronos Group, Inc.
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 Slang
 =====
 ![CI Status](https://github.com/shader-slang/slang/actions/workflows/ci.yml/badge.svg?branch=master)
-![CTS Status](https://github.com/shader-slang/slang/actions/workflows/vk-gl-cts-nightly.yml/badge.svg)
+![CTS Status](https://github.com/shader-slang/slang/actions/workflows/nightly-slang-vkglcts-test.yml/badge.svg)
 
 Slang is a shading language that makes it easier to build and maintain large shader codebases in a modular and extensible fashion, while also maintaining the highest possible performance on modern GPUs and graphics APIs.
 Slang is based on years of collaboration between researchers at NVIDIA, Carnegie Mellon University, Stanford, MIT, UCSD and the University of Washington.
@@ -14,7 +19,7 @@ The Slang shading language is designed to enable real-time graphics developers t
 
 ### Write Shaders Once, Run Anywhere
 
-The Slang compiler can generate code for a wide variety of targets: D3D12, Vulkan, Metal, D3D11, OpenGL, CUDA, and even generate code to run on a CPU. For textual targets, such as Metal Shading Language (MSL) and CUDA, Slang produces readable code that preserves original identifier names, as well as the type and call structure, making it easier to debug.
+The Slang compiler can generate code for a wide variety of targets: D3D12, Vulkan, Metal, D3D11, CUDA, and even generate code to run on a CPU. For textual targets, such as Metal Shading Language (MSL) and CUDA, Slang produces readable code that preserves original identifier names, as well as the type and call structure, making it easier to debug.
 
 ### Access the Latest GPU Features
 
@@ -50,7 +55,7 @@ Getting Started
 The fastest way to get started using Slang in your own development is to use a pre-built binary package, available through GitHub [releases](https://github.com/shader-slang/slang/releases).
 Slang binaries are also included in the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) since version 1.3.296.0.
 
-There are packages built for 32- and 64-bit Windows, as well as 64-bit Ubuntu.
+There are packages built for x86_64 and aarch64 Windows, Linux and macOS.
 Each binary release includes the command-line `slangc` compiler, a shared library for the compiler, and the `slang.h` header.
 
 See the user-guide for info on using the `slangc` command-line tool: [Slang Command Line Usage](
@@ -70,7 +75,7 @@ For developers writing Slang code, the [Slang Core Module Reference](https://sha
 We also provide a few [examples](examples/) of how to integrate Slang into a rendering application.
 
 These examples use a graphics layer that we include with Slang called "GFX" which is an abstraction library of various graphics APIs (D3D11, D2D12, OpenGL, Vulkan, CUDA, and the CPU) to support cross-platform applications using GPU graphics and compute capabilities. 
-If you'd like to learn more about GFX, see the [GFX User Guide](https://shader-slang.com/slang/gfx-user-guide/index.html).
+GFX is being deprecated in favor of [slang-rhi](https://github.com/shader-slang/slang-rhi).
 
 Additionally, we recommend checking out [Vulkan Mini Examples](https://github.com/nvpro-samples/vk_mini_samples/) for more examples of using Slang's language features available on Vulkan, such as pointers and the ray tracing intrinsics.
 
@@ -138,14 +143,15 @@ The Slang code itself is under the Apache 2.0 with LLVM Exception license (see [
 
 Builds of the core Slang tools depend on the following projects, either automatically or optionally, which may have their own licenses:
 
+* [`ankerl::unordered_dense::{map, set}`](https://github.com/martinus/unordered_dense) (MIT)
+* [`fast_float`](https://github.com/fastfloat/fast_float) (Apache 2.0 / MIT / Boost)
 * [`glslang`](https://github.com/KhronosGroup/glslang) (BSD)
 * [`lz4`](https://github.com/lz4/lz4) (BSD)
 * [`miniz`](https://github.com/richgel999/miniz) (MIT)
 * [`spirv-headers`](https://github.com/KhronosGroup/SPIRV-Headers) (Modified MIT)
 * [`spirv-tools`](https://github.com/KhronosGroup/SPIRV-Tools) (Apache 2.0)
-* [`ankerl::unordered_dense::{map, set}`](https://github.com/martinus/unordered_dense) (MIT)
 
-Slang releases may include [slang-llvm](https://github.com/shader-slang/slang-llvm) which includes [LLVM](https://github.com/llvm/llvm-project) under the license:
+Slang releases may include [LLVM](https://github.com/llvm/llvm-project) under the license:
 
 * [`llvm`](https://llvm.org/docs/DeveloperPolicy.html#new-llvm-project-license-framework) (Apache 2.0 License with LLVM exceptions)
 

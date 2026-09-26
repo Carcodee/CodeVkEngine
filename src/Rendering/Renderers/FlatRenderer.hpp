@@ -132,6 +132,18 @@ class FlatRenderer : public BaseRenderer
 		                                                                            assetPath +
 		                                                                                "\\Animations\\SmokeFreePack_v2\\Compressed\\512\\Smoke_4_512-sheet.png",
 		                                                                            30, animatorInfo);
+		if (testSpriteAnim->imagesFrames.empty())
+		{
+			// The optional smoke atlas is not distributed with the engine.
+			// ImageShipper owns and frees this pixel after uploading it.
+			auto *transparentPixel = std::calloc(4, 1);
+			auto *fallback = ResourcesManager::GetInstance()->GetShipper(
+			    "EmptySmokeAtlas", transparentPixel, 1, 1, 4, 1, 1,
+			    ENGINE::g_ShipperFormat, LayoutPatterns::GRAPHICS_READ);
+			testSpriteAnim->imagesFrames.push_back(fallback->imageView.get());
+			testSpriteAnim->animatorInfo = {glm::uvec2(1), 1, 1, 0, 1, 0.0f, true};
+			testSpriteAnim->stop = true;
+		}
 	}
 
 	void CreateBuffers()
@@ -234,7 +246,8 @@ class FlatRenderer : public BaseRenderer
 		    shaderPath + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv",
 		    S_FRAG);
 
-		AttachmentInfo outputColInfo = GetColorAttachmentInfo(BlendConfigs::B_ALPHA_BLEND,
+		// This pass writes storage images only; disable fragment color writes.
+		AttachmentInfo outputColInfo = GetColorAttachmentInfo(BlendConfigs::B_NONE,
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
 
 		auto cascadesGPUPipeline = renderGraph->AddGPUPipeline("CascadesGPUPipeline");
@@ -252,7 +265,7 @@ class FlatRenderer : public BaseRenderer
 			renderNode->DependsOn("ProbesGen_" + std::to_string(i));
 		}
 
-		AttachmentInfo mergeColInfo = GetColorAttachmentInfo( BlendConfigs::B_OPAQUE,
+		AttachmentInfo mergeColInfo = GetColorAttachmentInfo( BlendConfigs::B_NONE,
 		    glm::vec4(0.0f), core->swapchainRef->GetFormat(), vk::AttachmentLoadOp::eLoad,
 		    vk::AttachmentStoreOp::eStore);
 

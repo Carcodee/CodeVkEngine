@@ -53,6 +53,8 @@ namespace ENGINE
         void AddImagesArray(int binding, std::vector<ImageView*>& imageViews, std::vector<Sampler*>& samplers, vk::ImageLayout layout,
                            vk::DescriptorType type)
         {
+            // Partially bound arrays may be empty, but Vulkan writes may not be.
+            if (imageViews.empty()) return;
 
             std::vector<vk::DescriptorImageInfo>& imageInfosArray = imageArrayInfos.emplace_back(std::vector<vk::DescriptorImageInfo>());
             imageInfosArray.resize(imageViews.size());
@@ -113,6 +115,7 @@ namespace ENGINE
         
         void Clear()
         {
+            imageArrayInfos.clear();
             imageInfos.clear();
             writes.clear();
             bufferInfos.clear();

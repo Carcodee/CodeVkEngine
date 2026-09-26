@@ -13,7 +13,7 @@
 #define DESCRIPTORCACHE_HPP
 namespace ENGINE
 {
-#define DEFAULT_VAR_DESCRIPTOR_COUNT 1000
+#define DEFAULT_VAR_DESCRIPTOR_COUNT 12
     class DescriptorCache : public SYSTEMS::Watcher
     {
         struct SamplerBinding 

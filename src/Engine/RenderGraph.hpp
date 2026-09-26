@@ -1778,8 +1778,8 @@ class RenderGraph
 
 	void DebugShadersCompilation()
 	{
-		int result = std::system(
-		    "C:\\Users\\carlo\\CLionProjects\\CodeVkEngine\\src\\Shaders\\compile.bat");
+		std::string path = SYSTEMS::OS::GetInstance()->GetShadersPath() + "\\compile.bat";
+		int result = std::system(("\"\"" + path + "\"\"").c_str());
 		if (result == 0)
 		{
 			std::cout << "Shaders compiled\n";

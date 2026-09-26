@@ -70,6 +70,10 @@ namespace ENGINE
         auto blendAttachmentState = vk::PipelineColorBlendAttachmentState();
         switch (configs)
         {
+        case B_NONE:
+            blendAttachmentState.setColorWriteMask(vk::ColorComponentFlags{})
+                                .setBlendEnable(VK_FALSE);
+            break;
         case B_OPAQUE:
             blendAttachmentState.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                                     vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)

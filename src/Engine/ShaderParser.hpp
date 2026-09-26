@@ -247,10 +247,13 @@ namespace ENGINE
         }
 
         spSetCodeGenTarget(request, SLANG_SPIRV);
-        const char* preserveParamsArgs[] = {"-preserve-params"};
+        const char* preserveParamsArgs[] = {
+            "-preserve-params",
+        };
+
         if (spProcessCommandLineArguments(request, preserveParamsArgs, 1) != SLANG_OK)
         {
-            assert(false && "failed to set slang preserve params option");
+            assert(false && "Failed to set Slang compiler options");
         }
         int translationUnitIndex = spAddTranslationUnit(request, SLANG_SOURCE_LANGUAGE_SLANG, nullptr);
 

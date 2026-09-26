@@ -26,8 +26,8 @@ set(CODE_CUDA_ENGINE_ROOT "${SOLUTION_DIR}/dependencies/CodeCudaEngine" CACHE PA
         "Installed CodeCudaEngine package prefix")
 if(NOT EXISTS "${CODE_CUDA_ENGINE_ROOT}/lib/codeCudaLib.lib")
     message(FATAL_ERROR
-            "CodeCudaEngine has not been installed. Run setup_dependencies.ps1 "
-            "from the repository root before configuring.")
+            "Bundled CodeCudaEngine library is missing. Restore dependencies/CodeCudaEngine "
+            "from a complete checkout of this repository.")
 endif()
 find_package(CodeCudaEngine CONFIG REQUIRED
         PATHS "${CODE_CUDA_ENGINE_ROOT}"
@@ -50,19 +50,23 @@ set(IMGUI_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/imgui-docking")
 set(PROFILER_EXT_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/LegitProfiler")
 set(IMGUI_NODE_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/imgui-node-editor-master")
 set(SLANG_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/Slang/include")
-set(SLANG_LIBRARIES "${SOLUTION_DIR}/dependencies/Slang/lib/slang.lib")
+set(SLANG_LIBRARIES "${SOLUTION_DIR}/dependencies/Slang/lib/slang-compiler.lib")
+set(SLANG_RUNTIME_FILES
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-compiler.dll"
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-glslang.dll"
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-glsl-module.dll"
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-rt.dll")
 set(NLOHMANN_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/nlohmann")
 set(HAPPLY_INCLUDE_DIR "${SOLUTION_DIR}/dependencies/happly-master")
 
 foreach(required_file IN ITEMS
         "${GLFW3_LIBRARIES}"
         "${SLANG_LIBRARIES}"
-        "${SOLUTION_DIR}/dependencies/Slang/bin/slang.dll"
-        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-glslang.dll")
+        ${SLANG_RUNTIME_FILES})
     if(NOT EXISTS "${required_file}")
         message(FATAL_ERROR
                 "Required binary dependency is missing: ${required_file}. "
-                "Run setup_dependencies.ps1 from the repository root.")
+                "Restore dependencies/ from a complete checkout of this repository.")
     endif()
 endforeach()
 
@@ -80,6 +84,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_executable(Engine)
+set_property(TARGET Engine PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${SOLUTION_DIR}")
 
 if(MSVC)
     target_compile_options(Engine PRIVATE /bigobj)
@@ -124,10 +129,10 @@ set_target_properties(Engine PROPERTIES
 add_custom_command(
         TARGET Engine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${SOLUTION_DIR}/dependencies/Slang/bin/slang.dll"
+        ${SLANG_RUNTIME_FILES}
         "$<TARGET_FILE_DIR:Engine>"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-glslang.dll"
-        "$<TARGET_FILE_DIR:Engine>"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${SOLUTION_DIR}/dependencies/Slang/bin/slang-standard-module-2026.13.1"
+        "$<TARGET_FILE_DIR:Engine>/slang-standard-module-2026.13.1"
 )
 

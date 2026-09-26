@@ -215,38 +215,27 @@ To test another renderer, comment out FlatRenderer and uncomment the renderer bl
 
 ## Prerequisites
 
-- Windows with a Vulkan-capable GPU.
-- C++20 compiler.
+- Windows x64 with an NVIDIA GPU supporting Vulkan 1.3 and CUDA.
+- Visual Studio 2022 with the Desktop development with C++ workload (C++20).
 - CMake 3.26 or newer.
 - Vulkan SDK.
-- Visual Studio 2022/MSVC-compatible toolchain recommended.
-- CUDA Toolkit and the repo-local `dependencies/CodeCudaEngine` package, because `CMakeLists.txt` requires `find_package(CodeCudaEngine REQUIRED)`.
-- Repo-local dependencies under `dependencies/`.
+- CUDA Toolkit 13.4 (the bundled CodeCudaEngine library was built with this version).
 
 The current CMake file expects several dependencies at fixed repo-relative paths, including GLFW `lib-vc2022`, Slang libraries, ImGui docking, imgui-node-editor, SPIRV-Cross, tinygltf, happly, nlohmann/json, stb, LegitProfiler, and CodeCudaEngine.
 
 ## Build
 
-Clone `CodeVkEngine` and `CodeCudaEngine` beside one another. From the
-`CodeVkEngine` repository root, install the generated and binary dependencies:
+Clone or download this repository. The required Windows x64 dependency binaries,
+Slang 2026.13.1 headers and runtime, default material textures, and compiled shaders
+are included. No dependency setup script or sibling CodeCudaEngine checkout is needed.
+The optional Slang LLVM backend for CPU compilation is not included.
 
-```powershell
-.\setup_dependencies.ps1
-```
-
-The setup script builds `CodeCudaEngine` with MSVC and the installed CUDA
-Toolkit, then downloads hash-verified Slang 2024.17 and GLFW 3.4 Windows
-binaries. If the CUDA repository is elsewhere, pass its project directory:
-
-```powershell
-.\setup_dependencies.ps1 -CodeCudaProject "D:\src\CodeCudaEngine\project"
-```
-
-Configure and build with the Visual Studio toolchain:
+From the repository root, configure and build with the Visual Studio toolchain:
 
 ```sh
 cmake -S . -B cmake-build-msvc -G "Visual Studio 17 2022" -A x64
 cmake --build cmake-build-msvc --target Engine --config Debug
+cmake-build-msvc\bin\Debug\Engine.exe
 ```
 
 The executable is written to:
@@ -254,6 +243,14 @@ The executable is written to:
 ```text
 cmake-build-msvc/bin/Debug/Engine.exe
 ```
+
+Run from the repository root or a build directory inside it so the engine can find
+`Resources/` and `src/Shaders/`. GPU drivers and the SDK/toolchain prerequisites
+above must be installed separately.
+
+The smoke sprite atlas is optional and is not included; the default renderer uses
+a transparent frame when it is absent. Alternative experimental renderers may
+require their own external datasets.
 
 If you use CLion, select its Visual Studio toolchain rather than the bundled
 MinGW toolchain, open the repository root, and build the `Engine` target.

@@ -34,5 +34,19 @@
 # CMake out-of-source builds
 cmake-build-*/
 
-# Download cache populated by setup_dependencies.ps1
+# Local dependency downloads and backups
 .dependency-cache/
+
+# Editor state and generated shader compilation commands
+.idea/
+src/Shaders/tempFile.bat
+
+# Vendored Windows x64 libraries and shader compiler runtime
+!dependencies/CodeCudaEngine/lib/codeCudaLib.lib
+!dependencies/glfw/lib-vc2022/glfw3.lib
+!dependencies/Slang/lib/slang-compiler.lib
+!dependencies/Slang/bin/slang-compiler.dll
+!dependencies/Slang/bin/slang-glslang.dll
+!dependencies/Slang/bin/slang-glsl-module.dll
+!dependencies/Slang/bin/slang-rt.dll
+!dependencies/Slang/bin/slangc.exe

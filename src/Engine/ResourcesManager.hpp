@@ -6,7 +6,8 @@
 #ifndef RESOURCESMANAGER_HPP
 #define RESOURCESMANAGER_HPP
 
-#define BASE_SIZE 10000
+#define BASE_SIZE 8192
+#define DST_SET_MAX_SIZE 1280
 
 namespace ENGINE
 {
@@ -758,7 +759,7 @@ class ResourcesManager : SYSTEMS::Subject
 		images.reserve(BASE_SIZE);
 		filesManager        = std::make_unique<SYSTEMS::FilesManager>();
 		descriptorAllocator = std::make_unique<DescriptorAllocator>();
-		descriptorAllocator->BeginPool(core->logicalDevice.get(), 100, poolSizeRatios);
+		descriptorAllocator->BeginPool(core->logicalDevice.get(), DST_SET_MAX_SIZE, poolSizeRatios);
 
 		samplerPool = std::make_unique<SamplerPool>();
 
@@ -859,7 +860,10 @@ class ResourcesManager : SYSTEMS::Subject
 	    {vk::DescriptorType::eSampler, 1.5f},
 	    {vk::DescriptorType::eStorageBuffer, 1.5f},
 	    {vk::DescriptorType::eUniformBuffer, 1.5f},
+	    // Array bindings reserve 1000 descriptors each, including unused entries.
+	    // With 100 sets, reserve 100000 descriptors of each image type.
 	    {vk::DescriptorType::eStorageImage, 1.5f},
+	    {vk::DescriptorType::eCombinedImageSampler, 1.5f},
 	};
 	std::unique_ptr<SYSTEMS::FilesManager> filesManager;
 
