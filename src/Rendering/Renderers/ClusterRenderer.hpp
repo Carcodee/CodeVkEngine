@@ -262,7 +262,7 @@ class ClusterRenderer : public BaseRenderer
 		camera.position = glm::vec3(0.0f);
 
 		std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath();
-		RenderingResManager::GetInstance()->PushModelToIndirectBatch(path + "\\Models\\floating_lighthouse\\scene.gltf");
+		RenderingResManager::GetInstance()->PushModelToIndirectBatch(path + "\\Models\\porsche\\scene.gltf");
 
 		// compute
 		std::random_device rd;

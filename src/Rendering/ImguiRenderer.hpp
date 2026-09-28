@@ -2015,6 +2015,10 @@ class ImguiRenderer
 		ImGui::SeparatorText("Render Nodes");
 		for (auto &nodeInfo : nodeInfos)
 		{
+			if (nodeInfo.name == "BlitterNode")
+			{
+				continue;
+			}
 			std::string name = "Node: " + nodeInfo.name;
 			ImGui::Checkbox(name.c_str(), nodeInfo.active);
 		}

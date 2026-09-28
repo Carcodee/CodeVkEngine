@@ -473,6 +473,7 @@ class ResourcesManager : SYSTEMS::Subject
 		storageImgsToClear.push_back(name);
 	}
 
+	//handle spv or normal path, internally it creates the spv path
 	Shader *GetShader(std::string path, ShaderStage stage)
 	{
 		if (shadersNames.contains(path))

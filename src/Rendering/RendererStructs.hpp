@@ -7,234 +7,258 @@
 
 namespace Rendering
 {
+    struct MvpPc
+    {
+        glm::mat4 model = glm::mat4(1.0);
+        glm::mat4 projView = glm::mat4(1.0);
+    };
 
-struct MvpPc
-{
-	glm::mat4 model    = glm::mat4(1.0);
-	glm::mat4 projView = glm::mat4(1.0);
-};
+    struct SplitMVP
+    {
+        glm::mat4 model = glm::mat4(1.0);
+        glm::mat4 view = glm::mat4(1.0);
+        glm::mat4 proj = glm::mat4(1.0);
+    };
 
-struct SplitMVP
-{
-	glm::mat4 model = glm::mat4(1.0);
-	glm::mat4 view  = glm::mat4(1.0);
-	glm::mat4 proj  = glm::mat4(1.0);
-};
-enum PintMode
-{
-	P_OCCLUDER     = 0,
-	P_LIGHT_SOURCE = 1
-};
-struct RcPc
-{
-	int cascadesCount      = 0;
-	int probeSizePx        = 8;
-	int intervalCount      = 2;
-	int fWidth             = 0;
-	int fHeight            = 0;
-	int baseIntervalLength = 12;
-	int cascadeIndex       = -1;
-};
+    enum PintMode
+    {
+        P_OCCLUDER = 0,
+        P_LIGHT_SOURCE = 1
+    };
 
-struct ProbesGenPc
-{
-	int cascadeIndex = 0;
-	int intervalSize = 16;
-	int probeSizePx  = 16;
-};
+    struct RcPc
+    {
+        int cascadesCount = 0;
+        int probeSizePx = 8;
+        int intervalCount = 2;
+        int fWidth = 0;
+        int fHeight = 0;
+        int baseIntervalLength = 12;
+        int cascadeIndex = -1;
+    };
 
-struct PaintingPc
-{
-	glm::vec4 color         = glm::vec4(1.0);
-	int       layerSelected = 0;
-	int       painting      = 0;
-	int       xMousePos     = 0;
-	int       yMousePos     = 0;
-	int       radius        = 20;
-};
-struct CPropsUbo
-{
-	glm::mat4 invProj = glm::mat4(1.0);
-	glm::mat4 invView = glm::mat4(1.0);
-	glm::vec3 pos     = glm::vec3(0.0);
-	float     zNear   = 0.0f;
-	float     zFar    = 0.0f;
-};
-struct ArrayIndexer
-{
-	uint32_t offset = 0;
-	uint32_t size   = 0;
-};
-struct ScreenDataPc
-{
-	int      sWidth           = 0;
-	int      sHeight          = 0;
-	int      pointLightsCount = 0;
-	uint32_t xTileCount       = 0;
-	uint32_t yTileCount       = 0;
-	uint32_t xTileSizePx      = 0;
-	uint32_t yTileSizePx      = 0;
-};
-struct LightPc
-{
-	uint32_t xTileCount  = 0;
-	uint32_t yTileCount  = 0;
-	uint32_t xTileSizePx = 0;
-	uint32_t yTileSizePx = 0;
-	uint32_t zSlices     = 0;
-};
-struct MaterialPackedData
-{
-	glm::vec4 diff            = glm::vec4(1.0);
-	float     albedoFactor    = 1.0;
-	float     normalFactor    = 0.0;
-	float     roughnessFactor = 0.0;
-	float     metallicFactor  = 0.0;
-	float     alphaCutoff     = 0.0;
+    struct ProbesGenPc
+    {
+        int cascadeIndex = 0;
+        int intervalSize = 16;
+        int probeSizePx = 16;
+    };
 
-	int albedoOffset       = -1;
-	int normalOffset       = -1;
-	int emissionOffset     = -1;
-	int transOffset        = -1;
-	int roughnessOffset    = -1;
-	int metallicOffset     = -1;
-	int metRoughnessOffset = -1;
-};
-struct Sphere
-{
-	glm::vec3 center = glm::vec3(0);
-	float     radius = 0;
-};
+    struct PaintingPc
+    {
+        glm::vec4 color = glm::vec4(1.0);
+        int layerSelected = 0;
+        int painting = 0;
+        int xMousePos = 0;
+        int yMousePos = 0;
+        int radius = 20;
+    };
 
-struct ModelLoadConfigs
-{
-	bool loadMeshesSpheres;
-	bool compactMesh;
-};
+    struct CPropsUbo
+    {
+        glm::mat4 invProj = glm::mat4(1.0);
+        glm::mat4 invView = glm::mat4(1.0);
+        glm::vec3 pos = glm::vec3(0.0);
+        float zNear = 0.0f;
+        float zFar = 0.0f;
+    };
 
-struct Frustum
-{
-	glm::vec4 planes[6];
-	glm::vec3 points[8];
-};
-struct CascadesInfo
-{
-	uint32_t cascadeCount       = 4;
-	int      probeSizePx        = 16;
-	int      intervalCount      = 2;
-	int      baseIntervalLength = 12;
-};
+    struct ArrayIndexer
+    {
+        uint32_t offset = 0;
+        uint32_t size = 0;
+    };
 
-struct MergeCascadesInfo
-{
-	glm::uvec2 probeCentersPositionsPx;
-	glm::uvec2 probeSizesPx;
-	int        dirIndices;
-};
+    struct ScreenDataPc
+    {
+        int sWidth = 0;
+        int sHeight = 0;
+        int pointLightsCount = 0;
+        uint32_t xTileCount = 0;
+        uint32_t yTileCount = 0;
+        uint32_t xTileSizePx = 0;
+        uint32_t yTileSizePx = 0;
+    };
 
-struct RadianceCascadesConfigs
-{
-	int radiancePow  = 2;
-	int normalMapPow = 24;
-	int specularPow  = 2;
-	int roughnessPow = 2;
-};
+    struct LightPc
+    {
+        uint32_t xTileCount = 0;
+        uint32_t yTileCount = 0;
+        uint32_t xTileSizePx = 0;
+        uint32_t yTileSizePx = 0;
+        uint32_t zSlices = 0;
+    };
 
-struct GaussianSplat
-{
-	float x, y, z;
-	float nx, ny, nz;
-	float f_dc_0, f_dc_1, f_dc_2;
-	float opacity;
-	float scale_0, scale_1, scale_2;
-	float rot_0, rot_1, rot_2, rot_3;
+    struct MaterialPackedData
+    {
+        glm::vec4 diff = glm::vec4(1.0);
+        float albedoFactor = 1.0;
+        float normalFactor = 0.0;
+        float roughnessFactor = 0.0;
+        float metallicFactor = 0.0;
+        float alphaCutoff = 0.0;
 
-	float f_rest[45];
-};
-struct ArraysOfGaussians
-{
-	std::vector<glm::vec3> pos;
-	std::vector<glm::vec3> scales;
-	std::vector<glm::vec4> rots;
-	std::vector<glm::vec3> cols;
-	std::vector<float>     alphas;
-	std::vector<glm::vec3> shCoefs;
-	std::vector<int>       ids;
-	glm::vec3              hFovFocal;
+        int albedoOffset = -1;
+        int normalOffset = -1;
+        int emissionOffset = -1;
+        int transOffset = -1;
+        int roughnessOffset = -1;
+        int metallicOffset = -1;
+        int metRoughnessOffset = -1;
+    };
 
-	void Init(std::vector<GaussianSplat> splats, float fov, float sWidth, float sHeight)
-	{
-		size_t size = splats.size();
-		assert(size > 0);
+    struct Sphere
+    {
+        glm::vec3 center = glm::vec3(0);
+        float radius = 0;
+    };
 
-		std::random_device rd;
-		std::mt19937       gen(rd());
+    struct ModelLoadConfigs
+    {
+        bool loadMeshesSpheres;
+        bool compactMesh;
+    };
 
-		for (int i = 0; i < splats.size(); ++i)
-		{
-			// std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
-			// rots[i].x = distributionCov(gen);
-			// rots[i].y = distributionCov(gen);
-			// rots[i].z = distributionCov(gen);
-			// rots[i].w = distributionCov(gen);
-			//
-			// scales[i].x = distributionCov(gen);
-			// scales[i].y = distributionCov(gen);
-			// scales[i].z = distributionCov(gen);
-			//
-			pos.emplace_back(-glm::vec3(splats[i].x, splats[i].y, splats[i].z));
-			scales.emplace_back(UTIL::M_Exp(glm::vec3(splats[i].scale_0, splats[i].scale_1, splats[i].scale_2)));
-			rots.emplace_back(-UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0, splats[i].rot_1, splats[i].rot_2, splats[i].rot_3)));
-			glm::vec3 sh = glm::vec3(splats[i].f_dc_0, splats[i].f_dc_1, splats[i].f_dc_2);
-			cols.emplace_back(sh);
-			alphas.emplace_back(UTIL::M_Sigmoid(splats[i].opacity));
-			for (int j = 0; j < 15; j += 3)
-			{
-				glm::vec3 coeff = glm::vec3(splats[i].f_rest[j * 3 + 0], splats[i].f_rest[j * 3 + 1], splats[i].f_rest[j * 3 + 2]);
-				shCoefs.emplace_back(coeff);
-			}
-		}
+    struct Frustum
+    {
+        glm::vec4 planes[6];
+        glm::vec3 points[8];
+    };
 
-		float hTanY  = tan(glm::radians(fov) / 2.0);
-		float hTanX  = hTanY / sWidth * sHeight;
-		float focalZ = sHeight / (2 * hTanY);
-		hFovFocal    = glm::vec3(hTanX, hTanY, focalZ);
-	}
-	std::vector<uint32_t> SortByDepth(glm::mat4 view)
-	{
-		std::vector<uint32_t> indices(pos.size());
-		std::iota(indices.begin(), indices.end(), 0);
+    struct CascadesInfo
+    {
+        uint32_t cascadeCount = 4;
+        int probeSizePx = 16;
+        int intervalCount = 2;
+        int baseIntervalLength = 12;
+    };
 
-		std::sort(indices.begin(), indices.end(), [&](uint32_t a, uint32_t b) {
-			float za = (view * glm::vec4(pos[a], 1.0f)).z;
-			float zb = (view * glm::vec4(pos[b], 1.0f)).z;
-			return za < zb;
-		});
+    struct MergeCascadesInfo
+    {
+        glm::uvec2 probeCentersPositionsPx;
+        glm::uvec2 probeSizesPx;
+        int dirIndices;
+    };
 
-		return indices;
-	}
-};
-struct GSConfigsPc
-{
-	float scaleMod = 1.0;
-};
+    struct RadianceCascadesConfigs
+    {
+        int radiancePow = 2;
+        int normalMapPow = 24;
+        int specularPow = 2;
+        int roughnessPow = 2;
+    };
 
-struct PcHistogram
-{
-	uint32_t g_num_elements;                    // == NUM_ELEMENTS
-	uint32_t g_shift;                           // (*)
-	uint32_t g_num_workgroups;                  // == NUMBER_OF_WORKGROUPS as defined in the section above
-	uint32_t g_num_blocks_per_workgroup;        // == NUM_BLOCKS_PER_WORKGROUP
-};
+    struct GaussianSplat
+    {
+        float x, y, z;
+        float nx, ny, nz;
+        float f_dc_0, f_dc_1, f_dc_2;
+        float opacity;
+        float scale_0, scale_1, scale_2;
+        float rot_0, rot_1, rot_2, rot_3;
 
-struct PcRadixSort
-{
-	uint32_t g_num_elements;                    // == NUM_ELEMENTS
-	uint32_t g_shift;                           // (*)
-	uint32_t g_num_workgroups;                  // == NUMBER_OF_WORKGROUPS as defined in the section above
-	uint32_t g_num_blocks_per_workgroup;        // == NUM_BLOCKS_PER_WORKGROUP
-};
-}        // namespace Rendering
+        float f_rest[45];
+    };
+
+    struct ArraysOfGaussians
+    {
+        std::vector<glm::vec3> pos;
+        std::vector<glm::vec3> scales;
+        std::vector<glm::vec4> rots;
+        std::vector<glm::vec3> cols;
+        std::vector<float> alphas;
+        std::vector<glm::vec3> shCoefs;
+        std::vector<int> ids;
+        glm::vec3 hFovFocal;
+
+        void Init(std::vector<GaussianSplat> splats, float fov, float sWidth, float sHeight)
+        {
+            size_t size = splats.size();
+            assert(size > 0);
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+
+            for (int i = 0; i < splats.size(); ++i)
+            {
+                // std::uniform_real_distribution<> distributionCov(-0.2f, 0.2f);
+                // rots[i].x = distributionCov(gen);
+                // rots[i].y = distributionCov(gen);
+                // rots[i].z = distributionCov(gen);
+                // rots[i].w = distributionCov(gen);
+                //
+                // scales[i].x = distributionCov(gen);
+                // scales[i].y = distributionCov(gen);
+                // scales[i].z = distributionCov(gen);
+                //
+                pos.emplace_back(-glm::vec3(splats[i].x, splats[i].y, splats[i].z));
+                scales.emplace_back(UTIL::M_Exp(glm::vec3(splats[i].scale_0, splats[i].scale_1, splats[i].scale_2)));
+                rots.emplace_back(
+                    -UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0, splats[i].rot_1, splats[i].rot_2,
+                                                         splats[i].rot_3)));
+                glm::vec3 sh = glm::vec3(splats[i].f_dc_0, splats[i].f_dc_1, splats[i].f_dc_2);
+                cols.emplace_back(sh);
+                alphas.emplace_back(UTIL::M_Sigmoid(splats[i].opacity));
+                for (int j = 0; j < 15; j += 3)
+                {
+                    glm::vec3 coeff = glm::vec3(splats[i].f_rest[j * 3 + 0], splats[i].f_rest[j * 3 + 1],
+                                                splats[i].f_rest[j * 3 + 2]);
+                    shCoefs.emplace_back(coeff);
+                }
+            }
+
+            float hTanY = tan(glm::radians(fov) / 2.0);
+            float hTanX = hTanY / sWidth * sHeight;
+            float focalZ = sHeight / (2 * hTanY);
+            hFovFocal = glm::vec3(hTanX, hTanY, focalZ);
+        }
+
+        std::vector<uint32_t> SortByDepth(glm::mat4 view)
+        {
+            std::vector<uint32_t> indices(pos.size());
+            std::iota(indices.begin(), indices.end(), 0);
+
+            std::sort(indices.begin(), indices.end(), [&](uint32_t a, uint32_t b)
+            {
+                float za = (view * glm::vec4(pos[a], 1.0f)).z;
+                float zb = (view * glm::vec4(pos[b], 1.0f)).z;
+                return za < zb;
+            });
+
+            return indices;
+        }
+    };
+
+    struct GSConfigsPc
+    {
+        float scaleMod = 1.0;
+    };
+
+    struct PcHistogram
+    {
+        uint32_t g_num_elements; // == NUM_ELEMENTS
+        uint32_t g_shift; // (*)
+        uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
+        uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
+    };
+
+    struct PcRadixSort
+    {
+        uint32_t g_num_elements; // == NUM_ELEMENTS
+        uint32_t g_shift; // (*)
+        uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
+        uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
+    };
+
+    struct S_Lattice
+    {
+        glm::mat4 world_pos = glm::identity<glm::mat4>();
+        glm::vec2 lattice_size = glm::vec2{10, 10};
+        glm::uvec2 lattice_resolution = glm::uvec2{64, 64};
+        float* latticeDevice = nullptr;
+
+    };
+} // namespace Rendering
 
 
 #endif        // RENDERINGSTRUCTS_HPP
