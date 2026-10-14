@@ -2,91 +2,91 @@
 // Created by carlo on 2025-03-26.
 //
 
-#ifndef CFDRENDERER_HPP
-#define CFDRENDERER_HPP
+#ifndef CFD_RENDERER_HPP
+#define CFD_RENDERER_HPP
 
-namespace Rendering
+namespace rendering
 {
-    using namespace ENGINE;
+    using namespace engine;
 
-    class CFDRenderer : public BaseRenderer
+    class cfd_renderer : public base_renderer
     {
     public:
-        ~CFDRenderer() override = default;
+        ~cfd_renderer() override = default;
 
-        CFDRenderer(Core* core, WindowProvider* windowProvider)
+        cfd_renderer(engine::core* core, ::window_provider* window_provider)
         {
             this->core = core;
-            this->renderGraph = core->renderGraphRef;
-            this->windowProvider = windowProvider;
+            this->render_graph = core->render_graph_ref;
+            this->window_provider = window_provider;
 
-            CreateResources();
-            CreateBuffers();
-            CreatePipelines();
+            create_resources();
+            create_buffers();
+            create_pipelines();
         }
 
-        void CreateResources()
+        void create_resources()
         {
         }
 
-        void CreateBuffers()
+        void create_buffers()
         {
-            auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+            auto image_info = engine::image::create_info2d(window_provider->get_window_size(), 1, 1,
                                                  vk::Format::eR32G32B32A32Sfloat,
                                                  vk::ImageUsageFlagBits::eColorAttachment |
                                                  vk::ImageUsageFlagBits::eSampled);
-            auto* colAttachmentView = renderGraph->resourcesManager->GetImage("colAttachment", imageInfo, 0, 0);
-            voxelGrid.Init("CFD", renderGraph);
+            auto* col_attachment_view = render_graph->resources_manager->get_image("colAttachment", image_info, 0, 0);
+            voxel_grid.init("CFD", render_graph);
         }
 
-        void CreatePipelines()
+        void create_pipelines()
         {
-            auto& logicalDevice = core->logicalDevice.get();
-            std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
-            auto voxelizerComp = renderGraph->resourcesManager->GetShader(
-                shaderPath + "\\spirvGlsl\\CFD\\voxelizeMesh.comp.spv", S_COMP);
-            auto modelToVoxelize = RenderingResManager::GetInstance()->GetModel(
-                SYSTEMS::OS::GetInstance()->GetAssetsPath() + "\\Models\\porsche\\scene.gltf");
+            auto& logical_device = core->logical_device.get();
+            std::string shader_path = systems::os::get_instance()->get_shaders_path();
+            auto voxelizer_comp = render_graph->resources_manager->get_shader(
+                shader_path + "\\spirvGlsl\\CFD\\voxelizeMesh.comp.spv", s_comp);
+            auto model_to_voxelize = rendering_res_manager::get_instance()->get_model(
+                systems::os::get_instance()->get_assets_path() + "\\Models\\porsche\\scene.gltf");
 
-            auto* voxelizerNode = renderGraph->AddPass("voxelizer");
-            voxelizerNode->G_SetCompShader(voxelizerComp);
-            voxelizerNode->G_SetPushConstantSize(sizeof(PC_VoxelGrid));
-            voxelizerNode->BuildRenderGraphNode();
-            voxelizerNode->G_SetRenderOperation(new std::function<void()>(
-                [this, modelToVoxelize]()
+            auto* voxelizer_node = render_graph->add_pass("voxelizer");
+            voxelizer_node->g_set_comp_shader(voxelizer_comp);
+            voxelizer_node->g_set_push_constant_size(sizeof(pc_voxel_grid));
+            voxelizer_node->build_render_graph_node();
+            voxelizer_node->g_set_render_operation(new std::function<void()>(
+                [this, model_to_voxelize]()
                 {
-                    auto& renderNode = renderGraph->renderNodes.at("voxelizer");
+                    auto& render_node = render_graph->render_nodes.at("voxelizer");
 
-                    renderNode->G_SetBuffer("modelVertices", modelToVoxelize->vertBuffer->deviceBuffer.get());
-                    renderNode->G_SetBuffer("voxels", voxelGrid.d_VoxelGrid.d_cells);
-                    renderNode->GetCurrCmd().pushConstants(renderNode->GPUPipelineRef->pipelineLayout.get(),
+                    render_node->g_set_buffer("model_vertices", model_to_voxelize->vert_buffer->device_buffer.get());
+                    render_node->g_set_buffer("voxels", voxel_grid.d_voxel_grid.d_cells);
+                    render_node->get_curr_cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
                                                            vk::ShaderStageFlagBits::eCompute,
-                                                           0, sizeof(PC_VoxelGrid), &voxelGrid.pcVoxelGrid);
-                    renderNode->GetCurrCmd().dispatch(
-                        static_cast<uint32_t>((modelToVoxelize->vertices.size() + 31) / 32), 1, 1);
+                                                           0, sizeof(pc_voxel_grid), &voxel_grid.pc_voxel_grid);
+                    render_node->get_curr_cmd().dispatch(
+                        static_cast<uint32_t>((model_to_voxelize->vertices.size() + 31) / 32), 1, 1);
                 }));
 
         }
 
-        void RecreateSwapChainResources() override
+        void recreate_swap_chain_resources() override
         {
         }
 
-        void SetRenderOperation() override
+        void set_render_operation() override
         {
         }
 
-        void ReloadShaders() override
+        void reload_shaders() override
         {
         }
 
-        std::string passName = "passName";
+        std::string pass_name = "passName";
 
-        Core* core;
-        RenderGraph* renderGraph;
-        WindowProvider* windowProvider;
-        VoxelGrid voxelGrid = {};
+        engine::core* core;
+        engine::render_graph* render_graph;
+        ::window_provider* window_provider;
+        voxel_grid voxel_grid = {};
     };
-} // namespace Rendering
+} // namespace rendering
 
-#endif        // CFDRENDERER_HPP
+#endif        // CFD_RENDERER_HPP

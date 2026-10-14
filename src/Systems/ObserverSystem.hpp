@@ -2,26 +2,26 @@
 // Created by carlo on 2024-11-24.
 //
 
-#ifndef OBSERVER_SYSTEM
-#define OBSERVER_SYSTEM
-namespace SYSTEMS
+#ifndef OBSERVER_SYSTEM_HPP
+#define OBSERVER_SYSTEM_HPP
+namespace systems
 {
 
-class Watcher
-{
-  public:
-	virtual ~Watcher()           = default;
-	virtual void UpdateWatcher() = 0;
-};
-
-class Subject
+class watcher
 {
   public:
-	virtual ~Subject()                    = default;
-	virtual void Attach(Watcher *watcher) = 0;
-	virtual void Notify()                 = 0;
-	virtual void Detach(Watcher *watcher) = 0;
+	virtual ~watcher()           = default;
+	virtual void update_watcher() = 0;
 };
 
-}        // namespace SYSTEMS
-#endif        // OBSERVER_SYSTEM
+class subject
+{
+  public:
+	virtual ~subject()                    = default;
+	virtual void attach(watcher *watcher) = 0;
+	virtual void notify()                 = 0;
+	virtual void detach(watcher *watcher) = 0;
+};
+
+}        // namespace systems
+#endif        // OBSERVER_SYSTEM_HPP

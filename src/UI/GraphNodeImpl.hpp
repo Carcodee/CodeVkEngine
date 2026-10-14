@@ -3,228 +3,228 @@
 // Created by carlo on 2025-02-22.
 //
 
-#ifndef GRAPHNODEIMPL_HPP
-#define GRAPHNODEIMPL_HPP
+#ifndef GRAPH_NODE_IMPL_HPP
+#define GRAPH_NODE_IMPL_HPP
 
-namespace UI::Nodes
+namespace ui::nodes
 {
 
-void GraphNode::UpdateInfo()
+void ui::nodes::graph_node::update_info()
 {
-	if (!updateData)
+	if (!update_data)
 	{
 		return;
 	}
 	// unoptimall
-	Sort();
+	sort();
 }
 
-void GraphNode::Sort()
+void ui::nodes::graph_node::sort()
 {
-	std::vector<std::pair<int, PinInfo>> inputsMap = GetVectorFromMap(inputNodes);
-	std::sort(inputsMap.begin(), inputsMap.end(),
-	          [](std::pair<int, PinInfo> &a, std::pair<int, PinInfo> &b) {
-		          return a.second.nodeType < b.second.nodeType;
+	std::vector<std::pair<int, pin_info>> inputs_map = get_vector_from_map(input_nodes);
+	std::sort(inputs_map.begin(), inputs_map.end(),
+	          [](std::pair<int, pin_info> &a, std::pair<int, pin_info> &b) {
+		          return a.second.node_kind < b.second.node_kind;
 	          });
-	inputNodes.clear();
-	for (auto pair : inputsMap)
+	input_nodes.clear();
+	for (auto pair : inputs_map)
 	{
-		inputNodes.insert(pair);
-		if (!graphNodeResManager->inputOutputsIds.contains(pair.first))
+		input_nodes.insert(pair);
+		if (!graph_node_res_manager->input_outputs_ids.contains(pair.first))
 		{
-			graphNodeResManager->inputOutputsIds.try_emplace(pair.first, globalId);
+			graph_node_res_manager->input_outputs_ids.try_emplace(pair.first, global_id);
 		}
 	}
 }
 
-int GraphNode::RunCallback(std::string callback)
+int ui::nodes::graph_node::run_callback(std::string callback)
 {
 	if (!callbacks.contains(callback) || callbacks.at(callback) == nullptr)
 	{
-		SYSTEMS::Logger::GetInstance()->LogMessage(callback + " Does not exist");
+		systems::logger::get_instance()->log_message(callback + " Does not exist");
 		return 1;
 	}
 	(*callbacks.at(callback))(*this);
 	return 0;
 }
 
-void GraphNode::Draw()
+void ui::nodes::graph_node::draw()
 {
-	UpdateInfo();
-	if (firstFrame)
+	update_info();
+	if (first_frame)
 	{
-		ed::SetNodePosition(nodeId, ImVec2(pos.x, pos.y));
+		ed::SetNodePosition(node_id, ImVec2(pos.x, pos.y));
 	}
-	assert(nodeId.Get() != -1);
-	ImGui::PushID(nodeId.Get());
-	ed::BeginNode(nodeId);
+	assert(node_id.Get() != -1);
+	ImGui::PushID(node_id.Get());
+	ed::BeginNode(node_id);
 	ImGui::Text(name.c_str());
 
 	// ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);
-	std::deque<int> addedWidgets;
+	std::deque<int> added_widgets;
 
-	for (auto &input : inputNodes)
+	for (auto &input : input_nodes)
 	{
-		if (drawableWidgets.at(input.second.id))
-			input.second.Draw();
-		if (addMoreWidgets.contains(input.second.id))
+		if (drawable_widgets.at(input.second.id))
+			input.second.draw();
+		if (add_more_widgets.contains(input.second.id))
 		{
 			if (ImGui::Button("+"))
 			{
-				addedWidgets.push_front(input.second.id);
-				updateData = true;
+				added_widgets.push_front(input.second.id);
+				update_data = true;
 			}
 		}
 	}
-	while (!addedWidgets.empty())
+	while (!added_widgets.empty())
 	{
-		int      id        = graphNodeResManager->NextWidgetID();
-		PinInfo &copiedPin = inputNodes.at(addedWidgets.front());
-		PinInfo  pinInfo(copiedPin.name + "_" + std::to_string(id), copiedPin.nodeType);
-		pinInfo.data    = std::any();
-		pinInfo.pinKind = copiedPin.pinKind;
-		pinInfo.id      = id;
+		int      id        = graph_node_res_manager->next_widget_id();
+		pin_info &copied_pin = input_nodes.at(added_widgets.front());
+		pin_info  pin_info(copied_pin.name + "_" + std::to_string(id), copied_pin.node_kind);
+		pin_info.data    = std::any();
+		pin_info.pin_kind = copied_pin.pin_kind;
+		pin_info.id      = id;
 
-		inputNodes.try_emplace(id, pinInfo);
-		drawableWidgets.try_emplace(id, true);
-		addedWidgets.pop_front();
+		input_nodes.try_emplace(id, pin_info);
+		drawable_widgets.try_emplace(id, true);
+		added_widgets.pop_front();
 	}
 
 	for (auto &selectable : selectables)
 	{
-		if (drawableWidgets.at(selectable.first))
-			selectable.second.Draw(selectable.first);
+		if (drawable_widgets.at(selectable.first))
+			selectable.second.draw(selectable.first);
 
-		if (addMoreWidgets.contains(selectable.first))
+		if (add_more_widgets.contains(selectable.first))
 		{
 		}
 	}
-	for (auto &tInput : textInputs)
+	for (auto &t_input : text_inputs)
 	{
-		if (drawableWidgets.at(tInput.first))
-			tInput.second.Draw(tInput.first);
+		if (drawable_widgets.at(t_input.first))
+			t_input.second.draw(t_input.first);
 
-		if (addMoreWidgets.contains(tInput.first))
+		if (add_more_widgets.contains(t_input.first))
 		{
 		}
 	}
-	for (auto &primitiveInfo : primitives)
+	for (auto &primitive_info : primitives)
 	{
-		if (drawableWidgets.at(primitiveInfo.first))
-			primitiveInfo.second.Draw(primitiveInfo.first);
+		if (drawable_widgets.at(primitive_info.first))
+			primitive_info.second.draw(primitive_info.first);
 
-		if (addMoreWidgets.contains(primitiveInfo.first))
+		if (add_more_widgets.contains(primitive_info.first))
 		{
 		}
 	}
 
 	for (auto &scrollable : scrollables)
 	{
-		if (drawableWidgets.at(scrollable.first))
-			scrollable.second.Draw(scrollable.first);
+		if (drawable_widgets.at(scrollable.first))
+			scrollable.second.draw(scrollable.first);
 
-		if (addMoreWidgets.contains(scrollable.first))
+		if (add_more_widgets.contains(scrollable.first))
 		{
 		}
 	}
-	for (auto &multiOption : multiOptions)
+	for (auto &multi_option : multi_options)
 	{
-		if (drawableWidgets.at(multiOption.first))
-			multiOption.second.Draw(multiOption.first);
+		if (drawable_widgets.at(multi_option.first))
+			multi_option.second.draw(multi_option.first);
 
-		if (addMoreWidgets.contains(multiOption.first))
+		if (add_more_widgets.contains(multi_option.first))
 		{
 		}
 	}
-	for (auto &dynamicStructure : dynamicStructures)
+	for (auto &dynamic_structure : dynamic_structures)
 	{
-		if (drawableWidgets.at(dynamicStructure.first))
-			dynamicStructure.second.Draw(dynamicStructure.first);
+		if (drawable_widgets.at(dynamic_structure.first))
+			dynamic_structure.second.draw(dynamic_structure.first);
 
-		if (addMoreWidgets.contains(dynamicStructure.first))
+		if (add_more_widgets.contains(dynamic_structure.first))
 		{
 		}
 	}
 
-	for (auto &output : outputNodes)
+	for (auto &output : output_nodes)
 	{
-		if (drawableWidgets.at(output.first))
-			output.second.Draw();
-		if (addMoreWidgets.contains(output.second.id))
+		if (drawable_widgets.at(output.first))
+			output.second.draw();
+		if (add_more_widgets.contains(output.second.id))
 		{
 			if (ImGui::Button("+"))
 			{
-				addedWidgets.push_front(output.second.id);
-				updateData = true;
+				added_widgets.push_front(output.second.id);
+				update_data = true;
 			}
 		}
 	}
-	while (!addedWidgets.empty())
+	while (!added_widgets.empty())
 	{
-		int      id        = graphNodeResManager->NextWidgetID();
-		PinInfo &copiedPin = outputNodes.at(addedWidgets.front());
-		PinInfo  pinInfo(copiedPin.name + "_" + std::to_string(id), copiedPin.nodeType);
-		pinInfo.data    = std::any();
-		pinInfo.pinKind = copiedPin.pinKind;
-		pinInfo.id      = id;
+		int      id        = graph_node_res_manager->next_widget_id();
+		pin_info &copied_pin = output_nodes.at(added_widgets.front());
+		pin_info  pin_info(copied_pin.name + "_" + std::to_string(id), copied_pin.node_kind);
+		pin_info.data    = std::any();
+		pin_info.pin_kind = copied_pin.pin_kind;
+		pin_info.id      = id;
 
-		outputNodes.try_emplace(id, pinInfo);
-		drawableWidgets.try_emplace(id, true);
-		addedWidgets.pop_front();
+		output_nodes.try_emplace(id, pin_info);
+		drawable_widgets.try_emplace(id, true);
+		added_widgets.pop_front();
 	}
 
 	ed::EndNode();
 	ImGui::PopID();
-	firstFrame = false;
+	first_frame = false;
 }
 
-void GraphNode::ToggleDraw(int id, bool drawCondition)
+void ui::nodes::graph_node::toggle_draw(int id, bool draw_condition)
 {
-	assert(drawableWidgets.contains(id) && "Invalid Id");
-	drawableWidgets.at(id) = drawCondition;
+	assert(drawable_widgets.contains(id) && "Invalid Id");
+	drawable_widgets.at(id) = draw_condition;
 }
 
-void GraphNode::RecompileNode()
+void ui::nodes::graph_node::recompile_node()
 {
 	valid = false;
-	RunCallback("output_c");
+	run_callback("output_c");
 }
 
-int GraphNode::AddLink(int id, NodeType nodeType)
+int ui::nodes::graph_node::add_link(int id, node_type node_kind)
 {
-	if (nodeType != N_NONE && !graphNodesLinks.contains(id))
+	if (node_kind != n_none && !graph_nodes_links.contains(id))
 	{
-		graphNodesLinks.try_emplace(id, nodeType);
+		graph_nodes_links.try_emplace(id, node_kind);
 		return 0;
 	}
 	return 1;
 }
 
-std::map<NodeType, GraphNode *> GraphNode::GetGraphNodeRef(NodeType nodeType)
+std::map<node_type, ui::nodes::graph_node *> ui::nodes::graph_node::get_graph_node_ref(node_type node_kind)
 {
-	std::map<NodeType, GraphNode *> graphNodes;
-	for (auto nodeId : graphNodesLinks)
+	std::map<node_type, ui::nodes::graph_node *> graph_nodes;
+	for (auto node_id : graph_nodes_links)
 	{
-		if (IsValidNodeCombination(nodeId.second, nodeType))
+		if (is_valid_node_combination(node_id.second, node_kind))
 		{
-			SYSTEMS::Logger::GetInstance()->LogMessage("Returning: " + nodeTypeStrings.at(nodeType));
-			graphNodes.try_emplace(nodeId.second, graphNodeResManager->graphNodes.at(nodeId.second));
+			systems::logger::get_instance()->log_message("Returning: " + node_type_strings.at(node_kind));
+			graph_nodes.try_emplace(node_id.second, graph_node_res_manager->graph_nodes.at(node_id.second));
 		}
 	}
-	return graphNodes;
+	return graph_nodes;
 }
-PinInfo *GraphNode::GetInputDataById(int id)
+pin_info *ui::nodes::graph_node::get_input_data_by_id(int id)
 {
-	if (!inputNodes.contains(id))
+	if (!input_nodes.contains(id))
 	{
 		return nullptr;
 	}
-	return &inputNodes.at(id);
+	return &input_nodes.at(id);
 }
 
-PinInfo *GraphNode::GetInputDataByName(const std::string &name)
+pin_info *ui::nodes::graph_node::get_input_data_by_name(const std::string &name)
 {
-	for (auto &node : inputNodes)
+	for (auto &node : input_nodes)
 	{
 		if (node.second.name == name)
 		{
@@ -234,18 +234,18 @@ PinInfo *GraphNode::GetInputDataByName(const std::string &name)
 	return nullptr;
 }
 
-PinInfo *GraphNode::GetOutputDataById(int id)
+pin_info *ui::nodes::graph_node::get_output_data_by_id(int id)
 {
-	if (!outputNodes.contains(id))
+	if (!output_nodes.contains(id))
 	{
 		return nullptr;
 	}
-	return &outputNodes.at(id);
+	return &output_nodes.at(id);
 }
 
-PinInfo *GraphNode::GetOutputDataByName(const std::string &name)
+pin_info *ui::nodes::graph_node::get_output_data_by_name(const std::string &name)
 {
-	for (auto &node : outputNodes)
+	for (auto &node : output_nodes)
 	{
 		if (node.second.name == name)
 		{
@@ -255,22 +255,22 @@ PinInfo *GraphNode::GetOutputDataByName(const std::string &name)
 	return nullptr;
 }
 
-bool GraphNode::HasOutput(NodeType type)
+bool ui::nodes::graph_node::has_output(node_type type)
 {
-	for (auto &output : outputNodes)
+	for (auto &output : output_nodes)
 	{
-		if (output.second.nodeType == type)
+		if (output.second.node_kind == type)
 		{
 			return true;
 		}
 	}
 	return false;
 }
-bool GraphNode::HasInput(NodeType type)
+bool ui::nodes::graph_node::has_input(node_type type)
 {
-	for (auto &input : inputNodes)
+	for (auto &input : input_nodes)
 	{
-		if (input.second.nodeType == type)
+		if (input.second.node_kind == type)
 		{
 			return true;
 		}
@@ -278,17 +278,17 @@ bool GraphNode::HasInput(NodeType type)
 	return false;
 }
 
-void GraphNode::SetOuputData(const std::string &name, std::any data)
+void ui::nodes::graph_node::set_ouput_data(const std::string &name, std::any data)
 {
-	GetOutputDataByName(name)->data = data;
+	get_output_data_by_name(name)->data = data;
 }
 
-void GraphNode::SetOuputData(int id, std::any data)
+void ui::nodes::graph_node::set_ouput_data(int id, std::any data)
 {
-	GetOutputDataById(id)->data = data;
+	get_output_data_by_id(id)->data = data;
 }
 
-Scrollable *GraphNode::GetScrollable(const std::string &name)
+scrollable *ui::nodes::graph_node::get_scrollable(const std::string &name)
 {
 	for (auto &scrollable : scrollables)
 	{
@@ -301,42 +301,42 @@ Scrollable *GraphNode::GetScrollable(const std::string &name)
 	return nullptr;
 }
 
-MultiOption *GraphNode::GetMultiOption(const std::string name)
+ui::nodes::multi_option *ui::nodes::graph_node::get_multi_option(const std::string name)
 {
-	for (auto &multiOption : multiOptions)
+	for (auto &multi_option : multi_options)
 	{
-		if (multiOption.second.name == name)
+		if (multi_option.second.name == name)
 		{
-			return &multiOption.second;
+			return &multi_option.second;
 		}
 	}
 	assert(false && "invalid name");
 	return nullptr;
 }
 
-TextInput *GraphNode::GetTextInput(const std::string &name)
+text_input *ui::nodes::graph_node::get_text_input(const std::string &name)
 {
-	for (auto &textInput : textInputs)
+	for (auto &text_input : text_inputs)
 	{
-		if (textInput.second.name == name)
+		if (text_input.second.name == name)
 		{
-			return &textInput.second;
+			return &text_input.second;
 		}
 	}
 	return nullptr;
 }
 
-DynamicStructure *GraphNode::GetDynamicStructure(const std::string &name)
+dynamic_structure *ui::nodes::graph_node::get_dynamic_structure(const std::string &name)
 {
-	for (auto &dynamicStructure : dynamicStructures)
+	for (auto &dynamic_structure : dynamic_structures)
 	{
-		if (dynamicStructure.second.name == name)
+		if (dynamic_structure.second.name == name)
 		{
-			return &dynamicStructure.second;
+			return &dynamic_structure.second;
 		}
 	}
 	return nullptr;
 }
-};        // namespace UI::Nodes
+};        // namespace ui::nodes
 
-#endif        // GRAPHNODEIMPL_HPP
+#endif        // GRAPH_NODE_IMPL_HPP

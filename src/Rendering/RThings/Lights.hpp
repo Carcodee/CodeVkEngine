@@ -5,43 +5,43 @@
 #ifndef LIGHTS_HPP
 #define LIGHTS_HPP
 
-struct DirectionalLight
+struct directional_light
 {
 	glm::vec3 pos;
 	glm::vec3 col;
 	float     intensity;
 };
-struct PointLight
+struct point_light
 {
 	glm::vec3 pos          = glm::vec3(0.0f);
 	glm::vec3 col          = glm::vec3(1.0f);
 	float     radius       = 0.0f;
 	float     intensity    = 1.0f;
-	float     lAttenuation = 0.01f;
-	float     qAttenuation = 1.0f;
-	PointLight(glm::vec3 pos, glm::vec3 col, float intensity, float lAttenuation, float qAttenuation)
+	float     l_attenuation = 0.01f;
+	float     q_attenuation = 1.0f;
+	point_light(glm::vec3 pos, glm::vec3 col, float intensity, float l_attenuation, float q_attenuation)
 	{
 		this->pos          = pos;
 		this->col          = col;
 		this->intensity    = intensity;
-		this->lAttenuation = lAttenuation;
-		this->qAttenuation = qAttenuation;
-		CalculateRadiusFromParams();
+		this->l_attenuation = l_attenuation;
+		this->q_attenuation = q_attenuation;
+		calculate_radius_from_params();
 	}
 
-	PointLight(glm::vec3 pos, glm::vec3 col, float radius, float intensity, float lAttenuation, float qAttenuation)
+	point_light(glm::vec3 pos, glm::vec3 col, float radius, float intensity, float l_attenuation, float q_attenuation)
 	{
 		this->pos          = pos;
 		this->col          = col;
 		this->intensity    = intensity;
-		this->lAttenuation = lAttenuation;
+		this->l_attenuation = l_attenuation;
 		this->radius       = radius;
-		CalculateQAttenuationFromRadius();
+		calculate_q_attenuation_from_radius();
 	}
-	void CalculateRadiusFromParams()
+	void calculate_radius_from_params()
 	{
-		float a = qAttenuation;
-		float b = lAttenuation;
+		float a = q_attenuation;
+		float b = l_attenuation;
 		float c = 1.0 - (1.0 / 0.01);
 		// Calculate the discriminant
 		float discriminant = (b * b) - (4 * a * c);
@@ -58,10 +58,10 @@ struct PointLight
 		radius = std::max(r1, r2);
 	}
 
-	void CalculateQAttenuationFromRadius()
+	void calculate_q_attenuation_from_radius()
 	{
 		float threshold = 0.01f;        // Define the threshold
-		qAttenuation    = (1.0f / threshold - 1.0f - lAttenuation * radius) / (radius * radius);
+		q_attenuation    = (1.0f / threshold - 1.0f - l_attenuation * radius) / (radius * radius);
 	}
 };
 

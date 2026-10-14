@@ -3,57 +3,57 @@
 // Created by carlo on 2025-02-27.
 //
 
-#ifndef FILESMANAGER_HPP
-#define FILESMANAGER_HPP
+#ifndef FILES_MANAGER_HPP
+#define FILES_MANAGER_HPP
 
-namespace SYSTEMS
+namespace systems
 {
-class FilesManager
+class files_manager
 {
   public:
-	FilesManager()
+	files_manager()
 	{
 	}
 
-	~FilesManager()
+	~files_manager()
 	{
-		for (auto &path : pathsToDelete)
+		for (auto &path : paths_to_delete)
 		{
-			OS::GetInstance()->DeleteExistingFile(path);
+			os::get_instance()->delete_existing_file(path);
 		}
-		pathsToDelete.clear();
+		paths_to_delete.clear();
 	}
 
-	void AddPathToDelete(std::string path)
+	void add_path_to_delete(std::string path)
 	{
 		assert(false && "You are about to delete paths from generated folder, be sure is intended");
-		pathsToDelete.push_back(path);
+		paths_to_delete.push_back(path);
 	}
-	void CheckAllChanges()
+	void check_all_changes()
 	{
-		for (auto &file : renderNodesFiles)
+		for (auto &file : render_nodes_files)
 		{
 			// calling some callbacks
-			file->CheckLastTimeWrite();
+			file->check_last_time_write();
 		}
 	}
-	void AddFileToWatch(std::string path, std::function<void()> function)
+	void add_file_to_watch(std::string path, std::function<void()> function)
 	{
 		assert(!path.empty() && "Path is empty");
-		renderNodesFiles.emplace_back(std::make_unique<FileInfo>(path, function));
+		render_nodes_files.emplace_back(std::make_unique<file_info>(path, function));
 	}
-	void CollectRenderNodesMetadata(std::function<void()> onChangeCallback)
+	void collect_render_nodes_metadata(std::function<void()> on_change_callback)
 	{
-		std::filesystem::path renderPassesDir = OS::GetInstance()->engineResourcesPath / "RenderNodes";
-		for (auto passFileData : std::filesystem::directory_iterator(renderPassesDir))
+		std::filesystem::path render_passes_dir = os::get_instance()->engine_resources_path / "RenderNodes";
+		for (auto pass_file_data : std::filesystem::directory_iterator(render_passes_dir))
 		{
-			renderNodesFiles.emplace_back(std::make_unique<FileInfo>(passFileData.path().string(), onChangeCallback));
+			render_nodes_files.emplace_back(std::make_unique<file_info>(pass_file_data.path().string(), on_change_callback));
 		}
 	}
 
-	std::deque<std::string>                pathsToDelete;
-	std::vector<std::unique_ptr<FileInfo>> renderNodesFiles;
+	std::deque<std::string>                paths_to_delete;
+	std::vector<std::unique_ptr<file_info>> render_nodes_files;
 };
-}        // namespace SYSTEMS
+}        // namespace systems
 
-#endif        // FILESMANAGER_HPP
+#endif        // FILES_MANAGER_HPP

@@ -7,37 +7,37 @@
 #include "../Utils/uMath.glsl"
 
 
-layout(set = 0, binding = 0, scalar) buffer GSScale {
-    vec3 gsScale[];
+layout(set = 0, binding = 0, scalar) buffer gs_scale_buffer {
+    vec3 gs_scale[];
 };
-layout(set = 0, binding = 1, scalar) buffer GSRot {
-    vec4 gsRot[];
+layout(set = 0, binding = 1, scalar) buffer gs_rot_buffer {
+    vec4 gs_rot[];
 };
-layout(set = 0, binding = 2, scalar) buffer GSPos {
-    vec3 gsPos[];
+layout(set = 0, binding = 2, scalar) buffer gs_pos_buffer {
+    vec3 gs_pos[];
 };
-layout(set = 0, binding = 3, scalar) buffer GSCols {
-    vec3 gsCols[];
-};
-
-layout(set = 0, binding = 4, scalar) buffer GSAlphas {
-    float gsAlphas[];
+layout(set = 0, binding = 3, scalar) buffer gs_cols_buffer {
+    vec3 gs_cols[];
 };
 
-layout(set = 0, binding = 5, scalar) uniform HFov{
-    vec3 hFov;
-}camHFov;
+layout(set = 0, binding = 4, scalar) buffer gs_alphas_buffer {
+    float gs_alphas[];
+};
 
-layout(set = 0, binding = 6, scalar) uniform GSConfigs{
-    float scaleMod;
-}gsConfigs;
+layout(set = 0, binding = 5, scalar) uniform h_fov_uniform{
+    vec3 h_fov;
+}cam_h_fov;
 
-layout(set = 0, binding = 7, scalar) buffer GSShs {
-    vec3 gsShs[];
+layout(set = 0, binding = 6, scalar) uniform gs_configs_uniform{
+    float scale_mod;
+}gs_configs;
+
+layout(set = 0, binding = 7, scalar) buffer gs_shs_buffer {
+    vec3 gs_shs[];
 };
 
 
-layout(push_constant) uniform PushConstants {
+layout(push_constant) uniform push_constants {
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -51,7 +51,7 @@ layout(location = 1) in vec2 uv;
 layout(location = 0) out vec2 coordxy;
 layout(location = 1) out float alpha;
 layout(location = 2) out vec3 col;
-layout(location = 3) out vec2 textCoord;
+layout(location = 3) out vec2 text_coord;
 layout(location = 4) out vec3 conic;
 
 void main() {
@@ -61,39 +61,39 @@ void main() {
 //        gl_Position = vec4(-100.0, -100.0, -100.0, 1.0); // or return;
 //        return;
 //    }
-    textCoord = uv;
+    text_coord = uv;
     
-    vec3 camPos = vec3(inverse(pc.view)[3]);
-    vec3 pCloudPos = gsPos[id];
-    vec3 scaleVal = abs(gsScale[id]);
-    vec4 rotVal = gsRot[id];
-    float scale = gsConfigs.scaleMod;
-    mat3 cov3d = u_GetCov3D(rotVal, scaleVal, scale);
-    vec4 viewPos = pc.view * vec4(pCloudPos, 1.0);
-    vec4 screenPos = pc.proj * viewPos;
+    vec3 cam_pos = vec3(inverse(pc.view)[3]);
+    vec3 p_cloud_pos = gs_pos[id];
+    vec3 scale_val = abs(gs_scale[id]);
+    vec4 rot_val = gs_rot[id];
+    float scale = gs_configs.scale_mod;
+    mat3 cov3d = u_get_cov_3d(rot_val, scale_val, scale);
+    vec4 view_pos = pc.view * vec4(p_cloud_pos, 1.0);
+    vec4 screen_pos = pc.proj * view_pos;
 
-    screenPos.xyz = screenPos.xyz / screenPos.w;
-    screenPos.w = 1.f;
+    screen_pos.xyz = screen_pos.xyz / screen_pos.w;
+    screen_pos.w = 1.f;
     
-    vec2 wh = 2 * camHFov.hFov.xy * camHFov.hFov.z;
+    vec2 wh = 2 * cam_h_fov.h_fov.xy * cam_h_fov.h_fov.z;
 
     // Cull
-    if (any(greaterThan(abs(screenPos.xyz), vec3(1.3)))) {
+    if (any(greaterThan(abs(screen_pos.xyz), vec3(1.3)))) {
         gl_Position = vec4(0, 0, 0, 1);
         return;
     }
 
-    mat4 viewForCov = pc.view;
-    viewForCov[0][1] *= -1.0f;
-    viewForCov[1][1] *= -1.0f;
-    viewForCov[2][1] *= -1.0f;
-    viewForCov[3][1] *= -1.0f;
-    viewForCov[0][2] *= -1.0f;
-    viewForCov[1][2] *= -1.0f;
-    viewForCov[2][2] *= -1.0f;
-    viewForCov[3][2] *= -1.0f;
+    mat4 view_for_cov = pc.view;
+    view_for_cov[0][1] *= -1.0f;
+    view_for_cov[1][1] *= -1.0f;
+    view_for_cov[2][1] *= -1.0f;
+    view_for_cov[3][1] *= -1.0f;
+    view_for_cov[0][2] *= -1.0f;
+    view_for_cov[1][2] *= -1.0f;
+    view_for_cov[2][2] *= -1.0f;
+    view_for_cov[3][2] *= -1.0f;
 
-    mat2 cov2d = u_GetCov2D(viewPos, camHFov.hFov.z, camHFov.hFov.z, camHFov.hFov.x, camHFov.hFov.y, cov3d, viewForCov);
+    mat2 cov2d = u_get_cov_2d(view_pos, cam_h_fov.h_fov.z, cam_h_fov.h_fov.z, cam_h_fov.h_fov.x, cam_h_fov.h_fov.y, cov3d, view_for_cov);
     float det = determinant(cov2d);
     
     if (det == 0.0f){
@@ -101,37 +101,37 @@ void main() {
         return;
     }
     
-    mat2 conicMat = inverse(cov2d);
-    conic = vec3(conicMat[0][0], conicMat[0][1], conicMat[1][1]);
+    mat2 conic_mat = inverse(cov2d);
+    conic = vec3(conic_mat[0][0], conic_mat[0][1], conic_mat[1][1]);
     
-    vec3 myCov2d = vec3(cov2d[0][0], cov2d[0][1], cov2d[1][1]);
+    vec3 my_cov2d = vec3(cov2d[0][0], cov2d[0][1], cov2d[1][1]);
 
     // Project quad into screen space
-    vec2 quadwh_scr = vec2(3.f * sqrt(myCov2d.x), 3.f * sqrt(myCov2d.z));  // screen space half quad height and width
+    vec2 quadwh_scr = vec2(3.f * sqrt(my_cov2d.x), 3.f * sqrt(my_cov2d.z));  // screen space half quad height and width
     // Convert screenspace quad to NDC
     vec2 quadwh_ndc = quadwh_scr / wh * 2.0;
     // Update gaussian's position w.r.t the quad in NDC
-    screenPos.xy = screenPos.xy + pos * quadwh_ndc;
+    screen_pos.xy = screen_pos.xy + pos * quadwh_ndc;
     // Calculate where this quad lies in pixel coordinates 
     coordxy = pos * quadwh_scr;
 
-    gl_Position = screenPos;
+    gl_Position = screen_pos;
     
     
     
-    vec3 currShCoeffs[MAX_SH_COEFFS];
-    currShCoeffs[0] = gsCols[id];
-    vec3 newCol = currShCoeffs[0];
+    vec3 curr_sh_coeffs[MAX_SH_COEFFS];
+    curr_sh_coeffs[0] = gs_cols[id];
+    vec3 new_col = curr_sh_coeffs[0];
     int idx = 1;
     for(int i = id; i < id + 15; i++){
-        currShCoeffs[idx] = gsShs[i];
+        curr_sh_coeffs[idx] = gs_shs[i];
         idx++;
     }
-    vec3 rayDir = normalize(pCloudPos - camPos);
-    vec3 fullCol = u_compute_sh(rayDir,currShCoeffs, 3);    
+    vec3 ray_dir = normalize(p_cloud_pos - cam_pos);
+    vec3 full_col = u_compute_sh(ray_dir,curr_sh_coeffs, 3);
     
-    alpha = gsAlphas[id];
+    alpha = gs_alphas[id];
     
-    col = fullCol;
+    col = full_col;
     
 }

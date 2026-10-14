@@ -9,12 +9,12 @@
 //layout(location = 1) in vec2 ellipseAxisY;
 //layout(location = 2) in float alpha;
 //layout(location = 3) in vec3 col;
-//layout(location = 4) in vec2 textCoord;
+//layout(location = 4) in vec2 text_coord;
 
 layout(location = 0) in vec2 coordxy;
 layout(location = 1) in float alpha;
 layout(location = 2) in vec3 col;
-layout(location = 3) in vec2 textCoord;
+layout(location = 3) in vec2 text_coord;
 layout(location = 4) in vec3 conic;
 
 
@@ -23,24 +23,24 @@ layout(location = 0) out vec4 color;
 void main()
 {
         float power = -0.5f * (conic.x * coordxy.x * coordxy.x + conic.z * coordxy.y * coordxy.y) - conic.y * coordxy.x * coordxy.y;
-        float T = 1.0f;
+        float t = 1.0f;
         if(power > 0.0f) {
 //                color = vec4(1.0);
 //                return;
                 discard;
         };
-        float myAlpha = min(0.99f, alpha * exp(power));
-        if(myAlpha < 1.f / 255.f){
+        float my_alpha = min(0.99f, alpha * exp(power));
+        if(my_alpha < 1.f / 255.f){
 //                color = vec4(1.0);
 //                return;
                 discard;
         };
-        float testT = T * (1 - myAlpha);
-        if(testT < 0.0001f){
+        float test_t = t * (1 - my_alpha);
+        if(test_t < 0.0001f){
 //                color = vec4(1.0);
 //                return;
                 discard;
         }
-        color = vec4(col ,myAlpha);
+        color = vec4(col ,my_alpha);
 
 }

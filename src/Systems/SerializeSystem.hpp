@@ -2,18 +2,18 @@
 // Created by carlo on 2025-02-24.
 //
 
-#ifndef SERIALIZESYSTEM_HPP
-#define SERIALIZESYSTEM_HPP
+#ifndef SERIALIZE_SYSTEM_HPP
+#define SERIALIZE_SYSTEM_HPP
 
-namespace SYSTEMS
+namespace systems
 {
-template <typename T>
-struct ISerializable
+template <typename value_type>
+struct i_serializable
 {
-	virtual ~ISerializable()                                 = default;
-	virtual nlohmann::json Serialize()                       = 0;
-	virtual T             *Deserialize(std::string filename) = 0;
+	virtual ~i_serializable()                                 = default;
+	virtual nlohmann::json serialize()                       = 0;
+	virtual value_type             *deserialize(std::string filename) = 0;
 };
-}        // namespace SYSTEMS
+}        // namespace systems
 
-#endif        // SERIALIZESYSTEM_HPP
+#endif        // SERIALIZE_SYSTEM_HPP

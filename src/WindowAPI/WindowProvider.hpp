@@ -3,74 +3,74 @@
 // Created by carlo on 2024-10-02.
 //
 
-#ifndef WINDOW_HPP
-#define WINDOW_HPP
+#ifndef WINDOW_PROVIDER_HPP
+#define WINDOW_PROVIDER_HPP
 #include <glm/vec2.hpp>
 
-class WindowProvider
+class window_provider
 {
   public:
-	WindowProvider(int width, int height, const char *name)
+	window_provider(int width, int height, const char *name)
 	{
-		currentWidth       = width;
-		currentHeight      = height;
+		current_width       = width;
+		current_height      = height;
 		this->name         = name;
-		framebufferResized = false;
+		framebuffer_resized = false;
 	}
 
-	void InitGlfw()
+	void init_glfw()
 	{
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-		window = glfwCreateWindow(currentWidth, currentHeight, name, nullptr, nullptr);
+		window = glfwCreateWindow(current_width, current_height, name, nullptr, nullptr);
 		glfwSetWindowUserPointer(window, this);
-		glfwSetWindowSizeCallback(window, FramebufferResizeCallback_GLFW);
+		glfwSetWindowSizeCallback(window, framebuffer_resize_callback_glfw);
 	}
 
-	bool WindowShouldClose()
+	bool window_should_close()
 	{
-		windowShouldClose = glfwWindowShouldClose(window);
-		return windowShouldClose;
+		should_close = glfwWindowShouldClose(window);
+		return should_close;
 	}
 
-	void DestroyWindow()
+	void destroy_window()
 	{
 		glfwDestroyWindow(window);
 	}
-	void Terminate()
+	void terminate()
 	{
 		glfwTerminate();
 	}
-	void PollEvents()
+	void poll_events()
 	{
 		glfwPollEvents();
 	}
-	double GetTime()
+	double get_time()
 	{
 		return glfwGetTime();
 	}
-	glm::uvec2 GetWindowSize()
+	glm::uvec2 get_window_size()
 	{
-		return glm::uvec2(currentWidth, currentHeight);
+		return glm::uvec2(current_width, current_height);
 	}
 
 	GLFWwindow *window;
-	bool        framebufferResized;
-	int         currentWidth;
-	int         currentHeight;
+	bool        framebuffer_resized;
+	int         current_width;
+	int         current_height;
 	const char *name;
 
-	static void FramebufferResizeCallback_GLFW(GLFWwindow *window, int width, int height)
+	static void framebuffer_resize_callback_glfw(GLFWwindow *window, int width, int height)
 	{
-		auto instance                = reinterpret_cast<WindowProvider *>(glfwGetWindowUserPointer(window));
-		instance->currentWidth       = width;
-		instance->currentHeight      = height;
-		instance->framebufferResized = true;
+		auto instance                = reinterpret_cast<::window_provider *>(glfwGetWindowUserPointer(window));
+		instance->current_width       = width;
+		instance->current_height      = height;
+		instance->framebuffer_resized = true;
 	}
 
   private:
-	bool windowShouldClose;
+	bool should_close;
 };
-#endif        // WINDOW_HPP
+#endif        // WINDOW_PROVIDER_HPP

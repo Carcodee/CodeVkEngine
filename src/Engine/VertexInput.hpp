@@ -2,51 +2,51 @@
 // Created by carlo on 2024-09-26.
 //
 
-#ifndef VERTEXINPUT_HPP
-#define VERTEXINPUT_HPP
+#ifndef VERTEX_INPUT_HPP
+#define VERTEX_INPUT_HPP
 
-namespace ENGINE
+namespace engine
 {
-class VertexInput
+class vertex_input
 {
   public:
-	enum Attribs
+	enum attribs
 	{
-		INT,
-		FLOAT,
-		VEC2,
-		VEC3,
-		VEC4,
-		U8VEC3,
-		U8VEC4,
-		COLOR_32
+		int_value,
+		float_value,
+		vec2,
+		vec3,
+		vec4,
+		u8_vec3,
+		u8_vec4,
+		color_32
 	};
-	size_t GetSizeFrom(Attribs attribs)
+	size_t get_size_from(attribs attribs)
 	{
 		switch (attribs)
 		{
-			case Attribs::INT:
+			case attribs::int_value:
 				return sizeof(int);
 				break;
-			case Attribs::FLOAT:
+			case attribs::float_value:
 				return sizeof(float);
 				break;
-			case Attribs::VEC2:
+			case attribs::vec2:
 				return sizeof(glm::vec2);
 				break;
-			case Attribs::VEC3:
+			case attribs::vec3:
 				return sizeof(glm::vec3);
 				break;
-			case Attribs::VEC4:
+			case attribs::vec4:
 				return sizeof(glm::vec4);
 				break;
-			case Attribs::U8VEC3:
+			case attribs::u8_vec3:
 				return sizeof(glm::uvec3);
 				break;
-			case Attribs::U8VEC4:
+			case attribs::u8_vec4:
 				return sizeof(glm::uvec4);
 				break;
-			case Attribs::COLOR_32:
+			case attribs::color_32:
 				return sizeof(int);
 				break;
 			default:
@@ -56,32 +56,32 @@ class VertexInput
 		return 0;
 	}
 
-	vk::Format GetFormatFromAttrib(Attribs attribs)
+	vk::Format get_format_from_attrib(attribs attribs)
 	{
 		switch (attribs)
 		{
-			case Attribs::INT:
+			case attribs::int_value:
 				return vk::Format::eR32Sint;
 				break;
-			case Attribs::FLOAT:
+			case attribs::float_value:
 				return vk::Format::eR32Sfloat;
 				break;
-			case Attribs::VEC2:
+			case attribs::vec2:
 				return vk::Format::eR32G32Sfloat;
 				break;
-			case Attribs::VEC3:
+			case attribs::vec3:
 				return vk::Format::eR32G32B32Sfloat;
 				break;
-			case Attribs::VEC4:
+			case attribs::vec4:
 				return vk::Format::eR32G32B32A32Sfloat;
 				break;
-			case Attribs::U8VEC3:
+			case attribs::u8_vec3:
 				return vk::Format::eR8G8B8Unorm;
 				break;
-			case Attribs::U8VEC4:
+			case attribs::u8_vec4:
 				return vk::Format::eR8G8B8A8Unorm;
 				break;
-			case Attribs::COLOR_32:
+			case attribs::color_32:
 				return vk::Format::eR8G8B8A8Snorm;
 				break;
 			default:
@@ -91,60 +91,60 @@ class VertexInput
 		return vk::Format::eUndefined;
 	}
 
-	VertexInput *AddVertexInputBinding(uint32_t bufferBinding, uint32_t stride)
+	engine::vertex_input *add_vertex_input_binding(uint32_t buffer_binding, uint32_t stride)
 	{
-		auto bindDesc = vk::VertexInputBindingDescription()
-		                    .setBinding(bufferBinding)
+		auto bind_desc = vk::VertexInputBindingDescription()
+		                    .setBinding(buffer_binding)
 		                    .setStride(stride)
 		                    .setInputRate(vk::VertexInputRate::eVertex);
-		bindingDescription.push_back(bindDesc);
+		binding_description.push_back(bind_desc);
 		return this;
 	}
 
-	VertexInput *AddVertexAttrib(Attribs attribs, uint32_t binding, uint32_t offset, uint32_t location)
+	engine::vertex_input *add_vertex_attrib(attribs attribs, uint32_t binding, uint32_t offset, uint32_t location)
 	{
-		auto vertexAttrib = vk::VertexInputAttributeDescription()
+		auto vertex_attrib = vk::VertexInputAttributeDescription()
 		                        .setBinding(binding)
 		                        .setLocation(location)
-		                        .setFormat(GetFormatFromAttrib(attribs))
+		                        .setFormat(get_format_from_attrib(attribs))
 		                        .setOffset(offset);
-		inputDescription.push_back(vertexAttrib);
+		input_description.push_back(vertex_attrib);
 		return this;
 	}
 
-	std::vector<size_t>                              vertexOffsets;
-	int                                              attribSize = 0;
-	std::vector<vk::VertexInputAttributeDescription> inputDescription;
-	std::vector<vk::VertexInputBindingDescription>   bindingDescription;
+	std::vector<size_t>                              vertex_offsets;
+	int                                              attrib_size = 0;
+	std::vector<vk::VertexInputAttributeDescription> input_description;
+	std::vector<vk::VertexInputBindingDescription>   binding_description;
 };
 
-struct Vertex2D
+struct vertex_2d
 {
 	float pos[2];
 	float uv[2];
 
-	static ENGINE::VertexInput GetVertexInput()
+	static engine::vertex_input get_vertex_input()
 	{
-		ENGINE::VertexInput vertexInput;
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(Vertex2D, pos), 0);
-		vertexInput.AddVertexInputBinding(0, sizeof(Vertex2D));
+		engine::vertex_input vertex_layout;
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec2, 0, offsetof(vertex_2d, pos), 0);
+		vertex_layout.add_vertex_input_binding(0, sizeof(vertex_2d));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(Vertex2D, uv), 1);
-		vertexInput.AddVertexInputBinding(0, sizeof(Vertex2D));
-		return vertexInput;
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec2, 0, offsetof(vertex_2d, uv), 1);
+		vertex_layout.add_vertex_input_binding(0, sizeof(vertex_2d));
+		return vertex_layout;
 	}
 
-	static std::vector<Vertex2D> GetQuadVertices()
+	static std::vector<vertex_2d> get_quad_vertices()
 	{
-		std::vector<Vertex2D> quadVertices = {
+		std::vector<vertex_2d> quad_vertices = {
 		    {{-1.0f, 1.0f}, {0.0f, 1.0f}},
 		    {{-1.0f, -1.0f}, {0.0f, 0.0f}},
 		    {{1.0f, -1.0f}, {1.0f, 0.0f}},
 		    {{1.0f, 1.0f}, {1.0f, 1.0f}}};
-		return quadVertices;
+		return quad_vertices;
 	}
 
-	static std::vector<uint32_t> GetQuadIndices()
+	static std::vector<uint32_t> get_quad_indices()
 	{
 		std::vector<uint32_t> indices = {
 		    0, 1, 2,        // First triangle (top-left, bottom-left, bottom-right)
@@ -154,7 +154,7 @@ struct Vertex2D
 	};
 };
 
-struct M_Vertex3D
+struct m_vertex_3d
 {
 	glm::vec3 pos;
 	glm::vec3 normal;
@@ -162,38 +162,38 @@ struct M_Vertex3D
 	glm::vec2 uv;
 	int       id;
 
-	bool operator==(const M_Vertex3D &other) const
+	bool operator==(const m_vertex_3d &other) const
 	{
 		return pos == other.pos && uv == other.uv && normal == other.normal && tangent == other.tangent && id == other.id;
 	}
 
-	static ENGINE::VertexInput GetVertexInput()
+	static engine::vertex_input get_vertex_input()
 	{
-		ENGINE::VertexInput vertexInput;
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC3, 0, offsetof(M_Vertex3D, pos), 0);
-		vertexInput.AddVertexInputBinding(0, sizeof(M_Vertex3D));
+		engine::vertex_input vertex_layout;
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec3, 0, offsetof(m_vertex_3d, pos), 0);
+		vertex_layout.add_vertex_input_binding(0, sizeof(m_vertex_3d));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC3, 0, offsetof(M_Vertex3D, normal), 1);
-		vertexInput.AddVertexInputBinding(0, sizeof(M_Vertex3D));
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec3, 0, offsetof(m_vertex_3d, normal), 1);
+		vertex_layout.add_vertex_input_binding(0, sizeof(m_vertex_3d));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC3, 0, offsetof(M_Vertex3D, tangent), 2);
-		vertexInput.AddVertexInputBinding(0, sizeof(M_Vertex3D));
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec3, 0, offsetof(m_vertex_3d, tangent), 2);
+		vertex_layout.add_vertex_input_binding(0, sizeof(m_vertex_3d));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(M_Vertex3D, uv), 3);
-		vertexInput.AddVertexInputBinding(0, sizeof(M_Vertex3D));
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec2, 0, offsetof(m_vertex_3d, uv), 3);
+		vertex_layout.add_vertex_input_binding(0, sizeof(m_vertex_3d));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(M_Vertex3D, id), 4);
-		vertexInput.AddVertexInputBinding(0, sizeof(M_Vertex3D));
+		vertex_layout.add_vertex_attrib(engine::vertex_input::int_value, 0, offsetof(m_vertex_3d, id), 4);
+		vertex_layout.add_vertex_input_binding(0, sizeof(m_vertex_3d));
 
-		return vertexInput;
+		return vertex_layout;
 	}
 };
-struct D_Vertex3D
+struct d_vertex_3d
 {
 	glm::vec3 pos;
 
 	// Unit cube centered at the origin, for scaling by the voxel cell size.
-	static std::vector<D_Vertex3D> GetCubeVertices()
+	static std::vector<d_vertex_3d> get_cube_vertices()
 	{
 		return {
 		    {{-0.5f, -0.5f, -0.5f}},
@@ -207,7 +207,7 @@ struct D_Vertex3D
 		};
 	}
 
-	static std::vector<uint32_t> GetCubeIndices()
+	static std::vector<uint32_t> get_cube_indices()
 	{
 		// Counterclockwise when viewed from outside each face.
 		return {
@@ -220,48 +220,48 @@ struct D_Vertex3D
 		};
 	}
 
-	bool operator==(const M_Vertex3D &other) const
+	bool operator==(const m_vertex_3d &other) const
 	{
 		return pos == other.pos;
 	}
 
-	static ENGINE::VertexInput GetVertexInput()
+	static engine::vertex_input get_vertex_input()
 	{
-		ENGINE::VertexInput vertexInput;
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC3, 0, offsetof(D_Vertex3D, pos), 0);
-		vertexInput.AddVertexInputBinding(0, sizeof(D_Vertex3D));
-		return vertexInput;
+		engine::vertex_input vertex_layout;
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec3, 0, offsetof(d_vertex_3d, pos), 0);
+		vertex_layout.add_vertex_input_binding(0, sizeof(d_vertex_3d));
+		return vertex_layout;
 	}
 };
 
-struct GS_Vertex
+struct gs_vertex
 {
 	glm::vec2 pos;
 	glm::vec2 uv;
 	int       id;
 
-	static ENGINE::VertexInput GetVertexInput()
+	static engine::vertex_input get_vertex_input()
 	{
-		ENGINE::VertexInput vertexInput;
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(GS_Vertex, pos), 0);
-		vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex));
+		engine::vertex_input vertex_layout;
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec2, 0, offsetof(gs_vertex, pos), 0);
+		vertex_layout.add_vertex_input_binding(0, sizeof(gs_vertex));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::VEC2, 0, offsetof(GS_Vertex, uv), 0);
-		vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex));
+		vertex_layout.add_vertex_attrib(engine::vertex_input::vec2, 0, offsetof(gs_vertex, uv), 0);
+		vertex_layout.add_vertex_input_binding(0, sizeof(gs_vertex));
 
-		vertexInput.AddVertexAttrib(ENGINE::VertexInput::INT, 0, offsetof(GS_Vertex, id), 1);
-		vertexInput.AddVertexInputBinding(0, sizeof(GS_Vertex));
-		return vertexInput;
+		vertex_layout.add_vertex_attrib(engine::vertex_input::int_value, 0, offsetof(gs_vertex, id), 1);
+		vertex_layout.add_vertex_input_binding(0, sizeof(gs_vertex));
+		return vertex_layout;
 	}
 };
-}        // namespace ENGINE
+}        // namespace engine
 
 namespace std
 {
 template <>
-struct hash<ENGINE::M_Vertex3D>
+struct hash<engine::m_vertex_3d>
 {
-	size_t operator()(ENGINE::M_Vertex3D const &vertex) const
+	size_t operator()(engine::m_vertex_3d const &vertex) const
 	{
 		// Hash the position, color, normal, and texCoord
 		size_t hash1 = hash<glm::vec3>()(vertex.pos);
@@ -280,4 +280,4 @@ struct hash<ENGINE::M_Vertex3D>
 };
 }        // namespace std
 
-#endif        // VERTEXINPUT_HPP
+#endif        // VERTEX_INPUT_HPP

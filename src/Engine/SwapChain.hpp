@@ -5,181 +5,181 @@
 
     
 
-#ifndef SWAPCHAIN_HPP
+#ifndef SWAP_CHAIN_HPP
 
-namespace ENGINE
+namespace engine
 {
-    class SwapChain
+    class swap_chain
     {
     public:
 
-        SwapChain(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, WindowDesc windowDesc 
-            ,uint32_t imagesCount, QueueFamilyIndices queueFamilyIndices, vk::PresentModeKHR prefferedMode, glm::uvec2 windowSize)
+        swap_chain(vk::Instance instance, vk::PhysicalDevice physical_device, vk::Device logical_device, window_desc window_desc
+            ,uint32_t images_count, engine::queue_family_indices queue_family_ids, vk::PresentModeKHR preffered_mode, glm::uvec2 window_size)
         {
             
-            this->logicalDevice =logicalDevice;
-            this->surface = CreateWin32Surface(instance, windowDesc);
-            bool invalidSurface = queueFamilyIndices.graphicsFamilyIndex == uint32_t(-1) || !physicalDevice.
-                getSurfaceSupportKHR(queueFamilyIndices.presentFamilyIndex, surface.get());
-            assert(!invalidSurface &&"Window surface is incompatible with device");
+            this->logical_device =logical_device;
+            this->surface = create_win32_surface(instance, window_desc);
+            bool invalid_surface = queue_family_ids.graphics_family_index == uint32_t(-1) || !physical_device.
+                getSurfaceSupportKHR(queue_family_ids.present_family_index, surface.get());
+            assert(!invalid_surface &&"Window surface is incompatible with device");
 
-            this->surfaceDetails = GetSurfaceDetails(physicalDevice, this->surface.get());
-            this->surfaceFormat = FindSwapchainSurfaceFormat(surfaceDetails.formats);
-            this->presentMode = FindSwapchainPresentMode(surfaceDetails.presentModes, prefferedMode);
-            this->extent = FindSwapChainExtent(surfaceDetails.capabilities, vk::Extent2D(windowSize.x,windowSize.y));
-            this->depthFormat = FindDepthFormat(physicalDevice);
+            this->surface_details = get_surface_details(physical_device, this->surface.get());
+            this->surface_format = find_swapchain_surface_format(surface_details.formats);
+            this->present_mode = find_swapchain_present_mode(surface_details.present_modes, preffered_mode);
+            this->extent = find_swap_chain_extent(surface_details.capabilities, vk::Extent2D(window_size.x,window_size.y));
+            this->depth_format = find_depth_format(physical_device);
 
-            uint32_t imageCount = std::max(surfaceDetails.capabilities.minImageCount, imagesCount);
-            if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
+            uint32_t image_count = std::max(surface_details.capabilities.minImageCount, images_count);
+            if (surface_details.capabilities.maxImageCount > 0 && image_count > surface_details.capabilities.maxImageCount)
             {
-                imageCount = surfaceDetails.capabilities.maxImageCount;
+                image_count = surface_details.capabilities.maxImageCount;
             }
 
-            auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
+            auto swapchain_create_info = vk::SwapchainCreateInfoKHR()
                                        .setSurface(surface.get())
-                                       .setMinImageCount(imageCount)
-                                       .setImageFormat(surfaceFormat.format)
-                                       .setImageColorSpace(surfaceFormat.colorSpace)
+                                       .setMinImageCount(image_count)
+                                       .setImageFormat(surface_format.format)
+                                       .setImageColorSpace(surface_format.colorSpace)
                                        .setImageExtent(extent)
                                        .setImageArrayLayers(1)
                                        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-                                       .setPreTransform(surfaceDetails.capabilities.currentTransform)
+                                       .setPreTransform(surface_details.capabilities.currentTransform)
                                        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-                                       .setPresentMode(presentMode)
+                                       .setPresentMode(present_mode)
                                        .setClipped(true)
                                        .setOldSwapchain(nullptr);
-            uint32_t famililyIndices[] = {queueFamilyIndices.presentFamilyIndex, queueFamilyIndices.presentFamilyIndex};
-            if (queueFamilyIndices.graphicsFamilyIndex != queueFamilyIndices.presentFamilyIndex)
+            uint32_t familily_indices[] = {queue_family_ids.present_family_index, queue_family_ids.present_family_index};
+            if (queue_family_ids.graphics_family_index != queue_family_ids.present_family_index)
             {
-                swapchainCreateInfo
+                swapchain_create_info
                 .setImageSharingMode(vk::SharingMode::eConcurrent)
                 .setQueueFamilyIndexCount(2)
-                .setPQueueFamilyIndices(famililyIndices);
+                .setPQueueFamilyIndices(familily_indices);
                 
             }else
             {
-                swapchainCreateInfo
+                swapchain_create_info
                 .setImageSharingMode(vk::SharingMode::eExclusive);
             }
-            this->swapchainHandle = logicalDevice.createSwapchainKHRUnique(swapchainCreateInfo);
+            this->swapchain_handle = logical_device.createSwapchainKHRUnique(swapchain_create_info);
 
-            std::vector<vk::Image> swapChainImages = logicalDevice.getSwapchainImagesKHR(swapchainHandle.get());
+            std::vector<vk::Image> swap_chain_images = logical_device.getSwapchainImagesKHR(swapchain_handle.get());
 
             this->images.clear();
 
-            for (int imageIndex = 0; imageIndex < swapChainImages.size(); ++imageIndex)
+            for (int image_index = 0; image_index < swap_chain_images.size(); ++image_index)
             {
-                ImageSwapchain imageFull;
-                imageFull.imageData = std::make_unique<ImageData>(swapChainImages[imageIndex], vk::ImageType::e2D,
+                image_swapchain image_full;
+                image_full.image_metadata = std::make_unique<engine::image_data>(swap_chain_images[image_index], vk::ImageType::e2D,
                                                                   glm::vec3(extent.width, extent.height, 1), 1, 1,
-                                                                  surfaceFormat.format, vk::ImageLayout::eUndefined);
-                imageFull.imageView = std::make_unique<ImageView>(logicalDevice,
-                                                                  imageFull.imageData.get(), 0, 1, 0, 1);
+                                                                  surface_format.format, vk::ImageLayout::eUndefined);
+                image_full.image_view_handle = std::make_unique<engine::image_view>(logical_device,
+                                                                  image_full.image_metadata.get(), 0, 1, 0, 1);
 
-                images.emplace_back(std::move(imageFull));
+                images.emplace_back(std::move(image_full));
             }
             
-            this->depthImages.clear();
-            this->depthImagesFull.clear();
+            this->depth_images.clear();
+            this->depth_images_full.clear();
             
             for (int i = 0; i < images.size(); ++i)
             {
-                auto createInfo = ENGINE::Image::CreateInfo2d(glm::vec2(extent.width, extent.height), 1, 1, depthFormat, ENGINE::depthImageUsage);
-                std::unique_ptr<ENGINE::Image> image = std::make_unique<ENGINE::Image>(physicalDevice, logicalDevice, createInfo);
-                depthImages.emplace_back(std::move(image));
+                auto create_info = engine::image::create_info2d(glm::vec2(extent.width, extent.height), 1, 1, depth_format, engine::depth_image_usage);
+                std::unique_ptr<engine::image> image = std::make_unique<engine::image>(physical_device, logical_device, create_info);
+                depth_images.emplace_back(std::move(image));
             }
-            for (int imageIndex = 0; imageIndex < images.size(); ++imageIndex)
+            for (int image_index = 0; image_index < images.size(); ++image_index)
             {
-                ImageSwapchain depthImageFull;
-                depthImageFull.imageData = std::make_unique<ENGINE::ImageData>(depthImages[imageIndex]->imageHandle.get(), vk::ImageType::e2D,
+                image_swapchain depth_image_full;
+                depth_image_full.image_metadata = std::make_unique<engine::image_data>(depth_images[image_index]->image_handle.get(), vk::ImageType::e2D,
                                                                   glm::vec3(extent.width, extent.height, 1), 1, 1,
-                                                                  depthFormat, vk::ImageLayout::eUndefined);
-                depthImageFull.imageView = std::make_unique<ENGINE::ImageView>(logicalDevice, depthImageFull.imageData.get(), 0, 1, 0, 1);
+                                                                  depth_format, vk::ImageLayout::eUndefined);
+                depth_image_full.image_view_handle = std::make_unique<engine::image_view>(logical_device, depth_image_full.image_metadata.get(), 0, 1, 0, 1);
 
-                depthImagesFull.emplace_back(std::move(depthImageFull));
+                depth_images_full.emplace_back(std::move(depth_image_full));
             }
                         
         }
-        vk::ResultValue<uint32_t> AcquireNextImage(vk::Semaphore semaphore)
+        vk::ResultValue<uint32_t> acquire_next_image(vk::Semaphore semaphore)
         {
-            return logicalDevice.acquireNextImageKHR(swapchainHandle.get(), std::numeric_limits<uint64_t>::max(), semaphore, nullptr);
+            return logical_device.acquireNextImageKHR(swapchain_handle.get(), std::numeric_limits<uint64_t>::max(), semaphore, nullptr);
         }
-        std::vector<ImageView*> GetImageViews()
+        std::vector<engine::image_view*> get_image_views()
         {
-            std::vector<ImageView*> resImageViews;
+            std::vector<engine::image_view*> res_image_views;
             for (auto& image : this->images)
             {
-                resImageViews.push_back(image.imageView.get());
+                res_image_views.push_back(image.image_view_handle.get());
             }
-            return resImageViews;
+            return res_image_views;
         }
 
-        std::vector<ImageView*> GetDepthImageViews()
+        std::vector<engine::image_view*> get_depth_image_views()
         {
-            std::vector<ImageView*> resImageViews;
-            for (auto& image : this->depthImagesFull)
+            std::vector<engine::image_view*> res_image_views;
+            for (auto& image : this->depth_images_full)
             {
-                resImageViews.push_back(image.imageView.get());
+                res_image_views.push_back(image.image_view_handle.get());
             }
-            return resImageViews;
+            return res_image_views;
         }
 
-        vk::Format GetFormat()
+        vk::Format get_format()
         {
-            return surfaceFormat.format;
+            return surface_format.format;
         }
         
         
 
-        static vk::SurfaceFormatKHR FindSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& avalibleFormats)
+        static vk::SurfaceFormatKHR find_swapchain_surface_format(const std::vector<vk::SurfaceFormatKHR>& avalible_formats)
         {
-            vk::SurfaceFormatKHR bestFormat = {vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear};
+            vk::SurfaceFormatKHR best_format = {vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear};
 
-            if (avalibleFormats.size() == 1 && avalibleFormats[0].format == vk::Format::eUndefined)
+            if (avalible_formats.size() == 1 && avalible_formats[0].format == vk::Format::eUndefined)
             {
-                return bestFormat;
+                return best_format;
             }
 
-            for (auto availableFormat : avalibleFormats)
+            for (auto available_format : avalible_formats)
             {
-                if (availableFormat.format == bestFormat.format && availableFormat.colorSpace == bestFormat.colorSpace)
+                if (available_format.format == best_format.format && available_format.colorSpace == best_format.colorSpace)
                 {
-                    return  availableFormat;
+                    return  available_format;
                 }
             }
             std::cout << "No suitable format\n"; 
-            return bestFormat;
+            return best_format;
             
         }
 
-        static vk::PresentModeKHR FindSwapchainPresentMode(const std::vector<vk::PresentModeKHR> availablePresentModes,
-                                                           vk::PresentModeKHR preferredMode)
+        static vk::PresentModeKHR find_swapchain_present_mode(const std::vector<vk::PresentModeKHR> available_present_modes,
+                                                           vk::PresentModeKHR preferred_mode)
         {
-            for (const auto& availablePresentMode : availablePresentModes)
+            for (const auto& available_present_mode : available_present_modes)
             {
-                //if (availablePresentMode == vk::PresentModeKHR::eMailbox)
-                if (availablePresentMode == preferredMode)
-                    return availablePresentMode;
+                //if (available_present_mode == vk::PresentModeKHR::eMailbox)
+                if (available_present_mode == preferred_mode)
+                    return available_present_mode;
             }
 
             return vk::PresentModeKHR::eFifo;
         }
 
-        static vk::Format FindDepthFormat(vk::PhysicalDevice physicalDevice)
+        static vk::Format find_depth_format(vk::PhysicalDevice physical_device)
         {
-            std::vector<vk::Format> depthFormats = {
+            std::vector<vk::Format> depth_formats = {
                 vk::Format::eD32Sfloat,           
                 vk::Format::eD32SfloatS8Uint,      
                 vk::Format::eD24UnormS8Uint        
             };
 
-            for (vk::Format format : depthFormats)
+            for (vk::Format format : depth_formats)
             {
-                if (IsDepthFormat(format))
+                if (is_depth_format(format))
                 {
-                    vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
+                    vk::FormatProperties format_properties = physical_device.getFormatProperties(format);
 
-                    if (formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+                    if (format_properties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
                     {
                         return format;
                     }                   
@@ -192,20 +192,20 @@ namespace ENGINE
 
             throw std::runtime_error("Failed to find a supported depth format!");
         }
-        static vk::Extent2D FindSwapChainExtent(const vk::SurfaceCapabilitiesKHR& surfaceCapabilitiesKHR,
-                                                           vk::Extent2D windowSize)
+        static vk::Extent2D find_swap_chain_extent(const vk::SurfaceCapabilitiesKHR& surface_capabilities_khr,
+                                                           vk::Extent2D window_size)
         {
-            if (surfaceCapabilitiesKHR.currentExtent.width != std::numeric_limits<uint32_t>::max())
+            if (surface_capabilities_khr.currentExtent.width != std::numeric_limits<uint32_t>::max())
             {
-                return surfaceCapabilitiesKHR.currentExtent;
+                return surface_capabilities_khr.currentExtent;
             }
             else
             {
-                vk::Extent2D actualExtent = windowSize;
-                actualExtent.width = std::max(surfaceCapabilitiesKHR.minImageExtent.width, std::min(surfaceCapabilitiesKHR.maxImageExtent.width, actualExtent.width));
-                actualExtent.height = std::max(surfaceCapabilitiesKHR.minImageExtent.height, std::min(surfaceCapabilitiesKHR.maxImageExtent.height, actualExtent.height));
+                vk::Extent2D actual_extent = window_size;
+                actual_extent.width = std::max(surface_capabilities_khr.minImageExtent.width, std::min(surface_capabilities_khr.maxImageExtent.width, actual_extent.width));
+                actual_extent.height = std::max(surface_capabilities_khr.minImageExtent.height, std::min(surface_capabilities_khr.maxImageExtent.height, actual_extent.height));
                 
-                return actualExtent;
+                return actual_extent;
             }            
         }
         
@@ -213,32 +213,32 @@ namespace ENGINE
 
 
 
-        SurfaceDetails surfaceDetails;
-        vk::Device logicalDevice;
-        vk::SurfaceFormatKHR surfaceFormat;
-        vk::Format depthFormat; 
-        vk::PresentModeKHR presentMode;
+        surface_details surface_details;
+        vk::Device logical_device;
+        vk::SurfaceFormatKHR surface_format;
+        vk::Format depth_format;
+        vk::PresentModeKHR present_mode;
         vk::Extent2D extent;
-        struct ImageSwapchain
+        struct image_swapchain
         {
-            std::unique_ptr<ImageData> imageData;
-            std::unique_ptr<ImageView> imageView;
+            std::unique_ptr<engine::image_data> image_metadata;
+            std::unique_ptr<engine::image_view> image_view_handle;
         };
 
-        std::vector<ImageSwapchain> images;
+        std::vector<image_swapchain> images;
         
-        std::vector<std::unique_ptr<Image>> depthImages;
-        std::vector<ImageSwapchain> depthImagesFull;
+        std::vector<std::unique_ptr<engine::image>> depth_images;
+        std::vector<image_swapchain> depth_images_full;
 
         vk::UniqueSurfaceKHR surface;
-        vk::UniqueSwapchainKHR swapchainHandle;
+        vk::UniqueSwapchainKHR swapchain_handle;
         
 
     };
 
 
 }
-#define SWAPCHAIN_HPP
+#define SWAP_CHAIN_HPP
 
-#endif //SWAPCHAIN_HPP
+#endif //SWAP_CHAIN_HPP
     

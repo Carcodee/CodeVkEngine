@@ -10,7 +10,7 @@
 #include "../Utils/uMath.glsl"
 
 
-layout (set = 0, binding = 1, scalar) buffer modelVertices{
+layout (set = 0, binding = 1, scalar) buffer model_vertices{
     vec3 vertex[];
 };
 
@@ -18,11 +18,11 @@ layout (set = 0, binding = 2, scalar) buffer voxels{
     uint cells[];
 };
 
-layout(push_constant)uniform pushConstants{
+layout(push_constant)uniform push_constants{
         vec3 origin;
         uvec3 dimensions;
-        float cellSize;
-}voxelGrid;
+        float cell_size;
+}voxel_grid;
 
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {

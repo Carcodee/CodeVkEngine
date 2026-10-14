@@ -2,28 +2,28 @@
 // Created by carlo on 2024-10-24.
 //
 
-#ifndef INPUTSYSTEM_HPP
-#define INPUTSYSTEM_HPP
+#ifndef INPUT_SYSTEM_HPP
+#define INPUT_SYSTEM_HPP
 
-namespace SYSTEMS
+namespace systems
 {
 // template singleton for imput system, why is this here? :D
-class InputSystem
+class input_system
 {
-	InputSystem();
-	static InputSystem *GetInstance()
+	input_system();
+	static input_system *get_instance()
 	{
 		if (instance == nullptr)
 		{
-			instance = new InputSystem;
+			instance = new input_system;
 		}
 		return instance;
 	}
-	static InputSystem *instance;
+	static input_system *instance;
 };
 
-InputSystem *InputSystem::instance = nullptr;
+input_system *input_system::instance = nullptr;
 
-}        // namespace SYSTEMS
+}        // namespace systems
 
-#endif        // INPUTSYSTEM_HPP
+#endif        // INPUT_SYSTEM_HPP

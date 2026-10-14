@@ -5,114 +5,114 @@
 #ifndef MATERIAL_HPP
 #define MATERIAL_HPP
 
-namespace Rendering
+namespace rendering
 {
-enum TextureType
+enum texture_type
 {
-	ALBEDO             = 0,
-	NORMAL             = 1,
-	EMISSION           = 2,
-	TRANSMISSION       = 3,
-	ROUGHNESS          = 4,
-	METALLIC           = 5,
-	METALLIC_ROUGHNESS = 6,
-	AO                 = 7,
-	HEIGHT             = 8
+	albedo             = 0,
+	normal             = 1,
+	emission           = 2,
+	transmission       = 3,
+	roughness          = 4,
+	metallic           = 5,
+	metallic_roughness = 6,
+	ao                 = 7,
+	height             = 8
 
 };
-class Material
+class material
 {
   public:
-	MaterialPackedData materialPackedData;
+	rendering::material_packed_data material_packed_data;
 
-	std::map<TextureType, int> texturesOffsets{
-	    {ALBEDO, -1},
-	    {NORMAL, -1},
-	    {EMISSION, -1},
-	    {TRANSMISSION, -1},
-	    {ROUGHNESS, -1},
-	    {METALLIC, -1},
-	    {METALLIC_ROUGHNESS, -1},
-	    {AO, -1},
-	    {HEIGHT, -1},
+	std::map<texture_type, int> textures_offsets{
+	    {albedo, -1},
+	    {normal, -1},
+	    {emission, -1},
+	    {transmission, -1},
+	    {roughness, -1},
+	    {metallic, -1},
+	    {metallic_roughness, -1},
+	    {ao, -1},
+	    {height, -1},
 	};
-	std::map<TextureType, ENGINE::ImageView *> texturesRef{
-	    {ALBEDO, nullptr},
-	    {NORMAL, nullptr},
-	    {EMISSION, nullptr},
-	    {TRANSMISSION, nullptr},
-	    {ROUGHNESS, nullptr},
-	    {METALLIC, nullptr},
-	    {METALLIC_ROUGHNESS, nullptr},
-	    {AO, nullptr},
-	    {HEIGHT, nullptr},
+	std::map<texture_type, engine::image_view *> textures_ref{
+	    {albedo, nullptr},
+	    {normal, nullptr},
+	    {emission, nullptr},
+	    {transmission, nullptr},
+	    {roughness, nullptr},
+	    {metallic, nullptr},
+	    {metallic_roughness, nullptr},
+	    {ao, nullptr},
+	    {height, nullptr},
 	};
-	std::map<TextureType, std::string> texturesStrings{
-	    {ALBEDO, "Albedo"},
-	    {NORMAL, "Normal"},
-	    {EMISSION, "Emission"},
-	    {TRANSMISSION, "Transmission"},
-	    {ROUGHNESS, "Roughness"},
-	    {METALLIC, "Metallic"},
-	    {METALLIC_ROUGHNESS, "Metallic_roughness"},
-	    {AO, "Ao"},
-	    {HEIGHT, "Height"},
+	std::map<texture_type, std::string> textures_strings{
+	    {albedo, "Albedo"},
+	    {normal, "Normal"},
+	    {emission, "Emission"},
+	    {transmission, "Transmission"},
+	    {roughness, "Roughness"},
+	    {metallic, "Metallic"},
+	    {metallic_roughness, "Metallic_roughness"},
+	    {ao, "Ao"},
+	    {height, "Height"},
 	};
-	std::vector<ENGINE::ImageView *> imageViewsVec;
+	std::vector<engine::image_view *> image_views_vec;
 
-	void SetTexture(TextureType type, int offset)
+	void set_texture(texture_type type, int offset)
 	{
-		assert(texturesOffsets.contains(type) && "Texture type dont exist");
-		texturesOffsets.at(type) = offset;
+		assert(textures_offsets.contains(type) && "Texture type dont exist");
+		textures_offsets.at(type) = offset;
 		switch (type)
 		{
-			case ALBEDO:
-				materialPackedData.albedoOffset = offset;
+			case albedo:
+				material_packed_data.albedo_offset = offset;
 				break;
-			case NORMAL:
-				materialPackedData.normalOffset = offset;
+			case normal:
+				material_packed_data.normal_offset = offset;
 				break;
-			case EMISSION:
-				materialPackedData.albedoOffset = offset;
+			case emission:
+				material_packed_data.albedo_offset = offset;
 				break;
-			case TRANSMISSION:
-				materialPackedData.transOffset = offset;
+			case transmission:
+				material_packed_data.trans_offset = offset;
 				break;
-			case ROUGHNESS:
-				materialPackedData.roughnessOffset = offset;
+			case roughness:
+				material_packed_data.roughness_offset = offset;
 				break;
-			case METALLIC:
-				materialPackedData.metallicOffset = offset;
+			case metallic:
+				material_packed_data.metallic_offset = offset;
 				break;
-			case METALLIC_ROUGHNESS:
-				materialPackedData.metRoughnessOffset = offset;
+			case metallic_roughness:
+				material_packed_data.met_roughness_offset = offset;
 				break;
 		}
 	}
-	void SetTexture(TextureType type, ENGINE::ImageView *imgView)
+	void set_texture(texture_type type, engine::image_view *img_view)
 	{
-		assert(texturesOffsets.contains(type) && "Texture type dont exist");
-		texturesRef.at(type) = imgView;
+		assert(textures_offsets.contains(type) && "Texture type dont exist");
+		textures_ref.at(type) = img_view;
 	}
-	std::vector<ENGINE::ImageView *> &ConvertTexturesToVec()
+	std::vector<engine::image_view *> &convert_textures_to_vec()
 	{
-		imageViewsVec.clear();
-		imageViewsVec.reserve(texturesRef.size());
-		for (auto &imageView : texturesRef)
+		image_views_vec.clear();
+		image_views_vec.reserve(textures_ref.size());
+		for (auto &image_view_handle : textures_ref)
 		{
-			if (imageView.second == nullptr)
+			if (image_view_handle.second == nullptr)
 			{
-				imageViewsVec.emplace_back(
-				    ENGINE::ResourcesManager::GetInstance()->GetShipperFromName("default_tex")->imageView.get());
+				image_views_vec.emplace_back(
+				    engine::resources_manager::get_instance()->get_shipper_from_name("default_tex")->image_view_handle.get());
 			}
 			else
 			{
-				imageViewsVec.emplace_back(imageView.second);
+				image_views_vec.emplace_back(image_view_handle.second);
 			}
 		}
-		return imageViewsVec;
+		return image_views_vec;
 	}
 };
-}        // namespace Rendering
+}        // namespace rendering
 
 #endif        // MATERIAL_HPP

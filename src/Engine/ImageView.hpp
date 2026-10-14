@@ -2,160 +2,160 @@
 // Created by carlo on 2024-09-23.
 //
 
-#ifndef IMAGEVIEW_HPP
-#define IMAGEVIEW_HPP
+#ifndef IMAGE_VIEW_HPP
+#define IMAGE_VIEW_HPP
 
-namespace ENGINE
+namespace engine
 {
-    class SwapChain;
+    class swap_chain;
 
-    class ImageView
+    class image_view
     {
     public:
 
-        ImageView(vk::Device logicalDevice, ImageData* imageData,
-                  uint32_t baseMipLevel, uint32_t mipLevelCount, uint32_t baseArrayLayer, uint32_t arrayLayersCount)
+        image_view(vk::Device logical_device, engine::image_data* image_metadata,
+                  uint32_t base_mip_level, uint32_t mip_level_count, uint32_t base_array_layer, uint32_t array_layers_count)
         {
-            this->imageData = imageData;
+            this->image_metadata = image_metadata;
 
-            this->baseMipLevel = baseMipLevel;
-            this->mipLevelCount = mipLevelCount;
-            this->baseArrayLayer = baseArrayLayer;
-            this->arrayLayersCount = arrayLayersCount;
-        	this->logicalDevice = logicalDevice;
+            this->base_mip_level = base_mip_level;
+            this->mip_level_count = mip_level_count;
+            this->base_array_layer = base_array_layer;
+            this->array_layers_count = array_layers_count;
+            this->logical_device = logical_device;
 
-            auto subResourceRange = vk::ImageSubresourceRange()
-                                    .setLayerCount(arrayLayersCount)
-                                    .setLevelCount(mipLevelCount)
-                                    .setBaseArrayLayer(baseArrayLayer)
-                                    .setBaseMipLevel(baseMipLevel)
-                                    .setAspectMask(imageData->aspectFlags);
+            auto sub_resource_range = vk::ImageSubresourceRange()
+                                    .setLayerCount(array_layers_count)
+                                    .setLevelCount(mip_level_count)
+                                    .setBaseArrayLayer(base_array_layer)
+                                    .setBaseMipLevel(base_mip_level)
+                                    .setAspectMask(image_metadata->aspect_flags);
 
 
-            vk::ImageViewType imageViewType;
+            vk::ImageViewType image_view_type;
 
-            switch (imageData->imageType)
+            switch (image_metadata->image_type)
             {
             case vk::ImageType::e1D:
-                imageViewType = vk::ImageViewType::e1D;
+                image_view_type = vk::ImageViewType::e1D;
                 break;
             case vk::ImageType::e2D:
-                imageViewType = vk::ImageViewType::e2D;
+                image_view_type = vk::ImageViewType::e2D;
                 break;
             case vk::ImageType::e3D:
-                imageViewType = vk::ImageViewType::e3D;
+                image_view_type = vk::ImageViewType::e3D;
                 break;
             }
 
-            auto imageViewCreateInfo = vk::ImageViewCreateInfo()
-                                       .setSubresourceRange(subResourceRange)
-                                       .setFormat(imageData->format)
-                                       .setImage(imageData->imageHandle)
-                                       .setViewType(imageViewType);
+            auto image_view_create_info = vk::ImageViewCreateInfo()
+                                       .setSubresourceRange(sub_resource_range)
+                                       .setFormat(image_metadata->format)
+                                       .setImage(image_metadata->image_handle)
+                                       .setViewType(image_view_type);
 
-            this->imageView = logicalDevice.createImageViewUnique(imageViewCreateInfo);
+            this->image_view_handle = logical_device.createImageViewUnique(image_view_create_info);
         }
 
-        ImageView(vk::Device logicalDevice, ImageData* imageData,
-                  uint32_t baseMipLevel, uint32_t mipLevelCount, uint32_t baseArrayLayer, uint32_t arrayLayersCount,
+        image_view(vk::Device logical_device, engine::image_data* image_metadata,
+                  uint32_t base_mip_level, uint32_t mip_level_count, uint32_t base_array_layer, uint32_t array_layers_count,
                   std::string name, int32_t id)
         {
-            this->imageData = imageData;
+            this->image_metadata = image_metadata;
 
-            this->baseMipLevel = baseMipLevel;
-            this->mipLevelCount = mipLevelCount;
-            this->baseArrayLayer = baseArrayLayer;
-            this->arrayLayersCount = arrayLayersCount;
+            this->base_mip_level = base_mip_level;
+            this->mip_level_count = mip_level_count;
+            this->base_array_layer = base_array_layer;
+            this->array_layers_count = array_layers_count;
             this->name = name;
             this->id = id;
-        	this->logicalDevice = logicalDevice;
+            this->logical_device = logical_device;
 
-            auto subResourceRange = vk::ImageSubresourceRange()
-                                    .setLayerCount(arrayLayersCount)
-                                    .setLevelCount(mipLevelCount)
-                                    .setBaseArrayLayer(baseArrayLayer)
-                                    .setBaseMipLevel(baseMipLevel)
-                                    .setAspectMask(imageData->aspectFlags);
+            auto sub_resource_range = vk::ImageSubresourceRange()
+                                    .setLayerCount(array_layers_count)
+                                    .setLevelCount(mip_level_count)
+                                    .setBaseArrayLayer(base_array_layer)
+                                    .setBaseMipLevel(base_mip_level)
+                                    .setAspectMask(image_metadata->aspect_flags);
 
 
-            vk::ImageViewType imageViewType;
+            vk::ImageViewType image_view_type;
 
-            switch (imageData->imageType)
+            switch (image_metadata->image_type)
             {
             case vk::ImageType::e1D:
-                imageViewType = vk::ImageViewType::e1D;
+                image_view_type = vk::ImageViewType::e1D;
                 break;
             case vk::ImageType::e2D:
-                imageViewType = vk::ImageViewType::e2D;
+                image_view_type = vk::ImageViewType::e2D;
                 break;
             case vk::ImageType::e3D:
-                imageViewType = vk::ImageViewType::e3D;
+                image_view_type = vk::ImageViewType::e3D;
                 break;
             }
 
-            auto imageViewCreateInfo = vk::ImageViewCreateInfo()
-                                       .setSubresourceRange(subResourceRange)
-                                       .setFormat(imageData->format)
-                                       .setImage(imageData->imageHandle)
-                                       .setViewType(imageViewType);
+            auto image_view_create_info = vk::ImageViewCreateInfo()
+                                       .setSubresourceRange(sub_resource_range)
+                                       .setFormat(image_metadata->format)
+                                       .setImage(image_metadata->image_handle)
+                                       .setViewType(image_view_type);
 
-            this->imageView = logicalDevice.createImageViewUnique(imageViewCreateInfo);
+            this->image_view_handle = logical_device.createImageViewUnique(image_view_create_info);
         }
 
 
         //cubemaps
-        ImageView(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, ImageData* imageData,
-                  uint32_t mipLevelCount, uint32_t baseMipLevel)
+        image_view(vk::PhysicalDevice physical_device, vk::Device logical_device, engine::image_data* image_metadata,
+                  uint32_t mip_level_count, uint32_t base_mip_level)
         {
-            this->imageData = imageData;
-            this->mipLevelCount = mipLevelCount;
-            this->baseMipLevel = baseMipLevel;
-            this->baseArrayLayer = 0;
-            this->arrayLayersCount = 0;
-        	this->logicalDevice = logicalDevice;
+            this->image_metadata = image_metadata;
+            this->mip_level_count = mip_level_count;
+            this->base_mip_level = base_mip_level;
+            this->base_array_layer = 0;
+            this->array_layers_count = 0;
+            this->logical_device = logical_device;
 
-            auto subResourceRange = vk::ImageSubresourceRange()
-                                    .setLayerCount(this->arrayLayersCount)
-                                    .setLevelCount(this->mipLevelCount)
-                                    .setBaseArrayLayer(this->baseArrayLayer)
-                                    .setBaseMipLevel(this->baseMipLevel)
-                                    .setAspectMask(imageData->aspectFlags);
+            auto sub_resource_range = vk::ImageSubresourceRange()
+                                    .setLayerCount(this->array_layers_count)
+                                    .setLevelCount(this->mip_level_count)
+                                    .setBaseArrayLayer(this->base_array_layer)
+                                    .setBaseMipLevel(this->base_mip_level)
+                                    .setAspectMask(image_metadata->aspect_flags);
 
 
-            vk::ImageViewType imageViewType = vk::ImageViewType::eCube;
+            vk::ImageViewType image_view_type = vk::ImageViewType::eCube;
 
-            assert(imageData->imageType == vk::ImageType::e2D && "ImageType must be 2d for cubemap image view");
-            assert(imageData->arrayLayersCount == 6 && "array layer count must be 6 for cubemaps");
+            assert(image_metadata->image_type == vk::ImageType::e2D && "ImageType must be 2d for cubemap image view");
+            assert(image_metadata->array_layers_count == 6 && "array layer count must be 6 for cubemaps");
 
-            auto imageViewCreateInfo = vk::ImageViewCreateInfo()
-                                       .setSubresourceRange(subResourceRange)
-                                       .setFormat(imageData->format)
-                                       .setImage(imageData->imageHandle)
-                                       .setViewType(imageViewType);
+            auto image_view_create_info = vk::ImageViewCreateInfo()
+                                       .setSubresourceRange(sub_resource_range)
+                                       .setFormat(image_metadata->format)
+                                       .setImage(image_metadata->image_handle)
+                                       .setViewType(image_view_type);
 
-            this->imageView = logicalDevice.createImageViewUnique(imageViewCreateInfo);
+            this->image_view_handle = logical_device.createImageViewUnique(image_view_create_info);
         }
-    	void Recreate(ImageData* newImageData)
+        void recreate(engine::image_data* new_image_data)
         {
-        	imageData = newImageData;
-        	Recreate();
+            image_metadata = new_image_data;
+            recreate();
         }
-    	vk::ImageSubresourceRange GetSubresourceRange()
+        vk::ImageSubresourceRange get_subresource_range()
         {
-        	auto subResourceRange = vk::ImageSubresourceRange()
-									.setLayerCount(this->arrayLayersCount)
-									.setLevelCount(this->mipLevelCount)
-									.setBaseArrayLayer(this->baseArrayLayer)
-									.setBaseMipLevel(this->baseMipLevel)
-									.setAspectMask(imageData->aspectFlags);
-        	return subResourceRange;
+            auto sub_resource_range = vk::ImageSubresourceRange()
+									.setLayerCount(this->array_layers_count)
+									.setLevelCount(this->mip_level_count)
+									.setBaseArrayLayer(this->base_array_layer)
+									.setBaseMipLevel(this->base_mip_level)
+									.setAspectMask(image_metadata->aspect_flags);
+            return sub_resource_range;
 
         }
     	
     private:
-    	vk::ImageViewType GetViewType() const
+        vk::ImageViewType get_view_type() const
     	{
-    		switch (imageData->imageType)
+            switch (image_metadata->image_type)
     		{
     			case vk::ImageType::e1D:
     				return vk::ImageViewType::e1D;
@@ -171,31 +171,31 @@ namespace ENGINE
     				return vk::ImageViewType::e2D;
     		}
     	}
-    	void Recreate()
+        void recreate()
         {
-        	vk::ImageViewCreateInfo createInfo{};
-        	createInfo.setImage(imageData->imageHandle)
-					  .setFormat(imageData->format)
-					  .setViewType(GetViewType())
-					  .setSubresourceRange(GetSubresourceRange());
+            vk::ImageViewCreateInfo create_info{};
+            create_info.setImage(image_metadata->image_handle)
+					  .setFormat(image_metadata->format)
+					  .setViewType(get_view_type())
+					  .setSubresourceRange(get_subresource_range());
 
-        	imageView = logicalDevice.createImageViewUnique(createInfo);
+            image_view_handle = logical_device.createImageViewUnique(create_info);
         }
     	
     public:
-    	vk::Device logicalDevice;
-        uint32_t mipLevelCount;
-        uint32_t baseMipLevel;
-        uint32_t baseArrayLayer;
-        uint32_t arrayLayersCount;
+        vk::Device logical_device;
+        uint32_t mip_level_count;
+        uint32_t base_mip_level;
+        uint32_t base_array_layer;
+        uint32_t array_layers_count;
         std::string name;
         int32_t id;
 
-        vk::UniqueImageView imageView;
-        ImageData* imageData;
+        vk::UniqueImageView image_view_handle;
+        engine::image_data* image_metadata;
         
-        friend class SwapChain;
+        friend class swap_chain;
     };
 }
 
-#endif //IMAGEVIEW_HPP
+#endif //IMAGE_VIEW_HPP

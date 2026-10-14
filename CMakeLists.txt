@@ -36,8 +36,8 @@ find_package(CodeCudaEngine CONFIG REQUIRED
 message(STATUS "Found Vulkan in ${Vulkan_INCLUDE_DIRS}")
 message(STATUS "Found Vulkan libs in ${Vulkan_LIBRARIES}")
 
-get_filename_component(Vulkan_Base_Path ${Vulkan_INCLUDE_DIRS} DIRECTORY)
-message(STATUS "Found Vulkan path in ${Vulkan_Base_Path}")
+get_filename_component(vulkan_base_path ${Vulkan_INCLUDE_DIRS} DIRECTORY)
+message(STATUS "Found Vulkan path in ${vulkan_base_path}")
 
 set(GLFW3_LIBRARIES "${SOLUTION_DIR}/dependencies/glfw/lib-vc2022/glfw3.lib")
 

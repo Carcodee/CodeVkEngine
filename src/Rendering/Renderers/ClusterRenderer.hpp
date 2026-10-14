@@ -3,431 +3,431 @@
 // Created by carlo on 2024-10-25.
 //
 
-#ifndef CLUSTERRENDERER_HPP
-#define CLUSTERRENDERER_HPP
+#ifndef CLUSTER_RENDERER_HPP
+#define CLUSTER_RENDERER_HPP
 
-namespace Rendering
+namespace rendering
 {
-using namespace ENGINE;
-class ClusterRenderer : public BaseRenderer
+using namespace engine;
+class cluster_renderer : public base_renderer
 {
   public:
-	ClusterRenderer(Core *core, WindowProvider *windowProvider)
+	cluster_renderer(engine::core *core, ::window_provider *window_provider)
 	{
 		this->core           = core;
-		this->renderGraphRef = core->renderGraphRef;
-		this->windowProvider = windowProvider;
-		CreateResources();
-		CreateBuffers();
-		CreatePipelines();
+		this->render_graph_ref = core->render_graph_ref;
+		this->window_provider = window_provider;
+		create_resources();
+		create_buffers();
+		create_pipelines();
 	}
 
-	void RecreateSwapChainResources() override
+	void recreate_swap_chain_resources() override
 	{
 	}
 
-	void SetRenderOperation() override
+	void set_render_operation() override
 	{
-		renderGraphRef->GetNode(meshCullPassName)->G_SetRenderOperation(new std::function<void()>([this]() {
-			auto &renderNode = renderGraphRef->renderNodes.at(meshCullPassName);
-			renderNode->G_SetBuffer("IndirectCmds",
-			                      RenderingResManager::GetInstance()->indirectDrawBuffer);
-			renderNode->G_SetBuffer("MeshesSpheres", meshesSpheresCompact);
-			renderNode->G_SetBuffer("CamProps", cPropsUbo);
-			renderNode->G_SetBuffer("CullInfo", camFrustum);
-			renderNode->GetCurrCmd().dispatch(RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(), 1, 1);
+		render_graph_ref->get_node(mesh_cull_pass_name)->g_set_render_operation(new std::function<void()>([this]() {
+			auto &render_node = render_graph_ref->render_nodes.at(mesh_cull_pass_name);
+			render_node->g_set_buffer("indirect_cmds_buffer",
+			                      rendering_res_manager::get_instance()->indirect_draw_buffer);
+			render_node->g_set_buffer("meshes_spheres_buffer", meshes_spheres_compact);
+			render_node->g_set_buffer("cam_props", c_props_ubo);
+			render_node->g_set_buffer("cull_info_uniform", cam_frustum);
+			render_node->get_curr_cmd().dispatch(rendering_res_manager::get_instance()->indirect_draws_cmd_infos.size(), 1, 1);
 		}));
-		renderGraphRef->GetNode(meshCullPassName)->AddPreRenderingTask(new std::function<void()>([this]() {
-			MoveCam();
-			cPropsUbo.invProj = glm::inverse(currCamera->matrices.perspective);
-			cPropsUbo.invView = glm::inverse(currCamera->matrices.view);
-			cPropsUbo.pos     = currCamera->position;
-			cPropsUbo.zNear   = currCamera->cameraProperties.zNear;
-			cPropsUbo.zFar    = currCamera->cameraProperties.zFar;
-			BuildFrustumPlanes();
+		render_graph_ref->get_node(mesh_cull_pass_name)->add_pre_rendering_task(new std::function<void()>([this]() {
+			move_cam();
+			c_props_ubo.inv_proj = glm::inverse(curr_camera->matrices.perspective);
+			c_props_ubo.inv_view = glm::inverse(curr_camera->matrices.view);
+			c_props_ubo.pos     = curr_camera->position;
+			c_props_ubo.z_near   = curr_camera->camera_properties.z_near;
+			c_props_ubo.z_far    = curr_camera->camera_properties.z_far;
+			build_frustum_planes();
 
-			meshesSpheresCompact.clear();
-			std::vector<Sphere> meshesSpheresCompact2;
-			for (auto &model : RenderingResManager::GetInstance()->indirectModelsToDraw)
+			meshes_spheres_compact.clear();
+			std::vector<sphere> meshes_spheres_compact2;
+			for (auto &model : rendering_res_manager::get_instance()->indirect_models_to_draw)
 			{
-				for (auto &sphere : model.second->meshesSpheres)
+				for (auto &sphere : model.second->meshes_spheres)
 				{
-					meshesSpheresCompact.emplace_back(sphere);
-					meshesSpheresCompact2.emplace_back(sphere);
+					meshes_spheres_compact.emplace_back(sphere);
+					meshes_spheres_compact2.emplace_back(sphere);
 				}
 			}
 		}));
 
-		auto cullTask = new std::function<void()>([this]() {
-			cullDataPc.sWidth           = (int) windowProvider->GetWindowSize().x;
-			cullDataPc.sHeight          = (int) windowProvider->GetWindowSize().y;
-			cullDataPc.pointLightsCount = pointLights.size();
-			cullDataPc.xTileCount       = static_cast<uint32_t>((core->swapchainRef->extent.width - 1) / xTileSizePx + 1);
-			cullDataPc.yTileCount       = static_cast<uint32_t>((core->swapchainRef->extent.height - 1) / yTileSizePx + 1);
+		auto cull_task = new std::function<void()>([this]() {
+			cull_data_pc.s_width           = (int) window_provider->get_window_size().x;
+			cull_data_pc.s_height          = (int) window_provider->get_window_size().y;
+			cull_data_pc.point_lights_count = point_lights.size();
+			cull_data_pc.x_tile_count       = static_cast<uint32_t>((core->swapchain_ref->extent.width - 1) / x_tile_size_px + 1);
+			cull_data_pc.y_tile_count       = static_cast<uint32_t>((core->swapchain_ref->extent.height - 1) / y_tile_size_px + 1);
 
-			lightsMap.clear();
-			for (int i = 0; i < cullDataPc.xTileCount * cullDataPc.yTileCount * zSlicesSize; ++i)
+			lights_map.clear();
+			for (int i = 0; i < cull_data_pc.x_tile_count * cull_data_pc.y_tile_count * z_slices_size; ++i)
 			{
-				lightsMap.emplace_back(ArrayIndexer{});
+				lights_map.emplace_back(array_indexer{});
 			}
-			lightsIndices.clear();
-			lightsIndices.reserve(lightsMap.size() * pointLights.size());
-			for (int i = 0; i < lightsMap.size() * pointLights.size(); ++i)
+			lights_indices.clear();
+			lights_indices.reserve(lights_map.size() * point_lights.size());
+			for (int i = 0; i < lights_map.size() * point_lights.size(); ++i)
 			{
-				lightsIndices.emplace_back(-1);
+				lights_indices.emplace_back(-1);
 			}
-			cPropsUbo.invProj = glm::inverse(camera.matrices.perspective);
-			cPropsUbo.invView = glm::inverse(camera.matrices.view);
-			cPropsUbo.pos     = camera.position;
-			cPropsUbo.zNear   = camera.cameraProperties.zNear;
-			cPropsUbo.zFar    = camera.cameraProperties.zFar;
+			c_props_ubo.inv_proj = glm::inverse(camera.matrices.perspective);
+			c_props_ubo.inv_view = glm::inverse(camera.matrices.view);
+			c_props_ubo.pos     = camera.position;
+			c_props_ubo.z_near   = camera.camera_properties.z_near;
+			c_props_ubo.z_far    = camera.camera_properties.z_far;
 		});
 
-		auto cullRenderOp = new std::function<void()>(
+		auto cull_render_op = new std::function<void()>(
 		    [this]() {
-			    auto &renderNode = renderGraphRef->renderNodes.at(computePassName);
-			    renderNode->G_SetBuffer("PointLights", pointLights);
-			    renderNode->G_SetBuffer("LightMap", lightsMap);
-			    renderNode->G_SetBuffer("LightIndices", lightsIndices);
-			    renderNode->G_SetBuffer("CameraProperties", cPropsUbo);
-			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(computePassName)->GPUPipelineRef->pipelineLayout.get(),
+			    auto &render_node = render_graph_ref->render_nodes.at(compute_pass_name);
+			    render_node->g_set_buffer("point_lights_buffer", point_lights);
+			    render_node->g_set_buffer("light_map_buffer", lights_map);
+			    render_node->g_set_buffer("light_indices_buffer", lights_indices);
+			    render_node->g_set_buffer("camera_properties", c_props_ubo);
+			    render_node->get_curr_cmd().pushConstants(render_graph_ref->get_node(compute_pass_name)->gpu_pipeline_ref->pipeline_layout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
-			                                           0, sizeof(ScreenDataPc), &cullDataPc);
-			    renderNode->GetCurrCmd().dispatch(cullDataPc.xTileCount / localSize, cullDataPc.yTileCount / localSize,
-			                                      zSlicesSize);
+			                                           0, sizeof(screen_data_pc), &cull_data_pc);
+			    render_node->get_curr_cmd().dispatch(cull_data_pc.x_tile_count / local_size, cull_data_pc.y_tile_count / local_size,
+			                                      z_slices_size);
 		    });
 
-		renderGraphRef->GetNode(computePassName)->AddPreRenderingTask(cullTask);
-		renderGraphRef->GetNode(computePassName)->G_SetRenderOperation(cullRenderOp);
+		render_graph_ref->get_node(compute_pass_name)->add_pre_rendering_task(cull_task);
+		render_graph_ref->get_node(compute_pass_name)->g_set_render_operation(cull_render_op);
 
-		auto renderOp = new std::function<void()>(
+		auto render_op = new std::function<void()>(
 		    [this]() {
 			    vk::DeviceSize           offset = 0;
-			    std::vector<ImageView *> textures;
-			    for (auto &image : ResourcesManager::GetInstance()->imageShippers)
+			    std::vector<engine::image_view *> textures;
+			    for (auto &image : resources_manager::get_instance()->image_shippers)
 			    {
-				    textures.emplace_back(image->imageView.get());
+				    textures.emplace_back(image->image_view_handle.get());
 			    }
-			    std::vector<MaterialPackedData> materials;
-			    for (auto &mat : RenderingResManager::GetInstance()->materialPackedData)
+			    std::vector<rendering::material_packed_data> materials;
+			    for (auto &mat : rendering_res_manager::get_instance()->material_packed_data)
 			    {
 				    materials.emplace_back(*mat);
 			    }
 			    if (materials.empty())
 			    {
-				    materials.emplace_back(MaterialPackedData());
+				    materials.emplace_back(material_packed_data());
 			    }
 
-			    std::vector<glm::mat4> modelMats;
-			    std::vector<int>       meshMatIds;
-			    for (auto &model : RenderingResManager::GetInstance()->models)
+			    std::vector<glm::mat4> model_mats;
+			    std::vector<int>       mesh_mat_ids;
+			    for (auto &model : rendering_res_manager::get_instance()->models)
 			    {
-				    for (int i = 0; i < model->modelsMat.size(); ++i)
+				    for (int i = 0; i < model->models_mat.size(); ++i)
 				    {
-					    modelMats.push_back(model->modelsMat[i]);
+					    model_mats.push_back(model->models_mat[i]);
 				    }
 				    for (int i = 0; i < model->materials.size(); ++i)
 				    {
-					    meshMatIds.push_back(model->materials[i]);
+					    mesh_mat_ids.push_back(model->materials[i]);
 				    }
 			    }
-			    auto renderNode = renderGraphRef->GetNode(gBufferPassName);
+			    auto render_node = render_graph_ref->get_node(g_buffer_pass_name);
 
-			    renderGraphRef->GetNode(gBufferPassName)->G_SetSamplerArray("textures", textures);
-			    renderGraphRef->GetNode(gBufferPassName)->G_SetBuffer("MaterialsPacked", materials);
-			    renderGraphRef->GetNode(gBufferPassName)->G_SetBuffer("MeshMaterialsIds", meshMatIds);
-			    renderGraphRef->GetNode(gBufferPassName)->G_SetBuffer("MeshesModelMatrices", modelMats);
+			    render_graph_ref->get_node(g_buffer_pass_name)->g_set_sampler_array("textures", textures);
+			    render_graph_ref->get_node(g_buffer_pass_name)->g_set_buffer("materials_packed_buffer", materials);
+			    render_graph_ref->get_node(g_buffer_pass_name)->g_set_buffer("mesh_materials_ids", mesh_mat_ids);
+			    render_graph_ref->get_node(g_buffer_pass_name)->g_set_buffer("meshes_model_matrices", model_mats);
 
-			    pc.projView = camera.matrices.perspective * camera.matrices.view;
-			    renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(gBufferPassName)->GPUPipelineRef->pipelineLayout.get(),
+			    pc.proj_view = camera.matrices.perspective * camera.matrices.view;
+			    render_node->get_curr_cmd().pushConstants(render_graph_ref->get_node(g_buffer_pass_name)->gpu_pipeline_ref->pipeline_layout.get(),
 			                                           vk::ShaderStageFlagBits::eVertex |
 			                                               vk::ShaderStageFlagBits::eFragment,
-			                                           0, sizeof(MvpPc), &pc);
+			                                           0, sizeof(mvp_pc), &pc);
 
-			    int meshOffset = 0;
+			    int mesh_offset = 0;
 
-			    for (auto &modelPair : RenderingResManager::GetInstance()->indirectModelsToDraw)
+			    for (auto &model_pair : rendering_res_manager::get_instance()->indirect_models_to_draw)
 			    {
-				    Model *modelRef = modelPair.second;
-				    renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &modelRef->vertBuffer->deviceBuffer->bufferHandle.get(),
+				    rendering::model *model_ref = model_pair.second;
+				    render_node->get_curr_cmd().bindVertexBuffers(0, 1, &model_ref->vert_buffer->device_buffer->buffer_handle.get(),
 				                                               &offset);
-				    renderNode->GetCurrCmd().bindIndexBuffer(modelRef->indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
+				    render_node->get_curr_cmd().bindIndexBuffer(model_ref->index_buffer->get_buffer(), 0, vk::IndexType::eUint32);
 
-				    vk::DeviceSize sizeOffset = (meshOffset) * sizeof(DrawIndirectIndexedCmd);
-				    uint32_t       stride     = sizeof(DrawIndirectIndexedCmd);
-				    renderNode->GetCurrCmd().drawIndexedIndirect(
-				        RenderingResManager::GetInstance()->indirectDrawBuffer->bufferHandle.get(),
-				        sizeOffset,
-				        modelRef->meshCount,
+				    vk::DeviceSize size_offset = (mesh_offset) * sizeof(draw_indirect_indexed_cmd);
+				    uint32_t       stride     = sizeof(draw_indirect_indexed_cmd);
+				    render_node->get_curr_cmd().drawIndexedIndirect(
+				        rendering_res_manager::get_instance()->indirect_draw_buffer->buffer_handle.get(),
+				        size_offset,
+				        model_ref->mesh_count,
 				        stride);
-				    meshOffset += modelRef->meshCount;
+				    mesh_offset += model_ref->mesh_count;
 			    }
 		    });
 
-		renderGraphRef->GetNode(gBufferPassName)->G_SetRenderOperation(renderOp);
+		render_graph_ref->get_node(g_buffer_pass_name)->g_set_render_operation(render_op);
 
-		auto lSetViewTask = new std::function<void()>([this]() {
-			auto renderNode = renderGraphRef->GetNode(lightPassName);
-			lightPc.xTileCount  = cullDataPc.xTileCount;
-			lightPc.yTileCount  = cullDataPc.yTileCount;
-			lightPc.xTileSizePx = xTileSizePx;
-			lightPc.yTileSizePx = yTileSizePx;
-			lightPc.zSlices     = zSlicesSize;
+		auto l_set_view_task = new std::function<void()>([this]() {
+			auto render_node = render_graph_ref->get_node(light_pass_name);
+			light_pc.x_tile_count  = cull_data_pc.x_tile_count;
+			light_pc.y_tile_count  = cull_data_pc.y_tile_count;
+			light_pc.x_tile_size_px = x_tile_size_px;
+			light_pc.y_tile_size_px = y_tile_size_px;
+			light_pc.z_slices     = z_slices_size;
 
-			auto *currImage = renderGraphRef->currentBackBuffer;
-			renderNode->G_SetColorImageAttachmentBinding(0, currImage);
-			renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
+			auto *curr_image = render_graph_ref->current_back_buffer;
+			render_node->g_set_color_image_attachment_binding(0, curr_image);
+			render_node->g_set_framebuffer_size(window_provider->get_window_size());
 		});
-		auto lRenderOp    = new std::function<void()>(
+		auto l_render_op    = new std::function<void()>(
             [this]() {
-                auto renderNode = renderGraphRef->GetNode(lightPassName);
-                renderGraphRef->resourcesManager->RequestStorageImageClear("specularHolderStorage");
-			    renderNode->G_SetSampler("gCol", colAttachmentView);
-			    renderNode->G_SetSampler("gNormals", normAttachmentView);
-			    renderNode->G_SetSampler("gTang", tangAttachmentView);
-			    renderNode->G_SetSampler("gDepth", depthAttachmentView);
-			    renderNode->G_SetSampler("gMetRoughness", metRoughAttachmentView);
-			    renderNode->G_SetSampler("gMeshUV", uvAttachmentView);
+                auto render_node = render_graph_ref->get_node(light_pass_name);
+                render_graph_ref->resources_manager->request_storage_image_clear("specularHolderStorage");
+			    render_node->g_set_sampler("g_col", col_attachment_view);
+			    render_node->g_set_sampler("g_normals", norm_attachment_view);
+			    render_node->g_set_sampler("g_tang", tang_attachment_view);
+			    render_node->g_set_sampler("g_depth", depth_attachment_view);
+			    render_node->g_set_sampler("g_met_roughness", met_rough_attachment_view);
+			    render_node->g_set_sampler("g_mesh_uv", uv_attachment_view);
 
-			    renderNode->G_SetStorageImage("specularHolder", specularHolder);
-			    renderNode->G_SetBuffer("CameraProperties", cPropsUbo);
-			    renderNode->G_SetBuffer("PointLights", pointLights);
-			    renderNode->G_SetBuffer("LightMap", lightsMap);
-			    renderNode->G_SetBuffer("LightIndices", lightsIndices);
+			    render_node->g_set_storage_image("specular_holder", specular_holder);
+			    render_node->g_set_buffer("camera_properties", c_props_ubo);
+			    render_node->g_set_buffer("point_lights_buffer", point_lights);
+			    render_node->g_set_buffer("light_map_buffer", lights_map);
+			    render_node->g_set_buffer("light_indices_buffer", lights_indices);
                 vk::DeviceSize offset = 0;
-                renderNode->GetCurrCmd().bindVertexBuffers(0, 1, &lVertexBuffer->bufferHandle.get(), &offset);
-                renderNode->GetCurrCmd().bindIndexBuffer(lIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
+                render_node->get_curr_cmd().bindVertexBuffers(0, 1, &l_vertex_buffer->buffer_handle.get(), &offset);
+                render_node->get_curr_cmd().bindIndexBuffer(l_index_buffer->buffer_handle.get(), 0, vk::IndexType::eUint32);
 
-                renderNode->GetCurrCmd().pushConstants(renderGraphRef->GetNode(lightPassName)->GPUPipelineRef->pipelineLayout.get(),
+                render_node->get_curr_cmd().pushConstants(render_graph_ref->get_node(light_pass_name)->gpu_pipeline_ref->pipeline_layout.get(),
 			                                              vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
-			                                              0, sizeof(LightPc), &lightPc);
-                renderNode->GetCurrCmd().drawIndexed(quadIndices.size(), 1, 0,
+			                                              0, sizeof(light_pc), &light_pc);
+                render_node->get_curr_cmd().drawIndexed(quad_indices.size(), 1, 0,
 			                                            0, 0);
             });
 
-		renderGraphRef->GetNode(lightPassName)->AddPreRenderingTask(lSetViewTask);
-		renderGraphRef->GetNode(lightPassName)->G_SetRenderOperation(lRenderOp);
+		render_graph_ref->get_node(light_pass_name)->add_pre_rendering_task(l_set_view_task);
+		render_graph_ref->get_node(light_pass_name)->g_set_render_operation(l_render_op);
 	}
 
-	void ReloadShaders() override
+	void reload_shaders() override
 	{
-		auto *gRenderNode     = renderGraphRef->GetNode(gBufferPassName);
-		auto *renderNode      = renderGraphRef->GetNode(lightPassName);
-		auto *cRenderNode     = renderGraphRef->GetNode(computePassName);
-		auto *meshCRenderNode = renderGraphRef->GetNode(meshCullPassName);
+		auto *g_render_node     = render_graph_ref->get_node(g_buffer_pass_name);
+		auto *render_node      = render_graph_ref->get_node(light_pass_name);
+		auto *c_render_node     = render_graph_ref->get_node(compute_pass_name);
+		auto *mesh_c_render_node = render_graph_ref->get_node(mesh_cull_pass_name);
 
-		gRenderNode->G_RecreateResources();
-		renderNode->G_RecreateResources();
-		cRenderNode->G_RecreateResources();
-		meshCRenderNode->G_RecreateResources();
+		g_render_node->g_recreate_resources();
+		render_node->g_recreate_resources();
+		c_render_node->g_recreate_resources();
+		mesh_c_render_node->g_recreate_resources();
 	}
 
-	void CreateResources()
+	void create_resources()
 	{
-		auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+		auto image_info = engine::image::create_info2d(window_provider->get_window_size(), 1, 1,
 		                                     vk::Format::eR32G32B32A32Sfloat,
 		                                     vk::ImageUsageFlagBits::eColorAttachment |
 		                                         vk::ImageUsageFlagBits::eSampled);
 
-		auto storageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
+		auto storage_info = engine::image::create_info2d(window_provider->get_window_size(), 1, 1,
 		                                       vk::Format::eR32G32B32A32Sfloat,
 		                                       vk::ImageUsageFlagBits::eStorage |
 		                                           vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
 
-		auto depthImageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1,
-		                                          core->swapchainRef->depthFormat,
+		auto depth_image_info = engine::image::create_info2d(window_provider->get_window_size(), 1, 1,
+		                                          core->swapchain_ref->depth_format,
 		                                          vk::ImageUsageFlagBits::eDepthStencilAttachment |
 		                                              vk::ImageUsageFlagBits::eSampled);
 
-		colAttachmentView      = ResourcesManager::GetInstance()->GetImage("colAttachment", imageInfo, 0, 0);
-		normAttachmentView     = ResourcesManager::GetInstance()->GetImage("normAttachment", imageInfo, 0, 0);
-		tangAttachmentView     = ResourcesManager::GetInstance()->GetImage("tangAttachment", imageInfo, 0, 0);
-		metRoughAttachmentView = ResourcesManager::GetInstance()->GetImage("metRoughnessAttachmentView", imageInfo, 0, 0);
-		uvAttachmentView       = ResourcesManager::GetInstance()->GetImage("uvAttachmentView", imageInfo, 0, 0);
+		col_attachment_view      = resources_manager::get_instance()->get_image("colAttachment", image_info, 0, 0);
+		norm_attachment_view     = resources_manager::get_instance()->get_image("normAttachment", image_info, 0, 0);
+		tang_attachment_view     = resources_manager::get_instance()->get_image("tangAttachment", image_info, 0, 0);
+		met_rough_attachment_view = resources_manager::get_instance()->get_image("metRoughnessAttachmentView", image_info, 0, 0);
+		uv_attachment_view       = resources_manager::get_instance()->get_image("uvAttachmentView", image_info, 0, 0);
 
-		depthAttachmentView = ResourcesManager::GetInstance()->GetImage("depthAttachment", depthImageInfo, 0, 0);
-		specularHolder      = ResourcesManager::GetInstance()->GetImage("specularHolderStorage", storageInfo, 0, 0);
+		depth_attachment_view = resources_manager::get_instance()->get_image("depthAttachment", depth_image_info, 0, 0);
+		specular_holder      = resources_manager::get_instance()->get_image("specularHolderStorage", storage_info, 0, 0);
 
 		// gbuff
-		camera.SetPerspective(
-		    45.0f, (float) windowProvider->GetWindowSize().x / (float) windowProvider->GetWindowSize().y,
+		camera.set_perspective(
+		    45.0f, (float) window_provider->get_window_size().x / (float) window_provider->get_window_size().y,
 		    0.1f, 512.0f);
-		debugCam.SetPerspective(
-		    45.0f, (float) windowProvider->GetWindowSize().x / (float) windowProvider->GetWindowSize().y,
+		debug_cam.set_perspective(
+		    45.0f, (float) window_provider->get_window_size().x / (float) window_provider->get_window_size().y,
 		    0.1f, 512.0f);
 
-		currCamera = &camera;
+		curr_camera = &camera;
 
-		camera.SetLookAt(glm::vec3(0.0f, 0.0f, 1.0f));
+		camera.set_look_at(glm::vec3(0.0f, 0.0f, 1.0f));
 		camera.position = glm::vec3(0.0f);
 
-		std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath();
-		RenderingResManager::GetInstance()->PushModelToIndirectBatch(path + "\\Models\\porsche\\scene.gltf");
+		std::string path = systems::os::get_instance()->get_assets_path();
+		rendering_res_manager::get_instance()->push_model_to_indirect_batch(path + "\\Models\\porsche\\scene.gltf");
 
 		// compute
 		std::random_device rd;
 		std::mt19937       gen(rd());
 
-		pointLights.reserve(1);
+		point_lights.reserve(1);
 		for (int i = 0; i < 1; ++i)
 		{
-			std::uniform_real_distribution<> distributionPos(-10.0f, 10.0f);
-			std::uniform_real_distribution<> distributionCol(0.0f, 1.0f);
-			glm::vec3                        pos = glm::vec3(distributionPos(gen), distributionPos(gen), distributionPos(gen));
+			std::uniform_real_distribution<> distribution_pos(-10.0f, 10.0f);
+			std::uniform_real_distribution<> distribution_col(0.0f, 1.0f);
+			glm::vec3                        pos = glm::vec3(distribution_pos(gen), distribution_pos(gen), distribution_pos(gen));
 
-			glm::vec3 col = glm::vec3(distributionCol(gen), distributionCol(gen), distributionCol(gen));
+			glm::vec3 col = glm::vec3(distribution_col(gen), distribution_col(gen), distribution_col(gen));
 
-			std::uniform_real_distribution<> distributionIntensity(0.5f, 2.0f);
-			float                            intensity = static_cast<float>(distributionIntensity(gen));
+			std::uniform_real_distribution<> distribution_intensity(0.5f, 2.0f);
+			float                            intensity = static_cast<float>(distribution_intensity(gen));
 
-			std::uniform_real_distribution<> distributionRadius(0.5f, 10.0f);
+			std::uniform_real_distribution<> distribution_radius(0.5f, 10.0f);
 			float                            radius = 2.0f;
 
-			std::uniform_real_distribution<> distributionAttenuation(0.3f, 10.0f);
-			float                            lAttenuation = 0.01f;
-			float                            qAttenuation = static_cast<float>(distributionAttenuation(gen));
+			std::uniform_real_distribution<> distribution_attenuation(0.3f, 10.0f);
+			float                            l_attenuation = 0.01f;
+			float                            q_attenuation = static_cast<float>(distribution_attenuation(gen));
 
-			pointLights.emplace_back(PointLight{pos, col, radius, intensity, lAttenuation, 0.0f});
+			point_lights.emplace_back(point_light{pos, col, radius, intensity, l_attenuation, 0.0f});
 		}
 
-		cullDataPc.sWidth           = windowProvider->GetWindowSize().x;
-		cullDataPc.sHeight          = windowProvider->GetWindowSize().y;
-		cullDataPc.pointLightsCount = 0;
-		cullDataPc.xTileCount       = static_cast<uint32_t>((core->swapchainRef->extent.width - 1) / xTileSizePx + 1);
-		cullDataPc.yTileCount       = static_cast<uint32_t>((core->swapchainRef->extent.height - 1) / yTileSizePx + 1);
-		cullDataPc.xTileSizePx      = xTileSizePx;
-		cullDataPc.yTileSizePx      = yTileSizePx;
-		cullDataPc.pointLightsCount = (int) pointLights.size();
+		cull_data_pc.s_width           = window_provider->get_window_size().x;
+		cull_data_pc.s_height          = window_provider->get_window_size().y;
+		cull_data_pc.point_lights_count = 0;
+		cull_data_pc.x_tile_count       = static_cast<uint32_t>((core->swapchain_ref->extent.width - 1) / x_tile_size_px + 1);
+		cull_data_pc.y_tile_count       = static_cast<uint32_t>((core->swapchain_ref->extent.height - 1) / y_tile_size_px + 1);
+		cull_data_pc.x_tile_size_px      = x_tile_size_px;
+		cull_data_pc.y_tile_size_px      = y_tile_size_px;
+		cull_data_pc.point_lights_count = (int) point_lights.size();
 
-		lightsMap.reserve(cullDataPc.xTileCount * cullDataPc.yTileCount * zSlicesSize);
+		lights_map.reserve(cull_data_pc.x_tile_count * cull_data_pc.y_tile_count * z_slices_size);
 
-		for (int i = 0; i < lightsMap.capacity(); ++i)
+		for (int i = 0; i < lights_map.capacity(); ++i)
 		{
-			lightsMap.emplace_back(ArrayIndexer{});
+			lights_map.emplace_back(array_indexer{});
 		}
 
-		lightsIndices.reserve(lightsMap.size() * pointLights.size());
-		for (int i = 0; i < lightsMap.size() * pointLights.size(); ++i)
+		lights_indices.reserve(lights_map.size() * point_lights.size());
+		for (int i = 0; i < lights_map.size() * point_lights.size(); ++i)
 		{
-			lightsIndices.emplace_back(-1);
+			lights_indices.emplace_back(-1);
 		}
 
 		// light
-		quadVert    = Vertex2D::GetQuadVertices();
-		quadIndices = Vertex2D::GetQuadIndices();
+		quad_vert    = vertex_2d::get_quad_vertices();
+		quad_indices = vertex_2d::get_quad_indices();
 
-		cPropsUbo.invProj = glm::inverse(camera.matrices.perspective);
-		cPropsUbo.invView = glm::inverse(camera.matrices.view);
-		cPropsUbo.pos     = camera.position;
-		cPropsUbo.zNear   = camera.cameraProperties.zNear;
-		cPropsUbo.zFar    = camera.cameraProperties.zFar;
+		c_props_ubo.inv_proj = glm::inverse(camera.matrices.perspective);
+		c_props_ubo.inv_view = glm::inverse(camera.matrices.view);
+		c_props_ubo.pos     = camera.position;
+		c_props_ubo.z_near   = camera.camera_properties.z_near;
+		c_props_ubo.z_far    = camera.camera_properties.z_far;
 
-		lightPc.xTileCount  = cullDataPc.xTileCount;
-		lightPc.yTileCount  = cullDataPc.yTileCount;
-		lightPc.xTileSizePx = xTileSizePx;
-		lightPc.yTileSizePx = yTileSizePx;
-		lightPc.zSlices     = zSlicesSize;
+		light_pc.x_tile_count  = cull_data_pc.x_tile_count;
+		light_pc.y_tile_count  = cull_data_pc.y_tile_count;
+		light_pc.x_tile_size_px = x_tile_size_px;
+		light_pc.y_tile_size_px = y_tile_size_px;
+		light_pc.z_slices     = z_slices_size;
 	}
 
-	void CreateBuffers()
+	void create_buffers()
 	{
-		RenderingResManager::GetInstance()->BuildIndirectBuffers();
+		rendering_res_manager::get_instance()->build_indirect_buffers();
 
-		lVertexBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
+		l_vertex_buffer = resources_manager::get_instance()->get_buffer(resources_manager::buffer_params{
 		    "lVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
 		    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		    sizeof(Vertex2D) * quadVert.size(), sizeof(Vertex2D),quadVert.data()});
+		    sizeof(vertex_2d) * quad_vert.size(), sizeof(vertex_2d),quad_vert.data()});
 
-		lIndexBuffer = ResourcesManager::GetInstance()->GetBuffer(ResourcesManager::BufferParams{
+		l_index_buffer = resources_manager::get_instance()->get_buffer(resources_manager::buffer_params{
 		    "lIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
 		    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		    sizeof(uint32_t) * quadIndices.size(),sizeof(Vertex2D), quadIndices.data()});
+		    sizeof(uint32_t) * quad_indices.size(),sizeof(vertex_2d), quad_indices.data()});
 	}
 
-	void CreatePipelines()
+	void create_pipelines()
 	{
-		auto &logicalDevice = core->logicalDevice.get();
+		auto &logical_device = core->logical_device.get();
 
 		// Cull meshes
-		std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
+		std::string shader_path = systems::os::get_instance()->get_shaders_path();
 
-		cullMeshesCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\meshCull.comp.spv", S_COMP);
+		cull_meshes_comp_shader = render_graph_ref->resources_manager->get_shader(shader_path + "\\spirvGlsl\\Compute\\meshCull.comp.spv", s_comp);
 
-		auto *meshCullRenderNode = renderGraphRef->AddPass(meshCullPassName);
-		meshCullRenderNode->G_SetCompShader(cullMeshesCompShader);
-		meshCullRenderNode->BuildRenderGraphNode();
+		auto *mesh_cull_render_node = render_graph_ref->add_pass(mesh_cull_pass_name);
+		mesh_cull_render_node->g_set_comp_shader(cull_meshes_comp_shader);
+		mesh_cull_render_node->build_render_graph_node();
 
 		// Cull pass//
 
-		cullCompShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Compute\\lightCulling.comp.spv", S_COMP);
+		cull_comp_shader = render_graph_ref->resources_manager->get_shader(shader_path + "\\spirvGlsl\\Compute\\lightCulling.comp.spv", s_comp);
 
-		auto *cullRenderNode = renderGraphRef->AddPass(computePassName);
-		cullRenderNode->G_SetCompShader(cullCompShader);
-		cullRenderNode->G_SetPushConstantSize(sizeof(ScreenDataPc));
-		cullRenderNode->BuildRenderGraphNode();
+		auto *cull_render_node = render_graph_ref->add_pass(compute_pass_name);
+		cull_render_node->g_set_comp_shader(cull_comp_shader);
+		cull_render_node->g_set_push_constant_size(sizeof(screen_data_pc));
+		cull_render_node->build_render_graph_node();
 
 		// gbuffer
 
-		gVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv", S_VERT);
-		gFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", S_FRAG);
+		g_vert_shader = render_graph_ref->resources_manager->get_shader(shader_path + "\\spirvGlsl\\ClusterRendering\\gBuffer.vert.spv", s_vert);
+		g_frag_shader = render_graph_ref->resources_manager->get_shader(shader_path + "\\spirvGlsl\\ClusterRendering\\gBuffer.frag.spv", s_frag);
 
-		VertexInput    vertexInput = M_Vertex3D::GetVertexInput();
-		AttachmentInfo colInfo     = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
+		engine::vertex_input    vertex_layout = m_vertex_3d::get_vertex_input();
+		engine::attachment_info col_info     = get_color_attachment_info(blend_configs::b_opaque,
             glm::vec4(0.0f), vk::Format::eR32G32B32A32Sfloat);
-		AttachmentInfo depthInfo  = GetDepthAttachmentInfo();
-		auto           renderNode = renderGraphRef->AddPass(gBufferPassName);
+		engine::attachment_info depth_info  = get_depth_attachment_info();
+		auto           render_node = render_graph_ref->add_pass(g_buffer_pass_name);
 
-		renderNode->G_SetVertShader(gVertShader);
-		renderNode->G_SetFragShader(gFragShader);
-		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->G_SetVertexInput(vertexInput);
-		renderNode->G_SetPushConstantSize(sizeof(MvpPc));
-		renderNode->G_AddColorAttachmentOutput(0, colInfo);
-		renderNode->G_AddColorAttachmentOutput(1, colInfo);
-		renderNode->G_AddColorAttachmentOutput(2, colInfo);
-		renderNode->G_AddColorAttachmentOutput(3, colInfo);
-		renderNode->G_AddColorAttachmentOutput(4, colInfo);
-		renderNode->G_SetDepthAttachmentOutput(depthInfo);
-		renderNode->G_SetDepthConfig(DepthConfigs::D_ENABLE);
-		renderNode->G_SetColorImageAttachmentBinding(0, colAttachmentView);
-		renderNode->G_SetColorImageAttachmentBinding(1, normAttachmentView);
-		renderNode->G_SetColorImageAttachmentBinding(2, tangAttachmentView);
-		renderNode->G_SetColorImageAttachmentBinding(3, metRoughAttachmentView);
-		renderNode->G_SetColorImageAttachmentBinding(4, uvAttachmentView);
-		renderNode->G_SetDepthImageResource(depthAttachmentView);
-		renderNode->G_SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
-		renderNode->AddBufferSync({B_COMPUTE_WRITE, B_DRAW_INDIRECT});
-		renderNode->DependsOn(meshCullPassName);
-		renderNode->BuildRenderGraphNode();
+		render_node->g_set_vert_shader(g_vert_shader);
+		render_node->g_set_frag_shader(g_frag_shader);
+		render_node->g_set_framebuffer_size(window_provider->get_window_size());
+		render_node->g_set_vertex_input(vertex_layout);
+		render_node->g_set_push_constant_size(sizeof(mvp_pc));
+		render_node->g_add_color_attachment_output(0, col_info);
+		render_node->g_add_color_attachment_output(1, col_info);
+		render_node->g_add_color_attachment_output(2, col_info);
+		render_node->g_add_color_attachment_output(3, col_info);
+		render_node->g_add_color_attachment_output(4, col_info);
+		render_node->g_set_depth_attachment_output(depth_info);
+		render_node->g_set_depth_config(depth_configs::d_enable);
+		render_node->g_set_color_image_attachment_binding(0, col_attachment_view);
+		render_node->g_set_color_image_attachment_binding(1, norm_attachment_view);
+		render_node->g_set_color_image_attachment_binding(2, tang_attachment_view);
+		render_node->g_set_color_image_attachment_binding(3, met_rough_attachment_view);
+		render_node->g_set_color_image_attachment_binding(4, uv_attachment_view);
+		render_node->g_set_depth_image_resource(depth_attachment_view);
+		render_node->g_set_graphics_pipeline_configs({r_fill, t_triangle});
+		render_node->add_buffer_sync({b_compute_write, b_draw_indirect});
+		render_node->depends_on(mesh_cull_pass_name);
+		render_node->build_render_graph_node();
 
 		// light pass//
 
-		lVertShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\Common\\Quad.vert.spv", S_VERT);
-		lFragShader = renderGraphRef->resourcesManager->GetShader(shaderPath + "\\spirvGlsl\\ClusterRendering\\light.frag.spv", S_FRAG);
+		l_vert_shader = render_graph_ref->resources_manager->get_shader(shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", s_vert);
+		l_frag_shader = render_graph_ref->resources_manager->get_shader(shader_path + "\\spirvGlsl\\ClusterRendering\\light.frag.spv", s_frag);
 
-		AttachmentInfo lColInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
-		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
+		engine::attachment_info l_col_info = get_color_attachment_info(blend_configs::b_opaque,
+		    glm::vec4(0.0f), core->swapchain_ref->get_format());
 
-		VertexInput lVertexInput = Vertex2D::GetVertexInput();
+		engine::vertex_input l_vertex_input = vertex_2d::get_vertex_input();
 
-		auto lRenderNode = renderGraphRef->AddPass(lightPassName);
-		lRenderNode->G_SetVertShader(lVertShader);
-		lRenderNode->G_SetFragShader(lFragShader);
-		lRenderNode->G_SetPushConstantSize(sizeof(LightPc));
-		lRenderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
-		lRenderNode->G_SetVertexInput(lVertexInput);
-		lRenderNode->G_AddColorAttachmentOutput(0, lColInfo);
-		lRenderNode->G_AddSamplerResource(colAttachmentView);
-		lRenderNode->G_AddSamplerResource(normAttachmentView);
-		lRenderNode->G_AddSamplerResource(tangAttachmentView);
-		lRenderNode->G_AddSamplerResource(metRoughAttachmentView);
-		lRenderNode->G_AddSamplerResource(uvAttachmentView);
-		lRenderNode->G_AddSamplerResource(depthAttachmentView);
-		lRenderNode->G_AddStorageResource(specularHolder);
-		lRenderNode->DependsOn(computePassName);
-		lRenderNode->BuildRenderGraphNode();
+		auto l_render_node = render_graph_ref->add_pass(light_pass_name);
+		l_render_node->g_set_vert_shader(l_vert_shader);
+		l_render_node->g_set_frag_shader(l_frag_shader);
+		l_render_node->g_set_push_constant_size(sizeof(light_pc));
+		l_render_node->g_set_framebuffer_size(window_provider->get_window_size());
+		l_render_node->g_set_vertex_input(l_vertex_input);
+		l_render_node->g_add_color_attachment_output(0, l_col_info);
+		l_render_node->g_add_sampler_resource(col_attachment_view);
+		l_render_node->g_add_sampler_resource(norm_attachment_view);
+		l_render_node->g_add_sampler_resource(tang_attachment_view);
+		l_render_node->g_add_sampler_resource(met_rough_attachment_view);
+		l_render_node->g_add_sampler_resource(uv_attachment_view);
+		l_render_node->g_add_sampler_resource(depth_attachment_view);
+		l_render_node->g_add_storage_resource(specular_holder);
+		l_render_node->depends_on(compute_pass_name);
+		l_render_node->build_render_graph_node();
 	}
-	glm::vec4 u_GetPlane(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2)
+	glm::vec4 u_get_plane(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2)
 	{
 		glm::vec3 v1 = p1 - p0;
 		glm::vec3 v2 = p2 - p0;
@@ -441,151 +441,151 @@ class ClusterRenderer : public BaseRenderer
 		return plane;
 	}
 
-	glm::vec4 ScreenToViewNDC(glm::mat4 invProj, float depth, glm::vec2 ndcCoords)
+	glm::vec4 screen_to_view_ndc(glm::mat4 inv_proj, float depth, glm::vec2 ndc_coords)
 	{
-		glm::vec4 ndcPos  = glm::vec4(ndcCoords, depth, 1.0);
-		glm::vec4 viewPos = invProj * ndcPos;
-		viewPos           = viewPos / viewPos.w;
-		return viewPos;
+		glm::vec4 ndc_pos  = glm::vec4(ndc_coords, depth, 1.0);
+		glm::vec4 view_pos = inv_proj * ndc_pos;
+		view_pos           = view_pos / view_pos.w;
+		return view_pos;
 	}
-	void BuildFrustumPlanes()
+	void build_frustum_planes()
 	{
-		glm::vec3 nearTopL    = ScreenToViewNDC(cPropsUbo.invProj, 0.0, glm::vec2(-1.0, 1.0));
-		glm::vec3 nearTopR    = ScreenToViewNDC(cPropsUbo.invProj, 0.0, glm::vec2(1.0, 1.0));
-		glm::vec3 nearBottomL = ScreenToViewNDC(cPropsUbo.invProj, 0.0, glm::vec2(-1.0, -1.0));
-		glm::vec3 nearBottomR = ScreenToViewNDC(cPropsUbo.invProj, 0.0, glm::vec2(1.0, -1.0));
+		glm::vec3 near_top_l    = screen_to_view_ndc(c_props_ubo.inv_proj, 0.0, glm::vec2(-1.0, 1.0));
+		glm::vec3 near_top_r    = screen_to_view_ndc(c_props_ubo.inv_proj, 0.0, glm::vec2(1.0, 1.0));
+		glm::vec3 near_bottom_l = screen_to_view_ndc(c_props_ubo.inv_proj, 0.0, glm::vec2(-1.0, -1.0));
+		glm::vec3 near_bottom_r = screen_to_view_ndc(c_props_ubo.inv_proj, 0.0, glm::vec2(1.0, -1.0));
 
-		glm::vec3 farTopL    = ScreenToViewNDC(cPropsUbo.invProj, 1.0, glm::vec2(-1.0, 1.0));
-		glm::vec3 farTopR    = ScreenToViewNDC(cPropsUbo.invProj, 1.0, glm::vec2(1.0, 1.0));
-		glm::vec3 farBottomL = ScreenToViewNDC(cPropsUbo.invProj, 1.0, glm::vec2(-1.0, -1.0));
-		glm::vec3 farBottomR = ScreenToViewNDC(cPropsUbo.invProj, 1.0, glm::vec2(1.0, -1.0));
+		glm::vec3 far_top_l    = screen_to_view_ndc(c_props_ubo.inv_proj, 1.0, glm::vec2(-1.0, 1.0));
+		glm::vec3 far_top_r    = screen_to_view_ndc(c_props_ubo.inv_proj, 1.0, glm::vec2(1.0, 1.0));
+		glm::vec3 far_bottom_l = screen_to_view_ndc(c_props_ubo.inv_proj, 1.0, glm::vec2(-1.0, -1.0));
+		glm::vec3 far_bottom_r = screen_to_view_ndc(c_props_ubo.inv_proj, 1.0, glm::vec2(1.0, -1.0));
 
-		camFrustum.points[0] = nearTopL;
-		camFrustum.points[1] = nearTopR;
-		camFrustum.points[2] = nearBottomL;
-		camFrustum.points[3] = nearBottomR;
+		cam_frustum.points[0] = near_top_l;
+		cam_frustum.points[1] = near_top_r;
+		cam_frustum.points[2] = near_bottom_l;
+		cam_frustum.points[3] = near_bottom_r;
 
-		camFrustum.points[4] = farTopL;
-		camFrustum.points[5] = farTopR;
-		camFrustum.points[6] = farBottomL;
-		camFrustum.points[7] = farBottomR;
+		cam_frustum.points[4] = far_top_l;
+		cam_frustum.points[5] = far_top_r;
+		cam_frustum.points[6] = far_bottom_l;
+		cam_frustum.points[7] = far_bottom_r;
 
 		// left
-		camFrustum.planes[0] = u_GetPlane(nearBottomL, farBottomL, nearTopL);
+		cam_frustum.planes[0] = u_get_plane(near_bottom_l, far_bottom_l, near_top_l);
 
 		// Right Plane
-		camFrustum.planes[1] = u_GetPlane(nearTopR, farTopR, nearBottomR);
+		cam_frustum.planes[1] = u_get_plane(near_top_r, far_top_r, near_bottom_r);
 
 		// Top Plane
-		camFrustum.planes[2] = u_GetPlane(nearTopL, farTopL, nearTopR);
+		cam_frustum.planes[2] = u_get_plane(near_top_l, far_top_l, near_top_r);
 
 		// Bottom Plane
-		camFrustum.planes[3] = u_GetPlane(nearBottomR, farBottomR, nearBottomL);
+		cam_frustum.planes[3] = u_get_plane(near_bottom_r, far_bottom_r, near_bottom_l);
 
 		// Near Plane
-		camFrustum.planes[4] = u_GetPlane(nearTopL, nearBottomR, nearBottomL);
+		cam_frustum.planes[4] = u_get_plane(near_top_l, near_bottom_r, near_bottom_l);
 
 		// Far Plane
-		camFrustum.planes[5] = u_GetPlane(farTopL, farBottomL, farBottomR);
+		cam_frustum.planes[5] = u_get_plane(far_top_l, far_bottom_l, far_bottom_r);
 	}
-	void MoveCam()
+	void move_cam()
 	{
 		glm::vec2 input = glm::vec2(0.0f);
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_W))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_W))
 		{
 			input += glm::vec2(0.0f, 1.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_S))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_S))
 		{
 			input += glm::vec2(0.0f, -1.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_D))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_D))
 		{
 			input += glm::vec2(1.0f, 0.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_A))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_A))
 		{
 			input += glm::vec2(-1.0f, 0.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_LEFT_SHIFT))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_LEFT_SHIFT))
 		{
-			camera.movementSpeed = 40;
+			camera.movement_speed = 40;
 		}
 		else
 		{
-			camera.movementSpeed = 5;
+			camera.movement_speed = 5;
 		}
 		input                = glm::clamp(input, glm::vec2(-1.0, -1.0), glm::vec2(1.0, 1.0));
-		glm::vec2 mouseInput = glm::vec2(-ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-		camera.mouseInput    = mouseInput;
-		if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
+		glm::vec2 mouse_input = glm::vec2(-ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+		camera.mouse_input    = mouse_input;
+		if (glfwGetMouseButton(window_provider->window, GLFW_MOUSE_BUTTON_2))
 		{
-			camera.RotateCamera();
-			camera.Move(deltaTime, input);
+			camera.rotate_camera();
+			camera.move(delta_time, input);
 		}
 		else
 		{
-			camera.firstMouse = true;
+			camera.first_mouse = true;
 		}
-		camera.UpdateCam();
+		camera.update_cam();
 	};
 
-	WindowProvider *windowProvider;
-	Core           *core;
-	RenderGraph    *renderGraphRef;
+	::window_provider *window_provider;
+	engine::core           *core;
+	engine::render_graph    *render_graph_ref;
 
-	Shader *gVertShader;
-	Shader *gFragShader;
+	shader *g_vert_shader;
+	shader *g_frag_shader;
 
-	Shader *lVertShader;
-	Shader *lFragShader;
+	shader *l_vert_shader;
+	shader *l_frag_shader;
 
-	Shader *cullCompShader;
-	Shader *cullMeshesCompShader;
+	shader *cull_comp_shader;
+	shader *cull_meshes_comp_shader;
 
-	ImageView *colAttachmentView;
-	ImageView *normAttachmentView;
-	ImageView *tangAttachmentView;
-	ImageView *metRoughAttachmentView;
-	ImageView *depthAttachmentView;
-	ImageView *uvAttachmentView;
-	ImageView *specularHolder;
+	engine::image_view *col_attachment_view;
+	engine::image_view *norm_attachment_view;
+	engine::image_view *tang_attachment_view;
+	engine::image_view *met_rough_attachment_view;
+	engine::image_view *depth_attachment_view;
+	engine::image_view *uv_attachment_view;
+	engine::image_view *specular_holder;
 
-	StagedBuffer *vertexBuffer;
-	StagedBuffer *indexBuffer;
+	staged_buffer *vertex_buffer;
+	staged_buffer *index_buffer;
 
-	Buffer *lVertexBuffer;
-	Buffer *lIndexBuffer;
+	engine::buffer *l_vertex_buffer;
+	engine::buffer *l_index_buffer;
 
-	std::string gBufferPassName  = "gBuffer";
-	std::string computePassName  = "cullLight";
-	std::string lightPassName    = "light";
-	std::string meshCullPassName = "cullMesh";
+	std::string g_buffer_pass_name  = "gBuffer";
+	std::string compute_pass_name  = "cullLight";
+	std::string light_pass_name    = "light";
+	std::string mesh_cull_pass_name = "cullMesh";
 
 	// gbuff
-	Camera  camera     = {glm::vec3(5.0f), Camera::CameraMode::E_FREE};
-	Camera  debugCam   = {glm::vec3(10.0f), Camera::CameraMode::E_FREE};
-	Camera *currCamera = nullptr;
-	MvpPc   pc{};
+	rendering::camera  camera     = {glm::vec3(5.0f), rendering::camera::camera_mode::e_free};
+	rendering::camera  debug_cam   = {glm::vec3(10.0f), rendering::camera::camera_mode::e_free};
+	rendering::camera *curr_camera = nullptr;
+	mvp_pc   pc{};
 
 	// culling
-	std::vector<PointLight>   pointLights;
-	std::vector<ArrayIndexer> lightsMap;
-	std::vector<int32_t>      lightsIndices;
-	std::vector<Sphere>       meshesSpheresCompact;
-	ScreenDataPc              cullDataPc{};
-	uint32_t                  xTileSizePx = 512;
-	uint32_t                  yTileSizePx = 512;
-	uint32_t                  zSlicesSize = 4;
-	uint32_t                  localSize   = 1;
+	std::vector<point_light>   point_lights;
+	std::vector<array_indexer> lights_map;
+	std::vector<int32_t>      lights_indices;
+	std::vector<sphere>       meshes_spheres_compact;
+	screen_data_pc              cull_data_pc{};
+	uint32_t                  x_tile_size_px = 512;
+	uint32_t                  y_tile_size_px = 512;
+	uint32_t                  z_slices_size = 4;
+	uint32_t                  local_size   = 1;
 
 	// light
-	std::vector<Vertex2D> quadVert;
-	std::vector<uint32_t> quadIndices;
-	CPropsUbo             cPropsUbo;
-	LightPc               lightPc{};
-	Frustum               camFrustum;
+	std::vector<vertex_2d> quad_vert;
+	std::vector<uint32_t> quad_indices;
+	c_props_ubo             c_props_ubo;
+	light_pc               light_pc{};
+	frustum               cam_frustum;
 };
-}        // namespace Rendering
+}        // namespace rendering
 
-#endif        // CLUSTERRENDERER_HPP
+#endif        // CLUSTER_RENDERER_HPP

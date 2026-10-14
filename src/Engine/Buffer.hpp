@@ -5,116 +5,116 @@
 #ifndef BUFFER_HPP
 #define BUFFER_HPP
 
-namespace ENGINE
+namespace engine
 {
-class Buffer
+class buffer
 {
   public:
-	void *Map()
+	void *map()
 	{
-		mappedMem = logicalDevice.mapMemory(deviceMemHandle.get(), 0, deviceSize);
-		return mappedMem;
+		mapped_mem = logical_device.mapMemory(device_mem_handle.get(), 0, device_size);
+		return mapped_mem;
 	}
 
-	void Unmap()
+	void unmap()
 	{
-		logicalDevice.unmapMemory(deviceMemHandle.get());
-		mappedMem = nullptr;
+		logical_device.unmapMemory(device_mem_handle.get());
+		mapped_mem = nullptr;
 	}
 	// whole_size for the whole buffer
-	void Flush(vk::DeviceSize offset = 0)
+	void flush(vk::DeviceSize offset = 0)
 	{
-		auto mappedMemRange = vk::MappedMemoryRange()
-		                          .setMemory(deviceMemHandle.get())
+		auto mapped_mem_range = vk::MappedMemoryRange()
+		                          .setMemory(device_mem_handle.get())
 		                          .setOffset(offset)
-		                          .setSize(deviceSize);
-		logicalDevice.flushMappedMemoryRanges(mappedMemRange);
+		                          .setSize(device_size);
+		logical_device.flushMappedMemoryRanges(mapped_mem_range);
 	}
-	void Invlidate(vk::DeviceSize offset = 0)
+	void invlidate(vk::DeviceSize offset = 0)
 	{
-		auto mappedMemRange = vk::MappedMemoryRange()
-		                          .setMemory(deviceMemHandle.get())
+		auto mapped_mem_range = vk::MappedMemoryRange()
+		                          .setMemory(device_mem_handle.get())
 		                          .setOffset(offset)
-		                          .setSize(deviceSize);
-		logicalDevice.invalidateMappedMemoryRanges(mappedMemRange);
+		                          .setSize(device_size);
+		logical_device.invalidateMappedMemoryRanges(mapped_mem_range);
 	}
-	void SetupDescriptor(vk::DeviceSize offset = 0)
+	void setup_descriptor(vk::DeviceSize offset = 0)
 	{
-		descriptor.buffer = bufferHandle.get();
-		descriptor.range  = deviceSize;
+		descriptor.buffer = buffer_handle.get();
+		descriptor.range  = device_size;
 		descriptor.offset = offset;
 	}
 	
-	HANDLE GetBufferHandle()
+	HANDLE get_buffer_handle()
 	{
-		assert(isExternal && "Buffer is not external so external handle was not created");
-		return winMemHandle;
+		assert(is_external && "Buffer is not external so external handle was not created");
+		return win_mem_handle;
 	}
 
-	Buffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::BufferUsageFlags bufferUsageFlags,
-	       vk::MemoryPropertyFlags memPropertyFlags, vk::DeviceSize deviceSize, vk::DeviceSize stride,
-	        void *data = nullptr, bool isExternal = false)
+	buffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::BufferUsageFlags buffer_usage_flags,
+	       vk::MemoryPropertyFlags mem_property_flags, vk::DeviceSize device_size, vk::DeviceSize stride,
+	        void *data = nullptr, bool is_external = false)
 	{
-		this->logicalDevice    = logicalDevice;
-		this->physicalDevice   = physicalDevice;
-		this->deviceSize       = deviceSize;
-		this->usageFlags       = bufferUsageFlags;
-		this->isExternal = isExternal;
+		this->logical_device    = logical_device;
+		this->physical_device   = physical_device;
+		this->device_size       = device_size;
+		this->usage_flags       = buffer_usage_flags;
+		this->is_external = is_external;
 		this->stride = stride;
-		this->memPropertyFlags = memPropertyFlags;
-		auto bufferCreateInfo  = vk::BufferCreateInfo()
-		                            .setSize(deviceSize)
-		                            .setUsage(bufferUsageFlags)
+		this->mem_property_flags = mem_property_flags;
+		auto buffer_create_info  = vk::BufferCreateInfo()
+		                            .setSize(device_size)
+		                            .setUsage(buffer_usage_flags)
 		                            .setSharingMode(vk::SharingMode::eExclusive);
 
-		vk::ExternalMemoryBufferCreateInfo externalMemCreateInfo{};
-		externalMemCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
-		if (this->isExternal)
+		vk::ExternalMemoryBufferCreateInfo external_mem_create_info{};
+		external_mem_create_info.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+		if (this->is_external)
 		{
-			bufferCreateInfo.pNext = &externalMemCreateInfo;
+			buffer_create_info.pNext = &external_mem_create_info;
 		}
 
-		bufferHandle = logicalDevice.createBufferUnique(bufferCreateInfo);
+		buffer_handle = logical_device.createBufferUnique(buffer_create_info);
 
-		vk::MemoryRequirements bufferMemReq = logicalDevice.getBufferMemoryRequirements(bufferHandle.get());
+		vk::MemoryRequirements buffer_mem_req = logical_device.getBufferMemoryRequirements(buffer_handle.get());
 
-		alignment         = bufferMemReq.alignment;
-		auto memAllocInfo = vk::MemoryAllocateInfo()
-		                        .setAllocationSize(bufferMemReq.size)
-		                        .setMemoryTypeIndex(FindMemoryTypeIndex(physicalDevice, bufferMemReq.memoryTypeBits, memPropertyFlags));
+		alignment         = buffer_mem_req.alignment;
+		auto mem_alloc_info = vk::MemoryAllocateInfo()
+		                        .setAllocationSize(buffer_mem_req.size)
+		                        .setMemoryTypeIndex(find_memory_type_index(physical_device, buffer_mem_req.memoryTypeBits, mem_property_flags));
 
-		vk::ExportMemoryAllocateInfo exportAllocateInfo{};
-		exportAllocateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
-		if (this->isExternal)
+		vk::ExportMemoryAllocateInfo export_allocate_info{};
+		export_allocate_info.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+		if (this->is_external)
 		{
-			memAllocInfo.pNext = &exportAllocateInfo;
+			mem_alloc_info.pNext = &export_allocate_info;
 		}
 
-		deviceMemHandle = logicalDevice.allocateMemoryUnique(memAllocInfo);
+		device_mem_handle = logical_device.allocateMemoryUnique(mem_alloc_info);
 
 		if (data != nullptr)
 		{
-			Map();
-			memcpy(mappedMem, data, deviceSize);
-			Unmap();
-			if (!(memPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent))
+			map();
+			memcpy(mapped_mem, data, device_size);
+			unmap();
+			if (!(mem_property_flags & vk::MemoryPropertyFlagBits::eHostCoherent))
 			{
-				Flush();
+				flush();
 			}
 		}
-		if ((bufferUsageFlags & vk::BufferUsageFlagBits::eStorageBuffer) || (bufferUsageFlags &
+		if ((buffer_usage_flags & vk::BufferUsageFlagBits::eStorageBuffer) || (buffer_usage_flags &
 		                                                                     vk::BufferUsageFlagBits::eUniformBuffer))
 		{
-			SetupDescriptor();
+			setup_descriptor();
 		}
 
-		logicalDevice.bindBufferMemory(bufferHandle.get(), deviceMemHandle.get(), 0);
+		logical_device.bindBufferMemory(buffer_handle.get(), device_mem_handle.get(), 0);
 		
-		if (this->isExternal)
+		if (this->is_external)
 		{
 			
 			PFN_vkGetMemoryWin32HandleKHR fn = reinterpret_cast<PFN_vkGetMemoryWin32HandleKHR>(
-			vkGetDeviceProcAddr(logicalDevice, "vkGetMemoryWin32HandleKHR"));
+			vkGetDeviceProcAddr(logical_device, "vkGetMemoryWin32HandleKHR"));
 			
 			if (!fn)
 			{
@@ -123,14 +123,14 @@ class Buffer
 			
 			VkMemoryGetWin32HandleInfoKHR info{};
 			info.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
-			info.memory = static_cast<VkDeviceMemory>(deviceMemHandle.get());
+			info.memory = static_cast<VkDeviceMemory>(device_mem_handle.get());
 			info.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 
 			VkResult result =
 				fn(
-					static_cast<VkDevice>(logicalDevice),
+					static_cast<VkDevice>(logical_device),
 					&info,
-					&winMemHandle
+					&win_mem_handle
 				);
 			
 			if (result != VK_SUCCESS)
@@ -140,22 +140,22 @@ class Buffer
 		}
 	}
 
-	vk::UniqueDeviceMemory   deviceMemHandle;
-	vk::DeviceSize           deviceSize;
+	vk::UniqueDeviceMemory   device_mem_handle;
+	vk::DeviceSize           device_size;
 	vk::DeviceSize           alignment;
 	vk::DeviceSize           stride;
 	vk::DeviceSize           offset = 0;
-	vk::BufferUsageFlags     usageFlags;
-	vk::MemoryPropertyFlags  memPropertyFlags;
-	vk::Device               logicalDevice;
-	vk::PhysicalDevice       physicalDevice;
-	vk::UniqueBuffer         bufferHandle;
+	vk::BufferUsageFlags     usage_flags;
+	vk::MemoryPropertyFlags  mem_property_flags;
+	vk::Device               logical_device;
+	vk::PhysicalDevice       physical_device;
+	vk::UniqueBuffer         buffer_handle;
 	vk::DescriptorBufferInfo descriptor;
-	BufferUsageTypes         bufferUsage = B_EMPTY;
-	void                    *mappedMem;
+	buffer_usage_types         buffer_usage = b_empty;
+	void                    *mapped_mem;
 private:
-	HANDLE winMemHandle;
-	bool isExternal;
+	HANDLE win_mem_handle;
+	bool is_external;
 };
-}        // namespace ENGINE
+}        // namespace engine
 #endif        // BUFFER_HPP

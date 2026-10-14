@@ -4,377 +4,377 @@
 
 #ifndef CORE_HPP
 
-namespace ENGINE
+namespace engine
 {
 
-class PresentQueue;
-class SwapChain;
-class RenderGraph;
-class QueueWorkerManager;
+class present_queue;
+class swap_chain;
+class render_graph;
+class queue_worker_manager;
 
-class Core
+class core
 {
   public:
-	Core(const char **instanceExtensions, uint8_t instanceExtensionsCount, WindowDesc *compatibleWindowDesc, bool enableDebugging);
-	~Core();
-	void ClearCaches();
+	core(const char **instance_extensions, uint8_t instance_extensions_count, window_desc *compatible_window_desc, bool enable_debugging);
+	~core();
+	void clear_caches();
 
-	std::unique_ptr<SwapChain>   CreateSwapchain(vk::PresentModeKHR presentModeKHR, uint32_t imageCount, WindowDesc windowDesc, glm::uvec2 windowSize);
-	std::unique_ptr<RenderGraph> CreateRenderGraph();
+	std::unique_ptr<engine::swap_chain>   create_swapchain(vk::PresentModeKHR present_mode_khr, uint32_t image_count, window_desc window_desc, glm::uvec2 window_size);
+	std::unique_ptr<engine::render_graph> create_render_graph();
 
-	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffers(vk::CommandPool commandPoolIn, size_t count);
-	std::vector<vk::UniqueCommandBuffer> AllocateCommandBuffersSecondary(vk::CommandPool commandPool, size_t count);
-	vk::UniqueSemaphore                  CreateVulkanSemaphore();
-	vk::UniqueSemaphore                  CreateExportableBinarySemaphore(HANDLE& handleOut);
-	vk::UniqueSemaphore                  CreateVulkanTimelineSemaphore(uint32_t initialValue);
-	vk::UniqueSemaphore                  CreateExportableTimelineSemaphore(uint32_t initialValue, HANDLE& handleOut);
-	vk::UniqueFence                      CreateFence(bool state);
-	void                                 WaitForFence(vk::Fence fence);
-	void                                 ResetFence(vk::Fence fence);
+	std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::CommandPool command_pool_in, size_t count);
+	std::vector<vk::UniqueCommandBuffer> allocate_command_buffers_secondary(vk::CommandPool command_pool, size_t count);
+	vk::UniqueSemaphore                  create_vulkan_semaphore();
+	vk::UniqueSemaphore                  create_exportable_binary_semaphore(HANDLE& handle_out);
+	vk::UniqueSemaphore                  create_vulkan_timeline_semaphore(uint32_t initial_value);
+	vk::UniqueSemaphore                  create_exportable_timeline_semaphore(uint32_t initial_value, HANDLE& handle_out);
+	vk::UniqueFence                      create_fence(bool state);
+	void                                 wait_for_fence(vk::Fence fence);
+	void                                 reset_fence(vk::Fence fence);
 
-	void WaitIdle();
+	void wait_idle();
 
-	static vk::Queue GetDeviceQueue(vk::Device logicalDevice, uint32_t familyIndex);
+	static vk::Queue get_device_queue(vk::Device logical_device, uint32_t family_index);
 
-	static vk::UniqueCommandPool CreateCommandPool(vk::Device logicalDevice, uint32_t familyIndex);
+	static vk::UniqueCommandPool create_command_pool(vk::Device logical_device, uint32_t family_index);
 
 	vk::UniqueInstance                  instance;
-	vk::PhysicalDevice                  physicalDevice;
-	vk::UniqueDevice                    logicalDevice;
-	bool                                resizeRequested = false;
-	RenderGraph                        *renderGraphRef;
-	SwapChain                          *swapchainRef;
-	std::deque<std::function<void()> *> deletionQueue;
-	std::unique_ptr<QueueWorkerManager> queueWorkerManager;
-	QueueFamilyIndices                  queueFamilyIndices;
-	std::array<uint8_t, VK_UUID_SIZE>   deviceUUID;
+	vk::PhysicalDevice                  physical_device;
+	vk::UniqueDevice                    logical_device;
+	bool                                resize_requested = false;
+	engine::render_graph                        *render_graph_ref;
+	engine::swap_chain                          *swapchain_ref;
+	std::deque<std::function<void()> *> deletion_queue;
+	std::unique_ptr<engine::queue_worker_manager> queue_worker_manager;
+	engine::queue_family_indices                  queue_family_ids;
+	std::array<uint8_t, VK_UUID_SIZE>   device_uuid;
 
   private:
-	static vk::UniqueInstance CreateInstance(const std::vector<const char *> &instanceExtensions,
-	                                         const std::vector<const char *> &validationLayers);
+	static vk::UniqueInstance create_instance(const std::vector<const char *> &instance_extensions,
+	                                         const std::vector<const char *> &validation_layers);
 
-	static vk::PhysicalDevice FindPhysicalDevice(vk::Instance instance);
+	static vk::PhysicalDevice find_physical_device(vk::Instance instance);
 
-	static std::array<uint8_t, VK_UUID_SIZE> FindPhysicalDeviceUUID(vk::PhysicalDevice physicalDeviceIn);
+	static std::array<uint8_t, VK_UUID_SIZE> find_physical_device_uuid(vk::PhysicalDevice physical_device_in);
 
-	static QueueFamilyIndices FindQueueFamilyIndices(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
+	static engine::queue_family_indices find_queue_family_indices(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
 
-	static vk::UniqueDevice CreateLogicalDevice(vk::PhysicalDevice physicalDevice, QueueFamilyIndices familyIndices, std::vector<const char *> deviceExtensions, std::vector<const char *> validationLayers);
+	static vk::UniqueDevice create_logical_device(vk::PhysicalDevice physical_device, engine::queue_family_indices family_indices, std::vector<const char *> device_extensions, std::vector<const char *> validation_layers);
 
-	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, VulkanDispatchLoaderDynamic> CreateDebugUtilsMessenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debugCallback, VulkanDispatchLoaderDynamic &loader);
+	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vulkan_dispatch_loader_dynamic> create_debug_utils_messenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debug_callback, vulkan_dispatch_loader_dynamic &loader);
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessageCallback(
-	    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-	    VkDebugUtilsMessageTypeFlagsEXT             messageType,
-	    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-	    void                                       *pUserData);
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debug_message_callback(
+	    VkDebugUtilsMessageSeverityFlagBitsEXT      message_severity,
+	    VkDebugUtilsMessageTypeFlagsEXT             message_type,
+	    const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
+	    void                                       *p_user_data);
 
-	friend class Swapchain;
-	friend class RenderGraph;
+	friend class swapchain;
+	friend class render_graph;
 
-	VulkanDispatchLoaderDynamic                                               loader;
-	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, VulkanDispatchLoaderDynamic> debugUtilsMessenger;
+	vulkan_dispatch_loader_dynamic                                               loader;
+	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vulkan_dispatch_loader_dynamic> debug_utils_messenger;
 };
 
-struct WorkerQueue
+struct worker_queue
 {
-	Core                                             *coreRef           = nullptr;
-	vk::Queue                                         workerQueue       = {};
-	int32_t                                           familyIndex       = -1;
-	vk::UniqueCommandPool                             workerCommandPool = {};
-	SYSTEMS::TaskThread                               taskThreat        = {};
-	std::vector<std::vector<vk::UniqueCommandBuffer>> commandBuffers;
-	vk::UniqueSemaphore                               timelineSem;
-	HANDLE                                            exportableHandle   = nullptr;
-	int64_t                                           timelineValue      = -1;
+	engine::core                                             *core_ref           = nullptr;
+	vk::Queue                                         queue_handle       = {};
+	int32_t                                           family_index       = -1;
+	vk::UniqueCommandPool                             worker_command_pool = {};
+	systems::task_thread                               task_threat        = {};
+	std::vector<std::vector<vk::UniqueCommandBuffer>> command_buffers;
+	vk::UniqueSemaphore                               timeline_sem;
+	HANDLE                                            exportable_handle   = nullptr;
+	int64_t                                           timeline_value      = -1;
 	std::string                                       name               = "";
-	int                                               perCmdPoolSize     = 0;
-	bool                                              isMainThreat       = true;
-	bool                                              isForExternalUsage = false;
-	int                                               activeCmdIdx       = 0;
-	int                                               cmdsPoolSize       = 0;
-	int                                               currentPoolCmdIdx  = 0;
+	int                                               per_cmd_pool_size     = 0;
+	bool                                              is_main_threat       = true;
+	bool                                              is_for_external_usage = false;
+	int                                               active_cmd_idx       = 0;
+	int                                               cmds_pool_size       = 0;
+	int                                               current_pool_cmd_idx  = 0;
 	
-	HANDLE& GetExportableHandle()
+	HANDLE& get_exportable_handle()
 	{
-		assert(exportableHandle!= nullptr);
-		return exportableHandle;
+		assert(exportable_handle!= nullptr);
+		return exportable_handle;
 	}
 
-	vk::CommandBuffer &RequestQueueCmd(int &poolIdxOut)
+	vk::CommandBuffer &request_queue_cmd(int &pool_idx_out)
 	{
-		assert(currentPoolCmdIdx < 10 && "never should be that many pools");
-		assert(cmdsPoolSize < 10 && "never should be that many pools");
-		if (currentPoolCmdIdx >= cmdsPoolSize)
+		assert(current_pool_cmd_idx < 10 && "never should be that many pools");
+		assert(cmds_pool_size < 10 && "never should be that many pools");
+		if (current_pool_cmd_idx >= cmds_pool_size)
 		{
-			IncreasePool();
-			AllocatePoolCmds(perCmdPoolSize, currentPoolCmdIdx);
+			increase_pool();
+			allocate_pool_cmds(per_cmd_pool_size, current_pool_cmd_idx);
 		}
-		poolIdxOut            = currentPoolCmdIdx;
-		vk::CommandBuffer cmd = GetCurrentCmd(currentPoolCmdIdx);
-		currentPoolCmdIdx++;
+		pool_idx_out            = current_pool_cmd_idx;
+		vk::CommandBuffer cmd = get_current_cmd(current_pool_cmd_idx);
+		current_pool_cmd_idx++;
 
 		return cmd;
 	}
 
-	void InitTimelineSemaphore(int timelineValueIn, bool externalUsageIn)
+	void init_timeline_semaphore(int timeline_value_in, bool external_usage_in)
 	{
-		assert(coreRef != nullptr);
+		assert(core_ref != nullptr);
 
-		isForExternalUsage = externalUsageIn;
-		timelineValue      = timelineValueIn;
-		if (isForExternalUsage)
+		is_for_external_usage = external_usage_in;
+		timeline_value      = timeline_value_in;
+		if (is_for_external_usage)
 		{
-			timelineSem = coreRef->CreateExportableTimelineSemaphore(timelineValue, exportableHandle);
+			timeline_sem = core_ref->create_exportable_timeline_semaphore(timeline_value, exportable_handle);
 		}
 		else
 		{
-			timelineSem = coreRef->CreateVulkanTimelineSemaphore(timelineValue);
+			timeline_sem = core_ref->create_vulkan_timeline_semaphore(timeline_value);
 		}
 	}
 
-	void ResetPoolUsage()
+	void reset_pool_usage()
 	{
-		currentPoolCmdIdx = 0;
+		current_pool_cmd_idx = 0;
 	}
-	void IncreasePool()
+	void increase_pool()
 	{
-		assert(cmdsPoolSize < 10 && "never should be that many pools");
-		cmdsPoolSize++;
-		commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
+		assert(cmds_pool_size < 10 && "never should be that many pools");
+		cmds_pool_size++;
+		command_buffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
 	}
 
-	void InitCmdsToUsePools(int count)
+	void init_cmds_to_use_pools(int count)
 	{
-		cmdsPoolSize = count;
-		commandBuffers.reserve(10);
+		cmds_pool_size = count;
+		command_buffers.reserve(10);
 		for (int i = 0; i < count; ++i)
 		{
-			commandBuffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
+			command_buffers.emplace_back(std::vector<vk::UniqueCommandBuffer>());
 		}
 	}
 
-	void SetCmdIdx(int idx)
+	void set_cmd_idx(int idx)
 	{
-		assert(coreRef != nullptr && "Core is null");
-		if (commandBuffers.empty())
+		assert(core_ref != nullptr && "Core is null");
+		if (command_buffers.empty())
 		{
 			return;
 		}
-		activeCmdIdx = idx;
+		active_cmd_idx = idx;
 	}
-	vk::CommandBuffer &GetCurrentCmd(int cmdPoolIdx)
+	vk::CommandBuffer &get_current_cmd(int cmd_pool_idx)
 	{
-		assert(coreRef != nullptr && "Core is null");
-		assert(commandBuffers.size() != 0 && "There is no cmds allocated");
-		return commandBuffers[cmdPoolIdx][activeCmdIdx].get();
+		assert(core_ref != nullptr && "Core is null");
+		assert(command_buffers.size() != 0 && "There is no cmds allocated");
+		return command_buffers[cmd_pool_idx][active_cmd_idx].get();
 	};
 
-	void AllocatePoolCmds(int count, int cmdPoolIdx)
+	void allocate_pool_cmds(int count, int cmd_pool_idx)
 	{
-		assert(coreRef != nullptr && "Core is null");
-		assert(!commandBuffers.empty() && "command buffers must be non empty");
-		assert(cmdPoolIdx < commandBuffers.size() && "pool idx is bigger than the command buffer pools");
+		assert(core_ref != nullptr && "Core is null");
+		assert(!command_buffers.empty() && "command buffers must be non empty");
+		assert(cmd_pool_idx < command_buffers.size() && "pool idx is bigger than the command buffer pools");
 		assert(count > 0 && "there must be more than 0 cmds to allocate");
-		commandBuffers[cmdPoolIdx] = std::move(coreRef->AllocateCommandBuffers(workerCommandPool.get(), count));
+		command_buffers[cmd_pool_idx] = std::move(core_ref->allocate_command_buffers(worker_command_pool.get(), count));
 	}
 
-	void AllocateAllCmds(int count)
+	void allocate_all_cmds(int count)
 	{
-		assert(coreRef != nullptr && "Core is null");
-		assert(!commandBuffers.empty() && "command buffers must be non empty");
-		perCmdPoolSize = count;
-		for (int i = 0; i < commandBuffers.size(); ++i)
+		assert(core_ref != nullptr && "Core is null");
+		assert(!command_buffers.empty() && "command buffers must be non empty");
+		per_cmd_pool_size = count;
+		for (int i = 0; i < command_buffers.size(); ++i)
 		{
-			AllocatePoolCmds(perCmdPoolSize, i);
+			allocate_pool_cmds(per_cmd_pool_size, i);
 		}
 	}
 
-	void BeginCurrentCmds(vk::CommandBufferBeginInfo beginInfo)
+	void begin_current_cmds(vk::CommandBufferBeginInfo begin_info)
 	{
-		for (int i = 0; i < commandBuffers.size(); ++i)
+		for (int i = 0; i < command_buffers.size(); ++i)
 		{
-			commandBuffers[i][activeCmdIdx]->begin(beginInfo);
+			command_buffers[i][active_cmd_idx]->begin(begin_info);
 		}
 	}
-	void EndCurrentCmds()
+	void end_current_cmds()
 	{
-		for (int i = 0; i < commandBuffers.size(); ++i)
+		for (int i = 0; i < command_buffers.size(); ++i)
 		{
-			commandBuffers[i][activeCmdIdx]->end();
+			command_buffers[i][active_cmd_idx]->end();
 		}
 	}
-	WorkerQueue()                               = default;
-	~WorkerQueue()                              = default;
-	WorkerQueue(const WorkerQueue &)            = delete;
-	WorkerQueue &operator=(const WorkerQueue &) = delete;
-	WorkerQueue(WorkerQueue &&)                 = default;
-	WorkerQueue &operator=(WorkerQueue &&)      = default;
+	worker_queue()                               = default;
+	~worker_queue()                              = default;
+	worker_queue(const worker_queue &)            = delete;
+	worker_queue &operator=(const worker_queue &) = delete;
+	worker_queue(worker_queue &&)                 = default;
+	worker_queue &operator=(worker_queue &&)      = default;
 };
 
-class QueueWorkerManager
+class queue_worker_manager
 {
   public:
-	QueueWorkerManager(Core *core)
+	queue_worker_manager(engine::core *core)
 	{
 		assert(core != nullptr);
-		this->coreRef = core;
+		this->core_ref = core;
 	}
-	~QueueWorkerManager() = default;
-	WorkerQueue *GetOrCreateWorkerQueue(std::string name, uint32_t familyIndex, bool mainThread = true, bool externalUsage = false)
+	~queue_worker_manager() = default;
+	worker_queue *get_or_create_worker_queue(std::string name, uint32_t family_index, bool main_thread = true, bool external_usage = false)
 	{
-		assert(coreRef != nullptr);
-		if (workersQueues.contains(name))
+		assert(core_ref != nullptr);
+		if (workers_queues.contains(name))
 		{
-			return GetWorkerQueue(name);
+			return get_worker_queue(name);
 		}
-		workersQueues.try_emplace(name);
-		auto &queueRef             = workersQueues.at(name);
-		queueRef.coreRef           = coreRef;
-		queueRef.name              = name;
-		queueRef.workerQueue       = coreRef->GetDeviceQueue(coreRef->logicalDevice.get(), familyIndex);
-		queueRef.familyIndex       = static_cast<int32_t>(familyIndex);
-		queueRef.isMainThreat      = mainThread;
-		queueRef.cmdsPoolSize      = 1;
-		queueRef.isForExternalUsage = externalUsage;
-		queueRef.workerCommandPool = coreRef->CreateCommandPool(coreRef->logicalDevice.get(), familyIndex);
-		queueRef.InitCmdsToUsePools(queueRef.cmdsPoolSize);
-		queueRef.InitTimelineSemaphore(0, externalUsage);
-		if (mainThread == false)
+		workers_queues.try_emplace(name);
+		auto &queue_ref             = workers_queues.at(name);
+		queue_ref.core_ref           = core_ref;
+		queue_ref.name              = name;
+		queue_ref.queue_handle       = core_ref->get_device_queue(core_ref->logical_device.get(), family_index);
+		queue_ref.family_index       = static_cast<int32_t>(family_index);
+		queue_ref.is_main_threat      = main_thread;
+		queue_ref.cmds_pool_size      = 1;
+		queue_ref.is_for_external_usage = external_usage;
+		queue_ref.worker_command_pool = core_ref->create_command_pool(core_ref->logical_device.get(), family_index);
+		queue_ref.init_cmds_to_use_pools(queue_ref.cmds_pool_size);
+		queue_ref.init_timeline_semaphore(0, external_usage);
+		if (main_thread == false)
 		{
-			queueRef.taskThreat.Start();
+			queue_ref.task_threat.start();
 		}
-		return &queueRef;
+		return &queue_ref;
 	}
-	WorkerQueue *GetWorkerQueue(std::string name)
+	worker_queue *get_worker_queue(std::string name)
 	{
-		if (!workersQueues.contains(name))
+		if (!workers_queues.contains(name))
 		{
 			return nullptr;
 		}
-		return &workersQueues.at(name);
+		return &workers_queues.at(name);
 	}
 
-	vk::CommandBuffer RequestWorkerQueueCmd(std::string name, int &cmdPoolIdxUsedOut)
+	vk::CommandBuffer request_worker_queue_cmd(std::string name, int &cmd_pool_idx_used_out)
 	{
-		if (!workersQueues.contains(name))
+		if (!workers_queues.contains(name))
 		{
 			return nullptr;
 		};
-		return workersQueues.at(name).RequestQueueCmd(cmdPoolIdxUsedOut);
+		return workers_queues.at(name).request_queue_cmd(cmd_pool_idx_used_out);
 	}
 
-	WorkerQueue *UseQueue(std::string name)
+	worker_queue *use_queue(std::string name)
 	{
-		if (!workersQueues.contains(name))
+		if (!workers_queues.contains(name))
 		{
 			return nullptr;
 		}
-		return &workersQueues.at(name);
+		return &workers_queues.at(name);
 	}
 
-	void SetFrameIndex(int frameIdx)
+	void set_frame_index(int frame_idx)
 	{
-		for (auto &queue : workersQueues)
+		for (auto &queue : workers_queues)
 		{
-			queue.second.SetCmdIdx(frameIdx);
+			queue.second.set_cmd_idx(frame_idx);
 		}
 	}
-	void AllocateCmds(int count)
+	void allocate_cmds(int count)
 	{
-		for (auto &queue : workersQueues)
+		for (auto &queue : workers_queues)
 		{
 			if (queue.first == "Present")
 			{
 				continue;
 			}
-			queue.second.AllocateAllCmds(count);
+			queue.second.allocate_all_cmds(count);
 		}
 	}
-	void BeginCmds()
+	void begin_cmds()
 	{
-		for (auto &queue : workersQueues)
+		for (auto &queue : workers_queues)
 		{
 			if (queue.first == "Present")
 			{
 				continue;
 			}
-			auto bufferBeginInfo = vk::CommandBufferBeginInfo()
+			auto buffer_begin_info = vk::CommandBufferBeginInfo()
 			                           .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
-			queue.second.BeginCurrentCmds(bufferBeginInfo);
+			queue.second.begin_current_cmds(buffer_begin_info);
 		}
 	}
 
-	void EndCmds()
+	void end_cmds()
 	{
-		for (auto &queue : workersQueues)
+		for (auto &queue : workers_queues)
 		{
 			if (queue.first == "Present")
 			{
 				continue;
 			}
-			// for (auto cmdsPool : queue.second.commandBuffers)
+			// for (auto cmdsPool : queue.second.command_buffers)
 			// {
 			// }
-			queue.second.EndCurrentCmds();
+			queue.second.end_current_cmds();
 		}
 	}
-	void ResetPoolUsage()
+	void reset_pool_usage()
 	{
-		for (auto &queue : workersQueues)
+		for (auto &queue : workers_queues)
 		{
 			if (queue.first == "Present")
 			{
 				continue;
 			}
-			queue.second.ResetPoolUsage();
+			queue.second.reset_pool_usage();
 		}
 	}
-	Core                                        *coreRef;
-	std::unordered_map<std::string, WorkerQueue> workersQueues = {};
+	engine::core                                        *core_ref;
+	std::unordered_map<std::string, worker_queue> workers_queues = {};
 };
 
-class ExecuteOnceCommand
+class execute_once_command
 {
   public:
-	ExecuteOnceCommand(Core *core, std::string queueName = "Graphics")
+	execute_once_command(engine::core *core, std::string queue_name = "Graphics")
 	{
 		this->core          = core;
-		this->queueName     = queueName;
-		commandBufferHandle = std::move(core->AllocateCommandBuffers(core->queueWorkerManager->GetWorkerQueue(queueName)->workerCommandPool.get(), 1)[0]);
+		this->queue_name     = queue_name;
+		command_buffer_handle = std::move(core->allocate_command_buffers(core->queue_worker_manager->get_worker_queue(queue_name)->worker_command_pool.get(), 1)[0]);
 	}
 
-	vk::CommandBuffer BeginCommandBuffer()
+	vk::CommandBuffer begin_command_buffer()
 	{
-		auto bufferBeginInfo = vk::CommandBufferBeginInfo()
+		auto buffer_begin_info = vk::CommandBufferBeginInfo()
 		                           .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		commandBufferHandle->begin(bufferBeginInfo);
-		return commandBufferHandle.get();
+		command_buffer_handle->begin(buffer_begin_info);
+		return command_buffer_handle.get();
 	}
 
-	void EndCommandBuffer()
+	void end_command_buffer()
 	{
-		commandBufferHandle->end();
-		vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eAllCommands};
+		command_buffer_handle->end();
+		vk::PipelineStageFlags wait_stages[] = {vk::PipelineStageFlagBits::eAllCommands};
 
-		auto submitInfo = vk::SubmitInfo()
+		auto submit_info = vk::SubmitInfo()
 		                      .setWaitSemaphoreCount(0)
-		                      .setPWaitDstStageMask(waitStages)
+		                      .setPWaitDstStageMask(wait_stages)
 		                      .setCommandBufferCount(1)
-		                      .setPCommandBuffers(&commandBufferHandle.get())
+		                      .setPCommandBuffers(&command_buffer_handle.get())
 		                      .setSignalSemaphoreCount(0);
 
-		core->queueWorkerManager->GetWorkerQueue(this->queueName)->workerQueue.submit({submitInfo}, nullptr);
-		core->queueWorkerManager->GetWorkerQueue(this->queueName)->workerQueue.waitIdle();
+		core->queue_worker_manager->get_worker_queue(this->queue_name)->queue_handle.submit({submit_info}, nullptr);
+		core->queue_worker_manager->get_worker_queue(this->queue_name)->queue_handle.waitIdle();
 	}
 
-	Core                   *core;
-	vk::UniqueCommandBuffer commandBufferHandle;
-	std::string             queueName = "Graphics";
+	engine::core                   *core;
+	vk::UniqueCommandBuffer command_buffer_handle;
+	std::string             queue_name = "Graphics";
 };
 
-}        // namespace ENGINE
+}        // namespace engine
 
 #	define CORE_HPP
 

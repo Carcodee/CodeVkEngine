@@ -2,15 +2,15 @@
 
 CodeVkEngine is a personal Vulkan graphics engine for rapid rendering experiments. It started from the public [Vulkan Renderer Template](https://github.com/Carcodee/Vulkan-Renderer-Template), but the current repository has moved toward a render-graph driven engine with shader reflection, hot reload, ImGui tooling, and several prototype renderers.
 
-The current default renderer is **FlatRenderer**. It is the most recent active path in `src/main.cpp` and focuses on 2D rendering experiments, a paintable canvas, animated sprites, material layers, and Radiance Cascades.
+The current default renderer is **flat_renderer**. It is the most recent active path in `src/main.cpp` and focuses on 2D rendering experiments, a paintable canvas, animated sprites, material layers, and Radiance Cascades.
 
 ## Current State
 
-- **Default runtime path:** `FlatRenderer` plus ImGui and the render graph profiler/debug UI.
+- **Default runtime path:** `flat_renderer` plus ImGui and the render graph profiler/debug UI.
 - **Executable target:** `Engine`, produced under the CMake binary directory at `bin/Engine.exe`.
 - **Primary platform:** Windows, Vulkan, GLFW Win32 surface, Visual Studio/MSVC-style dependency layout.
 - **Shader workflow:** GLSL and Slang are both used. Compiled SPIR-V is checked in under `src/Shaders/spirvGlsl` and `src/Shaders/spirvSlang`.
-- **Renderer selection:** renderers are wired manually in `CreateRenderers()` inside `src/main.cpp`.
+- **Renderer selection:** renderers are wired manually in `create_renderers()` inside `src/main.cpp`.
 
 ## Features
 
@@ -101,13 +101,13 @@ Main files:
 
 ## Renderers
 
-### FlatRenderer
+### flat_renderer
 
 `src/Rendering/Renderers/FlatRenderer.hpp`
 
 This is the latest active renderer and the default renderer created by `src/main.cpp`.
 
-FlatRenderer currently includes:
+flat_renderer currently includes:
 
 - A compute-driven painting pass using storage images.
 - Paint layers for light, occluders, and debug rays.
@@ -129,11 +129,11 @@ https://github.com/user-attachments/assets/0aa9c22a-2a91-41ed-8d49-fb49fab54940
 
 https://github.com/user-attachments/assets/dca2c173-a05d-4da8-828e-f8b720450680
 
-### ClusterRenderer
+### cluster_renderer
 
 `src/Rendering/Renderers/ClusterRenderer.hpp`
 
-ClusterRenderer is currently present but commented out in `CreateRenderers()`. It implements a deferred-style path with:
+cluster_renderer is currently present but commented out in `create_renderers()`. It implements a deferred-style path with:
 
 - GPU mesh culling.
 - Point-light cluster/tile culling.
@@ -146,11 +146,11 @@ The renderer currently loads `Resources/Assets/Models/floating_lighthouse/scene.
 
 ![Cluster Renderer Demo](https://github.com/user-attachments/assets/261a7f85-a560-4fb4-be84-d3ef6517899c)
 
-### GSRenderer
+### gs_renderer
 
 `src/Rendering/Renderers/GSRenderer.hpp`
 
-GSRenderer is a prototype Gaussian splat renderer. It is present but commented out in `CreateRenderers()`.
+gs_renderer is a prototype Gaussian splat renderer. It is present but commented out in `create_renderers()`.
 
 Current behavior:
 
@@ -163,11 +163,11 @@ Known limitation: GPU sorting is not implemented yet, so the sort must be refres
 
 ![Gaussian Splats Renderer](https://github.com/user-attachments/assets/9ba7596f-0c5f-46e8-8bf7-9a9ddc7857c2)
 
-### DebugRenderer
+### debug_renderer
 
 `src/Rendering/Renderers/DebugRenderer.hpp`
 
-DebugRenderer is created every run, but it only builds an active pass when `ClusterRenderer` is enabled. Its current use is drawing the cluster renderer camera frustum in wireframe over the final image.
+debug_renderer is created every run, but it only builds an active pass when `cluster_renderer` is enabled. Its current use is drawing the cluster renderer camera frustum in wireframe over the final image.
 
 ![Debug Renderer Demo](https://github.com/user-attachments/assets/8dacb7c3-1b7e-4374-8ebc-8027921413b0)
 
@@ -175,9 +175,9 @@ DebugRenderer is created every run, but it only builds an active pass when `Clus
 
 These renderers are included in the source tree but are not active by default:
 
-- `GIRenderer`: simple shader/template based pass for GI/shader experiments.
-- `HairRenderer`: tessellation/geometry shader pipeline scaffold.
-- `TemplateRenderer`: minimal pattern for adding a new renderer.
+- `gi_renderer`: simple shader/template based pass for GI/shader experiments.
+- `hair_renderer`: tessellation/geometry shader pipeline scaffold.
+- `template_renderer`: minimal pattern for adding a new renderer.
 
 ## Runtime Controls
 
@@ -185,33 +185,33 @@ Global controls:
 
 - `R`: recreate render node pipelines / reload shader resources.
 - `0`: run the shader compilation debug path.
-- Right mouse button: active interaction button for camera look in 3D renderers and painting in FlatRenderer.
+- Right mouse button: active interaction button for camera look in 3D renderers and painting in flat_renderer.
 
-FlatRenderer:
+flat_renderer:
 
 - Right mouse button: paint at the current mouse position.
 - ImGui **Radiance Cascades** tab: brush, layer, cascade, light, texture, material, and animation controls.
 
-ClusterRenderer and GSRenderer:
+cluster_renderer and gs_renderer:
 
 - `W`, `A`, `S`, `D`: camera movement.
 - Right mouse button: mouse-look camera rotation.
-- Left shift: speed boost in ClusterRenderer.
-- GSRenderer ImGui **Update Sort**: manually resort splats by current view.
+- Left shift: speed boost in cluster_renderer.
+- gs_renderer ImGui **Update Sort**: manually resort splats by current view.
 
 ## Switching Renderers
 
-Renderer selection is currently manual. Edit `CreateRenderers()` in `src/main.cpp`.
+Renderer selection is currently manual. Edit `create_renderers()` in `src/main.cpp`.
 
 The latest/default setup is:
 
 ```cpp
-renderers.try_emplace("FlatRenderer", std::make_unique<Rendering::FlatRenderer>(core, windowProvider));
-Rendering::FlatRenderer* flatRenderer = dynamic_cast<Rendering::FlatRenderer*>(renderers.at("FlatRenderer").get());
-flatRenderer->SetRenderOperation();
+renderers.try_emplace("FlatRenderer", std::make_unique<rendering::flat_renderer>(core, window_provider));
+rendering::flat_renderer* flat_renderer = dynamic_cast<rendering::flat_renderer*>(renderers.at("FlatRenderer").get());
+flat_renderer->set_render_operation();
 ```
 
-To test another renderer, comment out FlatRenderer and uncomment the renderer block you want. Some debug UI tabs only appear when the matching renderer exists in the `renderers` map.
+To test another renderer, comment out flat_renderer and uncomment the renderer block you want. Some debug UI tabs only appear when the matching renderer exists in the `renderers` map.
 
 ## Prerequisites
 
@@ -309,6 +309,14 @@ CodeVkEngine currently uses:
 
 - The engine is Windows-focused right now because the app creates a Win32 Vulkan surface and uses Windows/MSVC dependency paths.
 - Renderer selection is compile-time/manual through `src/main.cpp`.
-- GSRenderer sorting is CPU/manual through the UI; GPU radix sort is present as experimental shader code but not wired into the active path.
+- gs_renderer sorting is CPU/manual through the UI; GPU radix sort is present as experimental shader code but not wired into the active path.
 - Some renderers are scaffolds or experiments, not polished product features.
-- Swapchain recreation is partially handled by the render graph, but individual renderer `RecreateSwapChainResources()` methods are mostly placeholders.
+- Swapchain recreation is partially handled by the render graph, but individual renderer `recreate_swap_chain_resources()` methods are mostly placeholders.
+
+## Naming
+
+Project-owned C++ and shader types, namespaces, functions, variables, members, and enum values use `lower_snake_case`. Macros and include guards use `UPPER_SNAKE_CASE`. API names supplied by Vulkan, GLFW, ImGui, CUDA, GLSL, Slang, and other dependencies retain their required spelling.
+
+Shader resource names must match their C++ binding strings. Slang entry points use `main_vs`, `main_fs`, and `main_cs`; update both the compiler script and runtime entry-point selection when adding a stage. Rebuild checked-in SPIR-V with `src/Shaders/compile.bat` after changing shader identifiers.
+
+`src/.clang-tidy` checks the C++ convention with `readability-identifier-naming`.

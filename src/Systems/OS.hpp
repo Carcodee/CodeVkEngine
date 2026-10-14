@@ -6,60 +6,60 @@
 #ifndef OS_HPP
 #define OS_HPP
 
-namespace SYSTEMS
+namespace systems
 {
 
-class OS
+class os
 {
   public:
-	OS()
+	os()
 	{
-		workingDir          = std::filesystem::current_path();
-		projectPath         = GetProjectPath(workingDir);
-		shadersPath         = projectPath / "src" / "Shaders";
-		assetsPath          = projectPath / "Resources" / "Assets";
-		engineResourcesPath = projectPath / "Resources" / "Engine";
+		working_dir          = std::filesystem::current_path();
+		project_path         = get_project_path(working_dir);
+		shaders_path         = project_path / "src" / "Shaders";
+		assets_path          = project_path / "Resources" / "Assets";
+		engine_resources_path = project_path / "Resources" / "Engine";
 
-		glslShadersTemplatePath  = shadersPath / "glsl" / "templates";
-		slangShadersTemplatePath = shadersPath / "slang" / "templates";
+		glsl_shaders_template_path  = shaders_path / "glsl" / "templates";
+		slang_shaders_template_path = shaders_path / "slang" / "templates";
 	}
 
-	static OS *GetInstance()
+	static os *get_instance()
 	{
-		static OS instance;
+		static os instance;
 		return &instance;
 	}
 
-	std::filesystem::path GetProjectPath(std::filesystem::path &workDir)
+	std::filesystem::path get_project_path(std::filesystem::path &work_dir)
 	{
-		std::filesystem::path projectPath      = workDir;
-		bool                  solutionPathFind = false;
-		while (!solutionPathFind)
+		std::filesystem::path project_path      = work_dir;
+		bool                  solution_path_find = false;
+		while (!solution_path_find)
 		{
-			for (auto element : std::filesystem::directory_iterator(projectPath))
+			for (auto element : std::filesystem::directory_iterator(project_path))
 			{
 				if (element.path().filename() == ".gitignore")
 				{
-					solutionPathFind = true;
+					solution_path_find = true;
 					break;
 				}
 			}
-			if (solutionPathFind)
+			if (solution_path_find)
 			{
 				break;
 			}
 
-			projectPath = projectPath.parent_path();
-			if (projectPath == workDir.root_path())
+			project_path = project_path.parent_path();
+			if (project_path == work_dir.root_path())
 			{
 				break;
 			}
 		}
-		assert(solutionPathFind && "The project dir was not find");
+		assert(solution_path_find && "The project dir was not find");
 
-		return projectPath;
+		return project_path;
 	}
-	bool IsPathAbsolute(std::string path)
+	bool is_path_absolute(std::string path)
 	{
 		if (!std::filesystem::exists(path))
 		{
@@ -67,153 +67,153 @@ class OS
 		}
 		return true;
 	}
-	std::string GetEngineResourcesPath()
+	std::string get_engine_resources_path()
 	{
-		return engineResourcesPath.string();
+		return engine_resources_path.string();
 	}
 
-	std::string GetAssetsPath()
+	std::string get_assets_path()
 	{
-		return assetsPath.string();
+		return assets_path.string();
 	}
-	std::string GetShadersPath()
+	std::string get_shaders_path()
 	{
-		return shadersPath.string();
-	}
-
-	std::string GetGlslTemplatePath()
-	{
-		return glslShadersTemplatePath.string();
+		return shaders_path.string();
 	}
 
-	std::string GetSlangTemplatePath()
+	std::string get_glsl_template_path()
 	{
-		return slangShadersTemplatePath.string();
+		return glsl_shaders_template_path.string();
 	}
-	static std::string GetExtension(std::string name)
+
+	std::string get_slang_template_path()
 	{
-		size_t pointPos = name.find_last_of(".");
-		if (pointPos > name.size() || pointPos < 0)
+		return slang_shaders_template_path.string();
+	}
+	static std::string get_extension(std::string name)
+	{
+		size_t point_pos = name.find_last_of(".");
+		if (point_pos > name.size() || point_pos < 0)
 		{
 			return "";
 		}
-		std::string extension = name.substr(pointPos, name.back());
+		std::string extension = name.substr(point_pos, name.back());
 		return extension;
 	}
 
-	static std::string ReadFile(const std::string &path)
+	static std::string read_file(const std::string &path)
 	{
-		std::ifstream inFile(path.c_str(), std::ios::in | std::ios::binary);
-		if (!inFile)
+		std::ifstream in_file(path.c_str(), std::ios::in | std::ios::binary);
+		if (!in_file)
 		{
 			assert(false && "impossible to open the path");
 		}
 		std::ostringstream oss;
 
-		oss << inFile.rdbuf();
+		oss << in_file.rdbuf();
 
-		inFile.close();
+		in_file.close();
 		return oss.str();
 	}
 
-	static nlohmann::json GetJsonFromFile(const std::string &path)
+	static nlohmann::json get_json_from_file(const std::string &path)
 	{
-		std::ifstream inFile(path);
-		if (!inFile)
+		std::ifstream in_file(path);
+		if (!in_file)
 		{
 			assert(false && "impossible to open the path");
 		}
 		nlohmann::json json;
 
-		inFile >> json;
+		in_file >> json;
 
-		inFile.close();
+		in_file.close();
 		return json;
 	}
-	static void CreateFileAt(const std::string dstFile)
+	static void create_file_at(const std::string dst_file)
 	{
-		std::ofstream dst(dstFile, std::ios::binary);
+		std::ofstream dst(dst_file, std::ios::binary);
 		if (!dst)
 		{
-			Logger::GetInstance()->Log("File: (" + dstFile + ") could not be created");
+			logger::get_instance()->log("File: (" + dst_file + ") could not be created");
 		}
 	}
 
-	static void WriteFile(const std::string &path, const char *text, size_t size)
+	static void write_file(const std::string &path, const char *text, size_t size)
 	{
 		std::ofstream file(path, std::ios::binary);
 		if (!file.is_open())
 		{
 			assert(false && "Impossible to write file");
-			Logger::GetInstance()->Log("File: (" + path + ") could not be opened");
+			logger::get_instance()->log("File: (" + path + ") could not be opened");
 			return;
 		}
 		file.write(text, size);
 		file.close();
 
-		Logger::GetInstance()->Log("File: (" + path + ") was writed succesfully");
+		logger::get_instance()->log("File: (" + path + ") was writed succesfully");
 	}
 
-	static void CopyFileInto(const std::string &srcFile, const std::string &dstFile)
+	static void copy_file_into(const std::string &src_file, const std::string &dst_file)
 	{
-		std::ifstream src(srcFile, std::ios::binary);
+		std::ifstream src(src_file, std::ios::binary);
 		if (!src)
 		{
 			assert(false && "Impossible to open src file");
 		}
-		std::ofstream dst(dstFile, std::ios::binary);
+		std::ofstream dst(dst_file, std::ios::binary);
 		if (!dst)
 		{
 			assert(false && "Impossible to create dst file");
 		}
 
 		dst << src.rdbuf();
-		Logger::GetInstance()->Log("File: (" + srcFile + ") was copied to: " + dstFile);
+		logger::get_instance()->log("File: (" + src_file + ") was copied to: " + dst_file);
 		src.close();
 		dst.close();
 	}
 
-	static void DeleteExistingFile(const std::string &path)
+	static void delete_existing_file(const std::string &path)
 	{
 		if (!std::filesystem::exists(path))
 		{
-			Logger::GetInstance()->Log("File: (" + path + ") does not exist");
+			logger::get_instance()->log("File: (" + path + ") does not exist");
 			return;
 		}
 		if (std::remove(path.c_str()) == 0)
 		{
-			Logger::GetInstance()->Log("File: (" + path + ") was deleted succesfully");
+			logger::get_instance()->log("File: (" + path + ") was deleted succesfully");
 		}
 		else
 		{
-			Logger::GetInstance()->Log("File: (" + path + ") was not deleted");
+			logger::get_instance()->log("File: (" + path + ") was not deleted");
 		}
 	}
-	static void AppendDataToFile(const std::string &path, const std::string &data)
+	static void append_data_to_file(const std::string &path, const std::string &data)
 	{
 		std::ofstream file(path, std::ios::app);
 		if (file)
 		{
 			file << data;
-			Logger::GetInstance()->Log("File: (" + path + ") was appended successfully");
+			logger::get_instance()->log("File: (" + path + ") was appended successfully");
 		}
 		else
 		{
-			Logger::GetInstance()->Log("File: (" + path + ") was not appended");
+			logger::get_instance()->log("File: (" + path + ") was not appended");
 		}
 	}
 
-	std::filesystem::path        workingDir;
-	std::filesystem::path        projectPath;
-	std::filesystem::path        engineResourcesPath;
-	std::filesystem::path        assetsPath;
-	std::filesystem::path        shadersPath;
-	std::filesystem::path        glslShadersTemplatePath;
-	std::filesystem::path        slangShadersTemplatePath;
-	std::queue<std::string_view> tempFilesToDestroy;
-	static OS                   *instance;
+	std::filesystem::path        working_dir;
+	std::filesystem::path        project_path;
+	std::filesystem::path        engine_resources_path;
+	std::filesystem::path        assets_path;
+	std::filesystem::path        shaders_path;
+	std::filesystem::path        glsl_shaders_template_path;
+	std::filesystem::path        slang_shaders_template_path;
+	std::queue<std::string_view> temp_files_to_destroy;
+	static os                   *instance;
 };
 
-}        // namespace SYSTEMS
+}        // namespace systems
 
 #endif        // OS_HPP

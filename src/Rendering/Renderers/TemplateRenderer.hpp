@@ -2,101 +2,101 @@
 // Created by carlo on 2025-03-26.
 //
 
-#ifndef TEMPLATERENDERER_HPP
-#define TEMPLATERENDERER_HPP
+#ifndef TEMPLATE_RENDERER_HPP
+#define TEMPLATE_RENDERER_HPP
 
-namespace Rendering
+namespace rendering
 {
-using namespace ENGINE;
-class TemplateRenderer : public BaseRenderer
+using namespace engine;
+class template_renderer : public base_renderer
 {
   public:
-	~TemplateRenderer() override = default;
+	~template_renderer() override = default;
 
-	TemplateRenderer(Core *core, WindowProvider *windowProvider)
+	template_renderer(engine::core *core, ::window_provider *window_provider)
 	{
 		this->core           = core;
-		this->renderGraph    = core->renderGraphRef;
-		this->windowProvider = windowProvider;
+		this->render_graph    = core->render_graph_ref;
+		this->window_provider = window_provider;
 
-		CreateResources();
-		CreateBuffers();
-		CreatePipelines();
+		create_resources();
+		create_buffers();
+		create_pipelines();
 	}
 
-	void CreateResources()
+	void create_resources()
 	{
 	}
 
-	void CreateBuffers()
+	void create_buffers()
 	{
 	}
 
-	void CreatePipelines()
+	void create_pipelines()
 	{
-		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
-		                                                glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
-		Shader        *vShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_VERT);
-		Shader        *fShader = renderGraph->resourcesManager->GetShader("SomeName", ShaderStage::S_FRAG);
+		engine::attachment_info col_info = get_color_attachment_info(blend_configs::b_opaque,
+		                                                glm::vec4(0.0f), render_graph->core->swapchain_ref->get_format());
+		shader        *v_shader = render_graph->resources_manager->get_shader("SomeName", shader_stage::s_vert);
+		shader        *f_shader = render_graph->resources_manager->get_shader("SomeName", shader_stage::s_frag);
 
-		auto       imageInfo        = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat, ENGINE::colorImageUsage);
-		ImageView *attachmentOutput = renderGraph->resourcesManager->GetImage("TemplateOutput", imageInfo, 0, 0);
+		auto       image_info        = engine::image::create_info2d(window_provider->get_window_size(), 1, 1, engine::g_32b_format, engine::color_image_usage);
+		engine::image_view *attachment_output = render_graph->resources_manager->get_image("TemplateOutput", image_info, 0, 0);
 
-		auto renderNode = renderGraph->AddPass(passName);
-		renderNode->G_SetConfigs({true});
-		renderNode->G_SetVertShader(vShader);
-		renderNode->G_SetFragShader(fShader);
-		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
+		auto render_node = render_graph->add_pass(pass_name);
+		render_node->g_set_configs({true});
+		render_node->g_set_vert_shader(v_shader);
+		render_node->g_set_frag_shader(f_shader);
+		render_node->g_set_framebuffer_size(window_provider->get_window_size());
+		render_node->g_set_vertex_input(vertex_2d::get_vertex_input());
 		// change this
-		renderNode->G_SetPushConstantSize(4);
-		renderNode->G_AddColorAttachmentOutput(0, colInfo);
+		render_node->g_set_push_constant_size(4);
+		render_node->g_add_color_attachment_output(0, col_info);
 		// only if we want to use custom attachment
-		//  renderNode->G_AddColorImageResource("default_attachment", attachmentOutput);
-		renderNode->BuildRenderGraphNode();
+		//  render_node->G_AddColorImageResource("default_attachment", attachment_output);
+		render_node->build_render_graph_node();
 	}
 
-	void RecreateSwapChainResources() override
+	void recreate_swap_chain_resources() override
 	{
 	}
 
-	void SetRenderOperation() override
+	void set_render_operation() override
 	{
-		auto taskOp = new std::function<void()>(
+		auto task_op = new std::function<void()>(
 		    [this] {
-			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->G_SetColorImageAttachmentBinding(0, renderGraph->currentBackBuffer);
+			    auto render_node = render_graph->get_node(pass_name);
+			    render_node->g_set_color_image_attachment_binding(0, render_graph->current_back_buffer);
 		    	
 		    });
-		auto renderOp = new std::function<void()>(
+		auto render_op = new std::function<void()>(
 		    [this]() {
-			    auto          &renderNode = renderGraph->renderNodes.at(passName);
+			    auto          &render_node = render_graph->render_nodes.at(pass_name);
 			    vk::DeviceSize offset     = 0;
-			    renderNode->GetCurrCmd().bindVertexBuffers(
+			    render_node->get_curr_cmd().bindVertexBuffers(
 			        0, 1,
-			        &renderGraph->resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
+			        &render_graph->resources_manager->get_staged_buff_from_name("quad_default")->device_buffer->buffer_handle.get(),
 			        &offset);
-			    renderNode->GetCurrCmd().bindIndexBuffer(
-			        renderGraph->resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
-			    renderNode->GetCurrCmd().drawIndexed(
-			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
+			    render_node->get_curr_cmd().bindIndexBuffer(
+			        render_graph->resources_manager->get_staged_buff_from_name("quad_index_default")->device_buffer->buffer_handle.get(), 0, vk::IndexType::eUint32);
+			    render_node->get_curr_cmd().drawIndexed(
+			        vertex_2d::get_quad_indices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(passName)->G_SetRenderOperation(renderOp);
-		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
+		render_graph->get_node(pass_name)->g_set_render_operation(render_op);
+		render_graph->get_node(pass_name)->add_pre_rendering_task(task_op);
 	}
 
-	void ReloadShaders() override
+	void reload_shaders() override
 	{
 	}
 
-	std::string passName = "passName";
+	std::string pass_name = "passName";
 
-	Core           *core;
-	RenderGraph    *renderGraph;
-	WindowProvider *windowProvider;
+	engine::core           *core;
+	engine::render_graph    *render_graph;
+	::window_provider *window_provider;
 
-	ImageView *colAttachmentView;
+	engine::image_view *col_attachment_view;
 };
-}        // namespace Rendering
+}        // namespace rendering
 
-#endif        // TEMPLATERENDERER_HPP
+#endif        // TEMPLATE_RENDERER_HPP

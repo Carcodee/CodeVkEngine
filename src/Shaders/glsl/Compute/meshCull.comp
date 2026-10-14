@@ -8,54 +8,54 @@
 #include "../Utils/uMath.glsl"
 #include "../Utils/uRendering.glsl"
 
-layout (set = 0, binding = 0, scalar) writeonly buffer IndirectCmds{
-    u_DrawIndirectIndexedCmd[] indirectCmds;
+layout (set = 0, binding = 0, scalar) writeonly buffer indirect_cmds_buffer{
+    u_draw_indirect_indexed_cmd[] indirect_cmds;
 };
-layout (set = 0, binding = 1, scalar) buffer MeshesSpheres{
-    u_Sphere[] meshesSpheres;
+layout (set = 0, binding = 1, scalar) buffer meshes_spheres_buffer{
+    u_sphere[] meshes_spheres;
 };
-layout(set = 0, binding = 2, scalar) uniform CamProps{
-    mat4 invProj;
-    mat4 invView;
-    vec3 camPos;
-    float zNear;
-    float zFar;
-}cProps;
+layout(set = 0, binding = 2, scalar) uniform cam_props{
+    mat4 inv_proj;
+    mat4 inv_view;
+    vec3 cam_pos;
+    float z_near;
+    float z_far;
+}c_props;
 
-layout(set = 0, binding = 3, scalar) uniform CullInfo{
-    u_Frustum frustum;
-}cullInfo;
+layout(set = 0, binding = 3, scalar) uniform cull_info_uniform{
+    u_frustum frustum;
+}cull_info;
 
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main(){
 
-    u_Frustum camFrustum = cullInfo.frustum;
+    u_frustum cam_frustum = cull_info.frustum;
     
     vec3 eye = vec3(0.0);
 
-    uint threadId = gl_GlobalInvocationID.x;
-    int instanceCountToAdd = 1;
-    vec4 viewSpacePos = -inverse(cProps.invView) * vec4(meshesSpheres[threadId].center, 1.0);
+    uint thread_id = gl_GlobalInvocationID.x;
+    int instance_count_to_add = 1;
+    vec4 view_space_pos = -inverse(c_props.inv_view) * vec4(meshes_spheres[thread_id].center, 1.0);
     for(int i = 0; i < 5; i++){
         int idx = i;
-//        vec4 viewSpacePos = -inverse(cProps.invView) * vec4(0.0, 0.0, 0.0, 1.0);
-//        if(!u_SphereInsidePlane(viewSpacePos.xyz , 1.0f, camFrustum.planes[idx].xyz, camFrustum.planes[idx].w)){
-//            instanceCountToAdd = 0;
+//        vec4 view_space_pos = -inverse(c_props.inv_view) * vec4(0.0, 0.0, 0.0, 1.0);
+//        if(!u_sphere_inside_plane(view_space_pos.xyz , 1.0f, cam_frustum.planes[idx].xyz, cam_frustum.planes[idx].w)){
+//            instance_count_to_add = 0;
 //            break;
 //        }
-        if(distance(viewSpacePos.xyz, eye) < meshesSpheres[threadId].radius ){
+        if(distance(view_space_pos.xyz, eye) < meshes_spheres[thread_id].radius ){
             break;
         }
-        if(!u_SphereInsidePlane(viewSpacePos.xyz , meshesSpheres[threadId].radius, camFrustum.planes[i].xyz, camFrustum.planes[i].w)){
-            instanceCountToAdd = 0;
+        if(!u_sphere_inside_plane(view_space_pos.xyz , meshes_spheres[thread_id].radius, cam_frustum.planes[i].xyz, cam_frustum.planes[i].w)){
+            instance_count_to_add = 0;
             break;
         }
     }
     //they point to the same dir
-//    if(dot(camFrustum.planes[2].xyz, camFrustum.planes[3].xyz) > 0){
-//        instanceCountToAdd = 0;
+//    if(dot(cam_frustum.planes[2].xyz, cam_frustum.planes[3].xyz) > 0){
+//        instance_count_to_add = 0;
 //    }
-    atomicAdd(indirectCmds[threadId].instanceCount, instanceCountToAdd);
+    atomicAdd(indirect_cmds[thread_id].instance_count, instance_count_to_add);
 }

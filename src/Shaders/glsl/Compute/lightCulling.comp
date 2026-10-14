@@ -8,132 +8,132 @@
 #include "../Utils/uMath.glsl"
 #include "../Utils/uRendering.glsl"
 
-layout (set = 0, binding = 0, scalar) buffer PointLights{
-    u_PointLight[] pointLights;
+layout (set = 0, binding = 0, scalar) buffer point_lights_buffer{
+    u_point_light[] point_lights;
 };
-layout (set = 0, binding = 1, scalar) writeonly buffer LightMap{
-    u_ArrayIndexer[] lightMap;
+layout (set = 0, binding = 1, scalar) writeonly buffer light_map_buffer{
+    u_array_indexer[] light_map;
 };
-layout (set = 0, binding = 2, scalar) writeonly buffer LightIndices{
-    int[] lightIndices;
+layout (set = 0, binding = 2, scalar) writeonly buffer light_indices_buffer{
+    int[] light_indices;
 };
-layout(set = 0, binding = 3, scalar) uniform CameraProperties{
-    mat4 invProj;
-    mat4 invView;
-    vec3 camPos;
-    float zNear;
-    float zFar;
-}cProps;
+layout(set = 0, binding = 3, scalar) uniform camera_properties{
+    mat4 inv_proj;
+    mat4 inv_view;
+    vec3 cam_pos;
+    float z_near;
+    float z_far;
+}c_props;
 
-layout(push_constant)uniform pushConstants{
-    int sWidth;
-    int sHeight;
-    int pointLightsCount;
-    uint tileCountX;
-    uint tileCountY;
-    int xTileSizePx;
-    int yTileSizePx;
+layout(push_constant)uniform push_constants{
+    int s_width;
+    int s_height;
+    int point_lights_count;
+    uint tile_count_x;
+    uint tile_count_y;
+    int x_tile_size_px;
+    int y_tile_size_px;
 }pc;
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 shared mat4 view;
 void main() {
 
-    uvec3 clusterId = gl_GlobalInvocationID;
-    uint threatSize = gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_NumWorkGroups.z;
+    uvec3 cluster_id = gl_GlobalInvocationID;
+    uint threat_size = gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_NumWorkGroups.z;
     
-    vec2 tileSizePX = vec2(pc.xTileSizePx, pc.yTileSizePx);
-    vec2 screenSize = vec2(pc.sWidth, pc.sHeight);
+    vec2 tile_size_px = vec2(pc.x_tile_size_px, pc.y_tile_size_px);
+    vec2 screen_size = vec2(pc.s_width, pc.s_height);
 
-    vec2 ndcSizePerTile = 2.0 * (tileSizePX/screenSize);
-    vec2 upperLeft = vec2(-1.0);
+    vec2 ndc_size_per_tile = 2.0 * (tile_size_px/screen_size);
+    vec2 upper_left = vec2(-1.0);
 
     //ndc space
-    vec2 topL = (upperLeft + clusterId.xy * ndcSizePerTile);
-    vec2 topR = vec2(topL.x + ndcSizePerTile.x, topL.y);
-    vec2 bottonR = (topL + ndcSizePerTile);
-    vec2 bottonL = vec2(topL.x, topL.y + ndcSizePerTile);
+    vec2 top_l = (upper_left + cluster_id.xy * ndc_size_per_tile);
+    vec2 top_r = vec2(top_l.x + ndc_size_per_tile.x, top_l.y);
+    vec2 botton_r = (top_l + ndc_size_per_tile);
+    vec2 botton_l = vec2(top_l.x, top_l.y + ndc_size_per_tile);
 
 
     //** TILE RENDERING START **//
     // screen to view
-    vec3 nearTopL =  u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, topL);
-    vec3 nearTopR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, topR);
-    vec3 nearBottomL = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, bottonL);
-    vec3 nearBottomR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 0.0, bottonR);
+    vec3 near_top_l =  u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 0.0, top_l);
+    vec3 near_top_r = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 0.0, top_r);
+    vec3 near_bottom_l = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 0.0, botton_l);
+    vec3 near_bottom_r = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 0.0, botton_r);
 
-    vec3 farTopL = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, topL);
-    vec3 farTopR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, topR);
-    vec3 farBottomL = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, bottonL);
-    vec3 farBottomR = u_ScreenToWorldNDC(cProps.invProj, cProps.invView, 1.0, bottonR);
+    vec3 far_top_l = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 1.0, top_l);
+    vec3 far_top_r = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 1.0, top_r);
+    vec3 far_bottom_l = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 1.0, botton_l);
+    vec3 far_bottom_r = u_screen_to_world_ndc(c_props.inv_proj, c_props.inv_view, 1.0, botton_r);
 
-    u_Frustum tileFrustum;
+    u_frustum tile_frustum;
     
     //left
-    tileFrustum.planes[0] = u_GetPlane(nearTopL, cProps.camPos, nearBottomL);
+    tile_frustum.planes[0] = u_get_plane(near_top_l, c_props.cam_pos, near_bottom_l);
 
     // Right Plane
-    tileFrustum.planes[1] = u_GetPlane(cProps.camPos, nearTopR, nearBottomR);
+    tile_frustum.planes[1] = u_get_plane(c_props.cam_pos, near_top_r, near_bottom_r);
 
     // Top Plane
-    tileFrustum.planes[2] = u_GetPlane(cProps.camPos, nearTopL, nearTopR);
+    tile_frustum.planes[2] = u_get_plane(c_props.cam_pos, near_top_l, near_top_r);
 
     // Bottom Plane
-    tileFrustum.planes[3] = u_GetPlane(cProps.camPos, nearBottomR, nearBottomL);
+    tile_frustum.planes[3] = u_get_plane(c_props.cam_pos, near_bottom_r, near_bottom_l);
 
     // Near Plane
-    tileFrustum.planes[4] = u_GetPlane(nearTopL, nearBottomR, nearBottomL);
+    tile_frustum.planes[4] = u_get_plane(near_top_l, near_bottom_r, near_bottom_l);
 
     // Far Plane
-    tileFrustum.planes[5] = u_GetPlane(farTopL, farBottomL, farBottomR);
+    tile_frustum.planes[5] = u_get_plane(far_top_l, far_bottom_l, far_bottom_r);
 
     //** TILE RENDERING END **//
 
-    float tileNear  = -cProps.zNear * pow(cProps.zFar / cProps.zNear, float(gl_WorkGroupID.z) / float(gl_NumWorkGroups.z));
-    float tileFar   = -cProps.zNear * pow(cProps.zFar / cProps.zNear, float(gl_WorkGroupID.z + 1) / float(gl_NumWorkGroups.z));
+    float tile_near  = -c_props.z_near * pow(c_props.z_far / c_props.z_near, float(gl_WorkGroupID.z) / float(gl_NumWorkGroups.z));
+    float tile_far   = -c_props.z_near * pow(c_props.z_far / c_props.z_near, float(gl_WorkGroupID.z + 1) / float(gl_NumWorkGroups.z));
 
 
-    vec3 maxPointVs = u_ScreenToViewNDC(cProps.invProj, 0.0, topR.xy).xyz;
-    vec3 minPointVs = u_ScreenToViewNDC(cProps.invProj, 0.0, bottonL.xy).xyz;
+    vec3 max_point_vs = u_screen_to_view_ndc(c_props.inv_proj, 0.0, top_r.xy).xyz;
+    vec3 min_point_vs = u_screen_to_view_ndc(c_props.inv_proj, 0.0, botton_l.xy).xyz;
     
-    vec3 minPointNear = u_LineIntersectionToZPlane(vec3(0.0), minPointVs, tileNear);
-    vec3 minPointFar = u_LineIntersectionToZPlane(vec3(0.0), minPointVs, tileFar);
-    vec3 maxPointNear = u_LineIntersectionToZPlane(vec3(0.0), maxPointVs, tileNear);
-    vec3 maxPointFar = u_LineIntersectionToZPlane(vec3(0.0), maxPointVs, tileFar);
+    vec3 min_point_near = u_line_intersection_to_z_plane(vec3(0.0), min_point_vs, tile_near);
+    vec3 min_point_far = u_line_intersection_to_z_plane(vec3(0.0), min_point_vs, tile_far);
+    vec3 max_point_near = u_line_intersection_to_z_plane(vec3(0.0), max_point_vs, tile_near);
+    vec3 max_point_far = u_line_intersection_to_z_plane(vec3(0.0), max_point_vs, tile_far);
     
-    vec3 minPointAABB = min(min(minPointNear, minPointFar), min(maxPointNear, maxPointFar));
-    vec3 maxPointAABB = max(max(minPointNear, minPointFar), max(maxPointNear, maxPointFar));
+    vec3 min_point_aabb = min(min(min_point_near, min_point_far), min(max_point_near, max_point_far));
+    vec3 max_point_aabb = max(max(min_point_near, min_point_far), max(max_point_near, max_point_far));
     
     //just to prevent collision for testing, even if is less likely to have all lights in the same tile
-    int maxLightsPerTile= pc.pointLightsCount;
+    int max_lights_per_tile= pc.point_lights_count;
     
-    uint idxIndexer = clusterId.x + (clusterId.y * pc.tileCountX) + (clusterId.z * pc.tileCountX * pc.tileCountY);
-    int idxLightIndicesStart = int(idxIndexer) * maxLightsPerTile;
+    uint idx_indexer = cluster_id.x + (cluster_id.y * pc.tile_count_x) + (cluster_id.z * pc.tile_count_x * pc.tile_count_y);
+    int idx_light_indices_start = int(idx_indexer) * max_lights_per_tile;
     
-    int lightCount = 0;
+    int light_count = 0;
 
-    for(int i = 0; i < pc.pointLightsCount; i++){
+    for(int i = 0; i < pc.point_lights_count; i++){
 
         //** start tile rendering
 //        bool insideFrustum = true;
 //        for(int j = 0; j < 6; j++){
 //            int planeIdx = j;
-//            if(!u_SphereInsidePlane(pointLights[i].pos, pointLights[i].radius, tileFrustum.planes[planeIdx].xyz, tileFrustum.planes[planeIdx].w)){
+//            if(!u_sphere_inside_plane(point_lights[i].pos, point_lights[i].radius, tile_frustum.planes[planeIdx].xyz, tile_frustum.planes[planeIdx].w)){
 //                insideFrustum = false;
 //                break;
 //            }
 //        }
         //** end tile rendering
-        mat4 view = inverse(cProps.invView);
-        vec4 posLightVs = view * vec4(pointLights[i].pos, 1.0);
-        if(u_AABB_Sphere(minPointAABB.xyz, maxPointAABB.xyz, posLightVs.xyz, pointLights[i].radius)){
-            if(lightCount < maxLightsPerTile){
-                int idx = idxLightIndicesStart + lightCount;
-                lightIndices[idx] = i;
-                lightCount++;
+        mat4 view = inverse(c_props.inv_view);
+        vec4 pos_light_vs = view * vec4(point_lights[i].pos, 1.0);
+        if(u_aabb_sphere(min_point_aabb.xyz, max_point_aabb.xyz, pos_light_vs.xyz, point_lights[i].radius)){
+            if(light_count < max_lights_per_tile){
+                int idx = idx_light_indices_start + light_count;
+                light_indices[idx] = i;
+                light_count++;
             }
         };
     }
-    atomicAdd(lightMap[idxIndexer].offset, idxLightIndicesStart);
-    atomicAdd(lightMap[idxIndexer].size, lightCount);
+    atomicAdd(light_map[idx_indexer].offset, idx_light_indices_start);
+    atomicAdd(light_map[idx_indexer].size, light_count);
 }

@@ -3,135 +3,135 @@
 // Created by carlo on 2025-03-26.
 //
 
-#ifndef GSRENDERER_HPP
-#define GSRENDERER_HPP
+#ifndef GS_RENDERER_HPP
+#define GS_RENDERER_HPP
 
-namespace Rendering
+namespace rendering
 {
-using namespace ENGINE;
-class GSRenderer : public BaseRenderer
+using namespace engine;
+class gs_renderer : public base_renderer
 {
   public:
-	~GSRenderer() override = default;
+	~gs_renderer() override = default;
 
-	GSRenderer(Core *core, WindowProvider *windowProvider)
+	gs_renderer(engine::core *core, ::window_provider *window_provider)
 	{
 		this->core           = core;
-		this->renderGraph    = core->renderGraphRef;
-		this->windowProvider = windowProvider;
+		this->render_graph    = core->render_graph_ref;
+		this->window_provider = window_provider;
 
-		CreateResources();
-		CreateBuffers();
-		CreatePipelines();
+		create_resources();
+		create_buffers();
+		create_pipelines();
 	}
 
-	void CreateResources()
+	void create_resources()
 	{
-		std::string path = SYSTEMS::OS::GetInstance()->GetAssetsPath() +
+		std::string path = systems::os::get_instance()->get_assets_path() +
 		                   "\\PointClouds\\Woman\\pc2.ply";
-		std::vector<GaussianSplat> gaussianSplats;
+		std::vector<gaussian_splat> gaussian_splats;
 		// for (auto& file : std::filesystem::directory_iterator(path))
 		// {
 		// for (auto& value : std::filesystem::directory_iterator(file))
 		// {
-		//     RenderingResManager::GetInstance()->LoadGS(value.path().string(), gaussianSplats);
+		//     rendering_res_manager::get_instance()->load_gs(value.path().string(), gaussian_splats);
 		//     break;
 		// }
 		//
 		// }
-		RenderingResManager::GetInstance()->LoadGS(path, gaussianSplats);
+		rendering_res_manager::get_instance()->load_gs(path, gaussian_splats);
 
-		gaussians.Init(gaussianSplats, camera.cameraProperties.fov, 1024.0, 1024.0);
+		gaussians.init(gaussian_splats, camera.camera_properties.fov, 1024.0, 1024.0);
 
-		auto indicesSorted = gaussians.SortByDepth(splitMvp.view);
+		auto indices_sorted = gaussians.sort_by_depth(split_mvp.view);
 		for (int i = 0; i < gaussians.pos.size(); ++i)
 		{
-			ENGINE::DrawIndirectIndexedCmd indirectCmd{};
-			indirectCmd.firstIndex    = 0;
-			indirectCmd.firstInstance = indicesSorted[i];
-			indirectCmd.indexCount    = Vertex2D::GetQuadIndices().size();
-			indirectCmd.instanceCount = 1;
-			indirectCmd.vertexOffset  = 0;
-			indexedCmds.emplace_back(indirectCmd);
+			engine::draw_indirect_indexed_cmd indirect_cmd{};
+			indirect_cmd.first_index    = 0;
+			indirect_cmd.first_instance = indices_sorted[i];
+			indirect_cmd.index_count    = vertex_2d::get_quad_indices().size();
+			indirect_cmd.instance_count = 1;
+			indirect_cmd.vertex_offset  = 0;
+			indexed_cmds.emplace_back(indirect_cmd);
 		}
-		indirectBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+		indirect_buffer = engine::resources_manager::get_instance()->get_buffer(engine::resources_manager::buffer_params{
 		    "gsIndirectDraw", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
 		    vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-		    sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), sizeof(ENGINE::DrawIndirectIndexedCmd),indexedCmds.data()});
+		    sizeof(engine::draw_indirect_indexed_cmd) * indexed_cmds.size(), sizeof(engine::draw_indirect_indexed_cmd),indexed_cmds.data()});
 	}
-	void ReSort()
+	void re_sort()
 	{
-		auto indicesSorted = gaussians.SortByDepth(splitMvp.view);
-		indexedCmds.clear();
+		auto indices_sorted = gaussians.sort_by_depth(split_mvp.view);
+		indexed_cmds.clear();
 		for (int i = 0; i < gaussians.pos.size(); ++i)
 		{
-			ENGINE::DrawIndirectIndexedCmd indirectCmd{};
-			indirectCmd.firstIndex    = 0;
-			indirectCmd.firstInstance = indicesSorted[i];
-			indirectCmd.indexCount    = Vertex2D::GetQuadIndices().size();
-			indirectCmd.instanceCount = 1;
-			indirectCmd.vertexOffset  = 0;
-			indexedCmds.emplace_back(indirectCmd);
+			engine::draw_indirect_indexed_cmd indirect_cmd{};
+			indirect_cmd.first_index    = 0;
+			indirect_cmd.first_instance = indices_sorted[i];
+			indirect_cmd.index_count    = vertex_2d::get_quad_indices().size();
+			indirect_cmd.instance_count = 1;
+			indirect_cmd.vertex_offset  = 0;
+			indexed_cmds.emplace_back(indirect_cmd);
 		}
-		indirectBuffer = ENGINE::ResourcesManager::GetInstance()->SetBuffer(
-		    "gsIndirectDraw", sizeof(ENGINE::DrawIndirectIndexedCmd) * indexedCmds.size(), sizeof(ENGINE::DrawIndirectIndexedCmd), indexedCmds.data());
+		indirect_buffer = engine::resources_manager::get_instance()->set_buffer(
+		    "gsIndirectDraw", sizeof(engine::draw_indirect_indexed_cmd) * indexed_cmds.size(), sizeof(engine::draw_indirect_indexed_cmd), indexed_cmds.data());
 	}
 
-	void CreateBuffers()
+	void create_buffers()
 	{
-		gsPointsVertexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
+		gs_points_vertex_buffer = this->render_graph->resources_manager->get_stage_buffer(
 		                                                              "gsPointsVertexBuffer", vk::BufferUsageFlagBits::eVertexBuffer,
-		                                                              sizeof(Vertex2D) * Vertex2D::GetQuadVertices().size(),sizeof(Vertex2D),
-		                                                              Vertex2D::GetQuadVertices().data())
-		                           ->deviceBuffer.get();
-		gsPointsIndexBuffer = this->renderGraph->resourcesManager->GetStageBuffer(
+		                                                              sizeof(vertex_2d) * vertex_2d::get_quad_vertices().size(),sizeof(vertex_2d),
+		                                                              vertex_2d::get_quad_vertices().data())
+		                           ->device_buffer.get();
+		gs_points_index_buffer = this->render_graph->resources_manager->get_stage_buffer(
 		                                                             "gsPointsIndexBuffer", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                             sizeof(Vertex2D) * Vertex2D::GetQuadIndices().size(),sizeof(Vertex2D),
-		                                                             Vertex2D::GetQuadIndices().data())
-		                          ->deviceBuffer.get();
+		                                                             sizeof(vertex_2d) * vertex_2d::get_quad_indices().size(),sizeof(vertex_2d),
+		                                                             vertex_2d::get_quad_indices().data())
+		                          ->device_buffer.get();
 	}
 
-	void CreatePipelines()
+	void create_pipelines()
 	{
-		// auto histogramNode = RenderingResManager::GetInstance()->GetTemplateComputeNode(
+		// auto histogramNode = rendering_res_manager::get_instance()->get_template_compute_node(
 		//     "histogramPass",
-		//     SYSTEMS::OS::GetInstance()->shadersPath.string() +
+		//     systems::os::get_instance()->shaders_path.string() +
 		//     "\\glsl\\ThirdParty\\multi_radixsort_histograms.comp");
-		// histogramNode->G_SetPushConstantSize(sizeof(PcHistogram));
+		// histogramNode->g_set_push_constant_size(sizeof(pc_histogram));
 		//
-		// auto radixSortNode = RenderingResManager::GetInstance()->GetTemplateComputeNode(
+		// auto radixSortNode = rendering_res_manager::get_instance()->get_template_compute_node(
 		//     "radixSortPass",
-		//     SYSTEMS::OS::GetInstance()->shadersPath.string() +
+		//     systems::os::get_instance()->shaders_path.string() +
 		//     "\\glsl\\ThirdParty\\multi_radixsort.comp");
-		// histogramNode->G_SetPushConstantSize(sizeof(PcRadixSort));
+		// histogramNode->g_set_push_constant_size(sizeof(pc_radix_sort));
 
-		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_ALPHA_BLEND,
-		    glm::vec4(0.0f), core->swapchainRef->GetFormat());
-		auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat, ENGINE::colorImageUsage);
-		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 0, 0);
+		engine::attachment_info col_info = get_color_attachment_info(blend_configs::b_alpha_blend,
+		    glm::vec4(0.0f), core->swapchain_ref->get_format());
+		auto image_info = engine::image::create_info2d(window_provider->get_window_size(), 1, 1, engine::g_32b_format, engine::color_image_usage);
+		// image_view* attachment_output = render_graph->resources_manager->get_image("shOutput", image_info, 0, 0);
 
-		auto renderNode = renderGraph->GetTemplateNode_DF(passName, "GSLoad", C_GLSL);
-		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->G_SetVertexInput(Vertex2D::GetVertexInput());
-		renderNode->G_SetPushConstantSize(sizeof(SplitMVP));
-		renderNode->G_AddColorAttachmentOutput(0, colInfo);
-		renderNode->G_SetGraphicsPipelineConfigs({R_FILL, T_TRIANGLE});
-		renderNode->BuildRenderGraphNode();
+		auto render_node = render_graph->get_template_node_df(pass_name, "GSLoad", c_glsl);
+		render_node->g_set_framebuffer_size(window_provider->get_window_size());
+		render_node->g_set_vertex_input(vertex_2d::get_vertex_input());
+		render_node->g_set_push_constant_size(sizeof(split_mvp));
+		render_node->g_add_color_attachment_output(0, col_info);
+		render_node->g_set_graphics_pipeline_configs({r_fill, t_triangle});
+		render_node->build_render_graph_node();
 
-		renderNode->G_SetBuffer("GSScale", gaussians.scales);
-		renderNode->G_SetBuffer("GSRot", gaussians.rots);
-		renderNode->G_SetBuffer("GSPos", gaussians.pos);
-		renderNode->G_SetBuffer("GSCols", gaussians.cols);
-		renderNode->G_SetBuffer("GSAlphas", gaussians.alphas);
-		renderNode->G_SetBuffer("HFov", gaussians.hFovFocal);
-		renderNode->G_SetBuffer("GSShs", gaussians.shCoefs);
+		render_node->g_set_buffer("gs_scale_buffer", gaussians.scales);
+		render_node->g_set_buffer("gs_rot_buffer", gaussians.rots);
+		render_node->g_set_buffer("gs_pos_buffer", gaussians.pos);
+		render_node->g_set_buffer("gs_cols_buffer", gaussians.cols);
+		render_node->g_set_buffer("gs_alphas_buffer", gaussians.alphas);
+		render_node->g_set_buffer("h_fov_uniform", gaussians.h_fov_focal);
+		render_node->g_set_buffer("gs_shs_buffer", gaussians.sh_coefs);
 	}
 
-	void RecreateSwapChainResources() override
+	void recreate_swap_chain_resources() override
 	{
 	}
 
-	void SetRenderOperation() override
+	void set_render_operation() override
 	{
 		// auto hTaskOp = new std::function<void()>(
 		//     [this]
@@ -141,111 +141,111 @@ class GSRenderer : public BaseRenderer
 		// auto hRenderOp = new std::function<void()>(
 		//     [this]()
 		//     {
-		//         auto& renderNode = renderGraph->renderNodes.at("histogramPass");
+		//         auto& render_node = render_graph->render_nodes.at("histogramPass");
 		//
-		//         renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-		//             renderNode->pipelineLayout.get(), 0,
+		//         render_node->get_curr_cmd().bindDescriptorSets(render_node->pipeline_type,
+		//             render_node->pipeline_layout.get(), 0,
 		//             1,
-		//             &renderNode->descCache->dstSet, 0, nullptr);
-		//         renderNode->GetCurrCmd().bindPipeline(
-		//             renderNode->pipelineType, renderNode->pipeline.get());
+		//             &render_node->desc_cache->dst_set, 0, nullptr);
+		//         render_node->get_curr_cmd().bindPipeline(
+		//             render_node->pipeline_type, render_node->pipeline.get());
 		//         vk::DeviceSize offset = 0;
 		//
-		//         renderNode->GetCurrCmd().pushConstants(
-		//             renderGraph->GetNode(passName)->pipelineLayout.get(),
+		//         render_node->get_curr_cmd().pushConstants(
+		//             render_graph->get_node(pass_name)->pipeline_layout.get(),
 		//             vk::ShaderStageFlagBits::eVertex |
 		//             vk::ShaderStageFlagBits::eFragment,
 		//             0, sizeof(PcHistogram), &pcHistogram);
 		//     });
 		//
-		// renderGraph->GetNode("histogramPass")->AddPreRenderingTask(hTaskOp);
-		// renderGraph->GetNode("histogramPass")->G_SetRenderOperation(hRenderOp);
+		// render_graph->get_node("histogramPass")->add_pre_rendering_task(hTaskOp);
+		// render_graph->get_node("histogramPass")->g_set_render_operation(hRenderOp);
 		//
 		// auto rRenderOp = new std::function<void()>(
 		//     [this]()
 		//     {
-		//         auto& renderNode = renderGraph->renderNodes.at("radixSortPass");
+		//         auto& render_node = render_graph->render_nodes.at("radixSortPass");
 		//
-		//         renderNode->GetCurrCmd().bindDescriptorSets(renderNode->pipelineType,
-		//                                          renderNode->pipelineLayout.get(), 0,
+		//         render_node->get_curr_cmd().bindDescriptorSets(render_node->pipeline_type,
+		//                                          render_node->pipeline_layout.get(), 0,
 		//                                          1,
-		//                                          &renderNode->descCache->dstSet, 0, nullptr);
-		//         renderNode->GetCurrCmd().bindPipeline(renderNode->pipelineType, renderNode->pipeline.get());
+		//                                          &render_node->desc_cache->dst_set, 0, nullptr);
+		//         render_node->get_curr_cmd().bindPipeline(render_node->pipeline_type, render_node->pipeline.get());
 		//         vk::DeviceSize offset = 0;
 		//
-		//         renderNode->GetCurrCmd().pushConstants(
-		//             renderGraph->GetNode(passName)->pipelineLayout.get(),
+		//         render_node->get_curr_cmd().pushConstants(
+		//             render_graph->get_node(pass_name)->pipeline_layout.get(),
 		//             vk::ShaderStageFlagBits::eVertex |
 		//             vk::ShaderStageFlagBits::eFragment,
 		//             0, sizeof(PcRadixSort), &pcRadixSort);
 		//     });
 		//
-		// renderGraph->GetNode("radixSortPass")->G_SetRenderOperation(rRenderOp);
+		// render_graph->get_node("radixSortPass")->g_set_render_operation(rRenderOp);
 
-		auto taskOp = new std::function<void()>(
+		auto task_op = new std::function<void()>(
 		    [this] {
-			    MoveCam();
-			    splitMvp.model = glm::identity<glm::mat4>();
+			    move_cam();
+			    split_mvp.model = glm::identity<glm::mat4>();
 
-			    auto renderNode = renderGraph->GetNode(passName);
-			    renderNode->G_SetColorImageAttachmentBinding(0, renderGraph->currentBackBuffer);
+			    auto render_node = render_graph->get_node(pass_name);
+			    render_node->g_set_color_image_attachment_binding(0, render_graph->current_back_buffer);
 		    });
-		auto renderOp = new std::function<void()>(
+		auto render_op = new std::function<void()>(
 		    [this]() {
-			    auto &renderNode = renderGraph->renderNodes.at(passName);
+			    auto &render_node = render_graph->render_nodes.at(pass_name);
 
-			    renderNode->G_SetBuffer("GSConfigs", gsConfigsPc);
+			    render_node->g_set_buffer("gs_configs_uniform", gs_configs_pc);
 
 			    vk::DeviceSize offset = 0;
 
-			    renderNode->GetCurrCmd().pushConstants(
-			        renderGraph->GetNode(passName)->GPUPipelineRef->pipelineLayout.get(),
+			    render_node->get_curr_cmd().pushConstants(
+			        render_graph->get_node(pass_name)->gpu_pipeline_ref->pipeline_layout.get(),
 			        vk::ShaderStageFlagBits::eVertex |
 			            vk::ShaderStageFlagBits::eFragment,
-			        0, sizeof(SplitMVP), &splitMvp);
+			        0, sizeof(split_mvp), &split_mvp);
 
-			    renderNode->GetCurrCmd().bindVertexBuffers(
+			    render_node->get_curr_cmd().bindVertexBuffers(
 			        0, 1,
-			        &gsPointsVertexBuffer->bufferHandle.get(),
+			        &gs_points_vertex_buffer->buffer_handle.get(),
 			        &offset);
 
-			    renderNode->GetCurrCmd().bindIndexBuffer(
-			        gsPointsIndexBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
-			    // renderNode->GetCurrCmd().drawIndexed(
-			    //     Vertex2D::GetQuadIndices().size(), gaussians.pos.size(), 0, 0, 0);
+			    render_node->get_curr_cmd().bindIndexBuffer(
+			        gs_points_index_buffer->buffer_handle.get(), 0, vk::IndexType::eUint32);
+			    // render_node->get_curr_cmd().drawIndexed(
+			    //     vertex_2d::get_quad_indices().size(), gaussians.pos.size(), 0, 0, 0);
 
-			    vk::DeviceSize sizeOffset = 0;
-			    uint32_t       stride     = sizeof(DrawIndirectIndexedCmd);
-			    renderNode->GetCurrCmd().drawIndexedIndirect(
-			        indirectBuffer->bufferHandle.get(),
-			        sizeOffset,
+			    vk::DeviceSize size_offset = 0;
+			    uint32_t       stride     = sizeof(draw_indirect_indexed_cmd);
+			    render_node->get_curr_cmd().drawIndexedIndirect(
+			        indirect_buffer->buffer_handle.get(),
+			        size_offset,
 			        gaussians.pos.size(),
 			        stride);
 		    });
-		renderGraph->GetNode(passName)->G_SetRenderOperation(renderOp);
-		renderGraph->GetNode(passName)->AddPreRenderingTask(taskOp);
+		render_graph->get_node(pass_name)->g_set_render_operation(render_op);
+		render_graph->get_node(pass_name)->add_pre_rendering_task(task_op);
 	}
 
-	void MoveCam()
+	void move_cam()
 	{
 		glm::vec2 input = glm::vec2(0.0f);
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_W))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_W))
 		{
 			input += glm::vec2(0.0f, 1.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_S))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_S))
 		{
 			input += glm::vec2(0.0f, -1.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_D))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_D))
 		{
 			input += glm::vec2(1.0f, 0.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_A))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_A))
 		{
 			input += glm::vec2(-1.0f, 0.0f);
 		}
-		if (glfwGetKey(windowProvider->window, GLFW_KEY_LEFT_SHIFT))
+		if (glfwGetKey(window_provider->window, GLFW_KEY_LEFT_SHIFT))
 		{
 			// camera.movementSpeed = 40;
 		}
@@ -254,51 +254,51 @@ class GSRenderer : public BaseRenderer
 			// camera.movementSpeed = 5;
 		}
 		input                = glm::clamp(input, glm::vec2(-1.0, -1.0), glm::vec2(1.0, 1.0));
-		glm::vec2 mouseInput = glm::vec2(-ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-		camera.mouseInput    = mouseInput;
-		if (glfwGetMouseButton(windowProvider->window, GLFW_MOUSE_BUTTON_2))
+		glm::vec2 mouse_input = glm::vec2(-ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+		camera.mouse_input    = mouse_input;
+		if (glfwGetMouseButton(window_provider->window, GLFW_MOUSE_BUTTON_2))
 		{
-			camera.RotateCamera();
-			camera.Move(deltaTime, input);
+			camera.rotate_camera();
+			camera.move(delta_time, input);
 		}
 		else
 		{
-			camera.firstMouse = true;
+			camera.first_mouse = true;
 		}
 
-		camera.UpdateCam();
-		splitMvp.view = camera.matrices.view;
+		camera.update_cam();
+		split_mvp.view = camera.matrices.view;
 
-		splitMvp.proj = camera.matrices.perspective;
-		splitMvp.proj[0][1] *= -1.0f;
-		splitMvp.proj[2][1] *= -1.0f;
-		splitMvp.proj[3][1] *= -1.0f;
+		split_mvp.proj = camera.matrices.perspective;
+		split_mvp.proj[0][1] *= -1.0f;
+		split_mvp.proj[2][1] *= -1.0f;
+		split_mvp.proj[3][1] *= -1.0f;
 	}
 
-	void ReloadShaders() override
+	void reload_shaders() override
 	{
 	}
 
-	std::string passName = "gsDisplayPass";
+	std::string pass_name = "gsDisplayPass";
 
-	Core             *core;
-	RenderGraph      *renderGraph;
-	WindowProvider   *windowProvider;
-	ENGINE::Buffer   *gsPointsVertexBuffer = nullptr;
-	ENGINE::Buffer   *gsPointsIndexBuffer  = nullptr;
-	ArraysOfGaussians gaussians            = {};
-	SplitMVP          splitMvp             = {};
-	Camera            camera               = {glm::vec3(5.0f), Camera::CameraMode::E_FREE};
+	engine::core             *core;
+	engine::render_graph      *render_graph;
+	::window_provider   *window_provider;
+	engine::buffer   *gs_points_vertex_buffer = nullptr;
+	engine::buffer   *gs_points_index_buffer  = nullptr;
+	arrays_of_gaussians gaussians            = {};
+	split_mvp          split_mvp             = {};
+	rendering::camera            camera               = {glm::vec3(5.0f), rendering::camera::camera_mode::e_free};
 
-	Buffer                             *indirectBuffer;
-	ImageView                          *colAttachmentView;
-	std::vector<glm::vec3>              posSorted;
-	std::vector<DrawIndirectIndexedCmd> indexedCmds;
+	engine::buffer                             *indirect_buffer;
+	engine::image_view                          *col_attachment_view;
+	std::vector<glm::vec3>              pos_sorted;
+	std::vector<draw_indirect_indexed_cmd> indexed_cmds;
 
-	GSConfigsPc gsConfigsPc = {};
-	PcHistogram pcHistogram = {};
-	PcRadixSort pcRadixSort = {};
+	gs_configs_pc gs_configs_pc = {};
+	pc_histogram pc_histogram = {};
+	pc_radix_sort pc_radix_sort = {};
 };
-}        // namespace Rendering
+}        // namespace rendering
 
-#endif        // GSRENDERER_HPP
+#endif        // GS_RENDERER_HPP

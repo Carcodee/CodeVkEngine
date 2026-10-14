@@ -9,40 +9,40 @@
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
 
-layout(push_constant) uniform pushConstants{
+layout(push_constant) uniform push_constants{
     vec4 color;
-    int layerSelected;
+    int layer_selected;
     int painting;
-    int xMouseCoord;
-    int yMouseCoord;
+    int x_mouse_coord;
+    int y_mouse_coord;
     int radius;
 }pc;
 
-layout (set = 0, binding = 0, rgba8) uniform image2D PaintingLayers[];
+layout (set = 0, binding = 0, rgba8) uniform image2D painting_layers[];
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 void main() {
 
     
-    int posX =int(gl_GlobalInvocationID.x - float(pc.radius / 2.0) + 1);
-    int posY =int(gl_GlobalInvocationID.y - float(pc.radius / 2.0) + 1);
+    int pos_x =int(gl_GlobalInvocationID.x - float(pc.radius / 2.0) + 1);
+    int pos_y =int(gl_GlobalInvocationID.y - float(pc.radius / 2.0) + 1);
     
 
-    int xCoord = (pc.xMouseCoord - int(gl_WorkGroupSize.x) + int(posX));
-    int yCoord = (pc.yMouseCoord - int(gl_WorkGroupSize.y) + int(posY));
+    int x_coord = (pc.x_mouse_coord - int(gl_WorkGroupSize.x) + int(pos_x));
+    int y_coord = (pc.y_mouse_coord - int(gl_WorkGroupSize.y) + int(pos_y));
     
-    vec2 dir = vec2(xCoord, yCoord) - vec2(pc.xMouseCoord, pc.yMouseCoord);
-    float squaredD = pow(2.0, dir.x) + pow(2.0, dir.y);
+    vec2 dir = vec2(x_coord, y_coord) - vec2(pc.x_mouse_coord, pc.y_mouse_coord);
+    float squared_d = pow(2.0, dir.x) + pow(2.0, dir.y);
     
-    if(distance(vec2(xCoord, yCoord), vec2(pc.xMouseCoord, pc.yMouseCoord)) < pc.radius/2.0){
-        ivec2 xy = ivec2(xCoord, yCoord) * 2;
+    if(distance(vec2(x_coord, y_coord), vec2(pc.x_mouse_coord, pc.y_mouse_coord)) < pc.radius/2.0){
+        ivec2 xy = ivec2(x_coord, y_coord) * 2;
         
         bool painting = (pc.painting == 1);
-        if(painting && pc.layerSelected == 0){
-            imageStore(PaintingLayers[0], xy , pc.color);
+        if(painting && pc.layer_selected == 0){
+            imageStore(painting_layers[0], xy , pc.color);
         }
-        if(painting && pc.layerSelected == 1){
-            imageStore(PaintingLayers[1], xy , vec4(1.0));
+        if(painting && pc.layer_selected == 1){
+            imageStore(painting_layers[1], xy , vec4(1.0));
         }       
     }
 }

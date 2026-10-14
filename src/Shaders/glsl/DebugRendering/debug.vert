@@ -2,11 +2,11 @@
 
 layout (location = 0) in vec3 pos;
 
-layout(push_constant)uniform pushConstants{
+layout(push_constant)uniform push_constants{
     mat4 model;
-    mat4 projView;
+    mat4 proj_view;
 }pc;
 
 void main() {
-    gl_Position = pc.projView * pc.model * vec4(pos, 1.0f);
+    gl_Position = pc.proj_view * pc.model * vec4(pos, 1.0f);
 }

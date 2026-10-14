@@ -3,75 +3,75 @@
 // Created by carlo on 2024-11-25.
 //
 
-#ifndef ENGINERESMANAGER_HPP
-#define ENGINERESMANAGER_HPP
+#ifndef RENDERING_RES_MANAGER_HPP
+#define RENDERING_RES_MANAGER_HPP
 
-namespace Rendering
+namespace rendering
 {
-    class RenderingResManager
+    class rendering_res_manager
     {
     public:
-        void LoadPLY(std::string path, std::vector<glm::vec3>& positions)
+        void load_ply(std::string path, std::vector<glm::vec3>& positions)
         {
             // Construct the data object by reading from file
             assert(std::filesystem::path(path).extension() == ".ply" && "Invalid PLY file");
             assert(std::filesystem::exists(path));
 
-            happly::PLYData plyIn(path);
+            happly::PLYData ply_in(path);
 
             // Get mesh-style data from the object
-            positions = plyIn.getVertexPositions_glm();
-            // std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+            positions = ply_in.getVertexPositions_glm();
+            // std::vector<std::vector<size_t>> fInd = ply_in.getFaceIndices<size_t>();
         }
 
-        void LoadGS(std::string path, std::vector<GaussianSplat>& splats)
+        void load_gs(std::string path, std::vector<gaussian_splat>& splats)
         {
             // Construct the data object by reading from file
             assert(std::filesystem::path(path).extension() == ".ply" && "Invalid PLY file");
             assert(std::filesystem::exists(path));
 
-            happly::PLYData plyIn(path);
+            happly::PLYData ply_in(path);
 
             // Get mesh-style data from the object
-            std::vector<float> xPos = plyIn.getElement("vertex").getProperty<float>("x");
-            std::vector<float> yPos = plyIn.getElement("vertex").getProperty<float>("y");
-            std::vector<float> zPos = plyIn.getElement("vertex").getProperty<float>("z");
+            std::vector<float> x_pos = ply_in.getElement("vertex").getProperty<float>("x");
+            std::vector<float> y_pos = ply_in.getElement("vertex").getProperty<float>("y");
+            std::vector<float> z_pos = ply_in.getElement("vertex").getProperty<float>("z");
 
-            std::vector<float> nx = plyIn.getElement("vertex").getProperty<float>("nx");
-            std::vector<float> ny = plyIn.getElement("vertex").getProperty<float>("ny");
-            std::vector<float> nz = plyIn.getElement("vertex").getProperty<float>("nz");
+            std::vector<float> nx = ply_in.getElement("vertex").getProperty<float>("nx");
+            std::vector<float> ny = ply_in.getElement("vertex").getProperty<float>("ny");
+            std::vector<float> nz = ply_in.getElement("vertex").getProperty<float>("nz");
 
-            std::vector<float> fdc0 = plyIn.getElement("vertex").getProperty<float>("f_dc_0");
-            std::vector<float> fdc1 = plyIn.getElement("vertex").getProperty<float>("f_dc_1");
-            std::vector<float> fdc2 = plyIn.getElement("vertex").getProperty<float>("f_dc_2");
+            std::vector<float> fdc0 = ply_in.getElement("vertex").getProperty<float>("f_dc_0");
+            std::vector<float> fdc1 = ply_in.getElement("vertex").getProperty<float>("f_dc_1");
+            std::vector<float> fdc2 = ply_in.getElement("vertex").getProperty<float>("f_dc_2");
 
-            std::vector<float> opacity = plyIn.getElement("vertex").getProperty<float>("opacity");
+            std::vector<float> opacity = ply_in.getElement("vertex").getProperty<float>("opacity");
 
-            std::vector<float> scale0 = plyIn.getElement("vertex").getProperty<float>("scale_0");
-            std::vector<float> scale1 = plyIn.getElement("vertex").getProperty<float>("scale_1");
-            std::vector<float> scale2 = plyIn.getElement("vertex").getProperty<float>("scale_2");
+            std::vector<float> scale0 = ply_in.getElement("vertex").getProperty<float>("scale_0");
+            std::vector<float> scale1 = ply_in.getElement("vertex").getProperty<float>("scale_1");
+            std::vector<float> scale2 = ply_in.getElement("vertex").getProperty<float>("scale_2");
 
-            std::vector<float> rot0 = plyIn.getElement("vertex").getProperty<float>("rot_0");
-            std::vector<float> rot1 = plyIn.getElement("vertex").getProperty<float>("rot_1");
-            std::vector<float> rot2 = plyIn.getElement("vertex").getProperty<float>("rot_2");
-            std::vector<float> rot3 = plyIn.getElement("vertex").getProperty<float>("rot_3");
+            std::vector<float> rot0 = ply_in.getElement("vertex").getProperty<float>("rot_0");
+            std::vector<float> rot1 = ply_in.getElement("vertex").getProperty<float>("rot_1");
+            std::vector<float> rot2 = ply_in.getElement("vertex").getProperty<float>("rot_2");
+            std::vector<float> rot3 = ply_in.getElement("vertex").getProperty<float>("rot_3");
 
-            int f_Rest_idx = 0;
-            std::string currCoef;
-            std::vector<std::vector<float>> fRests;
+            int f_rest_idx = 0;
+            std::string curr_coef;
+            std::vector<std::vector<float>> f_rests;
 
             for (int i = 0; i < 45; ++i)
             {
-                currCoef = "f_rest_" + std::to_string(f_Rest_idx);
-                std::vector<float> coefArray = plyIn.getElement("vertex").getProperty<float>(currCoef.c_str());
-                fRests.emplace_back(coefArray);
-                f_Rest_idx++;
+                curr_coef = "f_rest_" + std::to_string(f_rest_idx);
+                std::vector<float> coef_array = ply_in.getElement("vertex").getProperty<float>(curr_coef.c_str());
+                f_rests.emplace_back(coef_array);
+                f_rest_idx++;
             }
 
-            for (int i = 0; i < xPos.size(); ++i)
+            for (int i = 0; i < x_pos.size(); ++i)
             {
-                splats.emplace_back(GaussianSplat{
-                    xPos[i], yPos[i], zPos[i],
+                splats.emplace_back(gaussian_splat{
+                    x_pos[i], y_pos[i], z_pos[i],
                     nx[i], ny[i], nz[i],
                     fdc0[i], fdc1[i], fdc2[i],
                     opacity[i],
@@ -80,159 +80,159 @@ namespace Rendering
                 });
                 for (int j = 0; j < 15; ++j)
                 {
-                    splats.back().f_rest[j * 3 + 0] = fRests.at(j).at(i);
-                    splats.back().f_rest[j * 3 + 1] = fRests.at(j + 15).at(i);
-                    splats.back().f_rest[j * 3 + 2] = fRests.at(j + 30).at(i);
+                    splats.back().f_rest[j * 3 + 0] = f_rests.at(j).at(i);
+                    splats.back().f_rest[j * 3 + 1] = f_rests.at(j + 15).at(i);
+                    splats.back().f_rest[j * 3 + 2] = f_rests.at(j + 30).at(i);
                 }
             }
         }
 
-        void LoadGLTF(std::string path, Model& model, bool compactIndices)
+        void load_gltf(std::string path, rendering::model& model, bool compact_indices)
         {
             if (!std::filesystem::exists(path))
             {
-                SYSTEMS::Logger::GetInstance()->LogMessage("Path do not exist: " + path);
+                systems::logger::get_instance()->log_message("Path do not exist: " + path);
                 return;
             }
-            tinygltf::Model gltfModel;
+            tinygltf::Model gltf_model;
             std::string err;
             std::string warn;
-            tinygltf::TinyGLTF gltfContext;
-            gltfContext.LoadASCIIFromFile(&gltfModel, &err, &warn, path);
-            NodeMat* rootNode = new NodeMat();
+            tinygltf::TinyGLTF gltf_context;
+            gltf_context.LoadASCIIFromFile(&gltf_model, &err, &warn, path);
+            rendering::node_mat* root_node = new rendering::node_mat();
 
-            model.meshCount = (int)gltfModel.meshes.size();
-            for (auto& scene : gltfModel.scenes)
+            model.mesh_count = (int)gltf_model.meshes.size();
+            for (auto& scene : gltf_model.scenes)
             {
                 for (auto& node : scene.nodes)
                 {
-                    if (compactIndices)
+                    if (compact_indices)
                     {
-                        LoadGLTFNodeContiguousMesh(gltfModel, gltfModel.nodes[node], rootNode, model);
+                        load_gltf_node_contiguous_mesh(gltf_model, gltf_model.nodes[node], root_node, model);
                     }
                     else
                     {
-                        LoadGLTFNode(gltfModel, gltfModel.nodes[node], rootNode, model);
+                        load_gltf_node(gltf_model, gltf_model.nodes[node], root_node, model);
                     }
                 }
             }
-            model.SetWorldMatrices();
-            model.SetMeshesSpheres();
-            LoadGLTFMaterials(gltfModel, path);
-            SYSTEMS::Logger::GetInstance()->LogMessage("Model loader Errors: " + err);
-            SYSTEMS::Logger::GetInstance()->LogMessage("Model loader Warns: " + warn);
+            model.set_world_matrices();
+            model.set_meshes_spheres();
+            load_gltf_materials(gltf_model, path);
+            systems::logger::get_instance()->log_message("Model loader Errors: " + err);
+            systems::logger::get_instance()->log_message("Model loader Warns: " + warn);
         }
 
-        void LoadGLTFNode(tinygltf::Model& gltfModel, tinygltf::Node& node, NodeMat* parentNodeMat, Model& model)
+        void load_gltf_node(tinygltf::Model& gltf_model, tinygltf::Node& node, rendering::node_mat* parent_node_mat, rendering::model& model)
         {
-            glm::mat4 nodeMatrix = glm::mat4(1.0f);
+            glm::mat4 node_matrix = glm::mat4(1.0f);
             if (node.scale.size() == 3)
             {
-                nodeMatrix = glm::scale(nodeMatrix, glm::vec3(glm::make_vec3(node.scale.data())));
+                node_matrix = glm::scale(node_matrix, glm::vec3(glm::make_vec3(node.scale.data())));
             }
             if (node.rotation.size() == 4)
             {
                 glm::quat rot = glm::make_quat(node.rotation.data());
-                nodeMatrix *= glm::mat4(rot);
+                node_matrix *= glm::mat4(rot);
             }
             if (node.translation.size() == 3)
             {
-                nodeMatrix = glm::translate(nodeMatrix, glm::vec3(glm::make_vec3(node.translation.data())));
+                node_matrix = glm::translate(node_matrix, glm::vec3(glm::make_vec3(node.translation.data())));
             }
             if (node.matrix.size() == 16)
             {
-                nodeMatrix = glm::make_mat4(node.matrix.data());
+                node_matrix = glm::make_mat4(node.matrix.data());
             }
 
-            NodeMat* nodeMat = new NodeMat();
-            nodeMat->parentNode = parentNodeMat;
-            nodeMat->matrix = nodeMatrix;
+            rendering::node_mat* node_material = new rendering::node_mat();
+            node_material->parent_node = parent_node_mat;
+            node_material->matrix = node_matrix;
 
             for (auto& child : node.children)
             {
-                LoadGLTFNode(gltfModel, gltfModel.nodes[child], nodeMat, model);
+                load_gltf_node(gltf_model, gltf_model.nodes[child], node_material, model);
             }
 
             if (node.mesh > -1)
             {
-                model.nodeMats.push_back(nodeMat);
-                model.firstVertices.push_back(model.vertices.size());
-                model.firstIndices.push_back(model.indices.size());
-                tinygltf::Mesh& currMesh = gltfModel.meshes[node.mesh];
+                model.node_mats.push_back(node_material);
+                model.first_vertices.push_back(model.vertices.size());
+                model.first_indices.push_back(model.indices.size());
+                tinygltf::Mesh& curr_mesh = gltf_model.meshes[node.mesh];
 
-                if (currMesh.primitives[0].material > -1)
+                if (curr_mesh.primitives[0].material > -1)
                 {
                     model.materials.push_back(
-                        GetInstance()->materials.size() + currMesh.primitives[0].material);
+                        get_instance()->materials.size() + curr_mesh.primitives[0].material);
                 }
                 else
                 {
                     model.materials.push_back(0);
                 }
-                for (auto& primitive : currMesh.primitives)
+                for (auto& primitive : curr_mesh.primitives)
                 {
-                    int vertexCount = 0;
-                    int indexCount = 0;
+                    int vertex_count = 0;
+                    int index_count = 0;
                     {
-                        const float* posBuff = nullptr;
-                        const float* normalsBuff = nullptr;
-                        const float* tangentsBuff = nullptr;
-                        const float* textCoordsBuff = nullptr;
+                        const float* pos_buff = nullptr;
+                        const float* normals_buff = nullptr;
+                        const float* tangents_buff = nullptr;
+                        const float* text_coords_buff = nullptr;
                         if (primitive.attributes.find("POSITION") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("POSITION")->
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("POSITION")->
                                 second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            posBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            pos_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
-                            vertexCount = accessor.count;
+                            vertex_count = accessor.count;
                         }
                         if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("NORMAL")->
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("NORMAL")->
                                 second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            normalsBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            normals_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
                         }
                         if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("TEXCOORD_0")->
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("TEXCOORD_0")->
                                 second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            textCoordsBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            text_coords_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
                         }
                         if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("TANGENT")
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("TANGENT")
                                 ->second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            tangentsBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            tangents_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
                         }
 
-                        model.vertices.reserve(vertexCount);
-                        float maxDistance = 0.0;
+                        model.vertices.reserve(vertex_count);
+                        float max_distance = 0.0;
                         glm::vec3 min = glm::vec3();
                         glm::vec3 max = glm::vec3();
-                        for (int i = 0; i < vertexCount; ++i)
+                        for (int i = 0; i < vertex_count; ++i)
                         {
-                            ENGINE::M_Vertex3D vertex{};
-                            glm::vec3 pos = glm::make_vec3(&posBuff[i * 3]);
+                            engine::m_vertex_3d vertex{};
+                            glm::vec3 pos = glm::make_vec3(&pos_buff[i * 3]);
                             vertex.pos = pos;
-                            vertex.normal = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
+                            vertex.normal = normals_buff ? glm::make_vec3(&normals_buff[i * 3]) : glm::vec3(0.0f);
                             // not passing vec4 tangents at the moment
-                            glm::vec4 tangent = tangentsBuff ? glm::make_vec4(&tangentsBuff[i * 4]) : glm::vec4(0.0f);
-                            vertex.tangent = tangentsBuff
+                            glm::vec4 tangent = tangents_buff ? glm::make_vec4(&tangents_buff[i * 4]) : glm::vec4(0.0f);
+                            vertex.tangent = tangents_buff
                                                  ? glm::vec3(tangent.x, tangent.y, tangent.z) * tangent.w
                                                  : glm::vec3(0.0f);
-                            vertex.uv = textCoordsBuff ? glm::make_vec2(&textCoordsBuff[i * 2]) : glm::vec2(0.0f);
+                            vertex.uv = text_coords_buff ? glm::make_vec2(&text_coords_buff[i * 2]) : glm::vec2(0.0f);
                             vertex.id = node.mesh;
                             float distance = glm::distance(glm::vec3(0.0), vertex.pos);
-                            if (distance > maxDistance)
+                            if (distance > max_distance)
                             {
-                                maxDistance = distance;
+                                max_distance = distance;
                             }
                             min = glm::min(min, pos);
                             max = glm::max(max, pos);
@@ -240,20 +240,20 @@ namespace Rendering
                         }
                         glm::vec3 center = glm::vec3((min + max) * 0.5f);
                         float radius = glm::distance(center, max);
-                        model.meshesSpheres.emplace_back(Sphere{center, radius});
+                        model.meshes_spheres.emplace_back(sphere{center, radius});
                     }
                     // indices
                     {
-                        tinygltf::Accessor& accessor = gltfModel.accessors[primitive.indices];
-                        tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
-                        indexCount += static_cast<uint32_t>(accessor.count);
+                        tinygltf::Accessor& accessor = gltf_model.accessors[primitive.indices];
+                        tinygltf::BufferView& buffer_view = gltf_model.bufferViews[accessor.bufferView];
+                        index_count += static_cast<uint32_t>(accessor.count);
                         // meshIndexCount.push_back(indexCount);
                         switch (accessor.componentType)
                         {
                         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
                             {
-                                const uint32_t* buff = reinterpret_cast<const uint32_t*>(&(gltfModel.buffers[bufferView.
-                                    buffer].data[bufferView.byteOffset + accessor.byteOffset]));
+                                const uint32_t* buff = reinterpret_cast<const uint32_t*>(&(gltf_model.buffers[buffer_view.
+                                    buffer].data[buffer_view.byteOffset + accessor.byteOffset]));
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
                                     model.indices.push_back(buff[j]);
@@ -262,8 +262,8 @@ namespace Rendering
                             }
                         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                             {
-                                const uint16_t* buff = reinterpret_cast<const uint16_t*>(&(gltfModel.buffers[bufferView.
-                                    buffer].data[bufferView.byteOffset + accessor.byteOffset]));
+                                const uint16_t* buff = reinterpret_cast<const uint16_t*>(&(gltf_model.buffers[buffer_view.
+                                    buffer].data[buffer_view.byteOffset + accessor.byteOffset]));
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
                                     model.indices.push_back(buff[j]);
@@ -272,8 +272,8 @@ namespace Rendering
                             }
                         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
                             {
-                                const uint8_t* buff = reinterpret_cast<const uint8_t*>(&(gltfModel.buffers[bufferView.
-                                    buffer].data[bufferView.byteOffset + accessor.byteOffset]));
+                                const uint8_t* buff = reinterpret_cast<const uint8_t*>(&(gltf_model.buffers[buffer_view.
+                                    buffer].data[buffer_view.byteOffset + accessor.byteOffset]));
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
                                     model.indices.push_back(buff[j]);
@@ -287,154 +287,154 @@ namespace Rendering
                         }
                     }
 
-                    model.indicesCount.push_back(indexCount);
-                    model.verticesCount.push_back(vertexCount);
+                    model.indices_count.push_back(index_count);
+                    model.vertices_count.push_back(vertex_count);
                 }
             }
         }
 
-        void LoadGLTFNodeContiguousMesh(tinygltf::Model& gltfModel, tinygltf::Node& node, NodeMat* parentNodeMat,
-                                        Model& model)
+        void load_gltf_node_contiguous_mesh(tinygltf::Model& gltf_model, tinygltf::Node& node, rendering::node_mat* parent_node_mat,
+                                        rendering::model& model)
         {
-            glm::mat4 nodeMatrix = glm::mat4(1.0f);
+            glm::mat4 node_matrix = glm::mat4(1.0f);
             if (node.scale.size() == 3)
             {
-                nodeMatrix = glm::scale(nodeMatrix, glm::vec3(glm::make_vec3(node.scale.data())));
+                node_matrix = glm::scale(node_matrix, glm::vec3(glm::make_vec3(node.scale.data())));
             }
             if (node.rotation.size() == 4)
             {
                 glm::quat rot = glm::make_quat(node.rotation.data());
-                nodeMatrix *= glm::mat4(rot);
+                node_matrix *= glm::mat4(rot);
             }
             if (node.translation.size() == 3)
             {
-                nodeMatrix = glm::translate(nodeMatrix, glm::vec3(glm::make_vec3(node.translation.data())));
+                node_matrix = glm::translate(node_matrix, glm::vec3(glm::make_vec3(node.translation.data())));
             }
             if (node.matrix.size() == 16)
             {
-                nodeMatrix = glm::make_mat4(node.matrix.data());
+                node_matrix = glm::make_mat4(node.matrix.data());
             }
 
-            NodeMat* nodeMat = new NodeMat();
-            nodeMat->parentNode = parentNodeMat;
-            nodeMat->matrix = nodeMatrix;
+            rendering::node_mat* node_material = new rendering::node_mat();
+            node_material->parent_node = parent_node_mat;
+            node_material->matrix = node_matrix;
 
             for (auto& child : node.children)
             {
-                LoadGLTFNodeContiguousMesh(gltfModel, gltfModel.nodes[child], nodeMat, model);
+                load_gltf_node_contiguous_mesh(gltf_model, gltf_model.nodes[child], node_material, model);
             }
 
             if (node.mesh > -1)
             {
-                model.nodeMats.push_back(nodeMat);
-                model.firstVertices.push_back(model.vertices.size());
-                model.firstIndices.push_back(model.indices.size());
-                tinygltf::Mesh& currMesh = gltfModel.meshes[node.mesh];
+                model.node_mats.push_back(node_material);
+                model.first_vertices.push_back(model.vertices.size());
+                model.first_indices.push_back(model.indices.size());
+                tinygltf::Mesh& curr_mesh = gltf_model.meshes[node.mesh];
 
-                if (currMesh.primitives[0].material > -1)
+                if (curr_mesh.primitives[0].material > -1)
                 {
-                    model.materials.push_back(GetInstance()->materials.size() + currMesh.primitives[0].material);
+                    model.materials.push_back(get_instance()->materials.size() + curr_mesh.primitives[0].material);
                 }
                 else
                 {
                     model.materials.push_back(0);
                 }
-                for (auto& primitive : currMesh.primitives)
+                for (auto& primitive : curr_mesh.primitives)
                 {
-                    int verticesSize = model.vertices.size();
-                    int vertexCount = 0;
-                    int indexCount = 0;
+                    int vertices_size = model.vertices.size();
+                    int vertex_count = 0;
+                    int index_count = 0;
                     {
-                        const float* posBuff = nullptr;
-                        const float* normalsBuff = nullptr;
-                        const float* tangentsBuff = nullptr;
-                        const float* textCoordsBuff = nullptr;
+                        const float* pos_buff = nullptr;
+                        const float* normals_buff = nullptr;
+                        const float* tangents_buff = nullptr;
+                        const float* text_coords_buff = nullptr;
                         if (primitive.attributes.find("POSITION") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("POSITION")->
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("POSITION")->
                                 second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            posBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            pos_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
-                            vertexCount = accessor.count;
+                            vertex_count = accessor.count;
                         }
                         if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("NORMAL")->
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("NORMAL")->
                                 second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            normalsBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            normals_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
                         }
                         if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("TEXCOORD_0")->
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("TEXCOORD_0")->
                                 second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            textCoordsBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            text_coords_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
                         }
                         if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
                         {
-                            tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.find("TANGENT")
+                            tinygltf::Accessor& accessor = gltf_model.accessors[primitive.attributes.find("TANGENT")
                                 ->second];
-                            tinygltf::BufferView& view = gltfModel.bufferViews[accessor.bufferView];
-                            tangentsBuff = reinterpret_cast<const float*>(&gltfModel.buffers[view.buffer].data[view.
+                            tinygltf::BufferView& view = gltf_model.bufferViews[accessor.bufferView];
+                            tangents_buff = reinterpret_cast<const float*>(&gltf_model.buffers[view.buffer].data[view.
                                 byteOffset + accessor.byteOffset]);
                         }
 
-                        model.vertices.reserve(vertexCount);
-                        for (int i = 0; i < vertexCount; ++i)
+                        model.vertices.reserve(vertex_count);
+                        for (int i = 0; i < vertex_count; ++i)
                         {
-                            ENGINE::M_Vertex3D vertex{};
-                            glm::vec3 pos = glm::make_vec3(&posBuff[i * 3]);
+                            engine::m_vertex_3d vertex{};
+                            glm::vec3 pos = glm::make_vec3(&pos_buff[i * 3]);
                             vertex.pos = pos;
-                            vertex.normal = normalsBuff ? glm::make_vec3(&normalsBuff[i * 3]) : glm::vec3(0.0f);
+                            vertex.normal = normals_buff ? glm::make_vec3(&normals_buff[i * 3]) : glm::vec3(0.0f);
                             // not passing vec4 tangents at the moment
-                            glm::vec4 tangent = tangentsBuff ? glm::make_vec4(&tangentsBuff[i * 4]) : glm::vec4(0.0f);
-                            vertex.tangent = tangentsBuff
+                            glm::vec4 tangent = tangents_buff ? glm::make_vec4(&tangents_buff[i * 4]) : glm::vec4(0.0f);
+                            vertex.tangent = tangents_buff
                                                  ? glm::vec3(tangent.x, tangent.y, tangent.z) * tangent.w
                                                  : glm::vec3(0.0f);
-                            vertex.uv = textCoordsBuff ? glm::make_vec2(&textCoordsBuff[i * 2]) : glm::vec2(0.0f);
+                            vertex.uv = text_coords_buff ? glm::make_vec2(&text_coords_buff[i * 2]) : glm::vec2(0.0f);
                             vertex.id = node.mesh;
                             model.vertices.push_back(vertex);
                         }
                     }
                     // indices
                     {
-                        tinygltf::Accessor& accessor = gltfModel.accessors[primitive.indices];
-                        tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
-                        indexCount += static_cast<uint32_t>(accessor.count);
+                        tinygltf::Accessor& accessor = gltf_model.accessors[primitive.indices];
+                        tinygltf::BufferView& buffer_view = gltf_model.bufferViews[accessor.bufferView];
+                        index_count += static_cast<uint32_t>(accessor.count);
                         // meshIndexCount.push_back(indexCount);
                         switch (accessor.componentType)
                         {
                         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
                             {
-                                const uint32_t* buff = reinterpret_cast<const uint32_t*>(&(gltfModel.buffers[bufferView.
-                                    buffer].data[bufferView.byteOffset + accessor.byteOffset]));
+                                const uint32_t* buff = reinterpret_cast<const uint32_t*>(&(gltf_model.buffers[buffer_view.
+                                    buffer].data[buffer_view.byteOffset + accessor.byteOffset]));
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
-                                    model.indices.push_back(verticesSize + buff[j]);
+                                    model.indices.push_back(vertices_size + buff[j]);
                                 }
                                 break;
                             }
                         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                             {
-                                const uint16_t* buff = reinterpret_cast<const uint16_t*>(&(gltfModel.buffers[bufferView.
-                                    buffer].data[bufferView.byteOffset + accessor.byteOffset]));
+                                const uint16_t* buff = reinterpret_cast<const uint16_t*>(&(gltf_model.buffers[buffer_view.
+                                    buffer].data[buffer_view.byteOffset + accessor.byteOffset]));
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
-                                    model.indices.push_back(verticesSize + buff[j]);
+                                    model.indices.push_back(vertices_size + buff[j]);
                                 }
                                 break;
                             }
                         case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
                             {
-                                const uint8_t* buff = reinterpret_cast<const uint8_t*>(&(gltfModel.buffers[bufferView.
-                                    buffer].data[bufferView.byteOffset + accessor.byteOffset]));
+                                const uint8_t* buff = reinterpret_cast<const uint8_t*>(&(gltf_model.buffers[buffer_view.
+                                    buffer].data[buffer_view.byteOffset + accessor.byteOffset]));
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
-                                    model.indices.push_back(verticesSize + buff[j]);
+                                    model.indices.push_back(vertices_size + buff[j]);
                                 }
                                 break;
                             }
@@ -444,354 +444,354 @@ namespace Rendering
                             return;
                         }
                     }
-                    model.indicesCount.push_back(indexCount);
-                    model.verticesCount.push_back(vertexCount);
+                    model.indices_count.push_back(index_count);
+                    model.vertices_count.push_back(vertex_count);
                 }
             }
         }
 
-        void LoadGLTFMaterials(tinygltf::Model& model, std::string modelPath, std::string modelPathAbs = "")
+        void load_gltf_materials(tinygltf::Model& model, std::string model_path, std::string model_path_abs = "")
         {
-            std::string modelFolder;
-            std::filesystem::path path(modelPath);
-            modelPath = path.parent_path().string();
-            modelFolder = modelPath;
-            if (!modelPathAbs.empty())
+            std::string model_folder;
+            std::filesystem::path path(model_path);
+            model_path = path.parent_path().string();
+            model_folder = model_path;
+            if (!model_path_abs.empty())
             {
-                modelFolder = modelPathAbs;
+                model_folder = model_path_abs;
             }
-            if (!std::filesystem::exists(modelPath))
+            if (!std::filesystem::exists(model_path))
             {
-                SYSTEMS::Logger::GetInstance()->SetLogPreferences(SYSTEMS::LogLevel::L_WARN);
-                SYSTEMS::Logger::GetInstance()->LogMessage("Texture path does not exist at: " + modelPath);
+                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_warn);
+                systems::logger::get_instance()->log_message("Texture path does not exist at: " + model_path);
                 return;
             };
 
             for (int i = 0; i < model.materials.size(); ++i)
             {
-                tinygltf::Material& gltfMat = model.materials[i];
-                std::string materialName = "Material_" + GetInstance()->materials.size();
-                Material* material = GetInstance()->PushMaterial(materialName);
-                material->materialPackedData.diff = glm::vec4(gltfMat.pbrMetallicRoughness.baseColorFactor[0],
-                                                              gltfMat.pbrMetallicRoughness.baseColorFactor[1],
-                                                              gltfMat.pbrMetallicRoughness.baseColorFactor[2],
-                                                              gltfMat.pbrMetallicRoughness.baseColorFactor[3]);
-                material->materialPackedData.roughnessFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.
+                tinygltf::Material& gltf_mat = model.materials[i];
+                std::string material_name = "Material_" + get_instance()->materials.size();
+                rendering::material* material = get_instance()->push_material(material_name);
+                material->material_packed_data.diff = glm::vec4(gltf_mat.pbrMetallicRoughness.baseColorFactor[0],
+                                                              gltf_mat.pbrMetallicRoughness.baseColorFactor[1],
+                                                              gltf_mat.pbrMetallicRoughness.baseColorFactor[2],
+                                                              gltf_mat.pbrMetallicRoughness.baseColorFactor[3]);
+                material->material_packed_data.roughness_factor = static_cast<float>(gltf_mat.pbrMetallicRoughness.
                     roughnessFactor);
-                material->materialPackedData.metallicFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.
+                material->material_packed_data.metallic_factor = static_cast<float>(gltf_mat.pbrMetallicRoughness.
                     metallicFactor);
-                if (gltfMat.alphaMode == "OPAQUE")
+                if (gltf_mat.alphaMode == "OPAQUE")
                 {
-                    material->materialPackedData.alphaCutoff = 1.0f;
+                    material->material_packed_data.alpha_cutoff = 1.0f;
                 }
-                if (gltfMat.alphaMode == "BLEND")
+                if (gltf_mat.alphaMode == "BLEND")
                 {
-                    material->materialPackedData.alphaCutoff = gltfMat.alphaCutoff;
+                    material->material_packed_data.alpha_cutoff = gltf_mat.alphaCutoff;
                 }
-                if (gltfMat.pbrMetallicRoughness.baseColorTexture.index > -1)
+                if (gltf_mat.pbrMetallicRoughness.baseColorTexture.index > -1)
                 {
-                    std::string texturePath = GetGltfTexturePath(
-                        modelFolder,
-                        model.images[model.textures[gltfMat.pbrMetallicRoughness.baseColorTexture.index].source].uri);
-                    if (!texturePath.empty())
+                    std::string texture_path = get_gltf_texture_path(
+                        model_folder,
+                        model.images[model.textures[gltf_mat.pbrMetallicRoughness.baseColorTexture.index].source].uri);
+                    if (!texture_path.empty())
                     {
-                        ENGINE::ImageShipper* texture = ENGINE::ResourcesManager::GetInstance()->BatchShipper(
-                            texturePath, texturePath, 1, 1, ENGINE::g_ShipperFormat, ENGINE::GRAPHICS_READ);
-                        material->materialPackedData.diff = glm::vec4(1.0f);
-                        material->materialPackedData.albedoFactor = 1.0f;
-                        int id = ENGINE::ResourcesManager::GetInstance()->GetShipperID(texturePath);
-                        material->SetTexture(ALBEDO, id);
+                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        material->material_packed_data.diff = glm::vec4(1.0f);
+                        material->material_packed_data.albedo_factor = 1.0f;
+                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
+                        material->set_texture(albedo, id);
                     }
                 }
-                if (gltfMat.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
+                if (gltf_mat.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
                 {
-                    std::string texturePath = GetGltfTexturePath(
-                        modelFolder,
-                        model.images[model.textures[gltfMat.pbrMetallicRoughness.metallicRoughnessTexture.index].source]
+                    std::string texture_path = get_gltf_texture_path(
+                        model_folder,
+                        model.images[model.textures[gltf_mat.pbrMetallicRoughness.metallicRoughnessTexture.index].source]
                         .uri);
-                    if (!texturePath.empty())
+                    if (!texture_path.empty())
                     {
-                        ENGINE::ImageShipper* texture = ENGINE::ResourcesManager::GetInstance()->BatchShipper(
-                            texturePath, texturePath, 1, 1, ENGINE::g_ShipperFormat, ENGINE::GRAPHICS_READ);
-                        material->materialPackedData.diff = glm::vec4(1.0f);
-                        material->materialPackedData.albedoFactor = 1.0f;
-                        int id = ENGINE::ResourcesManager::GetInstance()->GetShipperID(texturePath);
-                        material->SetTexture(METALLIC_ROUGHNESS, id);
+                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        material->material_packed_data.diff = glm::vec4(1.0f);
+                        material->material_packed_data.albedo_factor = 1.0f;
+                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
+                        material->set_texture(metallic_roughness, id);
                     }
                 }
-                if (gltfMat.emissiveTexture.index > -1)
+                if (gltf_mat.emissiveTexture.index > -1)
                 {
-                    std::string texturePath = GetGltfTexturePath(
-                        modelFolder,
-                        model.images[model.textures[gltfMat.emissiveTexture.index].source].uri);
-                    if (!texturePath.empty())
+                    std::string texture_path = get_gltf_texture_path(
+                        model_folder,
+                        model.images[model.textures[gltf_mat.emissiveTexture.index].source].uri);
+                    if (!texture_path.empty())
                     {
-                        ENGINE::ImageShipper* texture = ENGINE::ResourcesManager::GetInstance()->BatchShipper(
-                            texturePath, texturePath, 1, 1, ENGINE::g_ShipperFormat, ENGINE::GRAPHICS_READ);
-                        material->materialPackedData.diff = glm::vec4(1.0f);
-                        material->materialPackedData.albedoFactor = 1.0f;
-                        int id = ENGINE::ResourcesManager::GetInstance()->GetShipperID(texturePath);
-                        material->SetTexture(EMISSION, id);
+                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        material->material_packed_data.diff = glm::vec4(1.0f);
+                        material->material_packed_data.albedo_factor = 1.0f;
+                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
+                        material->set_texture(emission, id);
                     }
                 }
-                if (gltfMat.normalTexture.index > -1)
+                if (gltf_mat.normalTexture.index > -1)
                 {
-                    std::string texturePath = GetGltfTexturePath(
-                        modelFolder,
-                        model.images[model.textures[gltfMat.normalTexture.index].source].uri);
-                    if (!texturePath.empty())
+                    std::string texture_path = get_gltf_texture_path(
+                        model_folder,
+                        model.images[model.textures[gltf_mat.normalTexture.index].source].uri);
+                    if (!texture_path.empty())
                     {
-                        ENGINE::ImageShipper* texture = ENGINE::ResourcesManager::GetInstance()->BatchShipper(
-                            texturePath, texturePath, 1, 1, ENGINE::g_ShipperFormat, ENGINE::GRAPHICS_READ);
-                        material->materialPackedData.diff = glm::vec4(1.0f);
-                        material->materialPackedData.albedoFactor = 1.0f;
-                        int id = ENGINE::ResourcesManager::GetInstance()->GetShipperID(texturePath);
-                        material->SetTexture(NORMAL, id);
+                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        material->material_packed_data.diff = glm::vec4(1.0f);
+                        material->material_packed_data.albedo_factor = 1.0f;
+                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
+                        material->set_texture(normal, id);
                     }
                 }
             }
         }
 
-        std::string GetGltfTexturePath(std::string modelPath, std::string uriPath)
+        std::string get_gltf_texture_path(std::string model_path, std::string uri_path)
         {
-            if (std::filesystem::exists(uriPath))
+            if (std::filesystem::exists(uri_path))
             {
-                return uriPath;
+                return uri_path;
             }
-            std::string path = modelPath + "\\" + uriPath;
+            std::string path = model_path + "\\" + uri_path;
             if (std::filesystem::exists(path))
             {
                 return path;
             }
-            std::cout << "there is no valid texture path on the gltf path: " << modelPath << "\n";
+            std::cout << "there is no valid texture path on the gltf path: " << model_path << "\n";
             return "";
         }
 
-        Material* PushMaterial(std::string name)
+        rendering::material* push_material(std::string name)
         {
-            Material* material;
-            if (!materialsNames.contains(name))
+            rendering::material* material;
+            if (!materials_names.contains(name))
             {
-                materials.emplace_back(std::make_unique<Material>());
+                materials.emplace_back(std::make_unique<rendering::material>());
                 material = materials.back().get();
-                materialPackedData.emplace_back(&material->materialPackedData);
+                material_packed_data.emplace_back(&material->material_packed_data);
             }
             else
             {
-                SYSTEMS::Logger::GetInstance()->SetLogPreferences(SYSTEMS::LogLevel::L_WARN);
-                SYSTEMS::Logger::GetInstance()->LogMessage(
+                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_warn);
+                systems::logger::get_instance()->log_message(
                     "Material with name: \"" + name + "\" already exist returning that material");
-                material = GetMaterialFromName(name);
+                material = get_material_from_name(name);
             }
             return material;
         }
 
-        static RenderingResManager* GetInstance()
+        static rendering_res_manager* get_instance()
         {
             if (instance == nullptr)
             {
-                instance = new RenderingResManager();
+                instance = new rendering_res_manager();
             }
             return instance;
         }
 
-        Material* GetMaterialFromName(std::string name)
+        rendering::material* get_material_from_name(std::string name)
         {
-            if (!materialsNames.contains(name))
+            if (!materials_names.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->SetLogPreferences(SYSTEMS::LogLevel::L_ERROR);
-                SYSTEMS::Logger::GetInstance()->LogMessage("Material with name: \"" + name + "\" does not exist");
+                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_error);
+                systems::logger::get_instance()->log_message("Material with name: \"" + name + "\" does not exist");
                 return nullptr;
             }
-            return materials.at(materialsNames.at(name)).get();
+            return materials.at(materials_names.at(name)).get();
         }
 
-        int GetMaterialId(std::string name)
+        int get_material_id(std::string name)
         {
-            if (!materialsNames.contains(name))
+            if (!materials_names.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->SetLogPreferences(SYSTEMS::LogLevel::L_ERROR);
-                SYSTEMS::Logger::GetInstance()->LogMessage("Material with name: \"" + name + "\" does not exist");
+                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_error);
+                systems::logger::get_instance()->log_message("Material with name: \"" + name + "\" does not exist");
                 return -1;
             }
-            return materialsNames.at(name);
+            return materials_names.at(name);
         }
 
-        std::vector<MaterialPackedData> GetMaterialData()
+        std::vector<rendering::material_packed_data> get_material_data()
         {
-            std::vector<MaterialPackedData> materialPackedDatas;
-            materialPackedDatas.reserve(materialPackedData.size());
-            for (auto& materialPackedData : materialPackedData)
+            std::vector<rendering::material_packed_data> material_packed_datas;
+            material_packed_datas.reserve(material_packed_data.size());
+            for (auto& material_packed_data : material_packed_data)
             {
-                materialPackedDatas.emplace_back(*materialPackedData);
+                material_packed_datas.emplace_back(*material_packed_data);
             }
-            return materialPackedDatas;
+            return material_packed_datas;
         }
 
-        Model* GetModel(std::string path)
+        rendering::model* get_model(std::string path)
         {
-            if (modelsNames.contains(path))
+            if (models_names.contains(path))
             {
-                return models.at(modelsNames.at(path)).get();
+                return models.at(models_names.at(path)).get();
             }
-            modelsNames.try_emplace(path, models.size());
-            Model* model = models.emplace_back(std::make_unique<Model>()).get();
+            models_names.try_emplace(path, models.size());
+            rendering::model* model = models.emplace_back(std::make_unique<rendering::model>()).get();
             model->id = models.size() - 1;
-            LoadGLTF(path, *model, false);
+            load_gltf(path, *model, false);
 
-            std::string vertBuffName = "VertBuff_" + std::to_string(model->id);
-            std::string indexBuffName = "IndexBuff_" + std::to_string(model->id);
-            model->vertBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
-                vertBuffName, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
-                sizeof(ENGINE::M_Vertex3D) * model->vertices.size(), sizeof(ENGINE::M_Vertex3D),
+            std::string vert_buff_name = "VertBuff_" + std::to_string(model->id);
+            std::string index_buff_name = "IndexBuff_" + std::to_string(model->id);
+            model->vert_buffer = engine::resources_manager::get_instance()->get_stage_buffer(
+                vert_buff_name, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+                sizeof(engine::m_vertex_3d) * model->vertices.size(), sizeof(engine::m_vertex_3d),
                 model->vertices.data());
-            model->indexBuffer = ENGINE::ResourcesManager::GetInstance()->GetStageBuffer(
-                indexBuffName, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+            model->index_buffer = engine::resources_manager::get_instance()->get_stage_buffer(
+                index_buff_name, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
                 sizeof(uint32_t) * model->indices.size(), sizeof(uint32_t),
                 model->indices.data());
 
             return model;
         }
 
-        Animator2D* GetAnimator(std::string name, std::string path, int frameSpacing, AnimatorInfo animatorInfo)
+        animator_2d* get_animator(std::string name, std::string path, int frame_spacing, rendering::animator_info animation_info)
         {
-            if (animatorsNames.contains(name))
+            if (animators_names.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->Log("Invalid name for animator");
+                systems::logger::get_instance()->log("Invalid name for animator");
                 return nullptr;
             }
-            animatorsNames.try_emplace(name, animators.size());
-            animators.emplace_back(std::make_unique<Animator2D>());
-            if (animatorInfo.isAtlas)
+            animators_names.try_emplace(name, animators.size());
+            animators.emplace_back(std::make_unique<animator_2d>());
+            if (animation_info.is_atlas)
             {
-                animators.back()->LoadAtlas(path, frameSpacing, animatorInfo);
+                animators.back()->load_atlas(path, frame_spacing, animation_info);
             }
             else
             {
-                animators.back()->LoadFrames(path, frameSpacing);
+                animators.back()->load_frames(path, frame_spacing);
             }
             return animators.back().get();
         }
 
-        Animator2D* GetAnimatorByName(std::string name)
+        animator_2d* get_animator_by_name(std::string name)
         {
-            if (!animatorsNames.contains(name))
+            if (!animators_names.contains(name))
             {
-                SYSTEMS::Logger::GetInstance()->Log("Invalid name for animator");
+                systems::logger::get_instance()->log("Invalid name for animator");
                 return nullptr;
             }
-            return animators.at(animatorsNames.at(name)).get();
+            return animators.at(animators_names.at(name)).get();
         }
 
-        void BuildIndirectBuffers()
+        void build_indirect_buffers()
         {
-            indirectDrawsCmdInfos.clear();
-            for (auto& pair : indirectModelsToDraw)
+            indirect_draws_cmd_infos.clear();
+            for (auto& pair : indirect_models_to_draw)
             {
-                Model* model = pair.second;
+                rendering::model* model = pair.second;
 
-                for (int j = 0; j < model->meshCount; ++j)
+                for (int j = 0; j < model->mesh_count; ++j)
                 {
-                    ENGINE::DrawIndirectIndexedCmd indirectCmd{};
-                    indirectCmd.firstIndex = model->firstIndices[j];
-                    indirectCmd.firstInstance = 0;
-                    indirectCmd.indexCount = model->indicesCount[j];
-                    indirectCmd.instanceCount = 0;
-                    indirectCmd.vertexOffset = model->firstVertices[j];
-                    indirectDrawsCmdInfos.emplace_back(indirectCmd);
+                    engine::draw_indirect_indexed_cmd indirect_cmd{};
+                    indirect_cmd.first_index = model->first_indices[j];
+                    indirect_cmd.first_instance = 0;
+                    indirect_cmd.index_count = model->indices_count[j];
+                    indirect_cmd.instance_count = 0;
+                    indirect_cmd.vertex_offset = model->first_vertices[j];
+                    indirect_draws_cmd_infos.emplace_back(indirect_cmd);
                 }
             }
-            indirectDrawBuffer = ENGINE::ResourcesManager::GetInstance()->GetBuffer(
-                ENGINE::ResourcesManager::BufferParams{
-                    "IndirectCmds", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+            indirect_draw_buffer = engine::resources_manager::get_instance()->get_buffer(
+                engine::resources_manager::buffer_params{
+                    "indirect_cmds_buffer", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
                     vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-                    sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(),
-                    sizeof(ENGINE::DrawIndirectIndexedCmd), indirectDrawsCmdInfos.data()
+                    sizeof(engine::draw_indirect_indexed_cmd) * indirect_draws_cmd_infos.size(),
+                    sizeof(engine::draw_indirect_indexed_cmd), indirect_draws_cmd_infos.data()
                 });
         }
 
-        void UpdateResources()
+        void update_resources()
         {
-            FlushIndirectBuffers();
+            flush_indirect_buffers();
         }
 
-        void FlushIndirectBuffers()
+        void flush_indirect_buffers()
         {
-            if (indirectDrawsCmdInfos.empty())
+            if (indirect_draws_cmd_infos.empty())
             {
                 return;
             }
-            cullCount = 0;
-            if (indirectDrawBuffer->mappedMem != nullptr)
+            cull_count = 0;
+            if (indirect_draw_buffer->mapped_mem != nullptr)
             {
-                indirectDrawBuffer->Unmap();
-                ENGINE::DrawIndirectIndexedCmd* infos = nullptr;
-                infos = reinterpret_cast<ENGINE::DrawIndirectIndexedCmd*>(indirectDrawBuffer->Map());
-                for (int i = 0; i < RenderingResManager::GetInstance()->indirectDrawsCmdInfos.size(); ++i)
+                indirect_draw_buffer->unmap();
+                engine::draw_indirect_indexed_cmd* infos = nullptr;
+                infos = reinterpret_cast<engine::draw_indirect_indexed_cmd*>(indirect_draw_buffer->map());
+                for (int i = 0; i < rendering_res_manager::get_instance()->indirect_draws_cmd_infos.size(); ++i)
                 {
-                    if (infos->instanceCount > 0)
+                    if (infos->instance_count > 0)
                     {
-                        cullCount++;
+                        cull_count++;
                     }
                     ++infos;
                 }
-                indirectDrawBuffer->Unmap();
+                indirect_draw_buffer->unmap();
             }
-            for (int i = 0; i < indirectDrawsCmdInfos.size(); ++i)
+            for (int i = 0; i < indirect_draws_cmd_infos.size(); ++i)
             {
-                indirectDrawsCmdInfos[i].instanceCount = 0;
+                indirect_draws_cmd_infos[i].instance_count = 0;
             }
-            indirectDrawBuffer = ENGINE::ResourcesManager::GetInstance()->SetBuffer(
-                "IndirectCmds", sizeof(ENGINE::DrawIndirectIndexedCmd) * indirectDrawsCmdInfos.size(),
-                sizeof(ENGINE::DrawIndirectIndexedCmd), indirectDrawsCmdInfos.data());
+            indirect_draw_buffer = engine::resources_manager::get_instance()->set_buffer(
+                "indirect_cmds_buffer", sizeof(engine::draw_indirect_indexed_cmd) * indirect_draws_cmd_infos.size(),
+                sizeof(engine::draw_indirect_indexed_cmd), indirect_draws_cmd_infos.data());
         }
 
-        Model* PushModelToIndirectBatch(std::string name)
+        rendering::model* push_model_to_indirect_batch(std::string name)
         {
-            if (indirectModelsToDraw.contains(name))
+            if (indirect_models_to_draw.contains(name))
             {
-                return indirectModelsToDraw.at(name);
+                return indirect_models_to_draw.at(name);
             }
-            Model* model = GetModel(name);
-            indirectModelsToDraw.try_emplace(name, model);
+            rendering::model* model = get_model(name);
+            indirect_models_to_draw.try_emplace(name, model);
             return model;
         }
 
-        Model* PushModelToIndividualDraw(std::string name)
+        rendering::model* push_model_to_individual_draw(std::string name)
         {
-            if (individualDrawModels.contains(name))
+            if (individual_draw_models.contains(name))
             {
-                return individualDrawModels.at(name);
+                return individual_draw_models.at(name);
             }
-            Model* model = GetModel(name);
-            individualDrawModels.try_emplace(name, model);
+            rendering::model* model = get_model(name);
+            individual_draw_models.try_emplace(name, model);
             return model;
         }
 
-        std::map<std::string, int> materialsNames;
-        std::map<std::string, int> modelsNames;
-        std::map<std::string, int> texturesNames;
-        std::map<std::string, int> animatorsNames;
+        std::map<std::string, int> materials_names;
+        std::map<std::string, int> models_names;
+        std::map<std::string, int> textures_names;
+        std::map<std::string, int> animators_names;
 
-        std::vector<std::unique_ptr<Material>> materials;
-        std::vector<MaterialPackedData*> materialPackedData;
-        std::vector<std::unique_ptr<Model>> models;
-        std::vector<std::unique_ptr<Animator2D>> animators;
-        ENGINE::Buffer* indirectDrawBuffer;
-        std::map<std::string, Model*> individualDrawModels;
-        std::map<std::string, Model*> indirectModelsToDraw;
-        std::vector<ENGINE::DrawIndirectIndexedCmd> indirectDrawsCmdInfos;
-        int cullCount = 0;
+        std::vector<std::unique_ptr<rendering::material>> materials;
+        std::vector<rendering::material_packed_data*> material_packed_data;
+        std::vector<std::unique_ptr<rendering::model>> models;
+        std::vector<std::unique_ptr<animator_2d>> animators;
+        engine::buffer* indirect_draw_buffer;
+        std::map<std::string, rendering::model*> individual_draw_models;
+        std::map<std::string, rendering::model*> indirect_models_to_draw;
+        std::vector<engine::draw_indirect_indexed_cmd> indirect_draws_cmd_infos;
+        int cull_count = 0;
 
-        RenderingResManager()
+        rendering_res_manager()
         {
         };
-        ~RenderingResManager() = default;
+        ~rendering_res_manager() = default;
 
     private:
-        static RenderingResManager* instance;
+        static rendering_res_manager* instance;
     };
 
-    RenderingResManager* RenderingResManager::instance = nullptr;
-} // namespace Rendering
-#endif        // ENGINERESMANAGER_HPP
+    rendering_res_manager* rendering_res_manager::instance = nullptr;
+} // namespace rendering
+#endif        // RENDERING_RES_MANAGER_HPP

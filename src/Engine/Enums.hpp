@@ -4,74 +4,74 @@
 
 #ifndef ENUMS_HPP
 #define ENUMS_HPP
-namespace ENGINE{
+namespace engine{
 
 
     //Sync
-    enum struct QueueFamilyTypes
+    enum struct queue_family_types
     {
-        GRAPHICS,
-        TRANSFER,
-        COMPUTE,
-        PRESENT,
-        UNDEFINED
+        graphics,
+        transfer,
+        compute,
+        present,
+        undefined
       };
 
-    enum LayoutPatterns
+    enum layout_patterns
     {
-        GRAPHICS_READ,
-        GRAPHICS_WRITE,
-        COMPUTE,
-        COMPUTE_WRITE,
-        TRANSFER_SRC,
-        TRANSFER_DST,
-        COLOR_ATTACHMENT,
-        DEPTH_ATTACHMENT,
-        PRESENT,
-        EMPTY,
+        graphics_read,
+        graphics_write,
+        compute,
+        compute_write,
+        transfer_src,
+        transfer_dst,
+        color_attachment,
+        depth_attachment,
+        present,
+        empty,
     };
 
-    enum BufferUsageTypes
+    enum buffer_usage_types
     {
-        B_VERTEX_BUFFER,
-        B_GRAPHICS_WRITE,
-        B_COMPUTE_WRITE,
-        B_TRANSFER_DST,
-        B_TRANSFER_SRC,
-        B_DRAW_INDIRECT,
-        B_EMPTY
+        b_vertex_buffer,
+        b_graphics_write,
+        b_compute_write,
+        b_transfer_dst,
+        b_transfer_src,
+        b_draw_indirect,
+        b_empty
     };
     ///
 
     //Pipeline
-    enum BlendConfigs
+    enum blend_configs
     {
-        B_NONE,
-        B_OPAQUE,
-        B_ADD,
-        B_MIX,
-        B_ALPHA_BLEND
+        b_none,
+        b_opaque,
+        b_add,
+        b_mix,
+        b_alpha_blend
     };
 
-    enum DepthConfigs
+    enum depth_configs
     {
-        D_NONE,
-        D_ENABLE,
-        D_DISABLE
+        d_none,
+        d_enable,
+        d_disable
     };
 
-    enum RasterizationConfigs
+    enum rasterization_configs
     {
-        R_FILL,
-        R_LINE,
-        R_POINT
+        r_fill,
+        r_line,
+        r_point
     };
 
-    enum TopologyConfigs
+    enum topology_configs
     {
-       T_TRIANGLE,
-       T_POINT_LIST,
-       T_PATCH_LIST,
+       t_triangle,
+       t_point_list,
+       t_patch_list,
     };
     ///
 

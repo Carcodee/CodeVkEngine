@@ -2,28 +2,28 @@
 // Created by carlo on 2024-09-24.
 //
 
-#ifndef UTILVK_HPP
-#define UTILVK_HPP
+#ifndef UTIL_VK_HPP
+#define UTIL_VK_HPP
 
-namespace ENGINE
+namespace engine
 {
-     static SurfaceDetails GetSurfaceDetails(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surfaceKHR)
+     static surface_details get_surface_details(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface_khr)
      {
-         SurfaceDetails surfaceDetails;
-         surfaceDetails.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surfaceKHR);
-         surfaceDetails.formats = physicalDevice.getSurfaceFormatsKHR(surfaceKHR);
-         surfaceDetails.presentModes = physicalDevice.getSurfacePresentModesKHR(surfaceKHR);
+         surface_details surface_details;
+         surface_details.capabilities = physical_device.getSurfaceCapabilitiesKHR(surface_khr);
+         surface_details.formats = physical_device.getSurfaceFormatsKHR(surface_khr);
+         surface_details.present_modes = physical_device.getSurfacePresentModesKHR(surface_khr);
 
-         return surfaceDetails;
+         return surface_details;
      }   
-	static uint32_t FindMemoryTypeIndex(vk::PhysicalDevice physicalDevice, uint32_t suitableIndices, vk::MemoryPropertyFlags memoryVisibility)
+	static uint32_t find_memory_type_index(vk::PhysicalDevice physical_device, uint32_t suitable_indices, vk::MemoryPropertyFlags memory_visibility)
 	{
-		vk::PhysicalDeviceMemoryProperties availableMemProperties = physicalDevice.getMemoryProperties();
+		vk::PhysicalDeviceMemoryProperties available_mem_properties = physical_device.getMemoryProperties();
 
-		for (uint32_t i = 0; i < availableMemProperties.memoryTypeCount; i++)
+		for (uint32_t i = 0; i < available_mem_properties.memoryTypeCount; i++)
 		{
-			if ((suitableIndices & (1 << i)) && (availableMemProperties.memoryTypes[i].propertyFlags & memoryVisibility)
-				== memoryVisibility)
+			if ((suitable_indices & (1 << i)) && (available_mem_properties.memoryTypes[i].propertyFlags & memory_visibility)
+				== memory_visibility)
 			{
 				return i;
 			}
@@ -31,50 +31,50 @@ namespace ENGINE
 		return uint32_t(-1);
 	}
 
-    static std::vector<uint32_t> GetByteCode(const std::string filepath)
+    static std::vector<uint32_t> get_byte_code(const std::string filepath)
     {
      	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
      	if (!file.is_open())
      		throw std::runtime_error("failed to open file!");
 
-     	size_t fileSize = (size_t)file.tellg();
-     	std::vector<uint32_t> bytecode(fileSize / sizeof(uint32_t));
+        size_t file_size = (size_t)file.tellg();
+        std::vector<uint32_t> bytecode(file_size / sizeof(uint32_t));
 
      	file.seekg(0);
      	file.read((char*)bytecode.data(), bytecode.size() * sizeof(uint32_t));
      	file.close();
      	
-		std::cout << "Read SPIR-V file of size: " << fileSize << " bytes." << std::endl;
+		std::cout << "Read SPIR-V file of size: " << file_size << " bytes." << std::endl;
      	
      	return bytecode;
     }
-	static void CopyBufferToImage(vk::CommandBuffer commandBuffer, vk::Buffer srcBuffer,
+	static void copy_buffer_to_image(vk::CommandBuffer command_buffer, vk::Buffer src_buffer,
                                   vk::Image* image, glm::uvec2 size)
     {
-        auto imageSubresource = vk::ImageSubresourceLayers()
+        auto image_subresource = vk::ImageSubresourceLayers()
                                 .setAspectMask(vk::ImageAspectFlagBits::eColor)
                                 .setMipLevel(0)
                                 .setBaseArrayLayer(0)
                                 .setLayerCount(1);
-        auto imageCopyRegion = vk::BufferImageCopy()
+        auto image_copy_region = vk::BufferImageCopy()
         .setBufferOffset(0)
         .setImageExtent(0)
         .setBufferImageHeight(0)
         .setBufferRowLength(0)
-        .setImageSubresource(imageSubresource)
+        .setImageSubresource(image_subresource)
         .setImageOffset(vk::Offset3D(0))
         .setImageExtent(vk::Extent3D(size.x, size.y, 1));
-        commandBuffer.copyBufferToImage(srcBuffer, *image, vk::ImageLayout::eTransferDstOptimal, 1, &imageCopyRegion);
+        command_buffer.copyBufferToImage(src_buffer, *image, vk::ImageLayout::eTransferDstOptimal, 1, &image_copy_region);
     }
     
 
-    static void PrintInvalidResource(std::string type, std::string resourceName)
+    static void print_invalid_resource(std::string type, std::string resource_name)
     {
-	    std::string message = type + " with name \"" + resourceName + "\" does not exist\n";
+	    std::string message = type + " with name \"" + resource_name + "\" does not exist\n";
      	std::cout <<message;
     }
 }
 
 
-#endif //UTILVK_HPP
+#endif //UTIL_VK_HPP

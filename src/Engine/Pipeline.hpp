@@ -9,18 +9,18 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
-namespace ENGINE
+namespace engine
 {
 
-    static vk::PrimitiveTopology GetTopology(TopologyConfigs topologyConfigs)
+    static vk::PrimitiveTopology get_topology(topology_configs topology_configs)
     {
-        switch (topologyConfigs)
+        switch (topology_configs)
         {
-        case T_TRIANGLE:
+        case t_triangle:
             return vk::PrimitiveTopology::eTriangleList;
-        case T_POINT_LIST:
+        case t_point_list:
             return vk::PrimitiveTopology::ePointList;
-        case T_PATCH_LIST:
+        case t_patch_list:
             return vk::PrimitiveTopology::ePatchList;
         default:
             assert(false);
@@ -28,29 +28,29 @@ namespace ENGINE
         }
         
     }
-    static vk::PipelineRasterizationStateCreateInfo GetRasterizationInfo(RasterizationConfigs configs)
+    static vk::PipelineRasterizationStateCreateInfo get_rasterization_info(rasterization_configs configs)
     {
-        auto rasterizationInfo = vk::PipelineRasterizationStateCreateInfo();
+        auto rasterization_info = vk::PipelineRasterizationStateCreateInfo();
 
         switch (configs) {
-        case R_FILL:
-            rasterizationInfo.setDepthClampEnable(VK_FALSE)
+        case r_fill:
+            rasterization_info.setDepthClampEnable(VK_FALSE)
                              .setRasterizerDiscardEnable(VK_FALSE)
                              .setPolygonMode(vk::PolygonMode::eFill)
                              .setCullMode(vk::CullModeFlagBits::eNone)
                              .setFrontFace(vk::FrontFace::eClockwise)
                              .setLineWidth(1.0f);
             break;
-        case R_LINE:
-            rasterizationInfo.setDepthClampEnable(VK_FALSE)
+        case r_line:
+            rasterization_info.setDepthClampEnable(VK_FALSE)
                              .setRasterizerDiscardEnable(VK_FALSE)
                              .setPolygonMode(vk::PolygonMode::eLine)
                              .setCullMode(vk::CullModeFlagBits::eNone)
                              .setFrontFace(vk::FrontFace::eClockwise)
                              .setLineWidth(1.0f);
             break;
-        case R_POINT:
-            rasterizationInfo.setDepthClampEnable(VK_FALSE)
+        case r_point:
+            rasterization_info.setDepthClampEnable(VK_FALSE)
                              .setRasterizerDiscardEnable(VK_FALSE)
                              .setPolygonMode(vk::PolygonMode::ePoint)
                              .setCullMode(vk::CullModeFlagBits::eNone)
@@ -61,26 +61,26 @@ namespace ENGINE
             assert(false && "Invalid rasterization config");
             break;
         }
-        return rasterizationInfo;
+        return rasterization_info;
     }
 
 
-    static vk::PipelineColorBlendAttachmentState GetBlendAttachmentState(BlendConfigs configs)
+    static vk::PipelineColorBlendAttachmentState get_blend_attachment_state(blend_configs configs)
     {
-        auto blendAttachmentState = vk::PipelineColorBlendAttachmentState();
+        auto blend_attachment_state = vk::PipelineColorBlendAttachmentState();
         switch (configs)
         {
-        case B_NONE:
-            blendAttachmentState.setColorWriteMask(vk::ColorComponentFlags{})
+        case b_none:
+            blend_attachment_state.setColorWriteMask(vk::ColorComponentFlags{})
                                 .setBlendEnable(VK_FALSE);
             break;
-        case B_OPAQUE:
-            blendAttachmentState.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+        case b_opaque:
+            blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                                     vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
                                 .setBlendEnable(VK_FALSE);
             break;
-        case B_ADD:
-            blendAttachmentState.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+        case b_add:
+            blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
                                     vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
                                 .setBlendEnable(VK_TRUE)
                                 .setAlphaBlendOp(vk::BlendOp::eAdd)
@@ -88,8 +88,8 @@ namespace ENGINE
                                 .setSrcColorBlendFactor(vk::BlendFactor::eOne)
                                 .setDstColorBlendFactor(vk::BlendFactor::eOne);
             break;
-        case B_MIX:
-            blendAttachmentState.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+        case b_mix:
+            blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
                                     vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
                                 .setBlendEnable(VK_TRUE)
                                 .setAlphaBlendOp(vk::BlendOp::eAdd)
@@ -97,8 +97,8 @@ namespace ENGINE
                                 .setSrcColorBlendFactor(vk::BlendFactor::eOne)
                                 .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
             break;
-        case B_ALPHA_BLEND:
-            blendAttachmentState.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+        case b_alpha_blend:
+            blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
                                     vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
                                 .setBlendEnable(VK_TRUE)
                                 .setAlphaBlendOp(vk::BlendOp::eAdd)
@@ -112,12 +112,12 @@ namespace ENGINE
         }
 
 
-        return blendAttachmentState;
+        return blend_attachment_state;
     }
 
-    static vk::PipelineDepthStencilStateCreateInfo GetDepthStencil(DepthConfigs configs)
+    static vk::PipelineDepthStencilStateCreateInfo get_depth_stencil(depth_configs configs)
     {
-        auto depthStencilCreateInfo = vk::PipelineDepthStencilStateCreateInfo()
+        auto depth_stencil_create_info = vk::PipelineDepthStencilStateCreateInfo()
                                       .setDepthTestEnable(VK_TRUE)
                                       .setDepthWriteEnable(VK_TRUE)
                                       .setDepthCompareOp(vk::CompareOp::eLess)
@@ -125,15 +125,15 @@ namespace ENGINE
                                       .setStencilTestEnable(VK_FALSE);
         switch (configs)
         {
-        case D_ENABLE:
-            depthStencilCreateInfo
+        case d_enable:
+            depth_stencil_create_info
                 .setDepthTestEnable(VK_TRUE)
                 .setDepthWriteEnable(VK_TRUE)
                 .setDepthCompareOp(vk::CompareOp::eLess)
                 .setDepthBoundsTestEnable(VK_FALSE);
             break;
-        case D_DISABLE:
-            depthStencilCreateInfo
+        case d_disable:
+            depth_stencil_create_info
                 .setDepthTestEnable(VK_FALSE)
                 .setDepthWriteEnable(VK_TRUE)
                 .setDepthCompareOp(vk::CompareOp::eAlways)
@@ -144,187 +144,187 @@ namespace ENGINE
             break;
         }
 
-        return depthStencilCreateInfo;
+        return depth_stencil_create_info;
     }
 
-    class GraphicsPipeline
+    class graphics_pipeline
     {
     public:
-        GraphicsPipeline(vk::Device& logicalDevice,
-                         std::map<ShaderStage, Shader*>& shaders,
-                         vk::PipelineLayout pipelineLayout,
-                         vk::PipelineRenderingCreateInfo dynamicRenderPass,
-                         GraphicsPipelineConfigs pipelineDisplayInfo,
-                         std::vector<BlendConfigs>& blendConfigs,
-                         DepthConfigs depthConfigs,
-                         VertexInput& vertexInput,
-                         vk::PipelineCache pipelineCache = nullptr)
+        graphics_pipeline(vk::Device& logical_device,
+                         std::map<shader_stage, shader*>& shaders,
+                         vk::PipelineLayout pipeline_layout,
+                         vk::PipelineRenderingCreateInfo dynamic_render_pass,
+                         engine::graphics_pipeline_configs pipeline_display_info,
+                         std::vector<blend_configs>& blend_configs,
+                         depth_configs depth_configs,
+                         engine::vertex_input& vertex_layout,
+                         vk::PipelineCache pipeline_cache = nullptr)
         {
-            assert(!vertexInput.inputDescription.empty()&&"vertexInput is empty");
+            assert(!vertex_layout.input_description.empty()&&"vertexInput is empty");
             assert((shaders.size() >= 2 ) &&"vertex shader module is empty");
-            this->pipelineLayout = pipelineLayout;
-            std::vector<vk::PipelineShaderStageCreateInfo> shaderStages (shaders.size());
-            vk::PipelineShaderStageCreateInfo vertShaderStage;
-            vk::PipelineShaderStageCreateInfo fragShaderStage;
-            vk::PipelineShaderStageCreateInfo tescShaderStage;
-            vk::PipelineShaderStageCreateInfo teseShaderStage;
-            vk::PipelineShaderStageCreateInfo geomShaderStage;
-            int stageIndex = 0;
+            this->pipeline_layout = pipeline_layout;
+            std::vector<vk::PipelineShaderStageCreateInfo> shader_stages (shaders.size());
+            vk::PipelineShaderStageCreateInfo vert_shader_stage;
+            vk::PipelineShaderStageCreateInfo frag_shader_stage;
+            vk::PipelineShaderStageCreateInfo tesc_shader_stage;
+            vk::PipelineShaderStageCreateInfo tese_shader_stage;
+            vk::PipelineShaderStageCreateInfo geom_shader_stage;
+            int stage_index = 0;
             for (auto& shader : shaders)
             {
-                if (shader.first == S_VERT)
+                if (shader.first == s_vert)
                 {
-                    vertShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
+                    vert_shader_stage = vk::PipelineShaderStageCreateInfo()
+                                      .setModule(shader.second->s_module.get()->shader_module_handle.get())
                                       .setStage(vk::ShaderStageFlagBits::eVertex)
                                       .setPName("main");
-                    shaderStages[stageIndex] = vertShaderStage;
+                    shader_stages[stage_index] = vert_shader_stage;
                 }
-                if (shader.first == S_FRAG)
+                if (shader.first == s_frag)
                 {
-                    fragShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
+                    frag_shader_stage = vk::PipelineShaderStageCreateInfo()
+                                      .setModule(shader.second->s_module.get()->shader_module_handle.get())
                                       .setStage(vk::ShaderStageFlagBits::eFragment)
                                       .setPName("main");
-                    shaderStages[stageIndex] = fragShaderStage;
+                    shader_stages[stage_index] = frag_shader_stage;
                 }
-                if (shader.first == S_TESS_CONTROL)
+                if (shader.first == s_tess_control)
                 {
-                    tescShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
+                    tesc_shader_stage = vk::PipelineShaderStageCreateInfo()
+                                      .setModule(shader.second->s_module.get()->shader_module_handle.get())
                                       .setStage(vk::ShaderStageFlagBits::eTessellationControl)
                                       .setPName("main");
-                    shaderStages[stageIndex] = tescShaderStage;
+                    shader_stages[stage_index] = tesc_shader_stage;
                 }
-                if (shader.first == S_TESS_EVAL)
+                if (shader.first == s_tess_eval)
                 {
-                    teseShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
+                    tese_shader_stage = vk::PipelineShaderStageCreateInfo()
+                                      .setModule(shader.second->s_module.get()->shader_module_handle.get())
                                       .setStage(vk::ShaderStageFlagBits::eTessellationEvaluation)
                                       .setPName("main");
-                    shaderStages[stageIndex] = teseShaderStage;
+                    shader_stages[stage_index] = tese_shader_stage;
                 }
-                if (shader.first == S_GEOM)
+                if (shader.first == s_geom)
                 {
-                    geomShaderStage = vk::PipelineShaderStageCreateInfo()
-                                      .setModule(shader.second->sModule.get()->shaderModuleHandle.get())
+                    geom_shader_stage = vk::PipelineShaderStageCreateInfo()
+                                      .setModule(shader.second->s_module.get()->shader_module_handle.get())
                                       .setStage(vk::ShaderStageFlagBits::eGeometry)
                                       .setPName("main");
-                    shaderStages[stageIndex] = geomShaderStage;
+                    shader_stages[stage_index] = geom_shader_stage;
                 }
-                stageIndex++;
+                stage_index++;
             }
 
-            vk::PipelineTessellationStateCreateInfo tessellationStateCreateInfo;
+            vk::PipelineTessellationStateCreateInfo tessellation_state_create_info;
             
             
-            auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
-                                 .setTopology(GetTopology(pipelineDisplayInfo.topologyConfigs))
+            auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo()
+                                 .setTopology(get_topology(pipeline_display_info.topology_configs))
                                  .setPrimitiveRestartEnable(VK_FALSE);
 
-            auto rasterization = GetRasterizationInfo(pipelineDisplayInfo.rasterizationConfigs);
+            auto rasterization = get_rasterization_info(pipeline_display_info.rasterization_configs);
 
-            vk::DynamicState dynamicStates[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+            vk::DynamicState dynamic_states[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
-            auto dynamicStateInfo = vk::PipelineDynamicStateCreateInfo()
+            auto dynamic_state_info = vk::PipelineDynamicStateCreateInfo()
                                     .setDynamicStateCount(2)
-                                    .setPDynamicStates(dynamicStates);
+                                    .setPDynamicStates(dynamic_states);
 
-            auto pipelineViewport = vk::PipelineViewportStateCreateInfo()
+            auto pipeline_viewport = vk::PipelineViewportStateCreateInfo()
                                     .setViewportCount(1)
                                     .setScissorCount(1);
 
-            auto multiSample = vk::PipelineMultisampleStateCreateInfo()
+            auto multi_sample = vk::PipelineMultisampleStateCreateInfo()
                 .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
-            auto _vertexInput = vk::PipelineVertexInputStateCreateInfo()
+            auto vertex_input_state = vk::PipelineVertexInputStateCreateInfo()
                                 .setVertexBindingDescriptionCount(1)
-                                .setPVertexBindingDescriptions(vertexInput.bindingDescription.data())
-                                .setVertexAttributeDescriptionCount(static_cast<uint32_t>(vertexInput.inputDescription.size()))
-                                .setPVertexAttributeDescriptions(vertexInput.inputDescription.data());
+                                .setPVertexBindingDescriptions(vertex_layout.binding_description.data())
+                                .setVertexAttributeDescriptionCount(static_cast<uint32_t>(vertex_layout.input_description.size()))
+                                .setPVertexAttributeDescriptions(vertex_layout.input_description.data());
 
-            vk::PipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo;
-            if (depthConfigs != D_NONE)
+            vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info;
+            if (depth_configs != d_none)
             {
-                 depthStencilStateCreateInfo = GetDepthStencil(depthConfigs);
+                 depth_stencil_state_create_info = get_depth_stencil(depth_configs);
             }
 
-            std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
-            for (auto blendConfig : blendConfigs)
+            std::vector<vk::PipelineColorBlendAttachmentState> blend_states;
+            for (auto blend_config : blend_configs)
             {
-                vk::PipelineColorBlendAttachmentState blendState = GetBlendAttachmentState(blendConfig);
-                blendStates.push_back(blendState);
+                vk::PipelineColorBlendAttachmentState blend_state = get_blend_attachment_state(blend_config);
+                blend_states.push_back(blend_state);
                 
             }
-            auto pipelineColorBlendStateCreateInfo = vk::PipelineColorBlendStateCreateInfo()
+            auto pipeline_color_blend_state_create_info = vk::PipelineColorBlendStateCreateInfo()
                                               .setLogicOpEnable(VK_FALSE)
-                                              .setAttachmentCount(static_cast<uint32_t>(blendStates.size()))
-                                              .setPAttachments(blendStates.data());
+                                              .setAttachmentCount(static_cast<uint32_t>(blend_states.size()))
+                                              .setPAttachments(blend_states.data());
             
-            auto graphicsPipeline = vk::GraphicsPipelineCreateInfo()
-                                    .setStageCount(shaderStages.size())
-                                    .setPStages(shaderStages.data())
-                                    .setPVertexInputState(&_vertexInput)
-                                    .setPInputAssemblyState(&inputAssembly)
-                                    .setPDynamicState(&dynamicStateInfo)
-                                    .setPViewportState(&pipelineViewport)
+            auto graphics_pipeline = vk::GraphicsPipelineCreateInfo()
+                                    .setStageCount(shader_stages.size())
+                                    .setPStages(shader_stages.data())
+                                    .setPVertexInputState(&vertex_input_state)
+                                    .setPInputAssemblyState(&input_assembly)
+                                    .setPDynamicState(&dynamic_state_info)
+                                    .setPViewportState(&pipeline_viewport)
                                     .setPRasterizationState(&rasterization)
-                                    .setPMultisampleState(&multiSample)
-                                    .setPColorBlendState(&pipelineColorBlendStateCreateInfo)
-                                    .setPDepthStencilState(&depthStencilStateCreateInfo)
-                                    .setLayout(pipelineLayout)
+                                    .setPMultisampleState(&multi_sample)
+                                    .setPColorBlendState(&pipeline_color_blend_state_create_info)
+                                    .setPDepthStencilState(&depth_stencil_state_create_info)
+                                    .setLayout(pipeline_layout)
                                     .setRenderPass(VK_NULL_HANDLE)
-                                    .setPNext(&dynamicRenderPass)
+                                    .setPNext(&dynamic_render_pass)
                                     .setBasePipelineHandle(VK_NULL_HANDLE)
                                     .setBasePipelineIndex(-1);
             
-            if (shaders.contains(S_TESS_CONTROL))
+            if (shaders.contains(s_tess_control))
             {
-                if (pipelineDisplayInfo.topologyConfigs != TopologyConfigs::T_PATCH_LIST)
+                if (pipeline_display_info.topology_configs != topology_configs::t_patch_list)
                 {
                     assert(false && "cant create tesselation shader without triangle patch list");
                 }
 
-                tessellationStateCreateInfo = vk::PipelineTessellationStateCreateInfo()
+                tessellation_state_create_info = vk::PipelineTessellationStateCreateInfo()
                 .setPatchControlPoints(3);
-                graphicsPipeline.setPTessellationState(&tessellationStateCreateInfo);
+                graphics_pipeline.setPTessellationState(&tessellation_state_create_info);
                 
             }
 
-            pipelineHandle = logicalDevice.createGraphicsPipelineUnique(pipelineCache, graphicsPipeline).value;
+            pipeline_handle = logical_device.createGraphicsPipelineUnique(pipeline_cache, graphics_pipeline).value;
         }
 
 
-        vk::UniquePipeline pipelineHandle;
-        vk::PipelineLayout pipelineLayout;
+        vk::UniquePipeline pipeline_handle;
+        vk::PipelineLayout pipeline_layout;
     };
 
-    class ComputePipeline
+    class compute_pipeline
     {
     public:
-        ComputePipeline(vk::Device logicalDevice, vk::ShaderModule computeModule, vk::PipelineLayout pipelineLayout, vk::PipelineCache pipelineCache = nullptr)
+        compute_pipeline(vk::Device logical_device, vk::ShaderModule compute_module, vk::PipelineLayout pipeline_layout, vk::PipelineCache pipeline_cache = nullptr)
         {
-            assert(computeModule != nullptr&& "Compute shader module is empty");
-            this->pipelineLayout = pipelineLayout;
-            auto computeStage = vk::PipelineShaderStageCreateInfo()
+            assert(compute_module != nullptr&& "Compute shader module is empty");
+            this->pipeline_layout = pipeline_layout;
+            auto compute_stage = vk::PipelineShaderStageCreateInfo()
                                 .setStage(vk::ShaderStageFlagBits::eCompute)
-                                .setModule(computeModule)
+                                .setModule(compute_module)
                                 .setPName("main");
 
-            auto viewportSate = vk::PipelineViewportStateCreateInfo();
+            auto viewport_sate = vk::PipelineViewportStateCreateInfo();
 
-            auto computePipeline = vk::ComputePipelineCreateInfo()
+            auto compute_pipeline = vk::ComputePipelineCreateInfo()
                                    .setFlags(vk::PipelineCreateFlags())
-                                   .setStage(computeStage)
-                                   .setLayout(pipelineLayout)
+                                   .setStage(compute_stage)
+                                   .setLayout(pipeline_layout)
                                    .setBasePipelineHandle(nullptr)
                                    .setBasePipelineIndex(-1);
 
-            pipelineHandle = logicalDevice.createComputePipelineUnique(pipelineCache, computePipeline).value;
+            pipeline_handle = logical_device.createComputePipelineUnique(pipeline_cache, compute_pipeline).value;
         }
 
-        vk::PipelineLayout pipelineLayout;
-        vk::UniquePipeline pipelineHandle;
+        vk::PipelineLayout pipeline_layout;
+        vk::UniquePipeline pipeline_handle;
     };
 }
 

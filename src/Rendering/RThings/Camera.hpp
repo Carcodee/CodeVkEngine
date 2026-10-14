@@ -5,9 +5,9 @@
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
 
-namespace Rendering
+namespace rendering
 {
-class Camera
+class camera
 {
   public:
 	struct matrices
@@ -15,28 +15,28 @@ class Camera
 		glm::mat4 perspective;
 		glm::mat4 view;
 	} matrices;
-	struct CameraProperties
+	struct camera_properties
 	{
-		float zNear  = 0;
-		float zFar   = 0;
+		float z_near  = 0;
+		float z_far   = 0;
 		float aspect = 0;
 		float fov    = 0;
 	};
-	enum CameraMode
+	enum camera_mode
 	{
-		E_FIXED,
-		E_FREE
+		e_fixed,
+		e_free
 	};
 
-	Camera(glm::vec3 camPos = glm::vec3(0.0f), CameraMode mode = E_FREE, glm::uvec2 aspect = glm::uvec2(800, 600),
-	       glm::vec3 lookAt = glm::vec3(0.0f))
+	camera(glm::vec3 cam_pos = glm::vec3(0.0f), camera_mode mode = e_free, glm::uvec2 aspect = glm::uvec2(800, 600),
+	       glm::vec3 look_at = glm::vec3(0.0f))
 	{
-		SetLookAt(lookAt);
-		SetPerspective(45.0f, (float) aspect.x / (float) aspect.y, 0.1f, 512.0f);
-		this->position    = camPos;
-		this->currentMode = mode;
-		this->mouseInput  = glm::vec2(0.0);
-		// switch (this->currentMode)
+		set_look_at(look_at);
+		set_perspective(45.0f, (float) aspect.x / (float) aspect.y, 0.1f, 512.0f);
+		this->position    = cam_pos;
+		this->current_mode = mode;
+		this->mouse_input  = glm::vec2(0.0);
+		// switch (this->current_mode)
 		// {
 		// case E_FIXED:
 		// 	SetLookAt(lookAt);
@@ -46,101 +46,101 @@ class Camera
 		// }
 	}
 
-	void Move(float deltaTime, glm::vec2 input)
+	void move(float delta_time, glm::vec2 input)
 	{
-		position += forward * input.y * movementSpeed * deltaTime;
-		position += right * input.x * movementSpeed * deltaTime;
+		position += forward * input.y * movement_speed * delta_time;
+		position += right * input.x * movement_speed * delta_time;
 	}
-	void UpdateCam()
+	void update_cam()
 	{
 		matrices.view = glm::lookAt(position, position + forward, up);
 	}
-	void RotateCamera()
+	void rotate_camera()
 	{
 		// todo: add input handler
-		float currentX = mouseInput.x;
-		float currentY = mouseInput.y;
+		float current_x = mouse_input.x;
+		float current_y = mouse_input.y;
 
-		if (firstMouse)
+		if (first_mouse)
 		{
-			lastX      = currentX;
-			lastY      = currentY;
-			firstMouse = false;
+			last_x      = current_x;
+			last_y      = current_y;
+			first_mouse = false;
 		}
 
-		float xOffset = lastX - currentX;
-		float yOffset = lastY - currentY;
+		float x_offset = last_x - current_x;
+		float y_offset = last_y - current_y;
 
-		lastX = currentX;
-		lastY = currentY;
+		last_x = current_x;
+		last_y = current_y;
 
-		xOffset *= sens;
-		yOffset *= sens;
+		x_offset *= sens;
+		y_offset *= sens;
 
-		yaw += xOffset;
-		pitch += yOffset;
+		yaw += x_offset;
+		pitch += y_offset;
 
 		pitch = glm::clamp(pitch, -89.0f, 89.0f);
 
-		if (inverseY)
+		if (inverse_y)
 		{
-			WorldUp = glm::vec3(0.0f, -1.0f, 0.0f);
+			world_up = glm::vec3(0.0f, -1.0f, 0.0f);
 		}
 
-		glm::vec3 camForward;
+		glm::vec3 cam_forward;
 
-		camForward.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		camForward.y = sin(glm::radians(pitch));
-		camForward.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+		cam_forward.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+		cam_forward.y = sin(glm::radians(pitch));
+		cam_forward.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
-		forward = normalize(camForward);
-		right   = normalize(cross(forward, WorldUp));
+		forward = normalize(cam_forward);
+		right   = normalize(cross(forward, world_up));
 		up      = normalize(cross(right, forward));
 	}
 
-	void SetPerspective(float fov, float aspect, float znear, float zfar)
+	void set_perspective(float fov, float aspect, float znear, float zfar)
 	{
 		matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
 		matrices.perspective[1][1] *= -1;
 
-		this->cameraProperties.fov    = fov;
-		this->cameraProperties.aspect = aspect;
-		this->cameraProperties.zNear  = znear;
-		this->cameraProperties.zFar   = zfar;
+		this->camera_properties.fov    = fov;
+		this->camera_properties.aspect = aspect;
+		this->camera_properties.z_near  = znear;
+		this->camera_properties.z_far   = zfar;
 	}
 
-	void SetLookAt(glm::vec3 targetPosition)
+	void set_look_at(glm::vec3 target_position)
 	{
-		this->lookAt  = targetPosition;
+		this->look_at  = target_position;
 		matrices.view = glm::lookAt(position,
-		                            lookAt,
-		                            WorldUp);
+		                            look_at,
+		                            world_up);
 	}
-	glm::mat4 GetViewProj()
+	glm::mat4 get_view_proj()
 	{
 		return matrices.perspective * matrices.view;
 	}
 
-	glm::vec3 WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 forward = glm::vec3(0.0f, 0.0f, 1.0f);
 	glm::vec3 right;
 	glm::vec3 up;
-	glm::vec3 lookAt = glm::vec3(0.0f);
+	glm::vec3 look_at = glm::vec3(0.0f);
 
-	glm::vec2 mouseInput;
+	glm::vec2 mouse_input;
 	glm::vec3 position;
 	float     yaw   = -90;
 	float     pitch = -90;
-	float     lastX = 0;
-	float     lastY = 0;
+	float     last_x = 0;
+	float     last_y = 0;
 	float     sens  = 0.4f;
 
-	CameraProperties cameraProperties{};
+	camera_properties camera_properties{};
 
-	bool       firstMouse = true;
-	bool       inverseY   = false;
-	CameraMode currentMode;
-	float      movementSpeed = 5.0f;
+	bool       first_mouse = true;
+	bool       inverse_y   = false;
+	camera_mode current_mode;
+	float      movement_speed = 5.0f;
 };
-}        // namespace Rendering
+}        // namespace rendering
 #endif        // CAMERA_HPP

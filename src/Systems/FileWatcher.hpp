@@ -2,26 +2,26 @@
 // Created by carlo on 2025-01-12.
 //
 
-#ifndef FILEWATCHER_HPP
-#define FILEWATCHER_HPP
+#ifndef FILE_WATCHER_HPP
+#define FILE_WATCHER_HPP
 
-namespace SYSTEMS
+namespace systems
 {
-struct FileInfo
+struct file_info
 {
 	// lastTime write it
-	FileInfo(const std::string &path, std::function<void()> onChangeCallback)
+	file_info(const std::string &path, std::function<void()> on_change_callback)
 	{
 		assert(std::filesystem::exists(path) && "invalid path");
 
-		this->onChangeCallback = onChangeCallback;
+		this->on_change_callback = on_change_callback;
 		this->path             = path;
 		this->name             = this->path.filename().string();
 		this->extension        = this->path.extension().string();
 		this->modified         = false;
-		lastTimeCheck          = std::filesystem::last_write_time(this->path);
+		last_time_check          = std::filesystem::last_write_time(this->path);
 	}
-	FileInfo(const std::string &path)
+	file_info(const std::string &path)
 	{
 		assert(std::filesystem::exists(path) && "invalid path");
 
@@ -29,22 +29,22 @@ struct FileInfo
 		this->name      = this->path.filename().string();
 		this->extension = this->path.extension().string();
 		this->modified  = false;
-		lastTimeCheck   = std::filesystem::last_write_time(this->path);
+		last_time_check   = std::filesystem::last_write_time(this->path);
 	}
-	void CheckLastTimeWrite()
+	void check_last_time_write()
 	{
-		auto fTime = std::filesystem::last_write_time(this->path);
-		if (fTime != lastTimeCheck)
+		auto f_time = std::filesystem::last_write_time(this->path);
+		if (f_time != last_time_check)
 		{
 			modified      = true;
-			lastTimeCheck = fTime;
-			// if (onChangeCallback)
+			last_time_check = f_time;
+			// if (on_change_callback)
 			// {
 			// onChangeCallback();
 			// }
 		}
 	}
-	void Invalidate()
+	void invalidate()
 	{
 		modified = false;
 	}
@@ -52,8 +52,8 @@ struct FileInfo
 	std::string                     name;
 	std::string                     extension;
 	std::atomic<bool>               modified;
-	std::filesystem::file_time_type lastTimeCheck;
-	std::function<void()>           onChangeCallback = {};
+	std::filesystem::file_time_type last_time_check;
+	std::function<void()>           on_change_callback = {};
 };
 // use background threat for this eventually
 //  class FileWatcher
@@ -65,16 +65,16 @@ struct FileInfo
 //              file.CheckLastTimeWrite();
 //          }
 //      }
-//      // FileInfo& GetFile(const std::string& path)
+//      // file_info& GetFile(const std::string& path)
 //      // {
 //      //     filesToWatch.emplace_back(FileInfo(path));
 //      //     return filesToWatch.back();
 //      // }
 //
-//      std::vector<FileInfo> filesToWatch;
+//      std::vector<file_info> filesToWatch;
 //      std::thread watcherThreat;
 //  };
 
-}        // namespace SYSTEMS
+}        // namespace systems
 
-#endif        // FILEWATCHER_HPP
+#endif        // FILE_WATCHER_HPP

@@ -2,21 +2,21 @@
 // Created by carlo on 2024-09-22.
 //
 
-#ifndef INSTANCE_HPP
+#ifndef SURFACE_HPP
 
-namespace ENGINE
+namespace engine
 {
 
-    static vk::UniqueSurfaceKHR CreateWin32Surface(vk::Instance instance, WindowDesc windowDesc)
+    static vk::UniqueSurfaceKHR create_win32_surface(vk::Instance instance, window_desc window_desc)
     {
 
-        auto surfaceCreateInfo = vk::Win32SurfaceCreateInfoKHR()
-        .setHwnd(windowDesc.hWnd)
-        .setHinstance(windowDesc.hInstance);
-        return instance.createWin32SurfaceKHRUnique(surfaceCreateInfo); 
+        auto surface_create_info = vk::Win32SurfaceCreateInfoKHR()
+        .setHwnd(window_desc.h_wnd)
+        .setHinstance(window_desc.h_instance);
+        return instance.createWin32SurfaceKHRUnique(surface_create_info);
     } 
     
 }
-#define INSTANCE_HPP
+#define SURFACE_HPP
 
-#endif //INSTANCE_HPP
+#endif //SURFACE_HPP

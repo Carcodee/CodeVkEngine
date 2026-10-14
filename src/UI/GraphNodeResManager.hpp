@@ -2,33 +2,33 @@
 // Created by carlo on 2025-02-22.
 //
 
-#ifndef GRAPHNODERESMANAGER_HPP
-#define GRAPHNODERESMANAGER_HPP
+#ifndef GRAPH_NODE_RES_MANAGER_HPP
+#define GRAPH_NODE_RES_MANAGER_HPP
 
-namespace UI::Nodes
+namespace ui::nodes
 {
-struct GraphNode;
-struct PinInfo;
-struct GraphNodeResManager
+struct graph_node;
+struct pin_info;
+struct graph_node_res_manager
 {
-	std::unique_ptr<Systems::Arena> graphNodesArena;
+	std::unique_ptr<systems::arena> graph_nodes_arena;
 
-	std::unordered_map<int, int> inputOutputsIds;
+	std::unordered_map<int, int> input_outputs_ids;
 
-	std::unordered_map<int, GraphNode *> graphNodes;
+	std::unordered_map<int, ui::nodes::graph_node *> graph_nodes;
 
-	int widgetsIdGen = 100;
-	int idNodeGen    = 100;
+	int widgets_id_gen = 100;
+	int id_node_gen    = 100;
 
-	GraphNodeResManager();
-	void       AddNodeId(int inputOutputId, int graphNodeId);
-	void       AddNodeIds(GraphNode *node);
-	GraphNode *GetNode(int id);
-	GraphNode *GetNodeByInputOutputId(int id);
-	PinInfo   *GetPinFromId(int id);
-	int        NextWidgetID();
-	int        NextNodeID();
+	graph_node_res_manager();
+	void       add_node_id(int input_output_id, int graph_node_id);
+	void       add_node_ids(ui::nodes::graph_node *node);
+	ui::nodes::graph_node *get_node(int id);
+	ui::nodes::graph_node *get_node_by_input_output_id(int id);
+	pin_info   *get_pin_from_id(int id);
+	int        next_widget_id();
+	int        next_node_id();
 };
-}        // namespace UI::Nodes
+}        // namespace ui::nodes
 
-#endif        // GRAPHNODERESMANAGER_HPP
+#endif        // GRAPH_NODE_RES_MANAGER_HPP

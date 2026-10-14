@@ -9,137 +9,137 @@
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
 
-layout (location = 0) in vec2 textCoord;
+layout (location = 0) in vec2 text_coord;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 out_color;
 
 
-layout(push_constant) uniform pushConstants{
-    int cascadesCount;
-    int probeSizePx;
-    int intervalCount;
-    int fWidth;
-    int fHeight;
-    int baseIntervalLength;
-    int cascadeIndex;
+layout(push_constant) uniform push_constants{
+    int cascades_count;
+    int probe_size_px;
+    int interval_count;
+    int f_width;
+    int f_height;
+    int base_interval_length;
+    int cascade_index;
 }pc;
 
-layout (set = 0, binding = 0)uniform sampler2D MergedCascades;
-layout (set = 0, binding = 1, rgba8) uniform image2D PaintingLayers[];
-layout (set = 0, binding = 2, rgba8) uniform image2D Radiances[];
-layout (set = 0, binding = 3) uniform sampler2D TestImage;
+layout (set = 0, binding = 0)uniform sampler2D merged_cascades;
+layout (set = 0, binding = 1, rgba8) uniform image2D painting_layers[];
+layout (set = 0, binding = 2, rgba8) uniform image2D radiances[];
+layout (set = 0, binding = 3) uniform sampler2D test_image;
 
-layout (set = 0, binding = 4) uniform sampler2D SpriteAnims[];
-layout (set = 0, binding = 5) uniform sampler2D MatTextures[];
+layout (set = 0, binding = 4) uniform sampler2D sprite_anims[];
+layout (set = 0, binding = 5) uniform sampler2D mat_textures[];
 
-layout (set = 0, binding = 6, scalar) buffer SpriteInfo{
-    u_SpriteAnimationInfo spriteAnimInfo;
+layout (set = 0, binding = 6, scalar) buffer sprite_info{
+    u_sprite_animation_info sprite_anim_info;
 };
 
 
-layout (set = 0, binding = 7, scalar) uniform LightInfo{
+layout (set = 0, binding = 7, scalar) uniform light_info{
     vec3 pos;
     vec3 col;
     float intensity;
 }ubo;
-layout (set = 0, binding = 8, scalar) uniform RConfigs{
-    u_RadianceCascadesConfigs configs;
-}rConfigs;
+layout (set = 0, binding = 8, scalar) uniform r_configs_uniform{
+    u_radiance_cascades_configs configs;
+}r_configs;
 
 
 void main() {
-    vec3 lightDir = ubo.pos ;
+    vec3 light_dir = ubo.pos ;
    
     ivec2 coord = ivec2(gl_FragCoord.xy);
-    ivec2 fSize = ivec2(pc.fWidth, pc.fHeight);
+    ivec2 f_size = ivec2(pc.f_width, pc.f_height);
     
-    int intervalCount = pc.intervalCount;
-    int probeSizePx = pc.probeSizePx;
+    int interval_count = pc.interval_count;
+    int probe_size_px = pc.probe_size_px;
     
-    vec2 probeCount = floor(vec2(fSize) / float(probeSizePx));
-    vec2 baseIndex = ((vec2(gl_FragCoord.xy)) / probeSizePx);
-    vec2 cellFrac = fract(baseIndex);
+    vec2 probe_count = floor(vec2(f_size) / float(probe_size_px));
+    vec2 base_index = ((vec2(gl_FragCoord.xy)) / probe_size_px);
+    vec2 cell_frac = fract(base_index);
 
-    baseIndex = floor(baseIndex);
+    base_index = floor(base_index);
 
-    vec2 tlProbePos= baseIndex;
-    vec2 trProbePos= baseIndex + vec2(1.0, 0.0);
-    vec2 blProbePos= baseIndex + vec2(0.0, 1.0);
-    vec2 brProbePos= baseIndex + vec2(1.0, 1.0);
+    vec2 tl_probe_pos= base_index;
+    vec2 tr_probe_pos= base_index + vec2(1.0, 0.0);
+    vec2 bl_probe_pos= base_index + vec2(0.0, 1.0);
+    vec2 br_probe_pos= base_index + vec2(1.0, 1.0);
 
-    vec2 tlFragPos = tlProbePos * probeSizePx;
-    vec2 trFragPos = trProbePos * probeSizePx;
-    vec2 blFragPos = blProbePos * probeSizePx;
-    vec2 brFragPos = brProbePos * probeSizePx;
+    vec2 tl_frag_pos = tl_probe_pos * probe_size_px;
+    vec2 tr_frag_pos = tr_probe_pos * probe_size_px;
+    vec2 bl_frag_pos = bl_probe_pos * probe_size_px;
+    vec2 br_frag_pos = br_probe_pos * probe_size_px;
     
     vec4 radiance = vec4(0.0);
 
-    ivec2 currDir = ivec2(0.0);
-    for (int i = 0; i < intervalCount * intervalCount; i++){
+    ivec2 curr_dir = ivec2(0.0);
+    for (int i = 0; i < interval_count * interval_count; i++){
 
-        currDir = ivec2(tlFragPos) + ivec2(i % probeSizePx, i / probeSizePx);
-        radiance+= imageLoad(Radiances[0], currDir);
+        curr_dir = ivec2(tl_frag_pos) + ivec2(i % probe_size_px, i / probe_size_px);
+        radiance+= imageLoad(radiances[0], curr_dir);
     }
-    radiance /= (intervalCount * intervalCount);
+    radiance /= (interval_count * interval_count);
 //    
-//    imageStore(Radiances[0], ivec2(gl_FragCoord.xy), radiance);
+//    imageStore(radiances[0], ivec2(gl_FragCoord.xy), radiance);
 //
-//    vec4 tlCol = imageLoad(Radiances[0], ivec2(tlFragPos));
-//    vec4 trCol = imageLoad(Radiances[0], ivec2(trFragPos));
-//    vec4 blCol = imageLoad(Radiances[0], ivec2(blFragPos));
-//    vec4 brCol = imageLoad(Radiances[0], ivec2(brFragPos));
+//    vec4 tlCol = imageLoad(radiances[0], ivec2(tl_frag_pos));
+//    vec4 trCol = imageLoad(radiances[0], ivec2(tr_frag_pos));
+//    vec4 blCol = imageLoad(radiances[0], ivec2(bl_frag_pos));
+//    vec4 brCol = imageLoad(radiances[0], ivec2(br_frag_pos));
 //
 //    vec4 interpolated = vec4(0.0);
-//    interpolated += mix(mix(tlCol, trCol, 0.0), mix(blCol, brCol, cellFrac.x), cellFrac.y);
+//    interpolated += mix(mix(tlCol, trCol, 0.0), mix(blCol, brCol, cell_frac.x), cell_frac.y);
 
-//    vec4 baseCol = imageLoad(Radiances[0], ivec2(gl_FragCoord.xy));
-    vec4 paintingImage = imageLoad(PaintingLayers[0], coord);
-    vec4 simulationImage = imageLoad(PaintingLayers[3], coord);
-    vec4 simulationImageInfo = imageLoad(PaintingLayers[4], coord);
-    vec4 testImg = texture(TestImage, textCoord);
-    vec4 blackOc= imageLoad(PaintingLayers[1], coord);
-    vec4 debug= imageLoad(PaintingLayers[2], coord);
+//    vec4 base_col = imageLoad(radiances[0], ivec2(gl_FragCoord.xy));
+    vec4 painting_image = imageLoad(painting_layers[0], coord);
+    vec4 simulation_image = imageLoad(painting_layers[3], coord);
+    vec4 simulation_image_info = imageLoad(painting_layers[4], coord);
+    vec4 test_img = texture(test_image, text_coord);
+    vec4 black_oc= imageLoad(painting_layers[1], coord);
+    vec4 debug= imageLoad(painting_layers[2], coord);
 
-    int size = spriteAnimInfo.rows * spriteAnimInfo.cols;
-    vec2 spritePos = u_GetSpriteCoordInAtlas(spriteAnimInfo.currentFrame, spriteAnimInfo.spriteSizePx, spriteAnimInfo.rows, spriteAnimInfo.cols, ivec2(gl_FragCoord.xy), fSize);
-    vec2 spritePos1 = u_GetSpriteCoordInAtlas((spriteAnimInfo.currentFrame + 1) % size, spriteAnimInfo.spriteSizePx, spriteAnimInfo.rows, spriteAnimInfo.cols, ivec2(gl_FragCoord.xy), fSize);
-    vec4 spriteCol = texture(SpriteAnims[0], vec2(spritePos));
-    vec4 spriteCol1 = texture(SpriteAnims[0], vec2(spritePos1));
+    int size = sprite_anim_info.rows * sprite_anim_info.cols;
+    vec2 sprite_pos = u_get_sprite_coord_in_atlas(sprite_anim_info.current_frame, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(gl_FragCoord.xy), f_size);
+    vec2 sprite_pos1 = u_get_sprite_coord_in_atlas((sprite_anim_info.current_frame + 1) % size, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(gl_FragCoord.xy), f_size);
+    vec4 sprite_col = texture(sprite_anims[0], vec2(sprite_pos));
+    vec4 sprite_col1 = texture(sprite_anims[0], vec2(sprite_pos1));
     
-    vec4 finalVal = mix(spriteCol, spriteCol1, spriteAnimInfo.interpVal);
+    vec4 final_val = mix(sprite_col, sprite_col1, sprite_anim_info.interp_val);
 
-    vec4 baseCol = texture(MatTextures[ALBEDO_OFFSET], textCoord);
-    vec4 normalMap = texture(MatTextures[NORMAL_OFFSET], textCoord);
-    vec4 roughness = texture(MatTextures[ROUGHNESS_OFFSET], textCoord);
-    vec4 ao = texture(MatTextures[AO_OFFSET], textCoord) * 2.0;
-    vec4 height = texture(MatTextures[HEIGHT_OFFSET], textCoord);
+    vec4 base_col = texture(mat_textures[ALBEDO_OFFSET], text_coord);
+    vec4 normal_map = texture(mat_textures[NORMAL_OFFSET], text_coord);
+    vec4 roughness = texture(mat_textures[ROUGHNESS_OFFSET], text_coord);
+    vec4 ao = texture(mat_textures[AO_OFFSET], text_coord) * 2.0;
+    vec4 height = texture(mat_textures[HEIGHT_OFFSET], text_coord);
 
-    u_RadianceCascadesConfigs configs = rConfigs.configs;
-//    outColor = (baseCol * ao.x * height.x) * vec4(diff, 1.0);
-    float normalMapCombined =pow(float(configs.normalMapPow), (normalMap.x * normalMap.y * normalMap.z));
-    float specular = pow(configs.specularPow ,max(0.0, normalMapCombined));
+    u_radiance_cascades_configs configs = r_configs.configs;
+//    out_color = (base_col * ao.x * height.x) * vec4(diff, 1.0);
+    float normal_map_combined =pow(float(configs.normal_map_pow), (normal_map.x * normal_map.y * normal_map.z));
+    float specular = pow(configs.specular_pow ,max(0.0, normal_map_combined));
     
-    vec4 finalRadiance = vec4(1.0);
-    for(int i = 0; i< configs.radiancePow; i++){
-        finalRadiance *= radiance;
+    vec4 final_radiance = vec4(1.0);
+    for(int i = 0; i< configs.radiance_pow; i++){
+        final_radiance *= radiance;
     }
     
-    vec4 test = baseCol * finalRadiance * pow(8.0 ,height.x);
-    vec4 finalCol = baseCol * finalRadiance * normalMapCombined * specular * pow(roughness.x, configs.roughnessPow) * ao.x;
+    vec4 test = base_col * final_radiance * pow(8.0 ,height.x);
+    vec4 final_col = base_col * final_radiance * normal_map_combined * specular * pow(roughness.x, configs.roughness_pow) * ao.x;
     
-    vec3 dirLightCol = abs(dot(normalMap.xyz, lightDir)) * ubo.col * ubo.intensity;
-    outColor = finalCol + vec4(dirLightCol, 1.0);
-//    if(spriteCol.w > 0.8){
-//        outColor = spriteCol;
+    vec3 dir_light_col = abs(dot(normal_map.xyz, light_dir)) * ubo.col * ubo.intensity;
+    out_color = final_col + vec4(dir_light_col, 1.0);
+//    if(sprite_col.w > 0.8){
+//        out_color = sprite_col;
 //    }
-    if(paintingImage.w > 0.1){
-        outColor = paintingImage * paintingImage.w;
+    if(painting_image.w > 0.1){
+        out_color = painting_image * painting_image.w;
     }
 
-    if(simulationImage.w > 0.9){
+    if(simulation_image.w > 0.9){
     }
-    outColor = vec4(simulationImage.xyz, simulationImage.w);
-//    outColor = simulationImageInfo;
+    out_color = vec4(simulation_image.xyz, simulation_image.w);
+//    out_color = simulation_image_info;
     
 
 }

@@ -6,36 +6,36 @@
 #ifndef ANIMATOR_HPP
 #define ANIMATOR_HPP
 
-namespace Rendering
+namespace rendering
 {
-struct AnimatorInfo
+struct animator_info
 {
-	glm::uvec2 spriteSizePx = glm::uvec2(0);
+	glm::uvec2 sprite_size_px = glm::uvec2(0);
 	int        rows         = -1;
 	int        cols         = -1;
-	int        currentFrame = -1;
-	int        frameCount   = -1;
-	float      interpVal    = -1.0f;
-	bool       isAtlas      = false;
+	int        current_frame = -1;
+	int        frame_count   = -1;
+	float      interp_val    = -1.0f;
+	bool       is_atlas      = false;
 };
-struct Animator2D
+struct animator_2d
 {
-	std::vector<ENGINE::ImageView *>    imagesFrames;
-	std::vector<std::vector<glm::vec4>> imagesFramesCPU;
-	AnimatorInfo                        animatorInfo;
-	int                                 currentFrameSpacing = 0;
-	int                                 frameSpacing        = 0;
+	std::vector<engine::image_view *>    images_frames;
+	std::vector<std::vector<glm::vec4>> images_frames_cpu;
+	rendering::animator_info                        animation_info;
+	int                                 current_frame_spacing = 0;
+	int                                 frame_spacing        = 0;
 	bool                                stop                = false;
 
-	void LoadFrames(std::string &filePath, int frameSpacing)
+	void load_frames(std::string &file_path, int frame_spacing)
 	{
-		std::filesystem::path path(filePath);
+		std::filesystem::path path(file_path);
 		int                   i = 0;
-		std::vector<ENGINE::ImageShipper*> shippers;
-		imagesFrames.clear();
-		imagesFramesCPU.clear();
-		this->frameSpacing        = std::max(1, frameSpacing);
-		this->currentFrameSpacing = 0;
+		std::vector<engine::image_shipper*> shippers;
+		images_frames.clear();
+		images_frames_cpu.clear();
+		this->frame_spacing        = std::max(1, frame_spacing);
+		this->current_frame_spacing = 0;
 		
 		shippers.reserve(1000);
 		for (auto &file : std::filesystem::directory_iterator(path))
@@ -45,146 +45,146 @@ struct Animator2D
 				continue;
 			}
 			// if (path.extension() != "png" || )
-			ENGINE::ImageShipper *imageShipper = ENGINE::ResourcesManager::GetInstance()->GetShipper(
-			    "Frame_" + std::to_string(i), file.path().string(), 1, 1, ENGINE::g_ShipperFormat, ENGINE::GRAPHICS_READ);
-			shippers.push_back(imageShipper);
-			imagesFrames.push_back(imageShipper->imageView.get());
+			engine::image_shipper *image_shipper = engine::resources_manager::get_instance()->get_shipper(
+			    "Frame_" + std::to_string(i), file.path().string(), 1, 1, engine::g_shipper_format, engine::graphics_read);
+			shippers.push_back(image_shipper);
+			images_frames.push_back(image_shipper->image_view_handle.get());
 			i++;
 		}
-		this->animatorInfo.frameCount   = static_cast<int>(imagesFrames.size());
-		this->animatorInfo.currentFrame = 0;
-		this->animatorInfo.interpVal    = 0.0f;
+		this->animation_info.frame_count   = static_cast<int>(images_frames.size());
+		this->animation_info.current_frame = 0;
+		this->animation_info.interp_val    = 0.0f;
 	}
-	void LoadFramesCPU(std::string &folderPath, bool flipY)
+	void load_frames_cpu(std::string &folder_path, bool flip_y)
 	{
-		std::filesystem::path path(folderPath);
-		std::vector<std::filesystem::path> framePaths;
-		imagesFramesCPU.clear();
-		currentFrameSpacing = 0;
-		animatorInfo        = {};
+		std::filesystem::path path(folder_path);
+		std::vector<std::filesystem::path> frame_paths;
+		images_frames_cpu.clear();
+		current_frame_spacing = 0;
+		animation_info        = {};
 
-		std::error_code directoryError;
-		for (auto &file : std::filesystem::directory_iterator(path, directoryError))
+		std::error_code directory_error;
+		for (auto &file : std::filesystem::directory_iterator(path, directory_error))
 		{
-			if (directoryError)
+			if (directory_error)
 			{
 				break;
 			}
 			if (file.is_regular_file())
 			{
-				framePaths.push_back(file.path());
+				frame_paths.push_back(file.path());
 			}
 		}
-		std::sort(framePaths.begin(), framePaths.end());
+		std::sort(frame_paths.begin(), frame_paths.end());
 
-		for (const auto &framePath : framePaths)
+		for (const auto &frame_path : frame_paths)
 		{
-			ENGINE::ImageShipper imageShipper;
-			if (!imageShipper.SetDataFromPath(framePath.string()))
+			engine::image_shipper image_shipper;
+			if (!image_shipper.set_data_from_path(frame_path.string()))
 			{
 				continue;
 			}
 
-			const glm::uvec2 frameSize(
-			    static_cast<uint32_t>(imageShipper.imageSize.x),
-			    static_cast<uint32_t>(imageShipper.imageSize.y));
-			if (!imagesFramesCPU.empty() && frameSize != animatorInfo.spriteSizePx)
+			const glm::uvec2 frame_size(
+			    static_cast<uint32_t>(image_shipper.image_size.x),
+			    static_cast<uint32_t>(image_shipper.image_size.y));
+			if (!images_frames_cpu.empty() && frame_size != animation_info.sprite_size_px)
 			{
-				SYSTEMS::Logger::GetInstance()->Log(
-				    "Skipping animation frame with a different size: " + framePath.string(),
-				    SYSTEMS::LogLevel::L_WARN);
-				imageShipper.Clear();
+				systems::logger::get_instance()->log(
+				    "Skipping animation frame with a different size: " + frame_path.string(),
+				    systems::log_level::l_warn);
+				image_shipper.clear();
 				continue;
 			}
-			if (imagesFramesCPU.empty())
+			if (images_frames_cpu.empty())
 			{
-				animatorInfo.spriteSizePx = frameSize;
+				animation_info.sprite_size_px = frame_size;
 			}
-			imageShipper.BuildCPUImage(".", 0, flipY);
-			imagesFramesCPU.emplace_back(imageShipper.ShipImageCPU());
+			image_shipper.build_cpu_image(".", 0, flip_y);
+			images_frames_cpu.emplace_back(image_shipper.ship_image_cpu());
 		}
-		animatorInfo.frameCount   = static_cast<int>(imagesFramesCPU.size());
-		animatorInfo.currentFrame = 0;
-		animatorInfo.interpVal    = 0.0f;
+		animation_info.frame_count   = static_cast<int>(images_frames_cpu.size());
+		animation_info.current_frame = 0;
+		animation_info.interp_val    = 0.0f;
 	}
 	
-	void ClearCPU()
+	void clear_cpu()
 	{
-		imagesFramesCPU.clear();
-		animatorInfo        = {};
-		currentFrameSpacing = 0;
+		images_frames_cpu.clear();
+		animation_info        = {};
+		current_frame_spacing = 0;
 		stop                = true;
 	}
 
-	void LoadAtlas(std::string path, int frameSpacing, AnimatorInfo animatorInfo)
+	void load_atlas(std::string path, int frame_spacing, rendering::animator_info animation_info)
 	{
 		if (!std::filesystem::is_regular_file(path))
 		{
-			SYSTEMS::Logger::GetInstance()->Log("Invalid file type when loading atlas");
+			systems::logger::get_instance()->log("Invalid file type when loading atlas");
 			return;
 		}
-		this->frameSpacing = frameSpacing;
-		this->animatorInfo = animatorInfo;
+		this->frame_spacing = frame_spacing;
+		this->animation_info = animation_info;
 
-		ENGINE::ImageView *imageView = ENGINE::ResourcesManager::GetInstance()->GetShipper(
-		                                                                          "Atlas_", path, 1, 1, ENGINE::g_ShipperFormat,
-		                                                                          ENGINE::GRAPHICS_READ)
-		                                   ->imageView.get();
-		imagesFrames.push_back(imageView);
-		this->animatorInfo.frameCount   = animatorInfo.cols * animatorInfo.rows;
-		this->animatorInfo.currentFrame = 0;
-		this->animatorInfo.interpVal    = 0.0f;
+		engine::image_view *image_view_handle = engine::resources_manager::get_instance()->get_shipper(
+		                                                                          "Atlas_", path, 1, 1, engine::g_shipper_format,
+		                                                                          engine::graphics_read)
+		                                   ->image_view_handle.get();
+		images_frames.push_back(image_view_handle);
+		this->animation_info.frame_count   = animation_info.cols * animation_info.rows;
+		this->animation_info.current_frame = 0;
+		this->animation_info.interp_val    = 0.0f;
 	}
 
 	
-	std::vector<glm::vec4> *UseCPUFrame()
+	std::vector<glm::vec4> *use_cpu_frame()
 	{
-		if (imagesFramesCPU.empty())
+		if (images_frames_cpu.empty())
 		{
 			return nullptr;
 		}
 
-		const int frameCount = static_cast<int>(imagesFramesCPU.size());
-		animatorInfo.frameCount = frameCount;
-		animatorInfo.currentFrame = std::max(0, animatorInfo.currentFrame) % frameCount;
-		const int index = animatorInfo.currentFrame;
+		const int frame_count = static_cast<int>(images_frames_cpu.size());
+		animation_info.frame_count = frame_count;
+		animation_info.current_frame = std::max(0, animation_info.current_frame) % frame_count;
+		const int index = animation_info.current_frame;
 		if (stop)
 		{
-			return &imagesFramesCPU.at(index);
+			return &images_frames_cpu.at(index);
 		}
-		const int safeFrameSpacing   = std::max(1, frameSpacing);
-		this->animatorInfo.interpVal = static_cast<float>(currentFrameSpacing) / static_cast<float>(safeFrameSpacing);
-		currentFrameSpacing          = (currentFrameSpacing + 1) % safeFrameSpacing;
-		if (currentFrameSpacing == 0)
+		const int safe_frame_spacing   = std::max(1, frame_spacing);
+		this->animation_info.interp_val = static_cast<float>(current_frame_spacing) / static_cast<float>(safe_frame_spacing);
+		current_frame_spacing          = (current_frame_spacing + 1) % safe_frame_spacing;
+		if (current_frame_spacing == 0)
 		{
-			animatorInfo.currentFrame = (animatorInfo.currentFrame + 1) % frameCount;
+			animation_info.current_frame = (animation_info.current_frame + 1) % frame_count;
 		}
-		return &imagesFramesCPU.at(index);
+		return &images_frames_cpu.at(index);
 	}
-	ENGINE::ImageView *UseFrame()
+	engine::image_view *use_frame()
 	{
-		if (imagesFrames.empty())
+		if (images_frames.empty())
 		{
 			return nullptr;
 		}
 
-		const int frameCount = static_cast<int>(imagesFrames.size());
-		animatorInfo.frameCount = frameCount;
-		animatorInfo.currentFrame = std::max(0, animatorInfo.currentFrame) % frameCount;
-		const int index = animatorInfo.currentFrame;
+		const int frame_count = static_cast<int>(images_frames.size());
+		animation_info.frame_count = frame_count;
+		animation_info.current_frame = std::max(0, animation_info.current_frame) % frame_count;
+		const int index = animation_info.current_frame;
 		if (stop)
 		{
-			return imagesFrames.at(index);
+			return images_frames.at(index);
 		}
-		const int safeFrameSpacing   = std::max(1, frameSpacing);
-		this->animatorInfo.interpVal = static_cast<float>(currentFrameSpacing) / static_cast<float>(safeFrameSpacing);
-		currentFrameSpacing          = (currentFrameSpacing + 1) % safeFrameSpacing;
-		if (currentFrameSpacing == 0)
+		const int safe_frame_spacing   = std::max(1, frame_spacing);
+		this->animation_info.interp_val = static_cast<float>(current_frame_spacing) / static_cast<float>(safe_frame_spacing);
+		current_frame_spacing          = (current_frame_spacing + 1) % safe_frame_spacing;
+		if (current_frame_spacing == 0)
 		{
-			animatorInfo.currentFrame = (animatorInfo.currentFrame + 1) % frameCount;
+			animation_info.current_frame = (animation_info.current_frame + 1) % frame_count;
 		}
-		return imagesFrames.at(index);
+		return images_frames.at(index);
 	}
 };
-}        // namespace Rendering
+}        // namespace rendering
 #endif        // ANIMATOR_HPP

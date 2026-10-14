@@ -3,56 +3,56 @@
 // Created by carlo on 2024-10-02.
 //
 
-#ifndef STAGEDBUFFER_HPP
-#define STAGEDBUFFER_HPP
+#ifndef STAGED_BUFFER_HPP
+#define STAGED_BUFFER_HPP
 
-namespace ENGINE
+namespace engine
 {
-    class StagedBuffer
+    class staged_buffer
     {
     public:
-        StagedBuffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::BufferUsageFlags usage,
+        staged_buffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::BufferUsageFlags usage,
                      vk::DeviceSize size, vk::DeviceSize stride)
         {
-            stagingBuffer = std::make_unique<ENGINE::Buffer>(physicalDevice, logicalDevice,
+            staging_buffer = std::make_unique<engine::buffer>(physical_device, logical_device,
                                                              vk::BufferUsageFlagBits::eTransferSrc,
                                                              vk::MemoryPropertyFlagBits::eHostVisible |
                                                              vk::MemoryPropertyFlagBits::eHostCoherent,
                                                              size, stride);
-            deviceBuffer = std::make_unique<ENGINE::Buffer>(physicalDevice, logicalDevice,
+            device_buffer = std::make_unique<engine::buffer>(physical_device, logical_device,
                                                             usage | vk::BufferUsageFlagBits::eTransferDst,
                                                             vk::MemoryPropertyFlagBits::eDeviceLocal, size, stride);
             this->size = size;
         }
 
-        void* Map()
+        void* map()
         {
-            return stagingBuffer->Map();
+            return staging_buffer->map();
         }
 
-        void Unmap(vk::CommandBuffer commandBuffer)
+        void unmap(vk::CommandBuffer command_buffer)
         {
-            stagingBuffer->Unmap();
+            staging_buffer->unmap();
 
-            auto copyRegion = vk::BufferCopy()
+            auto copy_region = vk::BufferCopy()
                               .setSrcOffset(0)
                               .setDstOffset(0)
                               .setSize(size);
 
-            commandBuffer.copyBuffer(stagingBuffer->bufferHandle.get(), deviceBuffer->bufferHandle.get(), 1 ,&copyRegion);
+            command_buffer.copyBuffer(staging_buffer->buffer_handle.get(), device_buffer->buffer_handle.get(), 1 ,&copy_region);
         }
         
 
-        vk::Buffer GetBuffer()
+        vk::Buffer get_buffer()
         {
-            return deviceBuffer->bufferHandle.get();
+            return device_buffer->buffer_handle.get();
         }
 
-        std::unique_ptr<ENGINE::Buffer> stagingBuffer;
-        std::unique_ptr<ENGINE::Buffer> deviceBuffer;
+        std::unique_ptr<engine::buffer> staging_buffer;
+        std::unique_ptr<engine::buffer> device_buffer;
         vk::DeviceSize size = 0;
     };
     
     
 }
-#endif //STAGEDBUFFER_HPP
+#endif //STAGED_BUFFER_HPP

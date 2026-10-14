@@ -10,44 +10,44 @@
 #include "../Utils/uMath.glsl"
 
 
-layout(push_constant)uniform pushConstants{
-    int cascadeIndex;
-    int intervalSize;
-    int probeSizePx;
+layout(push_constant)uniform push_constants{
+    int cascade_index;
+    int interval_size;
+    int probe_size_px;
 }pc;
 
-layout (location = 0) in vec2 textCoord;
+layout (location = 0) in vec2 text_coord;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 out_color;
 
 
 void main() {
 
-    vec2 textCoordPerGrid = vec2(1.0)/ pc.probeSizePx;
-    float intervalSizePx = floor(float(pc.probeSizePx) / float(pc.intervalSize));
+    vec2 text_coord_per_grid = vec2(1.0)/ pc.probe_size_px;
+    float interval_size_px = floor(float(pc.probe_size_px) / float(pc.interval_size));
     
     
-    ivec2 localTexelPosInProbe = ivec2((ivec2(gl_FragCoord.xy) % pc.probeSizePx));
-    vec2 cuadrant = floor(vec2(localTexelPosInProbe) / intervalSizePx);
+    ivec2 local_texel_pos_in_probe = ivec2((ivec2(gl_FragCoord.xy) % pc.probe_size_px));
+    vec2 cuadrant = floor(vec2(local_texel_pos_in_probe) / interval_size_px);
     
-    vec2 indexColNew = cuadrant / float(pc.intervalSize);
+    vec2 index_col_new = cuadrant / float(pc.interval_size);
     
 //    
-//    ivec2 probeId = ivec2(textCoord * pc.probeSizePx);
-//    vec2 gridCol = vec2(probeId) / pc.probeSizePx;
+//    ivec2 probeId = ivec2(text_coord * pc.probe_size_px);
+//    vec2 gridCol = vec2(probeId) / pc.probe_size_px;
 //    
-//    vec2 origin = textCoordPerGrid * vec2(probeId);
+//    vec2 origin = text_coord_per_grid * vec2(probeId);
 //
-//    vec2 localUV = ((textCoord) - origin) / textCoordPerGrid;
+//    vec2 localUV = ((text_coord) - origin) / text_coord_per_grid;
 //    
-//    ivec2 index = ivec2(localUV * (pc.intervalSize));
-//    vec2 indexCol = vec2(index)/(float(pc.intervalSize));
+//    ivec2 index = ivec2(localUV * (pc.interval_size));
+//    vec2 indexCol = vec2(index)/(float(pc.interval_size));
 //    
-//    int dirCount = pc.intervalSize;
-//    int dirIndex = index.x + index.y * (pc.intervalSize);
+//    int dir_count = pc.interval_size;
+//    int dir_index = index.x + index.y * (pc.interval_size);
 
-//    float test = float(dirIndex)/float(dirCount);
+//    float test = float(dir_index)/float(dir_count);
    
-    outColor = vec4(indexColNew, 0.0, 1.0);
+    out_color = vec4(index_col_new, 0.0, 1.0);
 
 }

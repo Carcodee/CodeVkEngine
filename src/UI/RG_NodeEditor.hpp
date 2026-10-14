@@ -3,168 +3,168 @@
 // Created by carlo on 2025-01-07.
 //
 
-#ifndef RG_NODEEDITOR_HPP
-#define RG_NODEEDITOR_HPP
+#ifndef RG_NODE_EDITOR_HPP
+#define RG_NODE_EDITOR_HPP
 
-namespace UI
+namespace ui
 {
 namespace ed = ax::NodeEditor;
 
-class RG_NodeEditor
+class rg_node_editor
 {
   public:
-	void SetStyle()
+	void set_style()
 	{
 	}
-	void Init(ENGINE::RenderGraph *renderGraph, WindowProvider *windowProvider)
+	void init(engine::render_graph *render_graph, ::window_provider *window_provider)
 	{
-		if (!firstFrame)
+		if (!first_frame)
 		{
 			return;
 		}
-		this->renderGraph            = renderGraph;
-		this->windowProvider         = windowProvider;
-		this->factory.renderGraph    = renderGraph;
-		this->factory.windowProvider = windowProvider;
-		this->factory.resManager     = &resManager;
+		this->render_graph            = render_graph;
+		this->window_provider         = window_provider;
+		this->factory.render_graph    = render_graph;
+		this->factory.window_provider = window_provider;
+		this->factory.res_manager     = &res_manager;
 
-		std::vector<Nodes::NodeType> nodesList = {
-		    Nodes::N_ROOT_NODE,
-		    Nodes::N_RENDER_NODE,
-		    Nodes::N_RENDER_NODE,
-		    Nodes::N_RENDER_NODE,
-		    // Nodes::N_VERT_SHADER,
-		    // Nodes::N_FRAG_SHADER,
-		    // Nodes::N_COMP_SHADER,
-		    // Nodes::N_COL_ATTACHMENT_STRUCTURE,
-		    // Nodes::N_DEPTH_STRUCTURE,
-		    // Nodes::N_PUSH_CONSTANT,
-		    // Nodes::N_IMAGE_SAMPLER,
-		    // Nodes::N_IMAGE_STORAGE,
-		    // Nodes::N_DEPTH_IMAGE_SAMPLER,
-		    // Nodes::N_VERTEX_INPUT,
+		std::vector<nodes::node_type> nodes_list = {
+		    nodes::n_root_node,
+		    nodes::n_render_node,
+		    nodes::n_render_node,
+		    nodes::n_render_node,
+		    // nodes::n_vert_shader,
+		    // nodes::n_frag_shader,
+		    // nodes::n_comp_shader,
+		    // nodes::n_col_attachment_structure,
+		    // nodes::n_depth_structure,
+		    // nodes::n_push_constant,
+		    // nodes::n_image_sampler,
+		    // nodes::n_image_storage,
+		    // nodes::n_depth_image_sampler,
+		    // nodes::n_vertex_input,
 		    // N_BUFFER
 		};
 		// test
-		for (const auto &nodeType : nodesList)
+		for (const auto &node_kind : nodes_list)
 		{
-			factory.GetNode(nodeType, glm::vec2(10.0, 0.0));
+			factory.get_node(node_kind, glm::vec2(10.0, 0.0));
 		}
 	}
 
-	void Draw()
+	void draw()
 	{
 		ed::Begin("My Editor", ImVec2(0.0, 0.0f));
-		for (auto &node : resManager.graphNodes)
+		for (auto &node : res_manager.graph_nodes)
 		{
-			node.second->Draw();
+			node.second->draw();
 		}
-		CheckLinks();
-		firstFrame = false;
+		check_links();
+		first_frame = false;
 		ed::End();
 	}
 
-	void CheckLinks()
+	void check_links()
 	{
 		for (auto link : links)
 		{
-			ed::Link(link.id, link.inputId, link.outputId);
+			ed::Link(link.id, link.input_id, link.output_id);
 		}
 
 		if (ed::BeginCreate())
 		{
-			ed::PinId startId, endId;
-			if (ed::QueryNewLink(&startId, &endId))
+			ed::PinId start_id, end_id;
+			if (ed::QueryNewLink(&start_id, &end_id))
 			{
-				Nodes::GraphNode *startNode = resManager.GetNodeByInputOutputId(startId.Get());
-				Nodes::GraphNode *endNode   = resManager.GetNodeByInputOutputId(endId.Get());
+				nodes::graph_node *start_node = res_manager.get_node_by_input_output_id(start_id.Get());
+				nodes::graph_node *end_node   = res_manager.get_node_by_input_output_id(end_id.Get());
 
-				if (startNode && endNode)
+				if (start_node && end_node)
 				{
-					ed::PinKind                               startPinType;
-					ed::PinKind                               endPinType;
-					std::map<ed::PinKind, Nodes::GraphNode *> pinNodes;
-					std::map<ed::PinKind, int>                pinIds;
+					ed::PinKind                               start_pin_type;
+					ed::PinKind                               end_pin_type;
+					std::map<ed::PinKind, nodes::graph_node *> pin_nodes;
+					std::map<ed::PinKind, int>                pin_ids;
 
-					Nodes::PinInfo *startPin = startNode->inputNodes.contains(startId.Get()) ? &startNode->inputNodes.at(startId.Get()) : nullptr;
-					startPinType             = ed::PinKind::Input;
-					if (startPin == nullptr)
+					nodes::pin_info *start_pin = start_node->input_nodes.contains(start_id.Get()) ? &start_node->input_nodes.at(start_id.Get()) : nullptr;
+					start_pin_type             = ed::PinKind::Input;
+					if (start_pin == nullptr)
 					{
-						startPin     = startNode->outputNodes.contains(startId.Get()) ? &startNode->outputNodes.at(startId.Get()) : nullptr;
-						startPinType = ed::PinKind::Output;
+						start_pin     = start_node->output_nodes.contains(start_id.Get()) ? &start_node->output_nodes.at(start_id.Get()) : nullptr;
+						start_pin_type = ed::PinKind::Output;
 					}
 
-					Nodes::PinInfo *endPin = endNode->inputNodes.contains(endId.Get()) ? &endNode->inputNodes.at(endId.Get()) : nullptr;
-					endPinType             = ed::PinKind::Input;
-					if (endPin == nullptr)
+					nodes::pin_info *end_pin = end_node->input_nodes.contains(end_id.Get()) ? &end_node->input_nodes.at(end_id.Get()) : nullptr;
+					end_pin_type             = ed::PinKind::Input;
+					if (end_pin == nullptr)
 					{
-						endPinType = ed::PinKind::Output;
-						endPin     = endNode->outputNodes.contains(endId.Get()) ? &endNode->outputNodes.at(endId.Get()) : nullptr;
+						end_pin_type = ed::PinKind::Output;
+						end_pin     = end_node->output_nodes.contains(end_id.Get()) ? &end_node->output_nodes.at(end_id.Get()) : nullptr;
 					}
 
-					pinNodes.try_emplace(startPinType, startNode);
-					pinNodes.try_emplace(endPinType, endNode);
+					pin_nodes.try_emplace(start_pin_type, start_node);
+					pin_nodes.try_emplace(end_pin_type, end_node);
 
-					pinIds.try_emplace(startPinType, startId.Get());
-					pinIds.try_emplace(endPinType, endId.Get());
+					pin_ids.try_emplace(start_pin_type, start_id.Get());
+					pin_ids.try_emplace(end_pin_type, end_id.Get());
 
-					if ((startPin && endPin) && (pinNodes.size() == 2))
+					if ((start_pin && end_pin) && (pin_nodes.size() == 2))
 					{
-						bool validLink = Nodes::IsValidNodeCombination(startPin->nodeType, endPin->nodeType);
+						bool valid_link = nodes::is_valid_node_combination(start_pin->node_kind, end_pin->node_kind);
 
-						if (validLink)
+						if (valid_link)
 						{
-							Nodes::GraphNode *outputNode = pinNodes.at(ed::PinKind::Output);
-							Nodes::GraphNode *inputNode  = pinNodes.at(ed::PinKind::Input);
+							nodes::graph_node *output_node = pin_nodes.at(ed::PinKind::Output);
+							nodes::graph_node *input_node  = pin_nodes.at(ed::PinKind::Input);
 
 							if (ed::AcceptNewItem())
 							{
-								outputNode->RunCallback("output_c");
-								Nodes::PinInfo *outputPin = &outputNode->outputNodes.at(pinIds.at(ed::PinKind::Output));
-								Nodes::PinInfo *inputPin  = &inputNode->inputNodes.at(pinIds.at(ed::PinKind::Input));
-								outputPin->linkedPin      = inputPin;
-								inputPin->linkedPin       = outputPin;
+								output_node->run_callback("output_c");
+								nodes::pin_info *output_pin = &output_node->output_nodes.at(pin_ids.at(ed::PinKind::Output));
+								nodes::pin_info *input_pin  = &input_node->input_nodes.at(pin_ids.at(ed::PinKind::Input));
+								output_pin->linked_pin      = input_pin;
+								input_pin->linked_pin       = output_pin;
 
-								inputNode->AddLink(outputNode->globalId, outputNode->outputNodes.at(pinIds.at(ed::PinKind::Output)).nodeType);
-								outputNode->AddLink(inputNode->globalId, inputNode->inputNodes.at(pinIds.at(ed::PinKind::Input)).nodeType);
-								inputNode->GetInputDataById(pinIds.at(ed::PinKind::Input))->data =
-								    outputNode->GetOutputDataById(pinIds.at(ed::PinKind::Output))->data;
+								input_node->add_link(output_node->global_id, output_node->output_nodes.at(pin_ids.at(ed::PinKind::Output)).node_kind);
+								output_node->add_link(input_node->global_id, input_node->input_nodes.at(pin_ids.at(ed::PinKind::Input)).node_kind);
+								input_node->get_input_data_by_id(pin_ids.at(ed::PinKind::Input))->data =
+								    output_node->get_output_data_by_id(pin_ids.at(ed::PinKind::Output))->data;
 
-								inputNode->RunCallback("link_c");
-								outputNode->RunCallback("link_c");
+								input_node->run_callback("link_c");
+								output_node->run_callback("link_c");
 
-								links.push_back({ed::LinkId(linkIdGen++), startId, endId});
-								ed::Link(links.back().id, links.back().inputId, links.back().outputId);
+								links.push_back({ed::LinkId(link_id_gen++), start_id, end_id});
+								ed::Link(links.back().id, links.back().input_id, links.back().output_id);
 							}
 						}
 					}
 				}
 				else
 				{
-					SYSTEMS::Logger::GetInstance()->LogMessage("Hello");
+					systems::logger::get_instance()->log_message("Hello");
 				}
 			}
 		}
 		ed::EndCreate();
 		if (ed::BeginDelete())
 		{
-			ed::LinkId deletedLinkId;
-			while (ed::QueryDeletedLink(&deletedLinkId))
+			ed::LinkId deleted_link_id;
+			while (ed::QueryDeletedLink(&deleted_link_id))
 			{
 				for (auto &link : links)
 				{
-					if (link.id == deletedLinkId)
+					if (link.id == deleted_link_id)
 					{
-						Nodes::PinInfo *output = resManager.GetPinFromId(link.outputId.Get());
-						Nodes::PinInfo *input  = resManager.GetPinFromId(link.inputId.Get());
-						output->linkedPin      = nullptr;
-						input->linkedPin       = nullptr;
+						nodes::pin_info *output = res_manager.get_pin_from_id(link.output_id.Get());
+						nodes::pin_info *input  = res_manager.get_pin_from_id(link.input_id.Get());
+						output->linked_pin      = nullptr;
+						input->linked_pin       = nullptr;
 
-						Nodes::GraphNode *inputNode  = resManager.GetNodeByInputOutputId(input->id);
-						Nodes::GraphNode *outputNode = resManager.GetNodeByInputOutputId(output->id);
+						nodes::graph_node *input_node  = res_manager.get_node_by_input_output_id(input->id);
+						nodes::graph_node *output_node = res_manager.get_node_by_input_output_id(output->id);
 						// do some callback;
-						inputNode->RunCallback("unlink_c");
-						outputNode->RunCallback("unlink_c");
+						input_node->run_callback("unlink_c");
+						output_node->run_callback("unlink_c");
 
 						links.erase(&link);
 						break;
@@ -175,16 +175,16 @@ class RG_NodeEditor
 		ed::EndDelete();
 	}
 
-	ImVector<Nodes::LinkInfo>  links;
-	Nodes::GraphNodeFactory    factory;
-	Nodes::GraphNodeResManager resManager;
+	ImVector<nodes::link_info>  links;
+	nodes::graph_node_factory    factory;
+	nodes::graph_node_res_manager res_manager;
 	// int_1 - in/out id || int_2 node idx in nodes vec
-	std::map<int, int>   nodesIds;
-	int                  linkIdGen  = 200;
-	bool                 firstFrame = true;
-	ENGINE::RenderGraph *renderGraph;
-	WindowProvider      *windowProvider;
+	std::map<int, int>   nodes_ids;
+	int                  link_id_gen  = 200;
+	bool                 first_frame = true;
+	engine::render_graph *render_graph;
+	::window_provider      *window_provider;
 };
-}        // namespace UI
+}        // namespace ui
 
-#endif        // RG_NODEEDITOR_HPP
+#endif        // RG_NODE_EDITOR_HPP

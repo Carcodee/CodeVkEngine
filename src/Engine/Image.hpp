@@ -5,173 +5,173 @@
 #ifndef IMAGE_HPP
 #define IMAGE_HPP
 
-namespace ENGINE
+namespace engine
 {
-    static bool IsDepthFormat(vk::Format format)
+    static bool is_depth_format(vk::Format format)
     {
         return (format >= vk::Format::eD16Unorm && format < vk::Format::eD32SfloatS8Uint);
     }
 
-    static vk::ImageUsageFlags GetGeneralUsageFlags(vk::Format format)
+    static vk::ImageUsageFlags get_general_usage_flags(vk::Format format)
     {
-        vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled;
-        if (IsDepthFormat(format))
+        vk::ImageUsageFlags usage_flags = vk::ImageUsageFlagBits::eSampled;
+        if (is_depth_format(format))
         {
-            usageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment |vk::ImageUsageFlagBits::eSampled;
+            usage_flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment |vk::ImageUsageFlagBits::eSampled;
         }else
         {
-            usageFlags |= vk::ImageUsageFlagBits::eColorAttachment |vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+            usage_flags |= vk::ImageUsageFlagBits::eColorAttachment |vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
         }
-        return usageFlags;
+        return usage_flags;
     }
 
-    static const vk::Format g_32bFormat = vk::Format::eR32G32B32A32Sfloat;
-    static const vk::Format g_16bFormat = vk::Format::eR16G16B16A16Sfloat;
-    static const vk::Format g_ShipperFormat = vk::Format::eR8G8B8A8Unorm;
+    static const vk::Format g_32b_format = vk::Format::eR32G32B32A32Sfloat;
+    static const vk::Format g_16b_format = vk::Format::eR16G16B16A16Sfloat;
+    static const vk::Format g_shipper_format = vk::Format::eR8G8B8A8Unorm;
     
     
-    static const vk::ImageUsageFlags colorImageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-    static const vk::ImageUsageFlags depthImageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+    static const vk::ImageUsageFlags color_image_usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+    static const vk::ImageUsageFlags depth_image_usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
-    class SwapChain;
-    class Image;
+    class swap_chain;
+    class image;
 
-    class ImageData
+    class image_data
     {
     public:
-        glm::uvec3 GetMipSize(uint32_t mipLevel)
+        glm::uvec3 get_mip_size(uint32_t mip_level)
         {
-            return mipInfos[mipLevel].size;
+            return mip_infos[mip_level].size;
         }
     	
-    	glm::uvec2 GetImageSize()
+        glm::uvec2 get_image_size()
         {
-        	return glm::uvec2(baseSize.x, baseSize.y);
+            return glm::uvec2(base_size.x, base_size.y);
         }
 
-        ImageData(vk::Image imageHandle, vk::ImageType imageType, glm::uvec3 size, uint32_t mipCount,
-                  uint32_t arrayLayersCount, vk::Format format, vk::ImageLayout layout)
+        image_data(vk::Image image_handle, vk::ImageType image_type, glm::uvec3 size, uint32_t mip_count,
+                  uint32_t array_layers_count, vk::Format format, vk::ImageLayout layout)
         {
-            this->imageHandle = imageHandle;
+            this->image_handle = image_handle;
             this->format = format;
-            this->mipsCount = mipCount;
-            this->arrayLayersCount = arrayLayersCount;
-            this->imageType = imageType;
+            this->mips_count = mip_count;
+            this->array_layers_count = array_layers_count;
+            this->image_type = image_type;
 
-            currentLayout = EMPTY;
-            currentPattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
-            currentPattern.accessMask = vk::AccessFlagBits::eNone;
-            currentPattern.layout = vk::ImageLayout::eUndefined;
-            currentPattern.queueFamilyType = QueueFamilyTypes::UNDEFINED;
+            current_layout = empty;
+            current_pattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
+            current_pattern.access_mask = vk::AccessFlagBits::eNone;
+            current_pattern.layout = vk::ImageLayout::eUndefined;
+            current_pattern.queue_family_type = queue_family_types::undefined;
 
-            this->baseSize= size;
+            this->base_size= size;
 
-            for (size_t mipLevel = 0; mipLevel < mipsCount; mipLevel++)
+            for (size_t mip_level = 0; mip_level < mips_count; mip_level++)
             {
-                MipInfo mipInfo;
-                mipInfo.size = this->baseSize;
-                mipInfo.size.x /= 2;
-                if (imageType == vk::ImageType::e2D)
+                mip_info mip_info;
+                mip_info.size = this->base_size;
+                mip_info.size.x /= 2;
+                if (image_type == vk::ImageType::e2D)
                 {
-                    mipInfo.size.y /= 2;
+                    mip_info.size.y /= 2;
                 }
-                if (imageType == vk::ImageType::e3D)
+                if (image_type == vk::ImageType::e3D)
                 {
-                    mipInfo.size.z /= 2;
+                    mip_info.size.z /= 2;
                 }
 
-                mipInfos.push_back(mipInfo);
+                mip_infos.push_back(mip_info);
             }
-            if (IsDepthFormat(format))
+            if (is_depth_format(format))
             {
-                this->aspectFlags =vk::ImageAspectFlagBits::eDepth;
+                this->aspect_flags =vk::ImageAspectFlagBits::eDepth;
                 
             }else
             {
-                this->aspectFlags =vk::ImageAspectFlagBits::eColor;
+                this->aspect_flags =vk::ImageAspectFlagBits::eColor;
             }
         }
-        void SetDebugName(std::string _debugName) 
+        void set_debug_name(std::string debug_name_param)
         {
-            this->debugName = _debugName;
+            this->debug_name = debug_name_param;
         }
 
-        std::vector<MipInfo> mipInfos;
-        vk::ImageAspectFlags aspectFlags;
-        vk::Image imageHandle;
+        std::vector<mip_info> mip_infos;
+        vk::ImageAspectFlags aspect_flags;
+        vk::Image image_handle;
         vk::Format format;
-    	glm::uvec3 baseSize;
-        vk::ImageType imageType;
-        uint32_t mipsCount;
-        uint32_t arrayLayersCount;
-        LayoutPatterns currentLayout;
-        ImageAccessPattern currentPattern;
+        glm::uvec3 base_size;
+        vk::ImageType image_type;
+        uint32_t mips_count;
+        uint32_t array_layers_count;
+        layout_patterns current_layout;
+        image_access_pattern current_pattern;
         
-        std::string debugName;
-        friend class Image;
-        friend class SwapChain;
+        std::string debug_name;
+        friend class image;
+        friend class swap_chain;
     };
 
-    class Image
+    class image
     {
     public:
 
-        static vk::ImageCreateInfo CreateInfo2d(glm::uvec2 size, uint32_t mipsCount, uint32_t arraysLayerCount,
+        static vk::ImageCreateInfo create_info2d(glm::uvec2 size, uint32_t mips_count, uint32_t arrays_layer_count,
                                                 vk::Format format, vk::ImageUsageFlags usage)
         {
             auto layout = vk::ImageLayout::eUndefined;
-            auto imageInfo = vk::ImageCreateInfo()
+            auto image_info = vk::ImageCreateInfo()
                              .setImageType(vk::ImageType::e2D)
                              .setExtent(vk::Extent3D(size.x, size.y, 1))
-                             .setMipLevels(mipsCount)
-                             .setArrayLayers(arraysLayerCount)
+                             .setMipLevels(mips_count)
+                             .setArrayLayers(arrays_layer_count)
                              .setFormat(format)
                              .setInitialLayout(layout)
                              .setUsage(usage)
                              .setSamples(vk::SampleCountFlagBits::e1)
                              .setFlags(vk::ImageCreateFlags());
-            return imageInfo;
+            return image_info;
         }
 
-        static vk::ImageCreateInfo CreateInfoVolume(glm::uvec3 size, uint32_t mipsCount, uint32_t arraysLayerCount,
+        static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t arrays_layer_count,
                                                     vk::Format format, vk::ImageUsageFlags usage)
         {
             auto layout = vk::ImageLayout::eUndefined;
-            auto imageInfo = vk::ImageCreateInfo()
+            auto image_info = vk::ImageCreateInfo()
                              .setImageType(vk::ImageType::e3D)
                              .setExtent(vk::Extent3D(size.x, size.y, size.z))
-                             .setMipLevels(mipsCount)
-                             .setArrayLayers(arraysLayerCount)
+                             .setMipLevels(mips_count)
+                             .setArrayLayers(arrays_layer_count)
                              .setFormat(format)
                              .setInitialLayout(layout)
                              .setUsage(usage)
                              .setSamples(vk::SampleCountFlagBits::e1)
                              .setFlags(vk::ImageCreateFlags())
                              .setTiling(vk::ImageTiling::eOptimal);
-            return imageInfo;
+            return image_info;
         }
 
-        Image(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::ImageCreateInfo imageInfo,
-              vk::MemoryPropertyFlags memFlags = vk::MemoryPropertyFlagBits::eDeviceLocal)
+        image(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::ImageCreateInfo image_info,
+              vk::MemoryPropertyFlags mem_flags = vk::MemoryPropertyFlagBits::eDeviceLocal)
         {
-            imageHandle = logicalDevice.createImageUnique(imageInfo);
-            glm::uvec3 size = {imageInfo.extent.width, imageInfo.extent.height, imageInfo.extent.depth};
-            imageData.reset(new ImageData(imageHandle.get(), imageInfo.imageType, size, imageInfo.mipLevels, imageInfo.arrayLayers, imageInfo.format, imageInfo.initialLayout));
-            vk::MemoryRequirements imageMemReq= logicalDevice.getImageMemoryRequirements(imageHandle.get());
+            image_handle = logical_device.createImageUnique(image_info);
+            glm::uvec3 size = {image_info.extent.width, image_info.extent.height, image_info.extent.depth};
+            image_metadata.reset(new engine::image_data(image_handle.get(), image_info.imageType, size, image_info.mipLevels, image_info.arrayLayers, image_info.format, image_info.initialLayout));
+            vk::MemoryRequirements image_mem_req= logical_device.getImageMemoryRequirements(image_handle.get());
 
-            auto allocInfo = vk::MemoryAllocateInfo()
-            .setAllocationSize(imageMemReq.size)
-            .setMemoryTypeIndex(FindMemoryTypeIndex(physicalDevice, imageMemReq.memoryTypeBits, memFlags));
+            auto alloc_info = vk::MemoryAllocateInfo()
+            .setAllocationSize(image_mem_req.size)
+            .setMemoryTypeIndex(find_memory_type_index(physical_device, image_mem_req.memoryTypeBits, mem_flags));
 
-            imageMemory = logicalDevice.allocateMemoryUnique(allocInfo);
+            image_memory = logical_device.allocateMemoryUnique(alloc_info);
             
-            logicalDevice.bindImageMemory(imageHandle.get(), imageMemory.get(), 0);
+            logical_device.bindImageMemory(image_handle.get(), image_memory.get(), 0);
             
         }
 
-        std::unique_ptr<ImageData> imageData;
-        vk::UniqueImage imageHandle;
-        vk::UniqueDeviceMemory imageMemory;
+        std::unique_ptr<engine::image_data> image_metadata;
+        vk::UniqueImage image_handle;
+        vk::UniqueDeviceMemory image_memory;
     };
 
 }

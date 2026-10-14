@@ -3,84 +3,84 @@
 // Created by carlo on 2025-02-22.
 //
 
-#ifndef GRAPHNODERESMANAGERIMPL_HPP
-#define GRAPHNODERESMANAGERIMPL_HPP
+#ifndef GRAPH_NODE_RES_MANAGER_IMPL_HPP
+#define GRAPH_NODE_RES_MANAGER_IMPL_HPP
 
-namespace UI::Nodes
+namespace ui::nodes
 {
-GraphNodeResManager::GraphNodeResManager()
+graph_node_res_manager::graph_node_res_manager()
 {
-	graphNodesArena = std::make_unique<Systems::Arena>();
+	graph_nodes_arena = std::make_unique<systems::arena>();
 }
 
-void GraphNodeResManager::AddNodeId(int inputOutputId, int graphNodeId)
+void graph_node_res_manager::add_node_id(int input_output_id, int graph_node_id)
 {
-	inputOutputsIds.try_emplace(inputOutputId, graphNodeId);
+	input_outputs_ids.try_emplace(input_output_id, graph_node_id);
 }
 
-void GraphNodeResManager::AddNodeIds(GraphNode *node)
+void graph_node_res_manager::add_node_ids(ui::nodes::graph_node *node)
 {
-	for (auto &input : node->inputNodes)
+	for (auto &input : node->input_nodes)
 	{
-		AddNodeId(input.first, node->globalId);
+		add_node_id(input.first, node->global_id);
 	}
-	for (auto &output : node->outputNodes)
+	for (auto &output : node->output_nodes)
 	{
-		AddNodeId(output.first, node->globalId);
+		add_node_id(output.first, node->global_id);
 	}
 }
 
-GraphNode *GraphNodeResManager::GetNode(int id)
+ui::nodes::graph_node *graph_node_res_manager::get_node(int id)
 {
-	if (graphNodes.contains(id))
+	if (graph_nodes.contains(id))
 	{
 		assert(false);
-		return graphNodes.at(id);
+		return graph_nodes.at(id);
 	}
-	GraphNode *graphNode = graphNodesArena->Alloc<GraphNode>();
-	graphNodes.try_emplace(id, graphNode);
-	graphNode->graphNodesRef       = &graphNodes;
-	graphNode->widgetsIdGen        = &widgetsIdGen;
-	graphNode->globalId            = id;
-	graphNode->graphNodesRef       = &graphNodes;
-	graphNode->graphNodeResManager = this;
-	return graphNode;
+	ui::nodes::graph_node *graph_node = graph_nodes_arena->alloc<ui::nodes::graph_node>();
+	graph_nodes.try_emplace(id, graph_node);
+	graph_node->graph_nodes_ref       = &graph_nodes;
+	graph_node->widgets_id_gen        = &widgets_id_gen;
+	graph_node->global_id            = id;
+	graph_node->graph_nodes_ref       = &graph_nodes;
+	graph_node->graph_node_res_manager = this;
+	return graph_node;
 }
 
-GraphNode *GraphNodeResManager::GetNodeByInputOutputId(int id)
+ui::nodes::graph_node *graph_node_res_manager::get_node_by_input_output_id(int id)
 {
-	if (!inputOutputsIds.contains(id))
+	if (!input_outputs_ids.contains(id))
 	{
 		return nullptr;
 	}
 
-	return graphNodes.at(inputOutputsIds.at(id));
+	return graph_nodes.at(input_outputs_ids.at(id));
 }
 
-PinInfo *GraphNodeResManager::GetPinFromId(int id)
+pin_info *graph_node_res_manager::get_pin_from_id(int id)
 {
-	for (auto &graphNode : graphNodes)
+	for (auto &graph_node : graph_nodes)
 	{
-		if (graphNode.second->inputNodes.contains(id))
+		if (graph_node.second->input_nodes.contains(id))
 		{
-			return &graphNode.second->inputNodes.at(id);
+			return &graph_node.second->input_nodes.at(id);
 		}
-		if (graphNode.second->outputNodes.contains(id))
+		if (graph_node.second->output_nodes.contains(id))
 		{
-			return &graphNode.second->outputNodes.at(id);
+			return &graph_node.second->output_nodes.at(id);
 		}
 	}
 	return nullptr;
 }
-int GraphNodeResManager::NextWidgetID()
+int graph_node_res_manager::next_widget_id()
 {
-	return widgetsIdGen++;
+	return widgets_id_gen++;
 }
 
-int GraphNodeResManager::NextNodeID()
+int graph_node_res_manager::next_node_id()
 {
-	return idNodeGen++;
+	return id_node_gen++;
 }
-}        // namespace UI::Nodes
+}        // namespace ui::nodes
 
-#endif        // GRAPHNODERESMANAGERIMPL_HPP
+#endif        // GRAPH_NODE_RES_MANAGER_IMPL_HPP

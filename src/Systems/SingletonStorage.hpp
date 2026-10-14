@@ -3,43 +3,43 @@
 // Created by carlo on 2024-11-22.
 //
 
-#ifndef SINGLETONSTORAGE_HPP
-#define SINGLETONSTORAGE_HPP
+#ifndef SINGLETON_STORAGE_HPP
+#define SINGLETON_STORAGE_HPP
 
-namespace SYSTEMS
+namespace systems
 {
 
-class SingletonStorage
+class singleton_storage
 {
   public:
-	template <typename T>
-	T *Get()
+	template <typename value_type>
+	value_type *get()
 	{
-		std::type_index typeIndex(typeid(T));
-		auto            it = storage.find(typeIndex);
+		std::type_index type_index(typeid(value_type));
+		auto            it = storage.find(type_index);
 		if (it != storage.end())
 		{
-			return std::any_cast<T *>(it->second);
+			return std::any_cast<value_type *>(it->second);
 		}
 
-		auto insert = storage.emplace(typeIndex, std::make_any<T>());
+		auto insert = storage.emplace(type_index, std::make_any<value_type>());
 
-		return std::any_cast<T *>(insert.first->second);
+		return std::any_cast<value_type *>(insert.first->second);
 	}
-	SingletonStorage(const SingletonStorage &)           = delete;
-	SingletonStorage operator=(const SingletonStorage &) = delete;
+	singleton_storage(const singleton_storage &)           = delete;
+	singleton_storage operator=(const singleton_storage &) = delete;
 
-	static SingletonStorage *instance()
+	static singleton_storage *instance()
 	{
-		static SingletonStorage instance;
+		static singleton_storage instance;
 		return &instance;
 	}
 
   private:
-	SingletonStorage() = default;
+	singleton_storage() = default;
 	std::unordered_map<std::type_index, std::any> storage;
 };
 
-}        // namespace SYSTEMS
+}        // namespace systems
 
-#endif        // SINGLETONSTORAGE_HPP
+#endif        // SINGLETON_STORAGE_HPP

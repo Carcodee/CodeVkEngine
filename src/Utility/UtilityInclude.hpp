@@ -2,8 +2,8 @@
 // Created by carlo on 2025-04-06.
 //
 
-#ifndef UTILITYINCLUDE_HPP
-#define UTILITYINCLUDE_HPP
+#ifndef UTILITY_INCLUDE_HPP
+#define UTILITY_INCLUDE_HPP
 
 
 #define GLM_FORCE_RADIANS
@@ -18,4 +18,4 @@
 
 #include "Math.hpp"
 
-#endif //UTILITYINCLUDE_HPP
+#endif //UTILITY_INCLUDE_HPP

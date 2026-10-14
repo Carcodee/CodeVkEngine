@@ -5,44 +5,44 @@
 #ifndef MATH_HPP
 #define MATH_HPP
 
-namespace UTIL
+namespace util
 {
 
-inline float M_NextFloat(float min, float max)
+inline float m_next_float(float min, float max)
 {
 	return 0;
 }
-inline glm::vec4 M_NormalizeRotation(const glm::vec4 rot)
+inline glm::vec4 m_normalize_rotation(const glm::vec4 rot)
 {
-	float sumOfSqaures  = rot.x * rot.x + rot.y * rot.y + rot.z * rot.z + rot.w * rot.w;
-	float normalizedVal = std::sqrt(sumOfSqaures);
-	return glm::vec4(rot.x / normalizedVal, rot.y / normalizedVal, rot.z / normalizedVal, rot.w / normalizedVal);
+	float sum_of_sqaures  = rot.x * rot.x + rot.y * rot.y + rot.z * rot.z + rot.w * rot.w;
+	float normalized_val = std::sqrt(sum_of_sqaures);
+	return glm::vec4(rot.x / normalized_val, rot.y / normalized_val, rot.z / normalized_val, rot.w / normalized_val);
 };
-inline float M_Sigmoid(float val)
+inline float m_sigmoid(float val)
 {
 	return 1 / (1.0 + std::exp(-val));
 }
 
-constexpr float  C0 = 0.28209479177387814f;
-inline glm::vec3 M_SH2RGB(const glm::vec3 color)
+constexpr float  c0 = 0.28209479177387814f;
+inline glm::vec3 m_sh2_rgb(const glm::vec3 color)
 {
-	return 0.5f + C0 * color;
+	return 0.5f + c0 * color;
 };
 
-inline float M_Exp(float val)
+inline float m_exp(float val)
 {
 	return std::exp(val);
 }
 
-inline glm::vec2 M_Exp(glm::vec2 val)
+inline glm::vec2 m_exp(glm::vec2 val)
 {
 	return glm::vec2(std::exp(val.x), std::exp(val.y));
 }
-inline glm::vec3 M_Exp(glm::vec3 val)
+inline glm::vec3 m_exp(glm::vec3 val)
 {
 	return glm::vec3(std::exp(val.x), std::exp(val.y), std::exp(val.z));
 }
 
-}        // namespace UTIL
+}        // namespace util
 
 #endif        // MATH_HPP

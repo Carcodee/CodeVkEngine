@@ -2,164 +2,164 @@
 // Created by carlo on 2024-10-08.
 //
 
-#ifndef RENDERINGSTRUCTS_HPP
-#define RENDERINGSTRUCTS_HPP
+#ifndef RENDERER_STRUCTS_HPP
+#define RENDERER_STRUCTS_HPP
 
 #include <cmath>
 #include <cstddef>
 
-namespace Rendering
+namespace rendering
 {
 
-    struct DebugVoxelsMVP
+    struct debug_voxels_mvp
     {
-        glm::mat4 projView = glm::mat4(1.0);
+        glm::mat4 proj_view = glm::mat4(1.0);
         glm::vec3 origin = glm::vec3{0.0f, 0.0f, 0.0f};
         alignas(16) glm::uvec3 dimensions = glm::uvec3{100, 100, 100};
-        float cellSize = 0.5f;
+        float cell_size = 0.5f;
     };
-    struct MvpPc
+    struct mvp_pc
     {
         glm::mat4 model = glm::mat4(1.0);
-        glm::mat4 projView = glm::mat4(1.0);
+        glm::mat4 proj_view = glm::mat4(1.0);
     };
 
-    struct SplitMVP
+    struct split_mvp
     {
         glm::mat4 model = glm::mat4(1.0);
         glm::mat4 view = glm::mat4(1.0);
         glm::mat4 proj = glm::mat4(1.0);
     };
 
-    enum PintMode
+    enum pint_mode
     {
-        P_OCCLUDER = 0,
-        P_LIGHT_SOURCE = 1
+        p_occluder = 0,
+        p_light_source = 1
     };
 
-    struct RcPc
+    struct rc_pc
     {
-        int cascadesCount = 0;
-        int probeSizePx = 8;
-        int intervalCount = 2;
-        int fWidth = 0;
-        int fHeight = 0;
-        int baseIntervalLength = 12;
-        int cascadeIndex = -1;
+        int cascades_count = 0;
+        int probe_size_px = 8;
+        int interval_count = 2;
+        int f_width = 0;
+        int f_height = 0;
+        int base_interval_length = 12;
+        int cascade_index = -1;
     };
 
-    struct ProbesGenPc
+    struct probes_gen_pc
     {
-        int cascadeIndex = 0;
-        int intervalSize = 16;
-        int probeSizePx = 16;
+        int cascade_index = 0;
+        int interval_size = 16;
+        int probe_size_px = 16;
     };
 
-    struct PaintingPc
+    struct painting_pc
     {
         glm::vec4 color = glm::vec4(1.0);
-        int layerSelected = 0;
+        int layer_selected = 0;
         int painting = 0;
-        int xMousePos = 0;
-        int yMousePos = 0;
+        int x_mouse_pos = 0;
+        int y_mouse_pos = 0;
         int radius = 20;
     };
 
-    struct CPropsUbo
+    struct c_props_ubo
     {
-        glm::mat4 invProj = glm::mat4(1.0);
-        glm::mat4 invView = glm::mat4(1.0);
+        glm::mat4 inv_proj = glm::mat4(1.0);
+        glm::mat4 inv_view = glm::mat4(1.0);
         glm::vec3 pos = glm::vec3(0.0);
-        float zNear = 0.0f;
-        float zFar = 0.0f;
+        float z_near = 0.0f;
+        float z_far = 0.0f;
     };
 
-    struct ArrayIndexer
+    struct array_indexer
     {
         uint32_t offset = 0;
         uint32_t size = 0;
     };
 
-    struct ScreenDataPc
+    struct screen_data_pc
     {
-        int sWidth = 0;
-        int sHeight = 0;
-        int pointLightsCount = 0;
-        uint32_t xTileCount = 0;
-        uint32_t yTileCount = 0;
-        uint32_t xTileSizePx = 0;
-        uint32_t yTileSizePx = 0;
+        int s_width = 0;
+        int s_height = 0;
+        int point_lights_count = 0;
+        uint32_t x_tile_count = 0;
+        uint32_t y_tile_count = 0;
+        uint32_t x_tile_size_px = 0;
+        uint32_t y_tile_size_px = 0;
     };
 
-    struct LightPc
+    struct light_pc
     {
-        uint32_t xTileCount = 0;
-        uint32_t yTileCount = 0;
-        uint32_t xTileSizePx = 0;
-        uint32_t yTileSizePx = 0;
-        uint32_t zSlices = 0;
+        uint32_t x_tile_count = 0;
+        uint32_t y_tile_count = 0;
+        uint32_t x_tile_size_px = 0;
+        uint32_t y_tile_size_px = 0;
+        uint32_t z_slices = 0;
     };
 
-    struct MaterialPackedData
+    struct material_packed_data
     {
         glm::vec4 diff = glm::vec4(1.0);
-        float albedoFactor = 1.0;
-        float normalFactor = 0.0;
-        float roughnessFactor = 0.0;
-        float metallicFactor = 0.0;
-        float alphaCutoff = 0.0;
+        float albedo_factor = 1.0;
+        float normal_factor = 0.0;
+        float roughness_factor = 0.0;
+        float metallic_factor = 0.0;
+        float alpha_cutoff = 0.0;
 
-        int albedoOffset = -1;
-        int normalOffset = -1;
-        int emissionOffset = -1;
-        int transOffset = -1;
-        int roughnessOffset = -1;
-        int metallicOffset = -1;
-        int metRoughnessOffset = -1;
+        int albedo_offset = -1;
+        int normal_offset = -1;
+        int emission_offset = -1;
+        int trans_offset = -1;
+        int roughness_offset = -1;
+        int metallic_offset = -1;
+        int met_roughness_offset = -1;
     };
 
-    struct Sphere
+    struct sphere
     {
         glm::vec3 center = glm::vec3(0);
         float radius = 0;
     };
 
-    struct ModelLoadConfigs
+    struct model_load_configs
     {
-        bool loadMeshesSpheres;
-        bool compactMesh;
+        bool load_meshes_spheres;
+        bool compact_mesh;
     };
 
-    struct Frustum
+    struct frustum
     {
         glm::vec4 planes[6];
         glm::vec3 points[8];
     };
 
-    struct CascadesInfo
+    struct cascades_info
     {
-        uint32_t cascadeCount = 4;
-        int probeSizePx = 16;
-        int intervalCount = 2;
-        int baseIntervalLength = 12;
+        uint32_t cascade_count = 4;
+        int probe_size_px = 16;
+        int interval_count = 2;
+        int base_interval_length = 12;
     };
 
-    struct MergeCascadesInfo
+    struct merge_cascades_info
     {
-        glm::uvec2 probeCentersPositionsPx;
-        glm::uvec2 probeSizesPx;
-        int dirIndices;
+        glm::uvec2 probe_centers_positions_px;
+        glm::uvec2 probe_sizes_px;
+        int dir_indices;
     };
 
-    struct RadianceCascadesConfigs
+    struct radiance_cascades_configs
     {
-        int radiancePow = 2;
-        int normalMapPow = 24;
-        int specularPow = 2;
-        int roughnessPow = 2;
+        int radiance_pow = 2;
+        int normal_map_pow = 24;
+        int specular_pow = 2;
+        int roughness_pow = 2;
     };
 
-    struct GaussianSplat
+    struct gaussian_splat
     {
         float x, y, z;
         float nx, ny, nz;
@@ -171,18 +171,18 @@ namespace Rendering
         float f_rest[45];
     };
 
-    struct ArraysOfGaussians
+    struct arrays_of_gaussians
     {
         std::vector<glm::vec3> pos;
         std::vector<glm::vec3> scales;
         std::vector<glm::vec4> rots;
         std::vector<glm::vec3> cols;
         std::vector<float> alphas;
-        std::vector<glm::vec3> shCoefs;
+        std::vector<glm::vec3> sh_coefs;
         std::vector<int> ids;
-        glm::vec3 hFovFocal;
+        glm::vec3 h_fov_focal;
 
-        void Init(std::vector<GaussianSplat> splats, float fov, float sWidth, float sHeight)
+        void init(std::vector<gaussian_splat> splats, float fov, float s_width, float s_height)
         {
             size_t size = splats.size();
             assert(size > 0);
@@ -203,28 +203,28 @@ namespace Rendering
                 // scales[i].z = distributionCov(gen);
                 //
                 pos.emplace_back(-glm::vec3(splats[i].x, splats[i].y, splats[i].z));
-                scales.emplace_back(UTIL::M_Exp(glm::vec3(splats[i].scale_0, splats[i].scale_1, splats[i].scale_2)));
+                scales.emplace_back(util::m_exp(glm::vec3(splats[i].scale_0, splats[i].scale_1, splats[i].scale_2)));
                 rots.emplace_back(
-                    -UTIL::M_NormalizeRotation(glm::vec4(splats[i].rot_0, splats[i].rot_1, splats[i].rot_2,
+                    -util::m_normalize_rotation(glm::vec4(splats[i].rot_0, splats[i].rot_1, splats[i].rot_2,
                                                          splats[i].rot_3)));
                 glm::vec3 sh = glm::vec3(splats[i].f_dc_0, splats[i].f_dc_1, splats[i].f_dc_2);
                 cols.emplace_back(sh);
-                alphas.emplace_back(UTIL::M_Sigmoid(splats[i].opacity));
+                alphas.emplace_back(util::m_sigmoid(splats[i].opacity));
                 for (int j = 0; j < 15; j += 3)
                 {
                     glm::vec3 coeff = glm::vec3(splats[i].f_rest[j * 3 + 0], splats[i].f_rest[j * 3 + 1],
                                                 splats[i].f_rest[j * 3 + 2]);
-                    shCoefs.emplace_back(coeff);
+                    sh_coefs.emplace_back(coeff);
                 }
             }
 
-            float hTanY = tan(glm::radians(fov) / 2.0);
-            float hTanX = hTanY / sWidth * sHeight;
-            float focalZ = sHeight / (2 * hTanY);
-            hFovFocal = glm::vec3(hTanX, hTanY, focalZ);
+            float h_tan_y = tan(glm::radians(fov) / 2.0);
+            float h_tan_x = h_tan_y / s_width * s_height;
+            float focal_z = s_height / (2 * h_tan_y);
+            h_fov_focal = glm::vec3(h_tan_x, h_tan_y, focal_z);
         }
 
-        std::vector<uint32_t> SortByDepth(glm::mat4 view)
+        std::vector<uint32_t> sort_by_depth(glm::mat4 view)
         {
             std::vector<uint32_t> indices(pos.size());
             std::iota(indices.begin(), indices.end(), 0);
@@ -240,20 +240,12 @@ namespace Rendering
         }
     };
 
-    struct GSConfigsPc
+    struct gs_configs_pc
     {
-        float scaleMod = 1.0;
+        float scale_mod = 1.0;
     };
 
-    struct PcHistogram
-    {
-        uint32_t g_num_elements; // == NUM_ELEMENTS
-        uint32_t g_shift; // (*)
-        uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
-        uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
-    };
-
-    struct PcRadixSort
+    struct pc_histogram
     {
         uint32_t g_num_elements; // == NUM_ELEMENTS
         uint32_t g_shift; // (*)
@@ -261,53 +253,61 @@ namespace Rendering
         uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
     };
 
-    struct PC_VoxelGrid
+    struct pc_radix_sort
+    {
+        uint32_t g_num_elements; // == NUM_ELEMENTS
+        uint32_t g_shift; // (*)
+        uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
+        uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
+    };
+
+    struct pc_voxel_grid
     {
         glm::vec3 origin = glm::vec3{0.0f, 0.0f, 0.0f};
         alignas(16) glm::uvec3 dimensions = glm::uvec3{10, 10, 10};
-        float cellSize = 0.5f;
-        uint64_t GetSize() const
+        float cell_size = 0.5f;
+        uint64_t get_size() const
         {
             return uint64_t(dimensions.x) * dimensions.y * dimensions.z;
         }
 
-        bool IsValid() const
+        bool is_valid() const
         {
             for (int axis = 0; axis < 3; ++axis)
             {
                 if (dimensions[axis] == 0 || dimensions[axis] > 4096 ||
                     !std::isfinite(origin[axis]) ||
-                    !std::isfinite(origin[axis] + float(dimensions[axis]) * cellSize))
+                    !std::isfinite(origin[axis] + float(dimensions[axis]) * cell_size))
                     return false;
             }
-            return std::isfinite(cellSize) && cellSize > 0.0f;
+            return std::isfinite(cell_size) && cell_size > 0.0f;
         }
     };
-    static_assert(offsetof(PC_VoxelGrid, dimensions) == 16);
-    static_assert(offsetof(PC_VoxelGrid, cellSize) == 28);
-    static_assert(sizeof(PC_VoxelGrid) == 32);
-    struct D_VoxelGrid
+    static_assert(offsetof(pc_voxel_grid, dimensions) == 16);
+    static_assert(offsetof(pc_voxel_grid, cell_size) == 28);
+    static_assert(sizeof(pc_voxel_grid) == 32);
+    struct d_voxel_grid
     {
-        ENGINE::Buffer* d_cells = nullptr;
+        engine::buffer* d_cells = nullptr;
     };
-    struct VoxelGrid
+    struct voxel_grid
     {
-        PC_VoxelGrid pcVoxelGrid  {};
-        D_VoxelGrid d_VoxelGrid = {};
+        pc_voxel_grid pc_voxel_grid  {};
+        d_voxel_grid d_voxel_grid = {};
         std::string name;
-        void Init(const std::string& voxel_name, ENGINE::RenderGraph* renderGraph)
+        void init(const std::string& voxel_name, engine::render_graph* render_graph)
         {
             name = "CellsBuffer_" + voxel_name;
-            d_VoxelGrid.d_cells = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+            d_voxel_grid.d_cells = render_graph->resources_manager->get_buffer(engine::resources_manager::buffer_params{
                 name, vk::BufferUsageFlagBits::eStorageBuffer,
                 {},
-                sizeof(uint32_t) * pcVoxelGrid.GetSize(),
+                sizeof(uint32_t) * pc_voxel_grid.get_size(),
                 sizeof(uint32_t), nullptr
             });
         }
 
     };
-} // namespace Rendering
+} // namespace rendering
 
 
-#endif        // RENDERINGSTRUCTS_HPP
+#endif        // RENDERER_STRUCTS_HPP

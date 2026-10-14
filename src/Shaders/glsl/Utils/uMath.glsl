@@ -7,16 +7,16 @@
 
 #define MAX_SH_COEFFS 16
 
-const float SH_C0 = 0.28209479177387814f;
-const float SH_C1 = 0.4886025119029199f;
-const float SH_C2[] = {
+const float sh_c0 = 0.28209479177387814f;
+const float sh_c1 = 0.4886025119029199f;
+const float sh_c2[] = {
 1.0925484305920792f,
 -1.0925484305920792f,
 0.31539156525252005f,
 -1.0925484305920792f,
 0.5462742152960396f
 };
-const float SH_C3[] = {
+const float sh_c3[] = {
 -0.5900435899266435f,
 2.890611442640554f,
 -0.4570457994644658f,
@@ -26,102 +26,102 @@ const float SH_C3[] = {
 -0.5900435899266435f
 };
 
-float AbsCosThetaWs(vec3 v1, vec3 v2){
+float abs_cos_theta_ws(vec3 v1, vec3 v2){
     return abs(dot(v1, v2));
 }
-float CosThetaWs(vec3 v1, vec3 v2){
+float cos_theta_ws(vec3 v1, vec3 v2){
     return dot(v1, v2);
 }
-float AbsCosThetaNs(vec3 v1){
+float abs_cos_theta_ns(vec3 v1){
     return v1.z;
 }
 
 
 //float
-float u_Lerp(float start, float end, float v){
+float u_lerp(float start, float end, float v){
     return start + v * (end - start);
 }
-float u_InvLerp(float start, float end, float v){
+float u_inv_lerp(float start, float end, float v){
     return (v - start)/ (end - start);
 }
-float u_Remap(float iStart, float iEnd, float oStart, float oEnd, float v){
-    return oStart + (oEnd - oStart) * (v - iStart)/(iEnd - iStart);
+float u_remap(float i_start, float i_end, float o_start, float o_end, float v){
+    return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
 
 //vec2
-vec2 u_Lerp(vec2 start, vec2 end, float v){
+vec2 u_lerp(vec2 start, vec2 end, float v){
     return start + v * (end - start);
 }
-vec2 u_InvLerp(vec2 start, vec2 end, float v){
+vec2 u_inv_lerp(vec2 start, vec2 end, float v){
     return (v - start)/ (end - start);
 }
-vec2 u_Remap(vec2 iStart, vec2 iEnd, vec2 oStart, vec2 oEnd, float v){
-    return oStart + (oEnd - oStart) * (v - iStart)/(iEnd - iStart);
+vec2 u_remap(vec2 i_start, vec2 i_end, vec2 o_start, vec2 o_end, float v){
+    return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
-vec2 u_Lerp(vec2 start, vec2 end, vec2 v){
+vec2 u_lerp(vec2 start, vec2 end, vec2 v){
     return start + v * (end - start);
 }
-vec2 u_InvLerp(vec2 start, vec2 end, vec2 v){
+vec2 u_inv_lerp(vec2 start, vec2 end, vec2 v){
     return (v - start)/ (end - start);
 }
-vec2 u_Remap(vec2 iStart, vec2 iEnd, vec2 oStart, vec2 oEnd, vec2 v){
-    return oStart + (oEnd - oStart) * (v - iStart)/(iEnd - iStart);
+vec2 u_remap(vec2 i_start, vec2 i_end, vec2 o_start, vec2 o_end, vec2 v){
+    return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
 
 //vec3
-vec3 u_Lerp(vec3 start, vec3 end, float v){
+vec3 u_lerp(vec3 start, vec3 end, float v){
     return start + v * (end - start);
 }
-vec3 u_InvLerp(vec3 start, vec3 end, float v){
+vec3 u_inv_lerp(vec3 start, vec3 end, float v){
     return (v - start)/ (end - start);
 }
-vec3 u_Remap(vec3 iStart, vec3 iEnd, vec3 oStart, vec3 oEnd, float v){
-    return oStart + (oEnd - oStart) * (v - iStart)/(iEnd - iStart);
+vec3 u_remap(vec3 i_start, vec3 i_end, vec3 o_start, vec3 o_end, float v){
+    return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
-vec3 u_Lerp(vec3 start, vec3 end, vec3 v){
+vec3 u_lerp(vec3 start, vec3 end, vec3 v){
     return start + v * (end - start);
 }
-vec3 u_InvLerp(vec3 start, vec3 end, vec3 v){
+vec3 u_inv_lerp(vec3 start, vec3 end, vec3 v){
     return (v - start)/ (end - start);
 }
-vec3 u_Remap(vec3 iStart, vec3 iEnd, vec3 oStart, vec3 oEnd, vec3 v){
-    return oStart + (oEnd - oStart) * (v - iStart)/(iEnd - iStart);
+vec3 u_remap(vec3 i_start, vec3 i_end, vec3 o_start, vec3 o_end, vec3 v){
+    return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
 
-float u_Min(float v1, float v2){
+float u_min(float v1, float v2){
     return min(v1, v2);
 }
-vec2 u_Min(vec2 v1, vec2 v2){
+vec2 u_min(vec2 v1, vec2 v2){
     return vec2(min(v1.x, v2.x), min(v1.y, v2.y));
 }
-vec3 u_Min(vec3 v1,vec3 v2){
+vec3 u_min(vec3 v1,vec3 v2){
     return vec3(min(v1.x, v2.x), min(v1.y, v2.y), min(v1.z, v2.z));
 }
 
-float u_Max(float v1, float v2){
+float u_max(float v1, float v2){
     return max(v1, v2);
 }
-vec2 u_Max(vec2 v1, vec2 v2){
+vec2 u_max(vec2 v1, vec2 v2){
     return vec2(max(v1.x, v2.x), max(v1.y, v2.y));
 }
-vec3 u_Max(vec3 v1,vec3 v2){
+vec3 u_max(vec3 v1,vec3 v2){
     return vec3(max(v1.x, v2.x), max(v1.y, v2.y), max(v1.z, v2.z));
 }
 
-vec3 u_HSLToRGB(float h, float s, float l) {
+vec3 u_hsl_to_rgb(float h, float s, float l) {
     float r, g, b;
 
     float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
     float p = 2.0 * l - q;
 
     float hk = mod(h, 1.0);
-    float tR = hk + 1.0 / 3.0;
-    float tG = hk;
-    float tB = hk - 1.0 / 3.0;
+    float t_r = hk + 1.0 / 3.0;
+    float t_g = hk;
+    float t_b = hk - 1.0 / 3.0;
 
-    r = tR < 0.0 ? tR + 1.0 : (tR > 1.0 ? tR - 1.0 : tR);
-    g = tG < 0.0 ? tG + 1.0 : (tG > 1.0 ? tG - 1.0 : tG);
-    b = tB < 0.0 ? tB + 1.0 : (tB > 1.0 ? tB - 1.0 : tB);
+    r = t_r < 0.0 ? t_r + 1.0 : (t_r > 1.0 ? t_r - 1.0 : t_r);
+    g = t_g < 0.0 ? t_g + 1.0 : (t_g > 1.0 ? t_g - 1.0 : t_g);
+    b = t_b < 0.0 ? t_b + 1.0 : (t_b > 1.0 ? t_b - 1.0 : t_b);
 
     r = r < 1.0 / 6.0 ? p + (q - p) * 6.0 * r : (r < 1.0 / 2.0 ? q : (r < 2.0 / 3.0 ? p + (q - p) * (2.0 / 3.0 - r) * 6.0 : p));
     g = g < 1.0 / 6.0 ? p + (q - p) * 6.0 * g : (g < 1.0 / 2.0 ? q : (g < 2.0 / 3.0 ? p + (q - p) * (2.0 / 3.0 - g) * 6.0 : p));
@@ -131,7 +131,7 @@ vec3 u_HSLToRGB(float h, float s, float l) {
 }
 
 //z up in tangent space
-void u_GetOrthoBase(vec3 n, out vec3 t, out vec3 b){ 
+void u_get_ortho_base(vec3 n, out vec3 t, out vec3 b){
     if(n.z < 0.99){
         vec3 arbitrary = vec3(0.0, 0.0, 1.0);
         t = normalize(cross(n, arbitrary));
@@ -142,7 +142,7 @@ void u_GetOrthoBase(vec3 n, out vec3 t, out vec3 b){
         b = normalize(cross(n, t));
     }
 }
-vec4 u_GetPlane(vec3 p0, vec3 p1, vec3 p2){
+vec4 u_get_plane(vec3 p0, vec3 p1, vec3 p2){
     vec3 v1 = p1 - p0;
     vec3 v2 = p2 - p0;
 
@@ -153,89 +153,89 @@ vec4 u_GetPlane(vec3 p0, vec3 p1, vec3 p2){
     return plane;
 }
 
-float u_SDF_Plane(vec3 pos, vec3 n, float dToPlane){
-    return dot(pos, n) + dToPlane;
+float u_sdf_plane(vec3 pos, vec3 n, float d_to_plane){
+    return dot(pos, n) + d_to_plane;
 }
 
-bool u_SphereInsidePlane(vec3 pos, float r, vec3 n, float dToPlane){
-    bool behindPlane = u_SDF_Plane(pos, n, dToPlane) < -r;
-    return !behindPlane;
+bool u_sphere_inside_plane(vec3 pos, float r, vec3 n, float d_to_plane){
+    bool behind_plane = u_sdf_plane(pos, n, d_to_plane) < -r;
+    return !behind_plane;
 }
-vec3 u_LineIntersectionToZPlane(vec3 A, vec3 B, float zDistance){
+vec3 u_line_intersection_to_z_plane(vec3 a, vec3 b, float z_distance){
     vec3 normal = vec3(0.0, 0.0, 1.0);
-    vec3 ab =  B - A;
-    float t = (zDistance - dot(normal, A)) / dot(normal, ab);
-    vec3 result = A + t * ab;
+    vec3 ab =  b - a;
+    float t = (z_distance - dot(normal, a)) / dot(normal, ab);
+    vec3 result = a + t * ab;
     return result;
 }
 
-bool u_AABB(vec2 minAABB, vec2 maxAABB, vec2 pos){
-    bool xCheck = bool(pos.x > minAABB.x && pos.x < maxAABB.x);
-    bool yCheck = bool(pos.y > minAABB.y && pos.y < maxAABB.y);
-    return xCheck && yCheck;
+bool u_aabb(vec2 min_aabb, vec2 max_aabb, vec2 pos){
+    bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
+    bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
+    return x_check && y_check;
 }
-bool u_AABB(vec3 minAABB, vec3 maxAABB, vec3 pos){
-    bool xCheck = bool(pos.x > minAABB.x && pos.x < maxAABB.x);
-    bool yCheck = bool(pos.y > minAABB.y && pos.y < maxAABB.y);
-    bool zCheck = bool(pos.z > minAABB.z && pos.z < maxAABB.z);
-    return xCheck && yCheck;
-}
-
-bool u_AABB_Sphere(vec2 min, vec2 max, vec2 spherePos, float r){
-
-    float closestX = clamp(spherePos.x, min.x, max.x);
-    float closestY = clamp(spherePos.y, min.y, max.y);
-
-    float dx = spherePos.x - closestX;
-    float dy = spherePos.y - closestY;
-
-    float distanceSqr = dx * dx + dy * dy;
-
-    return distanceSqr < r * r;
-}
-bool u_AABB_Sphere(vec3 min, vec3 max, vec3 spherePos, float r){
-
-    float closestX = clamp(spherePos.x, min.x, max.x);
-    float closestY = clamp(spherePos.y, min.y, max.y);
-    float closestZ = clamp(spherePos.z, min.z, max.z);
-
-    float dx = spherePos.x - closestX;
-    float dy = spherePos.y - closestY;
-    float dz = spherePos.z - closestZ;
-
-    float distanceSqr = dx * dx + dy * dy + dz * dz ;
-
-    return distanceSqr <= (r * r);
+bool u_aabb(vec3 min_aabb, vec3 max_aabb, vec3 pos){
+    bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
+    bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
+    bool z_check = bool(pos.z > min_aabb.z && pos.z < max_aabb.z);
+    return x_check && y_check;
 }
 
+bool u_aabb_sphere(vec2 min, vec2 max, vec2 sphere_pos, float r){
 
-float u_SDF_Sphere(vec3 spherePos, vec3 pos){
-    return distance(spherePos, pos);
+    float closest_x = clamp(sphere_pos.x, min.x, max.x);
+    float closest_y = clamp(sphere_pos.y, min.y, max.y);
+
+    float dx = sphere_pos.x - closest_x;
+    float dy = sphere_pos.y - closest_y;
+
+    float distance_sqr = dx * dx + dy * dy;
+
+    return distance_sqr < r * r;
+}
+bool u_aabb_sphere(vec3 min, vec3 max, vec3 sphere_pos, float r){
+
+    float closest_x = clamp(sphere_pos.x, min.x, max.x);
+    float closest_y = clamp(sphere_pos.y, min.y, max.y);
+    float closest_z = clamp(sphere_pos.z, min.z, max.z);
+
+    float dx = sphere_pos.x - closest_x;
+    float dy = sphere_pos.y - closest_y;
+    float dz = sphere_pos.z - closest_z;
+
+    float distance_sqr = dx * dx + dy * dy + dz * dz ;
+
+    return distance_sqr <= (r * r);
 }
 
 
-vec3 u_compute_sh(vec3 rayDir,in vec3 shCoef[MAX_SH_COEFFS], int bandSize) {
-    float x = rayDir.x, y = rayDir.y, z = rayDir.z;
+float u_sdf_sphere(vec3 sphere_pos, vec3 pos){
+    return distance(sphere_pos, pos);
+}
 
-    vec3 c = SH_C0 * shCoef[0];
 
-    c -= SH_C1 * shCoef[1] * y;
-    c += SH_C1 * shCoef[2] * z;
-    c -= SH_C1 * shCoef[3] * x;
-    if (bandSize >= 2){
-        c += SH_C2[0] * shCoef[4] * x * y;
-        c += SH_C2[1] * shCoef[5] * y * z;
-        c += SH_C2[2] * shCoef[6] * (2.0 * z * z - x * x - y * y);
-        c += SH_C2[3] * shCoef[7] * z * x;
-        c += SH_C2[4] * shCoef[8] * (x * x - y * y);
-        if(bandSize >= 3){
-            c +=SH_C3[0] * shCoef[9] * (3.0 * x * x - y * y) * y;
-            c +=SH_C3[1] * shCoef[10] * x * y * z;
-            c +=SH_C3[2] * shCoef[11] * (4.0 * z * z - x * x - y * y) * y;
-            c +=SH_C3[3] * shCoef[12] * z * (2.0 * z * z - 3.0 * x * x - 3.0 * y * y);
-            c +=SH_C3[4] * shCoef[13] * x * (4.0 * z * z - x * x - y * y);
-            c +=SH_C3[5] * shCoef[14] * (x * x - y * y) * z;
-            c +=SH_C3[6] * shCoef[15] * x * (x * x - 3.0 * y * y);
+vec3 u_compute_sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
+    float x = ray_dir.x, y = ray_dir.y, z = ray_dir.z;
+
+    vec3 c = sh_c0 * sh_coef[0];
+
+    c -= sh_c1 * sh_coef[1] * y;
+    c += sh_c1 * sh_coef[2] * z;
+    c -= sh_c1 * sh_coef[3] * x;
+    if (band_size >= 2){
+        c += sh_c2[0] * sh_coef[4] * x * y;
+        c += sh_c2[1] * sh_coef[5] * y * z;
+        c += sh_c2[2] * sh_coef[6] * (2.0 * z * z - x * x - y * y);
+        c += sh_c2[3] * sh_coef[7] * z * x;
+        c += sh_c2[4] * sh_coef[8] * (x * x - y * y);
+        if(band_size >= 3){
+            c +=sh_c3[0] * sh_coef[9] * (3.0 * x * x - y * y) * y;
+            c +=sh_c3[1] * sh_coef[10] * x * y * z;
+            c +=sh_c3[2] * sh_coef[11] * (4.0 * z * z - x * x - y * y) * y;
+            c +=sh_c3[3] * sh_coef[12] * z * (2.0 * z * z - 3.0 * x * x - 3.0 * y * y);
+            c +=sh_c3[4] * sh_coef[13] * x * (4.0 * z * z - x * x - y * y);
+            c +=sh_c3[5] * sh_coef[14] * (x * x - y * y) * z;
+            c +=sh_c3[6] * sh_coef[15] * x * (x * x - 3.0 * y * y);
         }
     }
     c += 0.5;

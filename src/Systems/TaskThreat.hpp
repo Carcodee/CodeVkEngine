@@ -3,72 +3,72 @@
 // Created by carlo on 2024-12-01.
 //
 
-#ifndef TASKTHREAT_HPP
-#define TASKTHREAT_HPP
-namespace SYSTEMS
+#ifndef TASK_THREAT_HPP
+#define TASK_THREAT_HPP
+namespace systems
 {
-class TaskThread
+class task_thread
 {
   public:
-	TaskThread() = default;
-	~TaskThread()
+	task_thread() = default;
+	~task_thread()
 	{
-		Stop();
+		stop();
 	};
 
-	TaskThread(const TaskThread &)            = delete;
-	TaskThread &operator=(const TaskThread &) = delete;
-	TaskThread(TaskThread &&)                 = default;
-	TaskThread &operator=(TaskThread &&)      = default;
+	task_thread(const task_thread &)            = delete;
+	task_thread &operator=(const task_thread &) = delete;
+	task_thread(task_thread &&)                 = default;
+	task_thread &operator=(task_thread &&)      = default;
 
-	void Run()
+	void run()
 	{
 		while (running)
 		{
 			// std::cout << "Running\n";
 			std::function<void()> task;
 			{
-				std::unique_lock<std::mutex> lock(queueMutex);
-				conditionVariable.wait(lock, [this]() { return !taskQueue.empty() || !running; });
-				if (taskQueue.empty() || !running)
+				std::unique_lock<std::mutex> lock(queue_mutex);
+				condition_variable.wait(lock, [this]() { return !task_queue.empty() || !running; });
+				if (task_queue.empty() || !running)
 				{
 					std::cout << "TaskQueue was empty and it shouldn't be!\n";
 					return;
 				}
-				task = std::move(taskQueue.front());
-				taskQueue.pop();
+				task = std::move(task_queue.front());
+				task_queue.pop();
 			}
 			task();
 		}
 	}
-	void Start()
+	void start()
 	{
-		assetThreat = std::thread(&TaskThread::Run, this);
+		asset_threat = std::thread(&task_thread::run, this);
 	}
-	void Stop()
+	void stop()
 	{
 		running = false;
-		conditionVariable.notify_one();
-		if (assetThreat.joinable())
+		condition_variable.notify_one();
+		if (asset_threat.joinable())
 		{
-			assetThreat.join();
+			asset_threat.join();
 		}
 	}
-	void AddPreRenderingTask(std::function<void()> task)
+	void add_pre_rendering_task(std::function<void()> task)
 	{
 		{
-			std::lock_guard<std::mutex> lockGuard(queueMutex);
-			taskQueue.push(task);
+			std::lock_guard<std::mutex> lock_guard(queue_mutex);
+			task_queue.push(task);
 		}
-		conditionVariable.notify_one();
+		condition_variable.notify_one();
 	}
 	std::atomic<bool>                 running           = true;
-	std::queue<std::function<void()>> taskQueue         = {};
-	std::thread                       assetThreat       = {};
-	std::mutex                        queueMutex        = {};
-	std::condition_variable           conditionVariable = {};
+	std::queue<std::function<void()>> task_queue         = {};
+	std::thread                       asset_threat       = {};
+	std::mutex                        queue_mutex        = {};
+	std::condition_variable           condition_variable = {};
 };
 
-}        // namespace SYSTEMS
+}        // namespace systems
 
-#endif        // TASKTHREAT_HPP
+#endif        // TASK_THREAT_HPP

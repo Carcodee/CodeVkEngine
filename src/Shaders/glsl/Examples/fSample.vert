@@ -6,23 +6,23 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec3 tang;
 layout (location = 3) in vec2 uv;
 
-layout (location = 0) out vec2 textCoord;
+layout (location = 0) out vec2 text_coord;
 
-layout(push_constant)uniform pushConstants{
+layout(push_constant)uniform push_constants{
     mat4 model;
-    mat4 projView;
+    mat4 proj_view;
 }pc;
 
-struct CameraSSBO{
+struct camera_ssbo{
     mat4 model;
-    mat4 projView;
+    mat4 proj_view;
 };
 
-layout(set = 0, binding = 5, scalar) buffer CameraBuffer{
-    CameraSSBO [] camerasSSBO;
+layout(set = 0, binding = 5, scalar) buffer camera_buffer{
+    camera_ssbo [] cameras_ssbo;
 };
 
 void main() {
-    gl_Position = pc.projView * pc.model * vec4(pos, 1.0f); 
-    textCoord = uv;
+    gl_Position = pc.proj_view * pc.model * vec4(pos, 1.0f);
+    text_coord = uv;
 }

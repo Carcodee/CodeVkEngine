@@ -5,75 +5,75 @@
 #ifndef SAMPLER_HPP
 #define SAMPLER_HPP
 
-namespace ENGINE
+namespace engine
 {
-    class Sampler
+    class sampler
     {
     public:
 
-        Sampler(vk::Device logicalDevice, vk::SamplerAddressMode addressMode, vk::Filter minMagFilterType,
-                vk::SamplerMipmapMode mipFilterType, bool useComparison = false,
-                vk::BorderColor borderColor = vk::BorderColor())
+        sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+                vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
+                vk::BorderColor border_color = vk::BorderColor())
         {
-            this->addressMode = addressMode;
-            this->minMagFilterType = minMagFilterType;
-            this->mipFilterType = mipFilterType;
-            this->useComparison = useComparison;
-            this->borderColor = borderColor;
-            auto samplerCreateInfo = vk::SamplerCreateInfo()
-                                     .setAddressModeU(addressMode)
-                                     .setAddressModeV(addressMode)
-                                     .setAddressModeW(addressMode)
+            this->address_mode = address_mode;
+            this->min_mag_filter_type = min_mag_filter_type;
+            this->mip_filter_type = mip_filter_type;
+            this->use_comparison = use_comparison;
+            this->border_color = border_color;
+            auto sampler_create_info = vk::SamplerCreateInfo()
+                                     .setAddressModeU(address_mode)
+                                     .setAddressModeV(address_mode)
+                                     .setAddressModeW(address_mode)
                                      .setAnisotropyEnable(false)
-                                     .setCompareEnable(useComparison)
-                                     .setCompareOp(useComparison ? vk::CompareOp::eLessOrEqual : vk::CompareOp::eAlways)
-                                     .setMagFilter(minMagFilterType)
-                                     .setMinFilter(minMagFilterType)
+                                     .setCompareEnable(use_comparison)
+                                     .setCompareOp(use_comparison ? vk::CompareOp::eLessOrEqual : vk::CompareOp::eAlways)
+                                     .setMagFilter(min_mag_filter_type)
+                                     .setMinFilter(min_mag_filter_type)
                                      .setMaxLod(1e7f)
                                      .setMinLod(0.0f)
-                                     .setMipmapMode(mipFilterType)
+                                     .setMipmapMode(mip_filter_type)
                                      .setUnnormalizedCoordinates(false)
-                                     .setBorderColor(borderColor);
+                                     .setBorderColor(border_color);
 
-            samplerHandle = logicalDevice.createSamplerUnique(samplerCreateInfo);
+            sampler_handle = logical_device.createSamplerUnique(sampler_create_info);
         }
-        vk::SamplerAddressMode addressMode;
-        vk::Filter minMagFilterType;
-        vk::SamplerMipmapMode mipFilterType;
-        bool useComparison;
-        vk::BorderColor borderColor;
-        vk::UniqueSampler samplerHandle;
+        vk::SamplerAddressMode address_mode;
+        vk::Filter min_mag_filter_type;
+        vk::SamplerMipmapMode mip_filter_type;
+        bool use_comparison;
+        vk::BorderColor border_color;
+        vk::UniqueSampler sampler_handle;
     };
-    class SamplerPool
+    class sampler_pool
     {
     public:
-        Sampler* AddSampler(vk::Device logicalDevice, vk::SamplerAddressMode addressMode, vk::Filter minMagFilterType,
-                vk::SamplerMipmapMode mipFilterType, bool useComparison = false,
-                vk::BorderColor borderColor = vk::BorderColor())
+        engine::sampler* add_sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+                vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
+                vk::BorderColor border_color = vk::BorderColor())
         {
-            for (auto& sampler : samplerPool)
+            for (auto& sampler : sampler_pool)
             {
-                if (sampler->addressMode == addressMode && sampler->minMagFilterType == minMagFilterType &&sampler-> 
-                mipFilterType == mipFilterType && sampler->useComparison == useComparison && sampler->borderColor
-                == borderColor)
+                if (sampler->address_mode == address_mode && sampler->min_mag_filter_type == min_mag_filter_type &&sampler->
+                mip_filter_type == mip_filter_type && sampler->use_comparison == use_comparison && sampler->border_color
+                == border_color)
                 {
                       
                     return sampler.get();
                 }
             }
-            std::unique_ptr<Sampler> sampler = std::make_unique<Sampler>(logicalDevice ,addressMode, minMagFilterType, mipFilterType, useComparison, borderColor);
-            samplerPool.emplace_back(std::move(sampler));
-            return samplerPool.front().get();
+            std::unique_ptr<engine::sampler> sampler = std::make_unique<engine::sampler>(logical_device ,address_mode, min_mag_filter_type, mip_filter_type, use_comparison, border_color);
+            sampler_pool.emplace_back(std::move(sampler));
+            return sampler_pool.front().get();
         }
-        Sampler* GetSampler(vk::SamplerAddressMode addressMode, vk::Filter minMagFilterType,
-                vk::SamplerMipmapMode mipFilterType, bool useComparison = false,
-                vk::BorderColor borderColor = vk::BorderColor())
+        engine::sampler* get_sampler(vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+                vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
+                vk::BorderColor border_color = vk::BorderColor())
         {
-             for (auto& sampler : samplerPool)
+             for (auto& sampler : sampler_pool)
             {
-                if (sampler->addressMode == addressMode && sampler->minMagFilterType == minMagFilterType &&sampler-> 
-                mipFilterType == mipFilterType && sampler->useComparison == useComparison && sampler->borderColor
-                == borderColor)
+                if (sampler->address_mode == address_mode && sampler->min_mag_filter_type == min_mag_filter_type &&sampler->
+                mip_filter_type == mip_filter_type && sampler->use_comparison == use_comparison && sampler->border_color
+                == border_color)
                 {
                     return sampler.get();
                 }
@@ -83,7 +83,7 @@ namespace ENGINE
         }
 
         
-        std::vector<std::unique_ptr<Sampler>> samplerPool;
+        std::vector<std::unique_ptr<engine::sampler>> sampler_pool;
         
     };
 }

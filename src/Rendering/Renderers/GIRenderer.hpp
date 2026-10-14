@@ -3,95 +3,95 @@
 // Created by carlo on 2025-03-26.
 //
 
-#ifndef GIRENDERER_HPP
-#define GIRENDERER_HPP
+#ifndef GI_RENDERER_HPP
+#define GI_RENDERER_HPP
 
-namespace Rendering
+namespace rendering
 {
-class GIRenderer : public BaseRenderer
+class gi_renderer : public base_renderer
 {
   public:
-	GIRenderer(Core *core, WindowProvider *windowProvider)
+	gi_renderer(engine::core *core, ::window_provider *window_provider)
 	{
 		this->core           = core;
-		this->renderGraph    = core->renderGraphRef;
-		this->windowProvider = windowProvider;
+		this->render_graph    = core->render_graph_ref;
+		this->window_provider = window_provider;
 
-		CreateResources();
-		CreateBuffers();
-		CreatePipelines();
+		create_resources();
+		create_buffers();
+		create_pipelines();
 	}
 
-	void CreateResources()
+	void create_resources()
 	{
 	}
 
-	void CreateBuffers()
+	void create_buffers()
 	{
-		quadVertBuffer  = ResourcesManager::GetInstance()->GetStagedBuffFromName("quad_default")->deviceBuffer.get();
-		quadIndexBuffer = ResourcesManager::GetInstance()->GetStagedBuffFromName("quad_index_default")->deviceBuffer.get();
+		quad_vert_buffer  = resources_manager::get_instance()->get_staged_buff_from_name("quad_default")->device_buffer.get();
+		quad_index_buffer = resources_manager::get_instance()->get_staged_buff_from_name("quad_index_default")->device_buffer.get();
 	}
 
-	void CreatePipelines()
+	void create_pipelines()
 	{
-		AttachmentInfo colInfo = GetColorAttachmentInfo(BlendConfigs::B_OPAQUE,
-		    glm::vec4(0.0f), renderGraph->core->swapchainRef->GetFormat());
-		std::string shaderPath = SYSTEMS::OS::GetInstance()->GetShadersPath();
+		engine::attachment_info col_info = get_color_attachment_info(blend_configs::b_opaque,
+		    glm::vec4(0.0f), render_graph->core->swapchain_ref->get_format());
+		std::string shader_path = systems::os::get_instance()->get_shaders_path();
 
-		// auto imageInfo = Image::CreateInfo2d(windowProvider->GetWindowSize(), 1, 1, ENGINE::g_32bFormat,ENGINE::colorImageUsage);
-		// ImageView* attachmentOutput = renderGraph->resourcesManager->GetImage("shOutput", imageInfo, 1, 1);
+		// auto image_info = image::create_info2d(window_provider->get_window_size(), 1, 1, engine::g_32b_format,engine::color_image_usage);
+		// image_view* attachment_output = render_graph->resources_manager->get_image("shOutput", image_info, 1, 1);
 
-		auto renderNode = renderGraph->GetTemplateNode_DF(
-		    shPassName, "shView.slang", C_GLSL);
-		renderNode->G_SetFramebufferSize(windowProvider->GetWindowSize());
-		renderNode->G_AddColorAttachmentOutput(0, colInfo);
+		auto render_node = render_graph->get_template_node_df(
+		    sh_pass_name, "shView.slang", c_glsl);
+		render_node->g_set_framebuffer_size(window_provider->get_window_size());
+		render_node->g_add_color_attachment_output(0, col_info);
 
-		renderNode->BuildRenderGraphNode();
+		render_node->build_render_graph_node();
 	}
 
-	void RecreateSwapChainResources() override
+	void recreate_swap_chain_resources() override
 	{
 	}
 
-	void SetRenderOperation() override
+	void set_render_operation() override
 	{
-		auto taskOp = new std::function<void()>([this] {
-			auto renderNode     = renderGraph->GetNode(shPassName);
-			auto currBackBuffer = renderGraph->currentBackBuffer;
-			renderNode->G_SetColorImageAttachmentBinding(0, currBackBuffer);
+		auto task_op = new std::function<void()>([this] {
+			auto render_node     = render_graph->get_node(sh_pass_name);
+			auto curr_back_buffer = render_graph->current_back_buffer;
+			render_node->g_set_color_image_attachment_binding(0, curr_back_buffer);
 		});
 
-		auto shRenderOp = new std::function<void()>(
+		auto sh_render_op = new std::function<void()>(
 		    [this]() {
-			    auto &renderNode = renderGraph->renderNodes.at(shPassName);
+			    auto &render_node = render_graph->render_nodes.at(sh_pass_name);
 			    vk::DeviceSize offset = 0;
-			    renderNode->GetCurrCmd().bindVertexBuffers(
+			    render_node->get_curr_cmd().bindVertexBuffers(
 			        0, 1,
-			        &renderGraph->resourcesManager->GetStagedBuffFromName("quad_default")->deviceBuffer->bufferHandle.get(),
+			        &render_graph->resources_manager->get_staged_buff_from_name("quad_default")->device_buffer->buffer_handle.get(),
 			        &offset);
-			    renderNode->GetCurrCmd().bindIndexBuffer(
-			        renderGraph->resourcesManager->GetStagedBuffFromName("quad_index_default")->deviceBuffer->bufferHandle.get(), 0, vk::IndexType::eUint32);
-			    renderNode->GetCurrCmd().drawIndexed(
-			        Vertex2D::GetQuadIndices().size(), 1, 0, 0, 0);
+			    render_node->get_curr_cmd().bindIndexBuffer(
+			        render_graph->resources_manager->get_staged_buff_from_name("quad_index_default")->device_buffer->buffer_handle.get(), 0, vk::IndexType::eUint32);
+			    render_node->get_curr_cmd().drawIndexed(
+			        vertex_2d::get_quad_indices().size(), 1, 0, 0, 0);
 		    });
-		renderGraph->GetNode(shPassName)->AddPreRenderingTask(taskOp);
-		renderGraph->GetNode(shPassName)->G_SetRenderOperation(shRenderOp);
+		render_graph->get_node(sh_pass_name)->add_pre_rendering_task(task_op);
+		render_graph->get_node(sh_pass_name)->g_set_render_operation(sh_render_op);
 	}
 
-	void ReloadShaders() override
+	void reload_shaders() override
 	{
 	}
 
-	std::string shPassName = "SHPass";
+	std::string sh_pass_name = "SHPass";
 
-	Core           *core;
-	RenderGraph    *renderGraph;
-	WindowProvider *windowProvider;
+	engine::core           *core;
+	engine::render_graph    *render_graph;
+	::window_provider *window_provider;
 
-	ImageView *colAttachmentView;
-	Buffer    *quadVertBuffer;
-	Buffer    *quadIndexBuffer;
+	engine::image_view *col_attachment_view;
+	engine::buffer    *quad_vert_buffer;
+	engine::buffer    *quad_index_buffer;
 };
-}        // namespace Rendering
+}        // namespace rendering
 
-#endif        // GIRENDERER_HPP
+#endif        // GI_RENDERER_HPP

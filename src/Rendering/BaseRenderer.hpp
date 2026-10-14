@@ -2,19 +2,19 @@
 // Created by carlo on 2024-10-07.
 //
 
-#ifndef BASERENDERER_HPP
-#define BASERENDERER_HPP
+#ifndef BASE_RENDERER_HPP
+#define BASE_RENDERER_HPP
 
-namespace Rendering
+namespace rendering
 {
-class BaseRenderer
+class base_renderer
 {
   public:
-	virtual ~BaseRenderer()                   = default;
-	virtual void RecreateSwapChainResources() = 0;
-	virtual void SetRenderOperation()         = 0;
+	virtual ~base_renderer()                   = default;
+	virtual void recreate_swap_chain_resources() = 0;
+	virtual void set_render_operation()         = 0;
 	// maybe remove this
-	virtual void ReloadShaders() = 0;
+	virtual void reload_shaders() = 0;
 };
-}        // namespace Rendering
-#endif        // BASERENDERER_HPP
+}        // namespace rendering
+#endif        // BASE_RENDERER_HPP

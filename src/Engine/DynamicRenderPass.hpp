@@ -2,137 +2,137 @@
 // Created by carlo on 2024-09-30.
 //
 
-#ifndef DYNAMICRENDERPASS_HPP
-#define DYNAMICRENDERPASS_HPP
+#ifndef DYNAMIC_RENDER_PASS_HPP
+#define DYNAMIC_RENDER_PASS_HPP
 
-namespace ENGINE
+namespace engine
 {
 
 // TODO: set base configs
-static AttachmentInfo GetColorAttachmentInfo(BlendConfigs blendConfigs, glm::vec4 clearCol = glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
-                                             vk::Format            format  = g_32bFormat,
-                                             vk::AttachmentLoadOp  loadOp  = vk::AttachmentLoadOp::eClear,
-                                             vk::AttachmentStoreOp storeOp = vk::AttachmentStoreOp::eStore)
+static engine::attachment_info get_color_attachment_info(blend_configs blend_configs, glm::vec4 clear_col = glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
+                                             vk::Format            format  = g_32b_format,
+                                             vk::AttachmentLoadOp  load_op  = vk::AttachmentLoadOp::eClear,
+                                             vk::AttachmentStoreOp store_op = vk::AttachmentStoreOp::eStore)
 {
-	AttachmentInfo attachmentInfo;
-	attachmentInfo.blendConfigs = blendConfigs;
-	attachmentInfo.attachmentInfo = vk::RenderingAttachmentInfo()
+	engine::attachment_info vk_attachment_info;
+	vk_attachment_info.blend_configs = blend_configs;
+	vk_attachment_info.vk_attachment_info = vk::RenderingAttachmentInfo()
 	                                    .setImageView(nullptr)
 	                                    .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
-	                                    .setLoadOp(loadOp)
-	                                    .setStoreOp(storeOp)
+	                                    .setLoadOp(load_op)
+	                                    .setStoreOp(store_op)
 	                                    .setClearValue(
 	                                        vk::ClearValue(vk::ClearColorValue(std::array<float, 4>{
-	                                            clearCol.x, clearCol.y, clearCol.z, clearCol.w})));
+	                                            clear_col.x, clear_col.y, clear_col.z, clear_col.w})));
 
-	attachmentInfo.format = format;
+	vk_attachment_info.format = format;
 
-	return attachmentInfo;
+	return vk_attachment_info;
 }
 
-static AttachmentInfo GetDepthAttachmentInfo(vk::Format format = vk::Format::eD32Sfloat)
+static engine::attachment_info get_depth_attachment_info(vk::Format format = vk::Format::eD32Sfloat)
 {
-	AttachmentInfo attachmentInfo;
-	attachmentInfo.attachmentInfo = vk::RenderingAttachmentInfo()
+	engine::attachment_info vk_attachment_info;
+	vk_attachment_info.vk_attachment_info = vk::RenderingAttachmentInfo()
 	                                    .setImageView(nullptr)
 	                                    .setImageLayout(vk::ImageLayout::eDepthAttachmentOptimal)
 	                                    .setLoadOp(vk::AttachmentLoadOp::eClear)
 	                                    .setStoreOp(vk::AttachmentStoreOp::eStore)
 	                                    .setClearValue(vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)));
-	attachmentInfo.format = format;
+	vk_attachment_info.format = format;
 
-	return attachmentInfo;
+	return vk_attachment_info;
 }
 
-struct DynamicRenderPass
+struct dynamic_render_pass
 {
   public:
-	void SetPipelineRenderingInfo(uint32_t                colorAttachmentCount,
-	                              std::vector<vk::Format> colorFormats,
-	                              vk::Format              depthFormat = vk::Format::eUndefined)
+	void set_pipeline_rendering_info(uint32_t                color_attachment_count,
+	                              std::vector<vk::Format> color_formats,
+	                              vk::Format              depth_format = vk::Format::eUndefined)
 	{
-		if (colorFormats.empty())
+		if (color_formats.empty())
 		{
 			std::cout << "Warning (Dynamic Render Pass): no color formats were set\n";
-			colorFormats.push_back(vk::Format::eUndefined);
+			color_formats.push_back(vk::Format::eUndefined);
 		}
-		this->colorFormats                = colorFormats;
-		this->depthFormat                 = depthFormat;
-		this->expectedColorAttachmentSize = colorAttachmentCount;
-		pipelineRenderingCreateInfo       = vk::PipelineRenderingCreateInfo()
-		                                  .setColorAttachmentCount(colorAttachmentCount)
-		                                  .setPColorAttachmentFormats(this->colorFormats.data())
-		                                  .setDepthAttachmentFormat(this->depthFormat)
+		this->color_formats                = color_formats;
+		this->depth_format                 = depth_format;
+		this->expected_color_attachment_size = color_attachment_count;
+		pipeline_rendering_create_info       = vk::PipelineRenderingCreateInfo()
+		                                  .setColorAttachmentCount(color_attachment_count)
+		                                  .setPColorAttachmentFormats(this->color_formats.data())
+		                                  .setDepthAttachmentFormat(this->depth_format)
 		                                  .setStencilAttachmentFormat(vk::Format::eUndefined);
 	}
-	void SetRenderInfo(std::vector<vk::RenderingAttachmentInfo> &colorAttachments,
-	                   glm::uvec2 framebufferSize, vk::RenderingAttachmentInfo *depthAttachment)
+	void set_render_info(std::vector<vk::RenderingAttachmentInfo> &color_attachments,
+	                   glm::uvec2 framebuffer_size, vk::RenderingAttachmentInfo *depth_attachment)
 	{
-		for (auto &element : colorAttachments)
+		for (auto &element : color_attachments)
 		{
 			assert(element.imageView != nullptr && "Image view was not set before setting the render info");
 		}
 		assert(
-		    colorAttachments.size() == expectedColorAttachmentSize &&
+		    color_attachments.size() == expected_color_attachment_size &&
 		    "Color attachment must be the same as the one indicated in the pipeline creation");
-		renderInfo = vk::RenderingInfo()
-		                 .setRenderArea({{0, 0}, {framebufferSize.x, framebufferSize.y}})
+		render_info = vk::RenderingInfo()
+		                 .setRenderArea({{0, 0}, {framebuffer_size.x, framebuffer_size.y}})
 		                 .setLayerCount(1)
-		                 .setColorAttachmentCount(colorAttachments.size())
-		                 .setPColorAttachments(colorAttachments.data());
-		if (depthAttachment->imageView != nullptr)
+		                 .setColorAttachmentCount(color_attachments.size())
+		                 .setPColorAttachments(color_attachments.data());
+		if (depth_attachment->imageView != nullptr)
 		{
-			renderInfo.setPDepthAttachment(depthAttachment);
+			render_info.setPDepthAttachment(depth_attachment);
 		}
 	}
 
-	void SetRenderInfoUnsafe(std::vector<vk::RenderingAttachmentInfo> &colorAttachments,
-	                         glm::uvec2 framebufferSize, vk::RenderingAttachmentInfo *depthAttachment)
+	void set_render_info_unsafe(std::vector<vk::RenderingAttachmentInfo> &color_attachments,
+	                         glm::uvec2 framebuffer_size, vk::RenderingAttachmentInfo *depth_attachment)
 	{
-		for (auto &element : colorAttachments)
+		for (auto &element : color_attachments)
 		{
 			assert(element.imageView != nullptr && "Image view was not set before setting the render info");
 		}
-		renderInfo = vk::RenderingInfo()
-		                 .setRenderArea({{0, 0}, {framebufferSize.x, framebufferSize.y}})
+		render_info = vk::RenderingInfo()
+		                 .setRenderArea({{0, 0}, {framebuffer_size.x, framebuffer_size.y}})
 		                 .setLayerCount(1)
-		                 .setColorAttachmentCount(colorAttachments.size())
-		                 .setPColorAttachments(colorAttachments.data());
-		if (depthAttachment->imageView != nullptr)
+		                 .setColorAttachmentCount(color_attachments.size())
+		                 .setPColorAttachments(color_attachments.data());
+		if (depth_attachment->imageView != nullptr)
 		{
-			renderInfo.setPDepthAttachment(depthAttachment);
+			render_info.setPDepthAttachment(depth_attachment);
 		}
 	}
-	void SetViewport(glm::uvec2 viewportSize, glm::uvec2 scissorSize)
+	void set_viewport(glm::uvec2 viewport_size, glm::uvec2 scissor_size)
 	{
 		viewport
 		    .setX(0.0f)
 		    .setY(0.0f)
-		    .setWidth(static_cast<float>(viewportSize.x))
-		    .setHeight(static_cast<float>(viewportSize.y))
+		    .setWidth(static_cast<float>(viewport_size.x))
+		    .setHeight(static_cast<float>(viewport_size.y))
 		    .setMinDepth(0.0f)
 		    .setMaxDepth(1.0f);
 		scissor
 		    .setOffset({0, 0})
-		    .setExtent({scissorSize.x, scissorSize.y});
+		    .setExtent({scissor_size.x, scissor_size.y});
 	}
-	void Reset()
+	void reset()
 	{
-		colorFormats.clear();
-		depthFormat                 = vk::Format::eUndefined;
-		expectedColorAttachmentSize = 0;
-		renderInfo                  = vk::RenderingInfo();
-		pipelineRenderingCreateInfo = vk::PipelineRenderingCreateInfo();
+		color_formats.clear();
+		depth_format                 = vk::Format::eUndefined;
+		expected_color_attachment_size = 0;
+		render_info                  = vk::RenderingInfo();
+		pipeline_rendering_create_info = vk::PipelineRenderingCreateInfo();
 		viewport                    = vk::Viewport();
 		scissor                     = vk::Rect2D();
 	}
-	std::vector<vk::Format>         colorFormats;
-	vk::Format                      depthFormat;
-	uint32_t                        expectedColorAttachmentSize = 0;
-	vk::RenderingInfo               renderInfo;
-	vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo;
+	std::vector<vk::Format>         color_formats;
+	vk::Format                      depth_format;
+	uint32_t                        expected_color_attachment_size = 0;
+	vk::RenderingInfo               render_info;
+	vk::PipelineRenderingCreateInfo pipeline_rendering_create_info;
 	vk::Viewport                    viewport;
 	vk::Rect2D                      scissor;
 };
-}        // namespace ENGINE
-#endif        // DYNAMICRENDERPASS_HPP
+}        // namespace engine
+#endif        // DYNAMIC_RENDER_PASS_HPP

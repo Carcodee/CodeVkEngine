@@ -5,71 +5,71 @@
 #ifndef MODEL_HPP
 #define MODEL_HPP
 
-namespace Rendering
+namespace rendering
 {
-struct NodeMat
+struct node_mat
 {
-	NodeMat  *parentNode = nullptr;
+	rendering::node_mat  *parent_node = nullptr;
 	glm::mat4 matrix     = glm::mat4(1.0f);
-	glm::mat4 GetWorlMat()
+	glm::mat4 get_worl_mat()
 	{
-		NodeMat  *parent = parentNode;
+		rendering::node_mat  *parent = parent_node;
 		glm::mat4 mat    = matrix;
 		while (parent != nullptr)
 		{
 			mat    = parent->matrix * mat;
-			parent = parent->parentNode;
+			parent = parent->parent_node;
 		}
 		return mat;
 	}
-	~NodeMat() = default;
+	~node_mat() = default;
 };
-struct Model
+struct model
 {
 	int                     id;
-	std::vector<ENGINE::M_Vertex3D> vertices;
+	std::vector<engine::m_vertex_3d> vertices;
 	std::vector<uint32_t>   indices;
 
 	// map with mesh number
-	int                    meshCount;
-	std::vector<uint32_t>  firstVertices;
-	std::vector<uint32_t>  firstIndices;
-	std::vector<uint32_t>  verticesCount;
-	std::vector<uint32_t>  indicesCount;
-	std::vector<NodeMat *> nodeMats;
-	std::vector<glm::mat4> modelsMat;
+	int                    mesh_count;
+	std::vector<uint32_t>  first_vertices;
+	std::vector<uint32_t>  first_indices;
+	std::vector<uint32_t>  vertices_count;
+	std::vector<uint32_t>  indices_count;
+	std::vector<rendering::node_mat *> node_mats;
+	std::vector<glm::mat4> models_mat;
 	std::vector<int>       materials;
-	std::vector<Sphere>    meshesSpheres;
+	std::vector<sphere>    meshes_spheres;
 
-	ENGINE::StagedBuffer *vertBuffer  = nullptr;
-	ENGINE::StagedBuffer *indexBuffer = nullptr;
+	engine::staged_buffer *vert_buffer  = nullptr;
+	engine::staged_buffer *index_buffer = nullptr;
 
-	void SetWorldMatrices()
+	void set_world_matrices()
 	{
-		modelsMat.reserve(meshCount);
-		for (auto &node : nodeMats)
+		models_mat.reserve(mesh_count);
+		for (auto &node : node_mats)
 		{
-			modelsMat.emplace_back(node->GetWorlMat());
+			models_mat.emplace_back(node->get_worl_mat());
 		}
 	}
-	void SetMeshesSpheres()
+	void set_meshes_spheres()
 	{
-		for (int i = 0; i < meshesSpheres.size(); ++i)
+		for (int i = 0; i < meshes_spheres.size(); ++i)
 		{
-			meshesSpheres[i].center = glm::vec3(modelsMat.at(i) * glm::vec4(meshesSpheres[i].center.x, meshesSpheres[i].center.y, meshesSpheres[i].center.z, 1.0));
-			float     scaleFactor   = glm::length(glm::vec3(modelsMat.at(i) * glm::vec4(0.0, 1.0, 0.0, 0.0)));
-			glm::vec4 radiusWs      = modelsMat.at(i) * (glm::vec4(0.0, meshesSpheres[i].radius, 0.0, 0.0));
-			glm::vec3 radiusPosWs   = meshesSpheres[i].center + glm::vec3(radiusWs);
-			meshesSpheres[i].radius = glm::distance(meshesSpheres[i].center, radiusPosWs);
+			meshes_spheres[i].center = glm::vec3(models_mat.at(i) * glm::vec4(meshes_spheres[i].center.x, meshes_spheres[i].center.y, meshes_spheres[i].center.z, 1.0));
+			float     scale_factor   = glm::length(glm::vec3(models_mat.at(i) * glm::vec4(0.0, 1.0, 0.0, 0.0)));
+			glm::vec4 radius_ws      = models_mat.at(i) * (glm::vec4(0.0, meshes_spheres[i].radius, 0.0, 0.0));
+			glm::vec3 radius_pos_ws   = meshes_spheres[i].center + glm::vec3(radius_ws);
+			meshes_spheres[i].radius = glm::distance(meshes_spheres[i].center, radius_pos_ws);
 		}
 	}
-	~Model()
+	~model()
 	{
-		for (auto node : nodeMats)
+		for (auto node : node_mats)
 		{
 			delete node;
 		}
 	}
 };
-}        // namespace Rendering
+}        // namespace rendering
 #endif        // MODEL_HPP
