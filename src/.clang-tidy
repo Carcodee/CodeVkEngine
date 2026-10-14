@@ -1,0 +1,9 @@
+Checks: '-*,readability-identifier-naming'
+HeaderFilterRegex: '[/\\]src[/\\].*'
+FormatStyle: none
+CheckOptions:
+  readability-identifier-naming.DefaultCase: lower_case
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.GetConfigPerFile: false
+  readability-identifier-naming.AggressiveDependentMemberLookup: true
+  readability-identifier-naming.IgnoreMainLikeFunctions: false
