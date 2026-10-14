@@ -5,8 +5,19 @@
 #ifndef RENDERINGSTRUCTS_HPP
 #define RENDERINGSTRUCTS_HPP
 
+#include <cmath>
+#include <cstddef>
+
 namespace Rendering
 {
+
+    struct DebugVoxelsMVP
+    {
+        glm::mat4 projView = glm::mat4(1.0);
+        glm::vec3 origin = glm::vec3{0.0f, 0.0f, 0.0f};
+        alignas(16) glm::uvec3 dimensions = glm::uvec3{100, 100, 100};
+        float cellSize = 0.5f;
+    };
     struct MvpPc
     {
         glm::mat4 model = glm::mat4(1.0);
@@ -250,12 +261,50 @@ namespace Rendering
         uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
     };
 
-    struct S_Lattice
+    struct PC_VoxelGrid
     {
-        glm::mat4 world_pos = glm::identity<glm::mat4>();
-        glm::vec2 lattice_size = glm::vec2{10, 10};
-        glm::uvec2 lattice_resolution = glm::uvec2{64, 64};
-        float* latticeDevice = nullptr;
+        glm::vec3 origin = glm::vec3{0.0f, 0.0f, 0.0f};
+        alignas(16) glm::uvec3 dimensions = glm::uvec3{10, 10, 10};
+        float cellSize = 0.5f;
+        uint64_t GetSize() const
+        {
+            return uint64_t(dimensions.x) * dimensions.y * dimensions.z;
+        }
+
+        bool IsValid() const
+        {
+            for (int axis = 0; axis < 3; ++axis)
+            {
+                if (dimensions[axis] == 0 || dimensions[axis] > 4096 ||
+                    !std::isfinite(origin[axis]) ||
+                    !std::isfinite(origin[axis] + float(dimensions[axis]) * cellSize))
+                    return false;
+            }
+            return std::isfinite(cellSize) && cellSize > 0.0f;
+        }
+    };
+    static_assert(offsetof(PC_VoxelGrid, dimensions) == 16);
+    static_assert(offsetof(PC_VoxelGrid, cellSize) == 28);
+    static_assert(sizeof(PC_VoxelGrid) == 32);
+    struct D_VoxelGrid
+    {
+        ENGINE::Buffer* d_cells = nullptr;
+    };
+    struct VoxelGrid
+    {
+        PC_VoxelGrid pcVoxelGrid  {};
+        D_VoxelGrid d_VoxelGrid = {};
+        std::string name;
+        void Init(const std::string& voxel_name, ENGINE::RenderGraph* renderGraph)
+        {
+            name = "CellsBuffer_" + voxel_name;
+            d_VoxelGrid.d_cells = renderGraph->resourcesManager->GetBuffer(ENGINE::ResourcesManager::BufferParams{
+                name, vk::BufferUsageFlagBits::eStorageBuffer,
+                {},
+                sizeof(uint32_t) * pcVoxelGrid.GetSize(),
+                sizeof(uint32_t), nullptr
+            });
+        }
 
     };
 } // namespace Rendering

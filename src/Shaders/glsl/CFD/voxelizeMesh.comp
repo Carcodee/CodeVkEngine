@@ -9,7 +9,22 @@
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (set = 0, binding = 1, scalar) buffer modelVertices{
+    vec3 vertex[];
+};
+
+layout (set = 0, binding = 2, scalar) buffer voxels{
+    uint cells[];
+};
+
+layout(push_constant)uniform pushConstants{
+        vec3 origin;
+        uvec3 dimensions;
+        float cellSize;
+}voxelGrid;
+
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
 
 }

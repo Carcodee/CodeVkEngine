@@ -35,7 +35,8 @@ namespace Rendering
                                                  vk::Format::eR32G32B32A32Sfloat,
                                                  vk::ImageUsageFlagBits::eColorAttachment |
                                                  vk::ImageUsageFlagBits::eSampled);
-            auto* colAttachmentView = ResourcesManager::GetInstance()->GetImage("colAttachment", imageInfo, 0, 0);
+            auto* colAttachmentView = renderGraph->resourcesManager->GetImage("colAttachment", imageInfo, 0, 0);
+            voxelGrid.Init("CFD", renderGraph);
         }
 
         void CreatePipelines()
@@ -49,15 +50,22 @@ namespace Rendering
 
             auto* voxelizerNode = renderGraph->AddPass("voxelizer");
             voxelizerNode->G_SetCompShader(voxelizerComp);
+            voxelizerNode->G_SetPushConstantSize(sizeof(PC_VoxelGrid));
             voxelizerNode->BuildRenderGraphNode();
-
             voxelizerNode->G_SetRenderOperation(new std::function<void()>(
-                [this]()
+                [this, modelToVoxelize]()
                 {
-                    glm::vec2 mouseInput = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
                     auto& renderNode = renderGraph->renderNodes.at("voxelizer");
-                    renderNode->GetCurrCmd().dispatch(64 / 8, 64 / 8, 1);
+
+                    renderNode->G_SetBuffer("modelVertices", modelToVoxelize->vertBuffer->deviceBuffer.get());
+                    renderNode->G_SetBuffer("voxels", voxelGrid.d_VoxelGrid.d_cells);
+                    renderNode->GetCurrCmd().pushConstants(renderNode->GPUPipelineRef->pipelineLayout.get(),
+                                                           vk::ShaderStageFlagBits::eCompute,
+                                                           0, sizeof(PC_VoxelGrid), &voxelGrid.pcVoxelGrid);
+                    renderNode->GetCurrCmd().dispatch(
+                        static_cast<uint32_t>((modelToVoxelize->vertices.size() + 31) / 32), 1, 1);
                 }));
+
         }
 
         void RecreateSwapChainResources() override
@@ -77,6 +85,7 @@ namespace Rendering
         Core* core;
         RenderGraph* renderGraph;
         WindowProvider* windowProvider;
+        VoxelGrid voxelGrid = {};
     };
 } // namespace Rendering
 

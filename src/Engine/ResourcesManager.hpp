@@ -797,6 +797,17 @@ class ResourcesManager : SYSTEMS::Subject
 		                                      sizeof(uint32_t) * ENGINE::Vertex2D::GetQuadIndices().size(), sizeof(uint32_t),
 		                                      ENGINE::Vertex2D::GetQuadIndices().data())
 		                                      ->deviceBuffer.get();
+
+		ENGINE::Buffer* cubeVerts = GetStageBuffer(
+															   "cube_verts_default", vk::BufferUsageFlagBits::eVertexBuffer,
+															   sizeof(D_Vertex3D) * D_Vertex3D::GetCubeVertices().size(), sizeof(D_Vertex3D),
+															   D_Vertex3D::GetCubeVertices().data())
+								->deviceBuffer.get();
+		ENGINE::Buffer* cubeIndex= GetStageBuffer(
+																"cube_index_default", vk::BufferUsageFlagBits::eIndexBuffer,
+																sizeof(uint32_t) * D_Vertex3D::GetCubeIndices().size(), sizeof(uint32_t),
+																D_Vertex3D::GetCubeIndices().data())
+								 ->deviceBuffer.get();
 	}
 
 	~ResourcesManager() = default;

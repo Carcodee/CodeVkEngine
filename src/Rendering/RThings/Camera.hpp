@@ -116,6 +116,10 @@ class Camera
 		                            lookAt,
 		                            WorldUp);
 	}
+	glm::mat4 GetViewProj()
+	{
+		return matrices.perspective * matrices.view;
+	}
 
 	glm::vec3 WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 forward = glm::vec3(0.0f, 0.0f, 1.0f);

@@ -192,6 +192,34 @@ struct D_Vertex3D
 {
 	glm::vec3 pos;
 
+	// Unit cube centered at the origin, for scaling by the voxel cell size.
+	static std::vector<D_Vertex3D> GetCubeVertices()
+	{
+		return {
+		    {{-0.5f, -0.5f, -0.5f}},
+		    {{ 0.5f, -0.5f, -0.5f}},
+		    {{ 0.5f,  0.5f, -0.5f}},
+		    {{-0.5f,  0.5f, -0.5f}},
+		    {{-0.5f, -0.5f,  0.5f}},
+		    {{ 0.5f, -0.5f,  0.5f}},
+		    {{ 0.5f,  0.5f,  0.5f}},
+		    {{-0.5f,  0.5f,  0.5f}}
+		};
+	}
+
+	static std::vector<uint32_t> GetCubeIndices()
+	{
+		// Counterclockwise when viewed from outside each face.
+		return {
+		    4, 5, 6, 6, 7, 4, // +Z
+		    1, 0, 3, 3, 2, 1, // -Z
+		    5, 1, 2, 2, 6, 5, // +X
+		    0, 4, 7, 7, 3, 0, // -X
+		    7, 6, 2, 2, 3, 7, // +Y
+		    0, 1, 5, 5, 4, 0  // -Y
+		};
+	}
+
 	bool operator==(const M_Vertex3D &other) const
 	{
 		return pos == other.pos;

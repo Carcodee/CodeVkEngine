@@ -258,6 +258,15 @@ class ImguiRenderer
 		this->renderGraph = renderGraph;
 		this->renderers   = &renderers;
 
+		for (const auto& entry : renderers)
+		{
+			if (auto* renderer = dynamic_cast<CFDRenderer*>(entry.second.get()))
+			{
+				this->cfdRenderer = renderer;
+				break;
+			}
+		}
+
 		if (renderers.contains("ClusterRenderer"))
 		{
 			this->clusterRenderer = dynamic_cast<ClusterRenderer *>(renderers.at("ClusterRenderer").get());
@@ -850,8 +859,121 @@ class ImguiRenderer
 		prettySmokeLastColor         = newColor;
 	}
 
+	void LatticeInfo()
+	{
+		if (!ImGui::CollapsingHeader("Lattice###fluid_lattice", ImGuiTreeNodeFlags_DefaultOpen))
+			return;
+		if (!cfdRenderer)
+		{
+			ImGui::TextDisabled("CFD renderer is unavailable.");
+			return;
+		}
+
+		if (!latticeConfigInitialized)
+		{
+			latticeConfig = cfdRenderer->voxelGrid.pcVoxelGrid;
+			latticeConfigInitialized = true;
+		}
+
+		if (ImGui::BeginTable("##fluid_lattice_properties", 2,
+		                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
+		{
+			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+			auto property = [](const char* label) {
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::TextUnformatted(label);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::SetNextItemWidth(-1.0f);
+			};
+			property("Origin (X, Y, Z)");
+			ImGui::DragFloat3("##lattice_origin", &latticeConfig.origin.x, 0.1f);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Minimum corner in the mesh coordinate space.");
+
+			int dimensions[3] = {int(latticeConfig.dimensions.x), int(latticeConfig.dimensions.y),
+			                     int(latticeConfig.dimensions.z)};
+			property("Cells (X, Y, Z)");
+			if (ImGui::DragInt3("##lattice_dimensions", dimensions, 1.0f, 1, 4096, "%d",
+			                    ImGuiSliderFlags_AlwaysClamp))
+			{
+				latticeConfig.dimensions = glm::uvec3(dimensions[0], dimensions[1], dimensions[2]);
+			}
+			property("Cell size");
+			ImGui::DragFloat("##lattice_cell_size", &latticeConfig.cellSize,
+			                                        0.01f, 0.0001f, 10000.0f, "%.4f",
+			                                        ImGuiSliderFlags_AlwaysClamp);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Edge length of each cubic cell, in mesh units.");
+			ImGui::EndTable();
+		}
+
+		const glm::vec3 extent = glm::vec3(latticeConfig.dimensions) * latticeConfig.cellSize;
+		const glm::vec3 maximum = latticeConfig.origin + extent;
+		const uint64_t cells = latticeConfig.GetSize();
+		ImGui::TextDisabled("Extent: %.3f x %.3f x %.3f", extent.x, extent.y, extent.z);
+		ImGui::TextDisabled("Maximum corner: %.3f, %.3f, %.3f", maximum.x, maximum.y, maximum.z);
+		ImGui::TextDisabled("%llu cells", static_cast<unsigned long long>(cells));
+		if (!latticeConfig.IsValid())
+		{
+			ImGui::TextWrapped("Enter finite coordinates, positive cell size, and dimensions from 1 to 4096.");
+			return;
+		}
+
+		ImGui::TextDisabled("Lattice preview");
+		const ImVec2 canvasMin = ImGui::GetCursorScreenPos();
+		const ImVec2 canvasSize(std::max(1.0f, ImGui::GetContentRegionAvail().x), 220.0f);
+		ImGui::InvisibleButton("##lattice_preview", canvasSize);
+		auto* draw = ImGui::GetWindowDrawList();
+		const ImVec2 canvasMax(canvasMin.x + canvasSize.x, canvasMin.y + canvasSize.y);
+		draw->AddRectFilled(canvasMin, canvasMax, ImGui::GetColorU32(ImGuiCol_FrameBg), 7.0f);
+		draw->PushClipRect(canvasMin, canvasMax, true);
+		const float projectedWidth = 0.866f * (extent.x + extent.z);
+		const float projectedHeight = 0.5f * (extent.x + extent.z) + extent.y;
+		const float scale = std::min(std::max(1.0f, canvasSize.x - 32.0f) / projectedWidth,
+		                             (canvasSize.y - 32.0f) / projectedHeight);
+		auto project = [&](glm::vec3 point) {
+			point -= extent * 0.5f;
+			return ImVec2(canvasMin.x + canvasSize.x * 0.5f + (point.x - point.z) * 0.866f * scale,
+			              canvasMin.y + canvasSize.y * 0.5f + ((point.x + point.z) * 0.5f - point.y) * scale);
+		};
+		const ImU32 gridColor = ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.45f);
+		const ImU32 edgeColor = ImGui::GetColorU32(ImguiRendererUI::AccentColor());
+		for (int axis = 0; axis < 3; ++axis)
+		{
+			const int next = (axis + 1) % 3;
+			const int last = (axis + 2) % 3;
+			const uint32_t step = std::max(1u, (latticeConfig.dimensions[axis] + 23u) / 24u);
+			for (uint32_t cell = step; cell < latticeConfig.dimensions[axis]; cell += step)
+			{
+				glm::vec3 start(0.0f), end(0.0f);
+				start[axis] = end[axis] = float(cell) * latticeConfig.cellSize;
+				end[next] = extent[next];
+				draw->AddLine(project(start), project(end), gridColor);
+				end[next] = 0.0f;
+				end[last] = extent[last];
+				draw->AddLine(project(start), project(end), gridColor);
+			}
+			for (int corner = 0; corner < 4; ++corner)
+			{
+				glm::vec3 start(0.0f);
+				start[next] = (corner & 1) ? extent[next] : 0.0f;
+				start[last] = (corner & 2) ? extent[last] : 0.0f;
+				glm::vec3 end = start;
+				end[axis] = extent[axis];
+				draw->AddLine(project(start), project(end), edgeColor, 1.5f);
+			}
+		}
+		draw->PopClipRect();
+		ImGui::TextWrapped("Preview settings only. Grid lines are sampled for readability.");
+		ImGui::Spacing();
+	}
+
 	void FluidSimInfo()
 	{
+		LatticeInfo();
 		CodeCuda::FluidSimulation::sim_params fluidSimParams{};
 		if (CodeCuda::FluidSimulation::C_GetSimulationParams(&fluidSimParams) != CodeCuda::C_Res::OK)
 		{
@@ -2620,6 +2742,9 @@ class ImguiRenderer
 	ClusterRenderer                                      *clusterRenderer = nullptr;
 	FlatRenderer                                         *flatRenderer    = nullptr;
 	GSRenderer                                           *gsRenderer      = nullptr;
+	CFDRenderer                                          *cfdRenderer     = nullptr;
+	PC_VoxelGrid                                          latticeConfig{};
+	bool                                                  latticeConfigInitialized = false;
 	ImGuiUtils::ProfilersWindow                           profilersWindow{};
 	UI::RG_NodeEditor                                     nodeEditor;
 	ImguiRendererUI::Fonts                                fonts{};
