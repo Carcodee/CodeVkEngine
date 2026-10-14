@@ -8,18 +8,18 @@ layout (location = 3) in vec2 uv;
 
 layout (location = 0) out vec2 text_coord;
 
-layout(push_constant)uniform push_constants{
+layout(push_constant)uniform Push_Constants{
     mat4 model;
     mat4 proj_view;
 }pc;
 
-struct camera_ssbo{
+struct Camera_Ssbo{
     mat4 model;
     mat4 proj_view;
 };
 
-layout(set = 0, binding = 5, scalar) buffer camera_buffer{
-    camera_ssbo [] cameras_ssbo;
+layout(set = 0, binding = 5, scalar) buffer Camera_Buffer{
+    Camera_Ssbo [] cameras_ssbo;
 };
 
 void main() {

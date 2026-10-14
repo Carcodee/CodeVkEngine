@@ -7,37 +7,37 @@
 #include "../Utils/uMath.glsl"
 
 
-layout(set = 0, binding = 0, scalar) buffer gs_scale_buffer {
+layout(set = 0, binding = 0, scalar) buffer Gs_Scale_Buffer {
     vec3 gs_scale[];
 };
-layout(set = 0, binding = 1, scalar) buffer gs_rot_buffer {
+layout(set = 0, binding = 1, scalar) buffer Gs_Rot_Buffer {
     vec4 gs_rot[];
 };
-layout(set = 0, binding = 2, scalar) buffer gs_pos_buffer {
+layout(set = 0, binding = 2, scalar) buffer Gs_Pos_Buffer {
     vec3 gs_pos[];
 };
-layout(set = 0, binding = 3, scalar) buffer gs_cols_buffer {
+layout(set = 0, binding = 3, scalar) buffer Gs_Cols_Buffer {
     vec3 gs_cols[];
 };
 
-layout(set = 0, binding = 4, scalar) buffer gs_alphas_buffer {
+layout(set = 0, binding = 4, scalar) buffer Gs_Alphas_Buffer {
     float gs_alphas[];
 };
 
-layout(set = 0, binding = 5, scalar) uniform h_fov_uniform{
+layout(set = 0, binding = 5, scalar) uniform H_Fov_Uniform{
     vec3 h_fov;
 }cam_h_fov;
 
-layout(set = 0, binding = 6, scalar) uniform gs_configs_uniform{
+layout(set = 0, binding = 6, scalar) uniform Gs_Configs_Uniform{
     float scale_mod;
 }gs_configs;
 
-layout(set = 0, binding = 7, scalar) buffer gs_shs_buffer {
+layout(set = 0, binding = 7, scalar) buffer Gs_Shs_Buffer {
     vec3 gs_shs[];
 };
 
 
-layout(push_constant) uniform push_constants {
+layout(push_constant) uniform Push_Constants {
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -68,7 +68,7 @@ void main() {
     vec3 scale_val = abs(gs_scale[id]);
     vec4 rot_val = gs_rot[id];
     float scale = gs_configs.scale_mod;
-    mat3 cov3d = u_get_cov_3d(rot_val, scale_val, scale);
+    mat3 cov3d = U_Get_Cov_3d(rot_val, scale_val, scale);
     vec4 view_pos = pc.view * vec4(p_cloud_pos, 1.0);
     vec4 screen_pos = pc.proj * view_pos;
 
@@ -93,7 +93,7 @@ void main() {
     view_for_cov[2][2] *= -1.0f;
     view_for_cov[3][2] *= -1.0f;
 
-    mat2 cov2d = u_get_cov_2d(view_pos, cam_h_fov.h_fov.z, cam_h_fov.h_fov.z, cam_h_fov.h_fov.x, cam_h_fov.h_fov.y, cov3d, view_for_cov);
+    mat2 cov2d = U_Get_Cov_2d(view_pos, cam_h_fov.h_fov.z, cam_h_fov.h_fov.z, cam_h_fov.h_fov.x, cam_h_fov.h_fov.y, cov3d, view_for_cov);
     float det = determinant(cov2d);
     
     if (det == 0.0f){
@@ -128,7 +128,7 @@ void main() {
         idx++;
     }
     vec3 ray_dir = normalize(p_cloud_pos - cam_pos);
-    vec3 full_col = u_compute_sh(ray_dir,curr_sh_coeffs, 3);
+    vec3 full_col = U_Compute_Sh(ray_dir,curr_sh_coeffs, 3);
     
     alpha = gs_alphas[id];
     

@@ -5,13 +5,13 @@
 #ifndef LIGHTS_HPP
 #define LIGHTS_HPP
 
-struct directional_light
+struct Directional_Light
 {
 	glm::vec3 pos;
 	glm::vec3 col;
 	float     intensity;
 };
-struct point_light
+struct Point_Light
 {
 	glm::vec3 pos          = glm::vec3(0.0f);
 	glm::vec3 col          = glm::vec3(1.0f);
@@ -19,26 +19,26 @@ struct point_light
 	float     intensity    = 1.0f;
 	float     l_attenuation = 0.01f;
 	float     q_attenuation = 1.0f;
-	point_light(glm::vec3 pos, glm::vec3 col, float intensity, float l_attenuation, float q_attenuation)
+	Point_Light(glm::vec3 pos, glm::vec3 col, float intensity, float l_attenuation, float q_attenuation)
 	{
 		this->pos          = pos;
 		this->col          = col;
 		this->intensity    = intensity;
 		this->l_attenuation = l_attenuation;
 		this->q_attenuation = q_attenuation;
-		calculate_radius_from_params();
+		Calculate_Radius_From_Params();
 	}
 
-	point_light(glm::vec3 pos, glm::vec3 col, float radius, float intensity, float l_attenuation, float q_attenuation)
+	Point_Light(glm::vec3 pos, glm::vec3 col, float radius, float intensity, float l_attenuation, float q_attenuation)
 	{
 		this->pos          = pos;
 		this->col          = col;
 		this->intensity    = intensity;
 		this->l_attenuation = l_attenuation;
 		this->radius       = radius;
-		calculate_q_attenuation_from_radius();
+		Calculate_Q_Attenuation_From_Radius();
 	}
-	void calculate_radius_from_params()
+	void Calculate_Radius_From_Params()
 	{
 		float a = q_attenuation;
 		float b = l_attenuation;
@@ -58,7 +58,7 @@ struct point_light
 		radius = std::max(r1, r2);
 	}
 
-	void calculate_q_attenuation_from_radius()
+	void Calculate_Q_Attenuation_From_Radius()
 	{
 		float threshold = 0.01f;        // Define the threshold
 		q_attenuation    = (1.0f / threshold - 1.0f - l_attenuation * radius) / (radius * radius);

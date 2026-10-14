@@ -1,9 +1,9 @@
-struct push_constants {
+struct Push_Constants {
     float4x4 model;
     float4x4 proj_view;
 };
 
-struct arrays_of_gaussians
+struct Arrays_Of_Gaussians
 {
 		float3x3 covariance_mats;
 		float3 positions;
@@ -11,21 +11,21 @@ struct arrays_of_gaussians
 		float alphas;
 };
 
-struct buffer_wrapper<t>{
-    t data[];
+struct Buffer_Wrapper<T>{
+    T data[];
 };
 
-struct matrix{
+struct Matrix{
     float3x3 data[];
 };
-struct pos_data{
+struct Pos_Data{
     float3 data[];
 };
 
 
 [vk::push_constant]
-cbuffer push_constants_buffer{
-    push_constants pc;
+cbuffer Push_Constants_Buffer{
+    Push_Constants pc;
 };
 
 // [[vk::binding(0, 0)]]
@@ -35,23 +35,23 @@ RWStructuredBuffer<float3x3> gs_mats;
 RWStructuredBuffer<float> gs_pos;
 // 
 // [[vk::binding(0, 2)]]
-// GLSLShaderStorageBuffer<buffer_wrapper<float3>> gs_cols;
+// GLSLShaderStorageBuffer<Buffer_Wrapper<float3>> gs_cols;
 // 
 // [[vk::binding(0, 3)]]
-// GLSLShaderStorageBuffer<buffer_wrapper<float>> gs_alphas;
+// GLSLShaderStorageBuffer<Buffer_Wrapper<float>> gs_alphas;
 
 
-struct vs_input {
+struct Vs_Input {
     int id : ID;    // gaussean id 
 };
 
-struct vs_output {
+struct Vs_Output {
     float4 position : SV_Position; // Clip-space position (required by Vulkan)
     float point_size : SV_PointSize;
 };
 
-vs_output main_vs(vs_input input) {
-    vs_output output;
+Vs_Output Main_Vs(Vs_Input input) {
+    Vs_Output output;
     float3 pos = gs_pos[input.id];
     float3x3 mat = gs_mats[input.id];
     
@@ -63,10 +63,10 @@ vs_output main_vs(vs_input input) {
     return output;
 }
 
-struct ps_input {
+struct Ps_Input {
 };
 
-struct ps_output {
+struct Ps_Output {
     float4 color : SV_Target;      // Fragment output
 };
 
@@ -74,8 +74,8 @@ struct ps_output {
 // Descriptor set binding for Vulkan
 // Binding set = 0, binding = 0 for texture, binding = 1 for sampler
 
-ps_output main_fs(ps_input input) {
-    ps_output output;
+Ps_Output Main_Fs(Ps_Input input) {
+    Ps_Output output;
     output.color = float4(1.0); // Sample the texture
     return output;
 }

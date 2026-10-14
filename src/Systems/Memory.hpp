@@ -12,7 +12,7 @@ namespace systems
 #ifndef L1_CACHE_LINE_SIZE
 #	define L1_CACHE_LINE_SIZE 64
 #endif
-void *alloc_aligned(size_t size)
+void *Alloc_Aligned(size_t size)
 {
 #if defined(IS_WINDOWS)
 	return _aligned_malloc(size, L1_CACHE_LINE_SIZE);
@@ -38,21 +38,21 @@ void *alloc_aligned(size_t size)
 // #endif
 //         return free(data);
 //     }
-template <typename value_type>
-value_type *alloc_aligned(size_t count)
+template <typename Value_Type>
+Value_Type *Alloc_Aligned(size_t count)
 {
-	return (value_type *) alloc_aligned(count * sizeof(value_type));
+	return (Value_Type *) Alloc_Aligned(count * sizeof(Value_Type));
 }
-class arena
+class Arena
 {
   public:
-	arena(size_t size = 262144)
+	Arena(size_t size = 262144)
 	{
 		max_block_size    = size;
 		current_block_pos = 0;
 	}
 
-	void *alloc(size_t size)
+	void *Alloc(size_t size)
 	{
 		size_t data_size = size;
 		if (current_block_pos + data_size > current_alloc_size)
@@ -75,7 +75,7 @@ class arena
 			if (!current_block)
 			{
 				current_alloc_size = std::max(data_size, max_block_size);
-				current_block     = (uint8_t *) alloc_aligned(current_alloc_size);
+				current_block     = (uint8_t *) Alloc_Aligned(current_alloc_size);
 			}
 			current_block_pos = 0;
 		}
@@ -86,22 +86,22 @@ class arena
 		return data;
 	}
 
-	template <typename value_type, typename... argument_types>
-	value_type *alloc(size_t n = 1, bool run_constructor = true, argument_types &&...args)
+	template <typename Value_Type, typename... Argument_Types>
+	Value_Type *Alloc(size_t n = 1, bool run_constructor = true, Argument_Types &&...args)
 	{
-		value_type *data = (value_type *) alloc(n * sizeof(value_type));
+		Value_Type *data = (Value_Type *) Alloc(n * sizeof(Value_Type));
 		if (run_constructor)
 		{
 			for (int i = 0; i < n; ++i)
 			{
-				new (&data[i]) value_type(std::forward<argument_types>(args)...);
-				destructors.push_back([ptr = &data[i]] { ptr->~value_type(); });
+				new (&data[i]) Value_Type(std::forward<Argument_Types>(args)...);
+				destructors.push_back([ptr = &data[i]] { ptr->~Value_Type(); });
 			}
 		}
 		return data;
 	}
 
-	void reset()
+	void Reset()
 	{
 		for (auto &destructor : destructors)
 		{
@@ -112,7 +112,7 @@ class arena
 		available_blocks.splice(available_blocks.begin(), used_blocks);
 	}
 
-	size_t total_allocated() const
+	size_t Total_Allocated() const
 	{
 		size_t total = current_alloc_size;
 		for (const auto &alloc : used_blocks)
@@ -126,7 +126,7 @@ class arena
 		return total;
 	}
 
-	~arena()
+	~Arena()
 	{
 		for (auto &destructor : destructors)
 		{

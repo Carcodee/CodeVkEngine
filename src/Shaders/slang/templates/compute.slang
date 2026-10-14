@@ -7,7 +7,7 @@ RWStructuredBuffer<float> result;
 
 [shader("compute")]
 [numthreads(1,1,1)]
-void main_cs(uint3 thread_id : SV_DispatchThreadID)
+void Main_Cs(uint3 thread_id : SV_DispatchThreadID)
 {
     uint index = thread_id.x;
     result[index] = buffer0[index] + buffer1[index];

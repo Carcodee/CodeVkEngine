@@ -7,13 +7,13 @@
 
 namespace rendering
 {
-struct node_mat
+struct Node_Mat
 {
-	rendering::node_mat  *parent_node = nullptr;
+	rendering::Node_Mat  *parent_node = nullptr;
 	glm::mat4 matrix     = glm::mat4(1.0f);
-	glm::mat4 get_worl_mat()
+	glm::mat4 Get_Worl_Mat()
 	{
-		rendering::node_mat  *parent = parent_node;
+		rendering::Node_Mat  *parent = parent_node;
 		glm::mat4 mat    = matrix;
 		while (parent != nullptr)
 		{
@@ -22,12 +22,12 @@ struct node_mat
 		}
 		return mat;
 	}
-	~node_mat() = default;
+	~Node_Mat() = default;
 };
-struct model
+struct Model
 {
 	int                     id;
-	std::vector<engine::m_vertex_3d> vertices;
+	std::vector<engine::M_Vertex_3d> vertices;
 	std::vector<uint32_t>   indices;
 
 	// map with mesh number
@@ -36,23 +36,23 @@ struct model
 	std::vector<uint32_t>  first_indices;
 	std::vector<uint32_t>  vertices_count;
 	std::vector<uint32_t>  indices_count;
-	std::vector<rendering::node_mat *> node_mats;
+	std::vector<rendering::Node_Mat *> node_mats;
 	std::vector<glm::mat4> models_mat;
 	std::vector<int>       materials;
-	std::vector<sphere>    meshes_spheres;
+	std::vector<Sphere>    meshes_spheres;
 
-	engine::staged_buffer *vert_buffer  = nullptr;
-	engine::staged_buffer *index_buffer = nullptr;
+	engine::Staged_Buffer *vert_buffer  = nullptr;
+	engine::Staged_Buffer *index_buffer = nullptr;
 
-	void set_world_matrices()
+	void Set_World_Matrices()
 	{
 		models_mat.reserve(mesh_count);
 		for (auto &node : node_mats)
 		{
-			models_mat.emplace_back(node->get_worl_mat());
+			models_mat.emplace_back(node->Get_Worl_Mat());
 		}
 	}
-	void set_meshes_spheres()
+	void Set_Meshes_Spheres()
 	{
 		for (int i = 0; i < meshes_spheres.size(); ++i)
 		{
@@ -63,7 +63,7 @@ struct model
 			meshes_spheres[i].radius = glm::distance(meshes_spheres[i].center, radius_pos_ws);
 		}
 	}
-	~model()
+	~Model()
 	{
 		for (auto node : node_mats)
 		{

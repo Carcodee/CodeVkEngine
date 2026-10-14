@@ -7,94 +7,94 @@
 
 namespace rendering
 {
-enum texture_type
+enum Texture_Type
 {
-	albedo             = 0,
-	normal             = 1,
-	emission           = 2,
-	transmission       = 3,
-	roughness          = 4,
-	metallic           = 5,
-	metallic_roughness = 6,
-	ao                 = 7,
-	height             = 8
+	Albedo             = 0,
+	Normal             = 1,
+	Emission           = 2,
+	Transmission       = 3,
+	Roughness          = 4,
+	Metallic           = 5,
+	Metallic_Roughness = 6,
+	Ao                 = 7,
+	Height             = 8
 
 };
-class material
+class Material
 {
   public:
-	rendering::material_packed_data material_packed_data;
+	rendering::Material_Packed_Data material_packed_data;
 
-	std::map<texture_type, int> textures_offsets{
-	    {albedo, -1},
-	    {normal, -1},
-	    {emission, -1},
-	    {transmission, -1},
-	    {roughness, -1},
-	    {metallic, -1},
-	    {metallic_roughness, -1},
-	    {ao, -1},
-	    {height, -1},
+	std::map<Texture_Type, int> textures_offsets{
+	    {Albedo, -1},
+	    {Normal, -1},
+	    {Emission, -1},
+	    {Transmission, -1},
+	    {Roughness, -1},
+	    {Metallic, -1},
+	    {Metallic_Roughness, -1},
+	    {Ao, -1},
+	    {Height, -1},
 	};
-	std::map<texture_type, engine::image_view *> textures_ref{
-	    {albedo, nullptr},
-	    {normal, nullptr},
-	    {emission, nullptr},
-	    {transmission, nullptr},
-	    {roughness, nullptr},
-	    {metallic, nullptr},
-	    {metallic_roughness, nullptr},
-	    {ao, nullptr},
-	    {height, nullptr},
+	std::map<Texture_Type, engine::Image_View *> textures_ref{
+	    {Albedo, nullptr},
+	    {Normal, nullptr},
+	    {Emission, nullptr},
+	    {Transmission, nullptr},
+	    {Roughness, nullptr},
+	    {Metallic, nullptr},
+	    {Metallic_Roughness, nullptr},
+	    {Ao, nullptr},
+	    {Height, nullptr},
 	};
-	std::map<texture_type, std::string> textures_strings{
-	    {albedo, "Albedo"},
-	    {normal, "Normal"},
-	    {emission, "Emission"},
-	    {transmission, "Transmission"},
-	    {roughness, "Roughness"},
-	    {metallic, "Metallic"},
-	    {metallic_roughness, "Metallic_roughness"},
-	    {ao, "Ao"},
-	    {height, "Height"},
+	std::map<Texture_Type, std::string> textures_strings{
+	    {Albedo, "Albedo"},
+	    {Normal, "Normal"},
+	    {Emission, "Emission"},
+	    {Transmission, "Transmission"},
+	    {Roughness, "Roughness"},
+	    {Metallic, "Metallic"},
+	    {Metallic_Roughness, "Metallic_roughness"},
+	    {Ao, "Ao"},
+	    {Height, "Height"},
 	};
-	std::vector<engine::image_view *> image_views_vec;
+	std::vector<engine::Image_View *> image_views_vec;
 
-	void set_texture(texture_type type, int offset)
+	void Set_Texture(Texture_Type type, int offset)
 	{
 		assert(textures_offsets.contains(type) && "Texture type dont exist");
 		textures_offsets.at(type) = offset;
 		switch (type)
 		{
-			case albedo:
+			case Albedo:
 				material_packed_data.albedo_offset = offset;
 				break;
-			case normal:
+			case Normal:
 				material_packed_data.normal_offset = offset;
 				break;
-			case emission:
+			case Emission:
 				material_packed_data.albedo_offset = offset;
 				break;
-			case transmission:
+			case Transmission:
 				material_packed_data.trans_offset = offset;
 				break;
-			case roughness:
+			case Roughness:
 				material_packed_data.roughness_offset = offset;
 				break;
-			case metallic:
+			case Metallic:
 				material_packed_data.metallic_offset = offset;
 				break;
-			case metallic_roughness:
+			case Metallic_Roughness:
 				material_packed_data.met_roughness_offset = offset;
 				break;
 		}
 	}
-	void set_texture(texture_type type, engine::image_view *img_view)
+	void Set_Texture(Texture_Type type, engine::Image_View *img_view)
 	{
 		assert(textures_offsets.contains(type) && "Texture type dont exist");
 		textures_ref.at(type) = img_view;
 	}
-	std::vector<engine::image_view *> &convert_textures_to_vec()
+	std::vector<engine::Image_View *> &Convert_Textures_To_Vec()
 	{
 		image_views_vec.clear();
 		image_views_vec.reserve(textures_ref.size());
@@ -103,7 +103,7 @@ class material
 			if (image_view_handle.second == nullptr)
 			{
 				image_views_vec.emplace_back(
-				    engine::resources_manager::get_instance()->get_shipper_from_name("default_tex")->image_view_handle.get());
+				    engine::Resources_Manager::Get_Instance()->Get_Shipper_From_Name("default_tex")->image_view_handle.get());
 			}
 			else
 			{

@@ -8,31 +8,31 @@
 
 namespace engine
 {
-    class staged_buffer
+    class Staged_Buffer
     {
     public:
-        staged_buffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::BufferUsageFlags usage,
+        Staged_Buffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::BufferUsageFlags usage,
                      vk::DeviceSize size, vk::DeviceSize stride)
         {
-            staging_buffer = std::make_unique<engine::buffer>(physical_device, logical_device,
+            staging_buffer = std::make_unique<engine::Buffer>(physical_device, logical_device,
                                                              vk::BufferUsageFlagBits::eTransferSrc,
                                                              vk::MemoryPropertyFlagBits::eHostVisible |
                                                              vk::MemoryPropertyFlagBits::eHostCoherent,
                                                              size, stride);
-            device_buffer = std::make_unique<engine::buffer>(physical_device, logical_device,
+            device_buffer = std::make_unique<engine::Buffer>(physical_device, logical_device,
                                                             usage | vk::BufferUsageFlagBits::eTransferDst,
                                                             vk::MemoryPropertyFlagBits::eDeviceLocal, size, stride);
             this->size = size;
         }
 
-        void* map()
+        void* Map()
         {
-            return staging_buffer->map();
+            return staging_buffer->Map();
         }
 
-        void unmap(vk::CommandBuffer command_buffer)
+        void Unmap(vk::CommandBuffer command_buffer)
         {
-            staging_buffer->unmap();
+            staging_buffer->Unmap();
 
             auto copy_region = vk::BufferCopy()
                               .setSrcOffset(0)
@@ -43,13 +43,13 @@ namespace engine
         }
         
 
-        vk::Buffer get_buffer()
+        vk::Buffer Get_Buffer()
         {
             return device_buffer->buffer_handle.get();
         }
 
-        std::unique_ptr<engine::buffer> staging_buffer;
-        std::unique_ptr<engine::buffer> device_buffer;
+        std::unique_ptr<engine::Buffer> staging_buffer;
+        std::unique_ptr<engine::Buffer> device_buffer;
         vk::DeviceSize size = 0;
     };
     

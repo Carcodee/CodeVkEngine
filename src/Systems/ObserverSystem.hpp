@@ -7,20 +7,20 @@
 namespace systems
 {
 
-class watcher
+class Watcher
 {
   public:
-	virtual ~watcher()           = default;
-	virtual void update_watcher() = 0;
+	virtual ~Watcher()           = default;
+	virtual void Update_Watcher() = 0;
 };
 
-class subject
+class Subject
 {
   public:
-	virtual ~subject()                    = default;
-	virtual void attach(watcher *watcher) = 0;
-	virtual void notify()                 = 0;
-	virtual void detach(watcher *watcher) = 0;
+	virtual ~Subject()                    = default;
+	virtual void Attach(Watcher *watcher) = 0;
+	virtual void Notify()                 = 0;
+	virtual void Detach(Watcher *watcher) = 0;
 };
 
 }        // namespace systems

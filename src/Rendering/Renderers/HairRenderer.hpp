@@ -8,99 +8,99 @@
 namespace rendering
 {
 using namespace engine;
-class hair_renderer : public base_renderer
+class Hair_Renderer : public Base_Renderer
 {
   public:
-	~hair_renderer() override = default;
+	~Hair_Renderer() override = default;
 
-	hair_renderer(engine::core *core, ::window_provider *window_provider)
+	Hair_Renderer(engine::Core *core, ::Window_Provider *window_provider)
 	{
 		this->core           = core;
 		this->render_graph    = core->render_graph_ref;
 		this->window_provider = window_provider;
 
-		create_resources();
-		create_buffers();
-		create_pipelines();
+		Create_Resources();
+		Create_Buffers();
+		Create_Pipelines();
 	}
 
-	void create_resources()
+	void Create_Resources()
 	{
 	}
 
-	void create_buffers()
+	void Create_Buffers()
 	{
 	}
 
-	void create_pipelines()
+	void Create_Pipelines()
 	{
-		engine::attachment_info col_info = get_color_attachment_info(blend_configs::b_opaque,
-		    glm::vec4(0.0f), render_graph->core->swapchain_ref->get_format());
-		shader *v_shader    = render_graph->resources_manager->get_or_create_default_shader("HairVert", shader_stage::s_vert, shader_compiler::c_glsl);
-		shader *f_shader    = render_graph->resources_manager->get_or_create_default_shader("HairFrag", shader_stage::s_frag, shader_compiler::c_glsl);
-		shader *g_shader    = render_graph->resources_manager->get_or_create_default_shader("HairGeo", shader_stage::s_geom, shader_compiler::c_glsl);
-		shader *tesc_shader = render_graph->resources_manager->get_or_create_default_shader("HairTesc", shader_stage::s_tess_control, shader_compiler::c_glsl);
-		shader *tese_shader = render_graph->resources_manager->get_or_create_default_shader("HairTese", shader_stage::s_tess_eval, shader_compiler::c_glsl);
+		engine::Attachment_Info col_info = Get_Color_Attachment_Info(Blend_Configs::B_Opaque,
+		    glm::vec4(0.0f), render_graph->core->swapchain_ref->Get_Format());
+		Shader *v_shader    = render_graph->resources_manager->Get_Or_Create_Default_Shader("HairVert", Shader_Stage::S_Vert, Shader_Compiler::C_Glsl);
+		Shader *f_shader    = render_graph->resources_manager->Get_Or_Create_Default_Shader("HairFrag", Shader_Stage::S_Frag, Shader_Compiler::C_Glsl);
+		Shader *g_shader    = render_graph->resources_manager->Get_Or_Create_Default_Shader("HairGeo", Shader_Stage::S_Geom, Shader_Compiler::C_Glsl);
+		Shader *tesc_shader = render_graph->resources_manager->Get_Or_Create_Default_Shader("HairTesc", Shader_Stage::S_Tess_Control, Shader_Compiler::C_Glsl);
+		Shader *tese_shader = render_graph->resources_manager->Get_Or_Create_Default_Shader("HairTese", Shader_Stage::S_Tess_Eval, Shader_Compiler::C_Glsl);
 
-		// auto image_info = image::create_info2d(window_provider->get_window_size(), 1, 1, engine::g_32b_format,engine::color_image_usage);
-		// image_view* attachment_output = render_graph->resources_manager->get_image("shOutput", image_info, 0, 0);
+		// auto image_info = image::Create_Info2d(window_provider->Get_Window_Size(), 1, 1, engine::g_32b_format,engine::color_image_usage);
+		// Image_View* attachment_output = render_graph->resources_manager->Get_Image("shOutput", image_info, 0, 0);
 
-		auto render_node = render_graph->add_pass(pass_name);
-		render_node->g_set_configs({true});
-		render_node->g_set_vert_shader(v_shader);
-		render_node->g_set_frag_shader(f_shader);
-		render_node->g_set_geom_shader(g_shader);
-		render_node->g_set_tes_control_shader(tesc_shader);
-		render_node->g_set_tes_eval_shader(tese_shader);
-		render_node->g_set_graphics_pipeline_configs(engine::graphics_pipeline_configs{
-		    rasterization_configs::r_fill, topology_configs::t_patch_list});
-		render_node->g_set_framebuffer_size(window_provider->get_window_size());
-		render_node->g_set_vertex_input(vertex_2d::get_vertex_input());
+		auto render_node = render_graph->Add_Pass(pass_name);
+		render_node->G_Set_Configs({true});
+		render_node->G_Set_Vert_Shader(v_shader);
+		render_node->G_Set_Frag_Shader(f_shader);
+		render_node->G_Set_Geom_Shader(g_shader);
+		render_node->G_Set_Tes_Control_Shader(tesc_shader);
+		render_node->G_Set_Tes_Eval_Shader(tese_shader);
+		render_node->G_Set_Graphics_Pipeline_Configs(engine::Graphics_Pipeline_Configs{
+		    Rasterization_Configs::R_Fill, Topology_Configs::T_Patch_List});
+		render_node->G_Set_Framebuffer_Size(window_provider->Get_Window_Size());
+		render_node->G_Set_Vertex_Input(Vertex_2d::Get_Vertex_Input());
 		// change this
-		//  render_node->g_set_push_constant_size(4);
-		render_node->g_add_color_attachment_output(0, col_info);
-		render_node->build_render_graph_node();
+		//  render_node->G_Set_Push_Constant_Size(4);
+		render_node->G_Add_Color_Attachment_Output(0, col_info);
+		render_node->Build_Render_Graph_Node();
 	}
 
-	void recreate_swap_chain_resources() override
+	void Recreate_Swap_Chain_Resources() override
 	{
 	}
 
-	void set_render_operation() override
+	void Set_Render_Operation() override
 	{
 		auto task_op = new std::function<void()>(
 		    [this] {
-			    auto render_node = render_graph->get_node(pass_name);
-			    render_node->g_set_color_image_attachment_binding(0, render_graph->current_back_buffer);
+			    auto render_node = render_graph->Get_Node(pass_name);
+			    render_node->G_Set_Color_Image_Attachment_Binding(0, render_graph->current_back_buffer);
 		    });
 		auto render_op = new std::function<void()>(
 		    [this]() {
 			    auto &render_node = render_graph->render_nodes.at(pass_name);
 			    vk::DeviceSize offset = 0;
-			    render_node->get_curr_cmd().bindVertexBuffers(
+			    render_node->Get_Curr_Cmd().bindVertexBuffers(
 			        0, 1,
-			        &render_graph->resources_manager->get_staged_buff_from_name("quad_default")->device_buffer->buffer_handle.get(),
+			        &render_graph->resources_manager->Get_Staged_Buff_From_Name("quad_default")->device_buffer->buffer_handle.get(),
 			        &offset);
-			    render_node->get_curr_cmd().bindIndexBuffer(
-			        render_graph->resources_manager->get_staged_buff_from_name("quad_index_default")->device_buffer->buffer_handle.get(), 0, vk::IndexType::eUint32);
-			    render_node->get_curr_cmd().drawIndexed(
-			        vertex_2d::get_quad_indices().size(), 1, 0, 0, 0);
+			    render_node->Get_Curr_Cmd().bindIndexBuffer(
+			        render_graph->resources_manager->Get_Staged_Buff_From_Name("quad_index_default")->device_buffer->buffer_handle.get(), 0, vk::IndexType::eUint32);
+			    render_node->Get_Curr_Cmd().drawIndexed(
+			        Vertex_2d::Get_Quad_Indices().size(), 1, 0, 0, 0);
 		    });
-		render_graph->get_node(pass_name)->g_set_render_operation(render_op);
-		render_graph->get_node(pass_name)->add_pre_rendering_task(task_op);
+		render_graph->Get_Node(pass_name)->G_Set_Render_Operation(render_op);
+		render_graph->Get_Node(pass_name)->Add_Pre_Rendering_Task(task_op);
 	}
 
-	void reload_shaders() override
+	void Reload_Shaders() override
 	{
 	}
 
 	std::string pass_name = "passName";
 
-	engine::core           *core;
-	engine::render_graph    *render_graph;
-	::window_provider *window_provider;
+	engine::Core           *core;
+	engine::Render_Graph    *render_graph;
+	::Window_Provider *window_provider;
 
-	engine::image_view *col_attachment_view;
+	engine::Image_View *col_attachment_view;
 };
 }        // namespace rendering
 

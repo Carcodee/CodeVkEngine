@@ -9,34 +9,34 @@
 namespace systems
 {
 
-class singleton_storage
+class Singleton_Storage
 {
   public:
-	template <typename value_type>
-	value_type *get()
+	template <typename Value_Type>
+	Value_Type *Get()
 	{
-		std::type_index type_index(typeid(value_type));
+		std::type_index type_index(typeid(Value_Type));
 		auto            it = storage.find(type_index);
 		if (it != storage.end())
 		{
-			return std::any_cast<value_type *>(it->second);
+			return std::any_cast<Value_Type *>(it->second);
 		}
 
-		auto insert = storage.emplace(type_index, std::make_any<value_type>());
+		auto insert = storage.emplace(type_index, std::make_any<Value_Type>());
 
-		return std::any_cast<value_type *>(insert.first->second);
+		return std::any_cast<Value_Type *>(insert.first->second);
 	}
-	singleton_storage(const singleton_storage &)           = delete;
-	singleton_storage operator=(const singleton_storage &) = delete;
+	Singleton_Storage(const Singleton_Storage &)           = delete;
+	Singleton_Storage operator=(const Singleton_Storage &) = delete;
 
-	static singleton_storage *instance()
+	static Singleton_Storage *Instance()
 	{
-		static singleton_storage instance;
+		static Singleton_Storage instance;
 		return &instance;
 	}
 
   private:
-	singleton_storage() = default;
+	Singleton_Storage() = default;
 	std::unordered_map<std::type_index, std::any> storage;
 };
 

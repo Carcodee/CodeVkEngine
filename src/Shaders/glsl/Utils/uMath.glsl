@@ -26,89 +26,89 @@ const float sh_c3[] = {
 -0.5900435899266435f
 };
 
-float abs_cos_theta_ws(vec3 v1, vec3 v2){
+float Abs_Cos_Theta_Ws(vec3 v1, vec3 v2){
     return abs(dot(v1, v2));
 }
-float cos_theta_ws(vec3 v1, vec3 v2){
+float Cos_Theta_Ws(vec3 v1, vec3 v2){
     return dot(v1, v2);
 }
-float abs_cos_theta_ns(vec3 v1){
+float Abs_Cos_Theta_Ns(vec3 v1){
     return v1.z;
 }
 
 
 //float
-float u_lerp(float start, float end, float v){
+float U_Lerp(float start, float end, float v){
     return start + v * (end - start);
 }
-float u_inv_lerp(float start, float end, float v){
+float U_Inv_Lerp(float start, float end, float v){
     return (v - start)/ (end - start);
 }
-float u_remap(float i_start, float i_end, float o_start, float o_end, float v){
+float U_Remap(float i_start, float i_end, float o_start, float o_end, float v){
     return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
 
 //vec2
-vec2 u_lerp(vec2 start, vec2 end, float v){
+vec2 U_Lerp(vec2 start, vec2 end, float v){
     return start + v * (end - start);
 }
-vec2 u_inv_lerp(vec2 start, vec2 end, float v){
+vec2 U_Inv_Lerp(vec2 start, vec2 end, float v){
     return (v - start)/ (end - start);
 }
-vec2 u_remap(vec2 i_start, vec2 i_end, vec2 o_start, vec2 o_end, float v){
+vec2 U_Remap(vec2 i_start, vec2 i_end, vec2 o_start, vec2 o_end, float v){
     return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
-vec2 u_lerp(vec2 start, vec2 end, vec2 v){
+vec2 U_Lerp(vec2 start, vec2 end, vec2 v){
     return start + v * (end - start);
 }
-vec2 u_inv_lerp(vec2 start, vec2 end, vec2 v){
+vec2 U_Inv_Lerp(vec2 start, vec2 end, vec2 v){
     return (v - start)/ (end - start);
 }
-vec2 u_remap(vec2 i_start, vec2 i_end, vec2 o_start, vec2 o_end, vec2 v){
+vec2 U_Remap(vec2 i_start, vec2 i_end, vec2 o_start, vec2 o_end, vec2 v){
     return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
 
 //vec3
-vec3 u_lerp(vec3 start, vec3 end, float v){
+vec3 U_Lerp(vec3 start, vec3 end, float v){
     return start + v * (end - start);
 }
-vec3 u_inv_lerp(vec3 start, vec3 end, float v){
+vec3 U_Inv_Lerp(vec3 start, vec3 end, float v){
     return (v - start)/ (end - start);
 }
-vec3 u_remap(vec3 i_start, vec3 i_end, vec3 o_start, vec3 o_end, float v){
+vec3 U_Remap(vec3 i_start, vec3 i_end, vec3 o_start, vec3 o_end, float v){
     return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
-vec3 u_lerp(vec3 start, vec3 end, vec3 v){
+vec3 U_Lerp(vec3 start, vec3 end, vec3 v){
     return start + v * (end - start);
 }
-vec3 u_inv_lerp(vec3 start, vec3 end, vec3 v){
+vec3 U_Inv_Lerp(vec3 start, vec3 end, vec3 v){
     return (v - start)/ (end - start);
 }
-vec3 u_remap(vec3 i_start, vec3 i_end, vec3 o_start, vec3 o_end, vec3 v){
+vec3 U_Remap(vec3 i_start, vec3 i_end, vec3 o_start, vec3 o_end, vec3 v){
     return o_start + (o_end - o_start) * (v - i_start)/(i_end - i_start);
 }
 
-float u_min(float v1, float v2){
+float U_Min(float v1, float v2){
     return min(v1, v2);
 }
-vec2 u_min(vec2 v1, vec2 v2){
+vec2 U_Min(vec2 v1, vec2 v2){
     return vec2(min(v1.x, v2.x), min(v1.y, v2.y));
 }
-vec3 u_min(vec3 v1,vec3 v2){
+vec3 U_Min(vec3 v1,vec3 v2){
     return vec3(min(v1.x, v2.x), min(v1.y, v2.y), min(v1.z, v2.z));
 }
 
-float u_max(float v1, float v2){
+float U_Max(float v1, float v2){
     return max(v1, v2);
 }
-vec2 u_max(vec2 v1, vec2 v2){
+vec2 U_Max(vec2 v1, vec2 v2){
     return vec2(max(v1.x, v2.x), max(v1.y, v2.y));
 }
-vec3 u_max(vec3 v1,vec3 v2){
+vec3 U_Max(vec3 v1,vec3 v2){
     return vec3(max(v1.x, v2.x), max(v1.y, v2.y), max(v1.z, v2.z));
 }
 
-vec3 u_hsl_to_rgb(float h, float s, float l) {
+vec3 U_Hsl_To_Rgb(float h, float s, float l) {
     float r, g, b;
 
     float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
@@ -131,7 +131,7 @@ vec3 u_hsl_to_rgb(float h, float s, float l) {
 }
 
 //z up in tangent space
-void u_get_ortho_base(vec3 n, out vec3 t, out vec3 b){
+void U_Get_Ortho_Base(vec3 n, out vec3 t, out vec3 b){
     if(n.z < 0.99){
         vec3 arbitrary = vec3(0.0, 0.0, 1.0);
         t = normalize(cross(n, arbitrary));
@@ -142,7 +142,7 @@ void u_get_ortho_base(vec3 n, out vec3 t, out vec3 b){
         b = normalize(cross(n, t));
     }
 }
-vec4 u_get_plane(vec3 p0, vec3 p1, vec3 p2){
+vec4 U_Get_Plane(vec3 p0, vec3 p1, vec3 p2){
     vec3 v1 = p1 - p0;
     vec3 v2 = p2 - p0;
 
@@ -153,15 +153,15 @@ vec4 u_get_plane(vec3 p0, vec3 p1, vec3 p2){
     return plane;
 }
 
-float u_sdf_plane(vec3 pos, vec3 n, float d_to_plane){
+float U_Sdf_Plane(vec3 pos, vec3 n, float d_to_plane){
     return dot(pos, n) + d_to_plane;
 }
 
-bool u_sphere_inside_plane(vec3 pos, float r, vec3 n, float d_to_plane){
-    bool behind_plane = u_sdf_plane(pos, n, d_to_plane) < -r;
+bool U_Sphere_Inside_Plane(vec3 pos, float r, vec3 n, float d_to_plane){
+    bool behind_plane = U_Sdf_Plane(pos, n, d_to_plane) < -r;
     return !behind_plane;
 }
-vec3 u_line_intersection_to_z_plane(vec3 a, vec3 b, float z_distance){
+vec3 U_Line_Intersection_To_Z_Plane(vec3 a, vec3 b, float z_distance){
     vec3 normal = vec3(0.0, 0.0, 1.0);
     vec3 ab =  b - a;
     float t = (z_distance - dot(normal, a)) / dot(normal, ab);
@@ -169,19 +169,19 @@ vec3 u_line_intersection_to_z_plane(vec3 a, vec3 b, float z_distance){
     return result;
 }
 
-bool u_aabb(vec2 min_aabb, vec2 max_aabb, vec2 pos){
+bool U_Aabb(vec2 min_aabb, vec2 max_aabb, vec2 pos){
     bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
     bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
     return x_check && y_check;
 }
-bool u_aabb(vec3 min_aabb, vec3 max_aabb, vec3 pos){
+bool U_Aabb(vec3 min_aabb, vec3 max_aabb, vec3 pos){
     bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
     bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
     bool z_check = bool(pos.z > min_aabb.z && pos.z < max_aabb.z);
     return x_check && y_check;
 }
 
-bool u_aabb_sphere(vec2 min, vec2 max, vec2 sphere_pos, float r){
+bool U_Aabb_Sphere(vec2 min, vec2 max, vec2 sphere_pos, float r){
 
     float closest_x = clamp(sphere_pos.x, min.x, max.x);
     float closest_y = clamp(sphere_pos.y, min.y, max.y);
@@ -193,7 +193,7 @@ bool u_aabb_sphere(vec2 min, vec2 max, vec2 sphere_pos, float r){
 
     return distance_sqr < r * r;
 }
-bool u_aabb_sphere(vec3 min, vec3 max, vec3 sphere_pos, float r){
+bool U_Aabb_Sphere(vec3 min, vec3 max, vec3 sphere_pos, float r){
 
     float closest_x = clamp(sphere_pos.x, min.x, max.x);
     float closest_y = clamp(sphere_pos.y, min.y, max.y);
@@ -209,12 +209,12 @@ bool u_aabb_sphere(vec3 min, vec3 max, vec3 sphere_pos, float r){
 }
 
 
-float u_sdf_sphere(vec3 sphere_pos, vec3 pos){
+float U_Sdf_Sphere(vec3 sphere_pos, vec3 pos){
     return distance(sphere_pos, pos);
 }
 
 
-vec3 u_compute_sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
+vec3 U_Compute_Sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
     float x = ray_dir.x, y = ray_dir.y, z = ray_dir.z;
 
     vec3 c = sh_c0 * sh_coef[0];
@@ -245,5 +245,20 @@ vec3 u_compute_sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
 
     //    assert(all(lessThanEqual(c, vec3(159.0))), "invalid sh: %f %f %f\n", c);
     return c;
+}
+mat4 Grid_3d_Pos_From_1d(float cell_size, uvec3 dimensions, vec3 origin, uint cell_id){
+
+    uvec3 pos_in_grid = uvec3(cell_id % dimensions.x, (cell_id / dimensions.x) % dimensions.y, cell_id / (dimensions.x * dimensions.y));
+    vec3 offset= vec3(pos_in_grid.x, pos_in_grid.y, pos_in_grid.z) * cell_size;
+
+    mat4 model = mat4(1.0);
+    model[0][0] = cell_size;
+    model[1][1] = cell_size;
+    model[2][2] = cell_size;
+
+    model[3][0] = origin.x + offset.x;
+    model[3][1] = origin.z + offset.y;
+    model[3][2] = origin.y + offset.z;
+    return model;
 }
 #endif 

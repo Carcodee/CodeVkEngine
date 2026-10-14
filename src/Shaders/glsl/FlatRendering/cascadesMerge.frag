@@ -9,7 +9,7 @@
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
 
-layout(push_constant) uniform push_constants{
+layout(push_constant) uniform Push_Constants{
     int cascades_count;
     int probe_size_px;
     int interval_count;
@@ -26,12 +26,12 @@ layout (location = 0) in vec2 text_coord;
 
 layout(location = 0) out vec4 out_color;
 
-vec4 merge_intervals(vec4 near, vec4 far){
+vec4 Merge_Intervals(vec4 near, vec4 far){
     vec3 radiance = near.rgb + (far.rgb * near.a);
     return vec4(radiance, near.a * far.a);
 }
 
-vec4 bilinear_weights(vec2 ratio) {
+vec4 Bilinear_Weights(vec2 ratio) {
     return vec4(
     (1.0 - ratio.x) * (1.0 - ratio.y),
     ratio.x * (1.0 - ratio.y),
@@ -40,13 +40,13 @@ vec4 bilinear_weights(vec2 ratio) {
     );
 }
 
-void bilinear_samples(vec2 dest_center, vec2 bilinear_size, out vec4 weights, out ivec2 base_index) {
+void Bilinear_Samples(vec2 dest_center, vec2 bilinear_size, out vec4 weights, out ivec2 base_index) {
     const vec2 base_coord = (dest_center / bilinear_size) - vec2(0.5, 0.5);
     const vec2 ratio = fract(base_coord);
-    weights = bilinear_weights(ratio);
+    weights = Bilinear_Weights(ratio);
     base_index = ivec2(floor(base_coord));
 }
-ivec2 bilinear_offset(int offset_index) {
+ivec2 Bilinear_Offset(int offset_index) {
     const ivec2 offsets[4] = {ivec2(0, 0), ivec2(1, 0), ivec2(0, 1), ivec2(1, 1)};
     return offsets[offset_index];
 }
@@ -93,7 +93,7 @@ void main() {
     vec2 bilinear_size = probe_sizes_px[n_plus_one];
     vec4 weights = vec4(0.0);
     ivec2 base_index = ivec2(0.0);
-    bilinear_samples(dest_center, bilinear_size, weights, base_index);
+    Bilinear_Samples(dest_center, bilinear_size, weights, base_index);
 
     ivec2 dest_dir_coord = ivec2(dir_indices[n] % int(probe_sizes_px[n].x), dir_indices[n] / probe_sizes_px[n].y);
     vec2 dest_base_coord =floor(dest_center / probe_sizes_px[n]) * probe_sizes_px[n];
@@ -110,7 +110,7 @@ void main() {
             vec4 radiance_bilinear = vec4(0.0);
             //per probe in n+1
             for (int b = 0; b < 4; b++){
-                const ivec2 base_offset = bilinear_offset(b);
+                const ivec2 base_offset = Bilinear_Offset(b);
                 const ivec2 bilinear_index = base_index + base_offset;
                 const int base_dir_index = dir_indices[n] * 4;
                 const int bilinear_dir_index = base_dir_index + d;
@@ -118,7 +118,7 @@ void main() {
                 bilinear_dir_index / bilinear_size.y);
                 const ivec2 bilinear_texel = bilinear_index * ivec2(bilinear_size) + bilinear_dir_coord;
                 vec4 bilinear_interval = imageLoad(radiances[n_plus_one], bilinear_texel);
-                radiance_bilinear += merge_intervals(dest_interval, bilinear_interval) * weights[b];
+                radiance_bilinear += Merge_Intervals(dest_interval, bilinear_interval) * weights[b];
             }
             merged += radiance_bilinear;
         }

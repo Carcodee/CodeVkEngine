@@ -9,25 +9,25 @@
 
 namespace engine
 {
-    class swap_chain
+    class Swap_Chain
     {
     public:
 
-        swap_chain(vk::Instance instance, vk::PhysicalDevice physical_device, vk::Device logical_device, window_desc window_desc
-            ,uint32_t images_count, engine::queue_family_indices queue_family_ids, vk::PresentModeKHR preffered_mode, glm::uvec2 window_size)
+        Swap_Chain(vk::Instance instance, vk::PhysicalDevice physical_device, vk::Device logical_device, Window_Desc window_desc
+            ,uint32_t images_count, engine::Queue_Family_Indices queue_family_ids, vk::PresentModeKHR preffered_mode, glm::uvec2 window_size)
         {
             
             this->logical_device =logical_device;
-            this->surface = create_win32_surface(instance, window_desc);
+            this->surface = Create_Win32_Surface(instance, window_desc);
             bool invalid_surface = queue_family_ids.graphics_family_index == uint32_t(-1) || !physical_device.
                 getSurfaceSupportKHR(queue_family_ids.present_family_index, surface.get());
             assert(!invalid_surface &&"Window surface is incompatible with device");
 
-            this->surface_details = get_surface_details(physical_device, this->surface.get());
-            this->surface_format = find_swapchain_surface_format(surface_details.formats);
-            this->present_mode = find_swapchain_present_mode(surface_details.present_modes, preffered_mode);
-            this->extent = find_swap_chain_extent(surface_details.capabilities, vk::Extent2D(window_size.x,window_size.y));
-            this->depth_format = find_depth_format(physical_device);
+            this->surface_details = Get_Surface_Details(physical_device, this->surface.get());
+            this->surface_format = Find_Swapchain_Surface_Format(surface_details.formats);
+            this->present_mode = Find_Swapchain_Present_Mode(surface_details.present_modes, preffered_mode);
+            this->extent = Find_Swap_Chain_Extent(surface_details.capabilities, vk::Extent2D(window_size.x,window_size.y));
+            this->depth_format = Find_Depth_Format(physical_device);
 
             uint32_t image_count = std::max(surface_details.capabilities.minImageCount, images_count);
             if (surface_details.capabilities.maxImageCount > 0 && image_count > surface_details.capabilities.maxImageCount)
@@ -69,11 +69,11 @@ namespace engine
 
             for (int image_index = 0; image_index < swap_chain_images.size(); ++image_index)
             {
-                image_swapchain image_full;
-                image_full.image_metadata = std::make_unique<engine::image_data>(swap_chain_images[image_index], vk::ImageType::e2D,
+                Image_Swapchain image_full;
+                image_full.image_metadata = std::make_unique<engine::Image_Data>(swap_chain_images[image_index], vk::ImageType::e2D,
                                                                   glm::vec3(extent.width, extent.height, 1), 1, 1,
                                                                   surface_format.format, vk::ImageLayout::eUndefined);
-                image_full.image_view_handle = std::make_unique<engine::image_view>(logical_device,
+                image_full.image_view_handle = std::make_unique<engine::Image_View>(logical_device,
                                                                   image_full.image_metadata.get(), 0, 1, 0, 1);
 
                 images.emplace_back(std::move(image_full));
@@ -84,29 +84,29 @@ namespace engine
             
             for (int i = 0; i < images.size(); ++i)
             {
-                auto create_info = engine::image::create_info2d(glm::vec2(extent.width, extent.height), 1, 1, depth_format, engine::depth_image_usage);
-                std::unique_ptr<engine::image> image = std::make_unique<engine::image>(physical_device, logical_device, create_info);
+                auto create_info = engine::Image::Create_Info2d(glm::vec2(extent.width, extent.height), 1, 1, depth_format, engine::depth_image_usage);
+                std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(physical_device, logical_device, create_info);
                 depth_images.emplace_back(std::move(image));
             }
             for (int image_index = 0; image_index < images.size(); ++image_index)
             {
-                image_swapchain depth_image_full;
-                depth_image_full.image_metadata = std::make_unique<engine::image_data>(depth_images[image_index]->image_handle.get(), vk::ImageType::e2D,
+                Image_Swapchain depth_image_full;
+                depth_image_full.image_metadata = std::make_unique<engine::Image_Data>(depth_images[image_index]->image_handle.get(), vk::ImageType::e2D,
                                                                   glm::vec3(extent.width, extent.height, 1), 1, 1,
                                                                   depth_format, vk::ImageLayout::eUndefined);
-                depth_image_full.image_view_handle = std::make_unique<engine::image_view>(logical_device, depth_image_full.image_metadata.get(), 0, 1, 0, 1);
+                depth_image_full.image_view_handle = std::make_unique<engine::Image_View>(logical_device, depth_image_full.image_metadata.get(), 0, 1, 0, 1);
 
                 depth_images_full.emplace_back(std::move(depth_image_full));
             }
                         
         }
-        vk::ResultValue<uint32_t> acquire_next_image(vk::Semaphore semaphore)
+        vk::ResultValue<uint32_t> Acquire_Next_Image(vk::Semaphore semaphore)
         {
             return logical_device.acquireNextImageKHR(swapchain_handle.get(), std::numeric_limits<uint64_t>::max(), semaphore, nullptr);
         }
-        std::vector<engine::image_view*> get_image_views()
+        std::vector<engine::Image_View*> Get_Image_Views()
         {
-            std::vector<engine::image_view*> res_image_views;
+            std::vector<engine::Image_View*> res_image_views;
             for (auto& image : this->images)
             {
                 res_image_views.push_back(image.image_view_handle.get());
@@ -114,9 +114,9 @@ namespace engine
             return res_image_views;
         }
 
-        std::vector<engine::image_view*> get_depth_image_views()
+        std::vector<engine::Image_View*> Get_Depth_Image_Views()
         {
-            std::vector<engine::image_view*> res_image_views;
+            std::vector<engine::Image_View*> res_image_views;
             for (auto& image : this->depth_images_full)
             {
                 res_image_views.push_back(image.image_view_handle.get());
@@ -124,14 +124,14 @@ namespace engine
             return res_image_views;
         }
 
-        vk::Format get_format()
+        vk::Format Get_Format()
         {
             return surface_format.format;
         }
         
         
 
-        static vk::SurfaceFormatKHR find_swapchain_surface_format(const std::vector<vk::SurfaceFormatKHR>& avalible_formats)
+        static vk::SurfaceFormatKHR Find_Swapchain_Surface_Format(const std::vector<vk::SurfaceFormatKHR>& avalible_formats)
         {
             vk::SurfaceFormatKHR best_format = {vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear};
 
@@ -152,7 +152,7 @@ namespace engine
             
         }
 
-        static vk::PresentModeKHR find_swapchain_present_mode(const std::vector<vk::PresentModeKHR> available_present_modes,
+        static vk::PresentModeKHR Find_Swapchain_Present_Mode(const std::vector<vk::PresentModeKHR> available_present_modes,
                                                            vk::PresentModeKHR preferred_mode)
         {
             for (const auto& available_present_mode : available_present_modes)
@@ -165,7 +165,7 @@ namespace engine
             return vk::PresentModeKHR::eFifo;
         }
 
-        static vk::Format find_depth_format(vk::PhysicalDevice physical_device)
+        static vk::Format Find_Depth_Format(vk::PhysicalDevice physical_device)
         {
             std::vector<vk::Format> depth_formats = {
                 vk::Format::eD32Sfloat,           
@@ -175,7 +175,7 @@ namespace engine
 
             for (vk::Format format : depth_formats)
             {
-                if (is_depth_format(format))
+                if (Is_Depth_Format(format))
                 {
                     vk::FormatProperties format_properties = physical_device.getFormatProperties(format);
 
@@ -192,7 +192,7 @@ namespace engine
 
             throw std::runtime_error("Failed to find a supported depth format!");
         }
-        static vk::Extent2D find_swap_chain_extent(const vk::SurfaceCapabilitiesKHR& surface_capabilities_khr,
+        static vk::Extent2D Find_Swap_Chain_Extent(const vk::SurfaceCapabilitiesKHR& surface_capabilities_khr,
                                                            vk::Extent2D window_size)
         {
             if (surface_capabilities_khr.currentExtent.width != std::numeric_limits<uint32_t>::max())
@@ -213,22 +213,22 @@ namespace engine
 
 
 
-        surface_details surface_details;
+        Surface_Details surface_details;
         vk::Device logical_device;
         vk::SurfaceFormatKHR surface_format;
         vk::Format depth_format;
         vk::PresentModeKHR present_mode;
         vk::Extent2D extent;
-        struct image_swapchain
+        struct Image_Swapchain
         {
-            std::unique_ptr<engine::image_data> image_metadata;
-            std::unique_ptr<engine::image_view> image_view_handle;
+            std::unique_ptr<engine::Image_Data> image_metadata;
+            std::unique_ptr<engine::Image_View> image_view_handle;
         };
 
-        std::vector<image_swapchain> images;
+        std::vector<Image_Swapchain> images;
         
-        std::vector<std::unique_ptr<engine::image>> depth_images;
-        std::vector<image_swapchain> depth_images_full;
+        std::vector<std::unique_ptr<engine::Image>> depth_images;
+        std::vector<Image_Swapchain> depth_images_full;
 
         vk::UniqueSurfaceKHR surface;
         vk::UniqueSwapchainKHR swapchain_handle;

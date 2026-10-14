@@ -12,11 +12,11 @@ layout (location = 2) out vec3 tang;
 layout (location = 3) out int id;
 layout (location = 4) out vec2 screen_uv;
 
-layout(push_constant)uniform push_constants{
+layout(push_constant)uniform Push_Constants{
     mat4 model;
     mat4 proj_view;
 }pc;
-layout (set = 0, binding = 3) readonly buffer meshes_model_matrices{
+layout (set = 0, binding = 3) readonly buffer Meshes_Model_Matrices{
     mat4[] model_matrices;
 };
 

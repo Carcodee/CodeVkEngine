@@ -8,70 +8,70 @@ namespace engine{
 
 
     //Sync
-    enum struct queue_family_types
+    enum struct Queue_Family_Types
     {
-        graphics,
-        transfer,
-        compute,
-        present,
-        undefined
+        Graphics,
+        Transfer,
+        Compute,
+        Present,
+        Undefined
       };
 
-    enum layout_patterns
+    enum Layout_Patterns
     {
-        graphics_read,
-        graphics_write,
-        compute,
-        compute_write,
-        transfer_src,
-        transfer_dst,
-        color_attachment,
-        depth_attachment,
-        present,
-        empty,
+        Graphics_Read,
+        Graphics_Write,
+        Compute,
+        Compute_Write,
+        Transfer_Src,
+        Transfer_Dst,
+        Color_Attachment,
+        Depth_Attachment,
+        Present,
+        Empty,
     };
 
-    enum buffer_usage_types
+    enum Buffer_Usage_Types
     {
-        b_vertex_buffer,
-        b_graphics_write,
-        b_compute_write,
-        b_transfer_dst,
-        b_transfer_src,
-        b_draw_indirect,
-        b_empty
+        B_Vertex_Buffer,
+        B_Graphics_Write,
+        B_Compute_Write,
+        B_Transfer_Dst,
+        B_Transfer_Src,
+        B_Draw_Indirect,
+        B_Empty
     };
     ///
 
     //Pipeline
-    enum blend_configs
+    enum Blend_Configs
     {
-        b_none,
-        b_opaque,
-        b_add,
-        b_mix,
-        b_alpha_blend
+        B_None,
+        B_Opaque,
+        B_Add,
+        B_Mix,
+        B_Alpha_Blend
     };
 
-    enum depth_configs
+    enum Depth_Configs
     {
-        d_none,
-        d_enable,
-        d_disable
+        D_None,
+        D_Enable,
+        D_Disable
     };
 
-    enum rasterization_configs
+    enum Rasterization_Configs
     {
-        r_fill,
-        r_line,
-        r_point
+        R_Fill,
+        R_Line,
+        R_Point
     };
 
-    enum topology_configs
+    enum Topology_Configs
     {
-       t_triangle,
-       t_point_list,
-       t_patch_list,
+       T_Triangle,
+       T_Point_List,
+       T_Patch_List,
     };
     ///
 

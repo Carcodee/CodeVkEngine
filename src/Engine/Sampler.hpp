@@ -7,11 +7,11 @@
 
 namespace engine
 {
-    class sampler
+    class Sampler
     {
     public:
 
-        sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+        Sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
                 vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
                 vk::BorderColor border_color = vk::BorderColor())
         {
@@ -44,10 +44,10 @@ namespace engine
         vk::BorderColor border_color;
         vk::UniqueSampler sampler_handle;
     };
-    class sampler_pool
+    class Sampler_Pool
     {
     public:
-        engine::sampler* add_sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+        engine::Sampler* Add_Sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
                 vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
                 vk::BorderColor border_color = vk::BorderColor())
         {
@@ -61,11 +61,11 @@ namespace engine
                     return sampler.get();
                 }
             }
-            std::unique_ptr<engine::sampler> sampler = std::make_unique<engine::sampler>(logical_device ,address_mode, min_mag_filter_type, mip_filter_type, use_comparison, border_color);
+            std::unique_ptr<engine::Sampler> sampler = std::make_unique<engine::Sampler>(logical_device ,address_mode, min_mag_filter_type, mip_filter_type, use_comparison, border_color);
             sampler_pool.emplace_back(std::move(sampler));
             return sampler_pool.front().get();
         }
-        engine::sampler* get_sampler(vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+        engine::Sampler* Get_Sampler(vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
                 vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
                 vk::BorderColor border_color = vk::BorderColor())
         {
@@ -83,7 +83,7 @@ namespace engine
         }
 
         
-        std::vector<std::unique_ptr<engine::sampler>> sampler_pool;
+        std::vector<std::unique_ptr<engine::Sampler>> sampler_pool;
         
     };
 }

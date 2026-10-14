@@ -10,7 +10,7 @@
 
 namespace engine
 {
-engine::core::core(const char **instance_extensions, uint8_t instance_extensions_count, window_desc *compatible_window_desc,
+engine::Core::Core(const char **instance_extensions, uint8_t instance_extensions_count, Window_Desc *compatible_window_desc,
            bool enable_debugging)
 {
 	std::vector<const char *> res_instance_extensions(instance_extensions, instance_extensions + instance_extensions_count);
@@ -25,25 +25,25 @@ engine::core::core(const char **instance_extensions, uint8_t instance_extensions
 		res_instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
-	this->instance = create_instance(res_instance_extensions, validation_layers);
+	this->instance = Create_Instance(res_instance_extensions, validation_layers);
 
-	loader = vulkan_dispatch_loader_dynamic(instance.get(), vkGetInstanceProcAddr);
+	loader = Vulkan_Dispatch_Loader_Dynamic(instance.get(), vkGetInstanceProcAddr);
 	loader.init();
 
 	auto properties = vk::enumerateInstanceLayerProperties();
 
 	if (enable_debugging)
 	{
-		this->debug_utils_messenger = create_debug_utils_messenger(instance.get(), debug_message_callback, loader);
+		this->debug_utils_messenger = Create_Debug_Utils_Messenger(instance.get(), Debug_Message_Callback, loader);
 	}
-	this->physical_device = find_physical_device(instance.get());
-	this->device_uuid     = find_physical_device_uuid(this->physical_device);
+	this->physical_device = Find_Physical_Device(instance.get());
+	this->device_uuid     = Find_Physical_Device_Uuid(this->physical_device);
 
 	if (compatible_window_desc)
 	{
 		vk::UniqueSurfaceKHR compatible_surface;
-		compatible_surface        = create_win32_surface(instance.get(), *compatible_window_desc);
-		this->queue_family_ids = find_queue_family_indices(physical_device, compatible_surface.get());
+		compatible_surface        = Create_Win32_Surface(instance.get(), *compatible_window_desc);
+		this->queue_family_ids = Find_Queue_Family_Indices(physical_device, compatible_surface.get());
 	}
 	std::vector<const char *> device_extensions;
 	device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -55,17 +55,17 @@ engine::core::core(const char **instance_extensions, uint8_t instance_extensions
 	device_extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
 	device_extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
 
-	this->logical_device      = create_logical_device(this->physical_device, this->queue_family_ids, device_extensions,
+	this->logical_device      = Create_Logical_Device(this->physical_device, this->queue_family_ids, device_extensions,
 	                                               validation_layers);
-	// this->presentation_queue       = get_device_queue(this->logical_device.get(), queue_family_ids.present_family_index);
+	// this->presentation_queue       = Get_Device_Queue(this->logical_device.get(), queue_family_ids.present_family_index);
 	
-	this->queue_worker_manager = std::make_unique<engine::queue_worker_manager>(this);
-	this->queue_worker_manager->get_or_create_worker_queue("Present", queue_family_ids.present_family_index);
-	this->queue_worker_manager->get_or_create_worker_queue("Graphics", queue_family_ids.graphics_family_index);
-	this->queue_worker_manager->get_or_create_worker_queue("Compute", queue_family_ids.compute_family_index);
-	this->queue_worker_manager->get_or_create_worker_queue("Graphics_Test", queue_family_ids.graphics_family_index);
-	this->queue_worker_manager->get_or_create_worker_queue("UI", queue_family_ids.graphics_family_index);
-	this->queue_worker_manager->get_or_create_worker_queue("CUDA", queue_family_ids.compute_family_index, true, true);
+	this->queue_worker_manager = std::make_unique<engine::Queue_Worker_Manager>(this);
+	this->queue_worker_manager->Get_Or_Create_Worker_Queue("Present", queue_family_ids.present_family_index);
+	this->queue_worker_manager->Get_Or_Create_Worker_Queue("Graphics", queue_family_ids.graphics_family_index);
+	this->queue_worker_manager->Get_Or_Create_Worker_Queue("Compute", queue_family_ids.compute_family_index);
+	this->queue_worker_manager->Get_Or_Create_Worker_Queue("Graphics_Test", queue_family_ids.graphics_family_index);
+	this->queue_worker_manager->Get_Or_Create_Worker_Queue("UI", queue_family_ids.graphics_family_index);
+	this->queue_worker_manager->Get_Or_Create_Worker_Queue("CUDA", queue_family_ids.compute_family_index, true, true);
 
 	for (auto &property : properties)
 	{
@@ -80,7 +80,7 @@ engine::core::core(const char **instance_extensions, uint8_t instance_extensions
 	// }
 }
 
-engine::core::~core()
+engine::Core::~Core()
 {
 	for (auto &func : deletion_queue)
 	{
@@ -89,30 +89,30 @@ engine::core::~core()
 	deletion_queue.clear();
 }
 
-void engine::core::clear_caches()
+void engine::Core::Clear_Caches()
 {
 }
 
-std::unique_ptr<engine::swap_chain> engine::core::create_swapchain(vk::PresentModeKHR present_mode_khr, uint32_t image_count,
-                                                 window_desc window_desc, glm::uvec2 window_size)
+std::unique_ptr<engine::Swap_Chain> engine::Core::Create_Swapchain(vk::PresentModeKHR present_mode_khr, uint32_t image_count,
+                                                 Window_Desc window_desc, glm::uvec2 window_size)
 {
-	auto swap_chain     = std::unique_ptr<engine::swap_chain>(new engine::swap_chain(this->instance.get(), this->physical_device,
+	auto swap_chain     = std::unique_ptr<engine::Swap_Chain>(new engine::Swap_Chain(this->instance.get(), this->physical_device,
 	                                                              this->logical_device.get(), window_desc, image_count, this->queue_family_ids,
 	                                                              present_mode_khr, window_size));
 	this->swapchain_ref = swap_chain.get();
 	return swap_chain;
 }
 
-std::unique_ptr<engine::render_graph> engine::core::create_render_graph()
+std::unique_ptr<engine::Render_Graph> engine::Core::Create_Render_Graph()
 {
-	auto render_graph = std::make_unique<engine::render_graph>(this);
+	auto render_graph = std::make_unique<engine::Render_Graph>(this);
 
 	this->render_graph_ref = render_graph.get();
 
 	return render_graph;
 }
 
-std::vector<vk::UniqueCommandBuffer> engine::core::allocate_command_buffers(vk::CommandPool command_pool_in, size_t count)
+std::vector<vk::UniqueCommandBuffer> engine::Core::Allocate_Command_Buffers(vk::CommandPool command_pool_in, size_t count)
 {
 	auto command_buffer_alloc_info = vk::CommandBufferAllocateInfo()
 	                                  .setCommandPool(command_pool_in)
@@ -122,7 +122,7 @@ std::vector<vk::UniqueCommandBuffer> engine::core::allocate_command_buffers(vk::
 	return logical_device->allocateCommandBuffersUnique(command_buffer_alloc_info);
 }
 
-std::vector<vk::UniqueCommandBuffer> engine::core::allocate_command_buffers_secondary(vk::CommandPool command_pool_in, size_t count)
+std::vector<vk::UniqueCommandBuffer> engine::Core::Allocate_Command_Buffers_Secondary(vk::CommandPool command_pool_in, size_t count)
 {
 	auto command_buffer_alloc_info = vk::CommandBufferAllocateInfo()
 	                                  .setCommandPool(command_pool_in)
@@ -131,13 +131,13 @@ std::vector<vk::UniqueCommandBuffer> engine::core::allocate_command_buffers_seco
 
 	return logical_device->allocateCommandBuffersUnique(command_buffer_alloc_info);
 }
-vk::UniqueSemaphore engine::core::create_vulkan_semaphore()
+vk::UniqueSemaphore engine::Core::Create_Vulkan_Semaphore()
 {
 	auto semaphore_info = vk::SemaphoreCreateInfo();
 	return logical_device->createSemaphoreUnique(semaphore_info);
 }
 
-vk::UniqueSemaphore engine::core::create_exportable_binary_semaphore(HANDLE& handle_out)
+vk::UniqueSemaphore engine::Core::Create_Exportable_Binary_Semaphore(HANDLE& handle_out)
 {
 	auto semaphore_type_info          = vk::SemaphoreTypeCreateInfo();
 	semaphore_type_info.semaphoreType = vk::SemaphoreType::eBinary;
@@ -161,7 +161,7 @@ vk::UniqueSemaphore engine::core::create_exportable_binary_semaphore(HANDLE& han
 	return binary_sem;
 }
 
-vk::UniqueSemaphore engine::core::create_vulkan_timeline_semaphore(uint32_t initial_value)
+vk::UniqueSemaphore engine::Core::Create_Vulkan_Timeline_Semaphore(uint32_t initial_value)
 {
 	auto semaphore_type_info          = vk::SemaphoreTypeCreateInfo();
 	semaphore_type_info.semaphoreType = vk::SemaphoreType::eTimeline;
@@ -172,7 +172,7 @@ vk::UniqueSemaphore engine::core::create_vulkan_timeline_semaphore(uint32_t init
 	return logical_device->createSemaphoreUnique(semaphore_info);
 }
 
-vk::UniqueSemaphore engine::core::create_exportable_timeline_semaphore(uint32_t initial_value, HANDLE& handle_out)
+vk::UniqueSemaphore engine::Core::Create_Exportable_Timeline_Semaphore(uint32_t initial_value, HANDLE& handle_out)
 {
 	auto semaphore_type_info          = vk::SemaphoreTypeCreateInfo();
 	semaphore_type_info.semaphoreType = vk::SemaphoreType::eTimeline;
@@ -197,7 +197,7 @@ vk::UniqueSemaphore engine::core::create_exportable_timeline_semaphore(uint32_t 
 
 	return timeline;
 }
-vk::UniqueFence engine::core::create_fence(bool state)
+vk::UniqueFence engine::Core::Create_Fence(bool state)
 {
 	auto fence_info = vk::FenceCreateInfo();
 	if (state)
@@ -207,16 +207,16 @@ vk::UniqueFence engine::core::create_fence(bool state)
 	return logical_device->createFenceUnique(fence_info);
 }
 
-void engine::core::wait_for_fence(vk::Fence fence)
+void engine::Core::Wait_For_Fence(vk::Fence fence)
 {
 	auto res = logical_device->waitForFences({fence}, true, std::numeric_limits<uint64_t>::max());
 }
-void engine::core::reset_fence(vk::Fence fence)
+void engine::Core::Reset_Fence(vk::Fence fence)
 {
 	logical_device->resetFences({fence});
 }
 
-void engine::core::wait_idle()
+void engine::Core::Wait_Idle()
 {
 	if (this->logical_device)
 	{
@@ -228,7 +228,7 @@ void engine::core::wait_idle()
 	}
 }
 
-vk::UniqueInstance engine::core::create_instance(const std::vector<const char *> &instance_extensions,
+vk::UniqueInstance engine::Core::Create_Instance(const std::vector<const char *> &instance_extensions,
                                         const std::vector<const char *> &validation_layers)
 {
 	auto app_info = vk::ApplicationInfo()
@@ -254,7 +254,7 @@ vk::UniqueInstance engine::core::create_instance(const std::vector<const char *>
 	return vk::createInstanceUnique(instance_create_info);
 }
 
-std::array<uint8_t, VK_UUID_SIZE> engine::core::find_physical_device_uuid(vk::PhysicalDevice physical_device_in)
+std::array<uint8_t, VK_UUID_SIZE> engine::Core::Find_Physical_Device_Uuid(vk::PhysicalDevice physical_device_in)
 {
 	vk::PhysicalDeviceIDProperties physical_device_id_properties{};
 
@@ -269,7 +269,7 @@ std::array<uint8_t, VK_UUID_SIZE> engine::core::find_physical_device_uuid(vk::Ph
 	std::memcpy(uuid.data(), physical_device_id_properties.deviceUUID.data(), VK_UUID_SIZE);
 	return uuid;
 }
-vk::PhysicalDevice engine::core::find_physical_device(vk::Instance instance)
+vk::PhysicalDevice engine::Core::Find_Physical_Device(vk::Instance instance)
 {
 	std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
 	std::cout << "Found " << physical_devices.size() << " physical device(s)\n";
@@ -295,10 +295,10 @@ vk::PhysicalDevice engine::core::find_physical_device(vk::Instance instance)
 	return physical_device;
 }
 
-engine::queue_family_indices engine::core::find_queue_family_indices(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface)
+engine::Queue_Family_Indices engine::Core::Find_Queue_Family_Indices(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface)
 {
 	std::vector<vk::QueueFamilyProperties> queue_families = physical_device.getQueueFamilyProperties();
-	engine::queue_family_indices                     queue_family_ids;
+	engine::Queue_Family_Indices                     queue_family_ids;
 	queue_family_ids.transfer_family_index = uint32_t(-1);
 	queue_family_ids.graphics_family_index = uint32_t(-1);
 	queue_family_ids.present_family_index  = uint32_t(-1);
@@ -329,7 +329,7 @@ engine::queue_family_indices engine::core::find_queue_family_indices(vk::Physica
 	return queue_family_ids;
 }
 
-vk::UniqueDevice engine::core::create_logical_device(vk::PhysicalDevice physical_device, engine::queue_family_indices family_indices,
+vk::UniqueDevice engine::Core::Create_Logical_Device(vk::PhysicalDevice physical_device, engine::Queue_Family_Indices family_indices,
                                            std::vector<const char *> device_extensions,
                                            std::vector<const char *> validation_layers)
 {
@@ -379,7 +379,7 @@ vk::UniqueDevice engine::core::create_logical_device(vk::PhysicalDevice physical
 	return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
 }
 
-vk::UniqueCommandPool engine::core::create_command_pool(vk::Device logical_device, uint32_t family_index)
+vk::UniqueCommandPool engine::Core::Create_Command_Pool(vk::Device logical_device, uint32_t family_index)
 {
 	auto command_pool_info = vk::CommandPoolCreateInfo()
 	                           .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
@@ -388,12 +388,12 @@ vk::UniqueCommandPool engine::core::create_command_pool(vk::Device logical_devic
 	return logical_device.createCommandPoolUnique(command_pool_info);
 }
 
-vk::Queue engine::core::get_device_queue(vk::Device logical_device, uint32_t family_index)
+vk::Queue engine::Core::Get_Device_Queue(vk::Device logical_device, uint32_t family_index)
 {
 	return logical_device.getQueue(family_index, 0);
 }
 
-vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vulkan_dispatch_loader_dynamic> engine::core::create_debug_utils_messenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debug_callback, vulkan_dispatch_loader_dynamic &loader)
+vk::UniqueHandle<vk::DebugUtilsMessengerEXT, Vulkan_Dispatch_Loader_Dynamic> engine::Core::Create_Debug_Utils_Messenger(vk::Instance instance, PFN_vkDebugUtilsMessengerCallbackEXT debug_callback, Vulkan_Dispatch_Loader_Dynamic &loader)
 {
 	auto messenger_create_info = vk::DebugUtilsMessengerCreateInfoEXT()
 	                               .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
@@ -404,7 +404,7 @@ vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vulkan_dispatch_loader_dynamic> eng
 	return instance.createDebugUtilsMessengerEXTUnique(messenger_create_info, nullptr, loader);
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL engine::core::debug_message_callback(
+VKAPI_ATTR VkBool32 VKAPI_CALL engine::Core::Debug_Message_Callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT      message_severity,
     VkDebugUtilsMessageTypeFlagsEXT             message_type,
     const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,

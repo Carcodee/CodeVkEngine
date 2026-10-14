@@ -9,193 +9,193 @@ namespace rendering
 {
     using namespace engine;
 
-    class debug_renderer : public base_renderer
+    class Debug_Renderer : public Base_Renderer
     {
     public:
-        ~debug_renderer() override = default;
+        ~Debug_Renderer() override = default;
 
-        debug_renderer(engine::core* core, ::window_provider* window_provider,
-                      std::map<std::string, std::unique_ptr<base_renderer>>& renderers)
+        Debug_Renderer(engine::Core* core, ::Window_Provider* window_provider,
+                      std::map<std::string, std::unique_ptr<Base_Renderer>>& renderers)
         {
             this->core = core;
             this->render_graph = core->render_graph_ref;
             this->window_provider = window_provider;
             if (renderers.contains("ClusterRenderer"))
             {
-                this->cluster_renderer = dynamic_cast<rendering::cluster_renderer*>(renderers.at("ClusterRenderer").get());
+                this->cluster_renderer = dynamic_cast<rendering::Cluster_Renderer*>(renderers.at("ClusterRenderer").get());
             }
 
             if (renderers.contains("CFDRenderer"))
             {
-                this->cfd_renderer = dynamic_cast<rendering::cfd_renderer*>(renderers.at("CFDRenderer").get());
+                this->cfd_renderer = dynamic_cast<rendering::Cfd_Renderer*>(renderers.at("CFDRenderer").get());
             }
 
-            create_resources();
-            create_buffers();
-            create_pipelines();
+            Create_Resources();
+            Create_Buffers();
+            Create_Pipelines();
         }
 
-        void create_resources()
+        void Create_Resources()
         {
-            auto image_info = engine::image::create_info2d(window_provider->get_window_size(), 1, 1,
+            auto image_info = engine::Image::Create_Info2d(window_provider->Get_Window_Size(), 1, 1,
                                                  vk::Format::eR32G32B32A32Sfloat,
                                                  vk::ImageUsageFlagBits::eColorAttachment |
                                                  vk::ImageUsageFlagBits::eSampled);
 
             // image view not used right now
-            //  col_attachment_view = resources_manager::get_instance()->get_image("debugColAttachment", image_info, 0, 0);
-            set_view_camera();
+            //  col_attachment_view = resources_manager::Get_Instance()->Get_Image("debugColAttachment", image_info, 0, 0);
+            Set_View_Camera();
         }
 
-        void create_buffers()
+        void Create_Buffers()
         {
-            raw_vertices_buff = resources_manager::get_instance()->get_buffer(
-                resources_manager::buffer_params{
+            raw_vertices_buff = Resources_Manager::Get_Instance()->Get_Buffer(
+                Resources_Manager::Buffer_Params{
                     "debugRawVertices", vk::BufferUsageFlagBits::eVertexBuffer,
                     vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
                     1
                 });
 
-            auto* models_voxels = resources_manager::get_instance()->get_buffer(
-                resources_manager::buffer_params{
+            auto* models_voxels = Resources_Manager::Get_Instance()->Get_Buffer(
+                Resources_Manager::Buffer_Params{
                     "models_voxels", vk::BufferUsageFlagBits::eStorageBuffer,
                     vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-                    cfd_renderer->voxel_grid.pc_voxel_grid.get_size(), sizeof(glm::mat4)
+                    cfd_renderer->voxel_grid.pc_voxel_grid.Get_Size(), sizeof(glm::mat4)
                 });
         }
 
-        void create_pipelines()
+        void Create_Pipelines()
         {
-            std::string shader_path = systems::os::get_instance()->get_shaders_path();
+            std::string shader_path = systems::Os::Get_Instance()->Get_Shaders_Path();
 
-            engine::attachment_info col_info = get_color_attachment_info(blend_configs::b_opaque,
-                                                            glm::vec4(0.0f), core->swapchain_ref->get_format(),
+            engine::Attachment_Info col_info = Get_Color_Attachment_Info(Blend_Configs::B_Opaque,
+                                                            glm::vec4(0.0f), core->swapchain_ref->Get_Format(),
                                                             vk::AttachmentLoadOp::eLoad);
             if (cluster_renderer)
             {
-                auto model_v_shader = render_graph->resources_manager->get_shader(
-                    shader_path + "\\spirvGlsl\\DebugRendering\\debug.vert.spv", s_vert);
+                auto model_v_shader = render_graph->resources_manager->Get_Shader(
+                    shader_path + "\\spirvGlsl\\DebugRendering\\debug.vert.spv", S_Vert);
 
-                auto model_f_shader = render_graph->resources_manager->get_shader(
-                    shader_path + "\\spirvGlsl\\DebugRendering\\debug.frag.spv", s_frag);
+                auto model_f_shader = render_graph->resources_manager->Get_Shader(
+                    shader_path + "\\spirvGlsl\\DebugRendering\\debug.frag.spv", S_Frag);
 
-                auto render_node = render_graph->add_pass(m_debugger_pass_name);
-                render_node->g_set_vert_shader(model_v_shader);
-                render_node->g_set_frag_shader(model_f_shader);
-                render_node->g_set_framebuffer_size(render_graph->current_back_buffer->image_metadata->get_image_size());
-                render_node->g_set_push_constant_size(sizeof(mvp_pc));
-                render_node->g_set_vertex_input( d_vertex_3d::get_vertex_input());
-                render_node->g_add_color_attachment_output(0, col_info);
-                render_node->g_set_color_image_attachment_binding(0, render_graph->current_back_buffer);
-                render_node->g_set_graphics_pipeline_configs({rasterization_configs::r_line, topology_configs::t_triangle});
-                render_node->g_set_depth_config(depth_configs::d_none);
-                render_node->depends_on("light");
-                render_node->build_render_graph_node();
+                auto render_node = render_graph->Add_Pass(m_debugger_pass_name);
+                render_node->G_Set_Vert_Shader(model_v_shader);
+                render_node->G_Set_Frag_Shader(model_f_shader);
+                render_node->G_Set_Framebuffer_Size(render_graph->current_back_buffer->image_metadata->Get_Image_Size());
+                render_node->G_Set_Push_Constant_Size(sizeof(Mvp_Pc));
+                render_node->G_Set_Vertex_Input( D_Vertex_3d::Get_Vertex_Input());
+                render_node->G_Add_Color_Attachment_Output(0, col_info);
+                render_node->G_Set_Color_Image_Attachment_Binding(0, render_graph->current_back_buffer);
+                render_node->G_Set_Graphics_Pipeline_Configs({Rasterization_Configs::R_Line, Topology_Configs::T_Triangle});
+                render_node->G_Set_Depth_Config(Depth_Configs::D_None);
+                render_node->Depends_On("light");
+                render_node->Build_Render_Graph_Node();
 
                 auto debug_task = new std::function<void()>([this]()
                 {
-                    set_view_camera();
-                    create_frustum_vertices();
-                    raw_vertices_buff = resources_manager::get_instance()->set_buffer(
-                        "debugRawVertices", sizeof(d_vertex_3d) * raw_3d_vertices.size(), sizeof(d_vertex_3d),
+                    Set_View_Camera();
+                    Create_Frustum_Vertices();
+                    raw_vertices_buff = Resources_Manager::Get_Instance()->Set_Buffer(
+                        "debugRawVertices", sizeof(D_Vertex_3d) * raw_3d_vertices.size(), sizeof(D_Vertex_3d),
                         raw_3d_vertices.data());
                 });
                 auto render_op = new std::function<void()>(
                     [this]()
                     {
                         vk::DeviceSize offset = 0;
-                        auto node = render_graph->get_node(m_debugger_pass_name);
+                        auto node = render_graph->Get_Node(m_debugger_pass_name);
 
-                        node->get_curr_cmd().bindVertexBuffers(0, 1, &raw_vertices_buff->buffer_handle.get(), &offset);
+                        node->Get_Curr_Cmd().bindVertexBuffers(0, 1, &raw_vertices_buff->buffer_handle.get(), &offset);
 
-                        pc.proj_view = current_view_cam->get_view_proj();
+                        pc.proj_view = current_view_cam->Get_View_Proj();
                         pc.model = glm::mat4(1.0);
 
-                        node->get_curr_cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
+                        node->Get_Curr_Cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
                                                          vk::ShaderStageFlagBits::eVertex |
                                                          vk::ShaderStageFlagBits::eFragment,
-                                                         0, sizeof(mvp_pc), &pc);
-                        node->get_curr_cmd().draw(raw_3d_vertices.size(), 1, 0, 0);
+                                                         0, sizeof(Mvp_Pc), &pc);
+                        node->Get_Curr_Cmd().draw(raw_3d_vertices.size(), 1, 0, 0);
                     });
 
-                render_graph->get_node(m_debugger_pass_name)->add_pre_rendering_task(debug_task);
-                render_graph->get_node(m_debugger_pass_name)->g_set_render_operation(render_op);
+                render_graph->Get_Node(m_debugger_pass_name)->Add_Pre_Rendering_Task(debug_task);
+                render_graph->Get_Node(m_debugger_pass_name)->G_Set_Render_Operation(render_op);
             }
             if (cfd_renderer)
             {
 
-                auto model_v_shader = render_graph->resources_manager->get_shader(
-                    shader_path + "\\spirvGlsl\\DebugRendering\\debugCFD.vert.spv", s_vert);
-                auto model_f_shader = render_graph->resources_manager->get_shader(
-                    shader_path + "\\spirvGlsl\\DebugRendering\\debugCFD.frag.spv", s_frag);
-                auto render_node = render_graph->add_pass("voxelizer_viewer");
-                render_node->g_set_vert_shader(model_v_shader);
-                render_node->g_set_frag_shader(model_f_shader);
-                render_node->g_set_framebuffer_size(render_graph->current_back_buffer->image_metadata->get_image_size());
-                render_node->g_set_push_constant_size(sizeof(debug_voxels_mvp));
-                render_node->g_set_vertex_input(d_vertex_3d::get_vertex_input());
-                render_node->g_add_color_attachment_output(0, col_info);
-                render_node->g_set_color_image_attachment_binding(0, render_graph->current_back_buffer);
-                render_node->g_set_graphics_pipeline_configs({rasterization_configs::r_line, topology_configs::t_triangle});
-                render_node->g_set_depth_config(depth_configs::d_none);
+                auto model_v_shader = render_graph->resources_manager->Get_Shader(
+                    shader_path + "\\spirvGlsl\\DebugRendering\\debugCFD.vert.spv", S_Vert);
+                auto model_f_shader = render_graph->resources_manager->Get_Shader(
+                    shader_path + "\\spirvGlsl\\DebugRendering\\debugCFD.frag.spv", S_Frag);
+                auto render_node = render_graph->Add_Pass("voxelizer_viewer");
+                render_node->G_Set_Vert_Shader(model_v_shader);
+                render_node->G_Set_Frag_Shader(model_f_shader);
+                render_node->G_Set_Framebuffer_Size(render_graph->current_back_buffer->image_metadata->Get_Image_Size());
+                render_node->G_Set_Push_Constant_Size(sizeof(Debug_Voxels_Mvp));
+                render_node->G_Set_Vertex_Input(D_Vertex_3d::Get_Vertex_Input());
+                render_node->G_Add_Color_Attachment_Output(0, col_info);
+                render_node->G_Set_Color_Image_Attachment_Binding(0, render_graph->current_back_buffer);
+                render_node->G_Set_Graphics_Pipeline_Configs({Rasterization_Configs::R_Line, Topology_Configs::T_Triangle});
+                render_node->G_Set_Depth_Config(Depth_Configs::D_None);
                 if (cluster_renderer)
                 {
-                    render_node->depends_on("light");
-                    render_node->depends_on("ModelDebugger");
+                    render_node->Depends_On("light");
+                    render_node->Depends_On("ModelDebugger");
                 }
-                render_node->depends_on("voxelizer");
-                render_node->build_render_graph_node();
+                render_node->Depends_On("voxelizer");
+                render_node->Build_Render_Graph_Node();
 
-                render_node->g_set_render_operation(new std::function<void()>(
+                render_node->G_Set_Render_Operation(new std::function<void()>(
                     [this]()
                     {
-                        debug_voxels_pc.proj_view = current_view_cam->get_view_proj();
+                        debug_voxels_pc.proj_view = current_view_cam->Get_View_Proj();
                         debug_voxels_pc.origin = cfd_renderer->voxel_grid.pc_voxel_grid.origin;
                         debug_voxels_pc.cell_size = cfd_renderer->voxel_grid.pc_voxel_grid.cell_size;
                         debug_voxels_pc.dimensions = cfd_renderer->voxel_grid.pc_voxel_grid.dimensions;
 
                         vk::DeviceSize offset = 0;
-                        auto node = render_graph->get_node("voxelizer_viewer");
-
-                        node->get_curr_cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
+                        auto node = render_graph->Get_Node("voxelizer_viewer");
+                        node->G_Set_Buffer("Voxels",render_graph->resources_manager->Get_Buff_From_Name(cfd_renderer->voxel_grid.name));
+                        node->Get_Curr_Cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
                                                          vk::ShaderStageFlagBits::eVertex |
                                                          vk::ShaderStageFlagBits::eFragment,
-                                                         0, sizeof(debug_voxels_mvp), &debug_voxels_pc);
-                        node->get_curr_cmd().bindVertexBuffers(
-                            0, 1, &render_graph->resources_manager->get_staged_buff_from_name("cube_verts_default")->device_buffer->buffer_handle.
+                                                         0, sizeof(Debug_Voxels_Mvp), &debug_voxels_pc);
+                        node->Get_Curr_Cmd().bindVertexBuffers(
+                            0, 1, &render_graph->resources_manager->Get_Staged_Buff_From_Name("cube_verts_default")->device_buffer->buffer_handle.
                                                 get(), &offset);
-                        node->get_curr_cmd().bindIndexBuffer(
-                            render_graph->resources_manager->get_staged_buff_from_name("cube_index_default")->device_buffer->buffer_handle.get(), 0,
+                        node->Get_Curr_Cmd().bindIndexBuffer(
+                            render_graph->resources_manager->Get_Staged_Buff_From_Name("cube_index_default")->device_buffer->buffer_handle.get(), 0,
                             vk::IndexType::eUint32);
-                        node->get_curr_cmd().drawIndexed(36, cfd_renderer->voxel_grid.pc_voxel_grid.get_size(), 0, 0, 0);
+                        node->Get_Curr_Cmd().drawIndexed(36, cfd_renderer->voxel_grid.pc_voxel_grid.Get_Size(), 0, 0, 0);
                     }));
             }
         }
 
-        void recreate_swap_chain_resources() override
+        void Recreate_Swap_Chain_Resources() override
         {
         }
 
-        void set_render_operation() override
+        void Set_Render_Operation() override
         {
         }
 
-        void reload_shaders() override
+        void Reload_Shaders() override
         {
-            auto node = render_graph->get_node(m_debugger_pass_name);
+            auto node = render_graph->Get_Node(m_debugger_pass_name);
             if (node)
             {
-                node->g_recreate_resources();
+                node->G_Recreate_Resources();
             }
         }
 
-        void set_view_camera()
+        void Set_View_Camera()
         {
             current_view_cam = &cluster_renderer->camera;
         }
 
 
-        void create_frustum_vertices()
+        void Create_Frustum_Vertices()
         {
             glm::vec4 near_top_l = glm::inverse(cluster_renderer->curr_camera->matrices.view) * glm::vec4(
                 cluster_renderer->cam_frustum.points[0], 1.0);
@@ -249,24 +249,24 @@ namespace rendering
             raw_3d_vertices.push_back({far_bottom_l});
         }
 
-        std::vector<d_vertex_3d> raw_3d_vertices;
-        std::vector<rendering::model> models;
-        std::unique_ptr<shader> model_f_shader;
-        std::unique_ptr<shader> model_v_shader;
+        std::vector<D_Vertex_3d> raw_3d_vertices;
+        std::vector<rendering::Model> models;
+        std::unique_ptr<Shader> model_f_shader;
+        std::unique_ptr<Shader> model_v_shader;
         std::string m_debugger_pass_name = "ModelDebugger";
 
-        engine::core* core;
-        engine::render_graph* render_graph;
-        ::window_provider* window_provider;
+        engine::Core* core;
+        engine::Render_Graph* render_graph;
+        ::Window_Provider* window_provider;
 
-        engine::image_view* col_attachment_view;
-        engine::buffer* raw_vertices_buff;
-        rendering::camera* current_view_cam;
+        engine::Image_View* col_attachment_view;
+        engine::Buffer* raw_vertices_buff;
+        rendering::Camera* current_view_cam;
 
-        mvp_pc pc{};
-        debug_voxels_mvp debug_voxels_pc{};
-        rendering::cluster_renderer* cluster_renderer = nullptr;
-        rendering::cfd_renderer* cfd_renderer = nullptr;
+        Mvp_Pc pc{};
+        Debug_Voxels_Mvp debug_voxels_pc{};
+        rendering::Cluster_Renderer* cluster_renderer = nullptr;
+        rendering::Cfd_Renderer* cfd_renderer = nullptr;
     };
 } // namespace rendering
 #endif        // DEBUG_RENDERER_HPP

@@ -7,27 +7,27 @@
 
 namespace ui::nodes
 {
-struct graph_node;
-struct pin_info;
-struct graph_node_res_manager
+struct Graph_Node;
+struct Pin_Info;
+struct Graph_Node_Res_Manager
 {
-	std::unique_ptr<systems::arena> graph_nodes_arena;
+	std::unique_ptr<systems::Arena> graph_nodes_arena;
 
 	std::unordered_map<int, int> input_outputs_ids;
 
-	std::unordered_map<int, ui::nodes::graph_node *> graph_nodes;
+	std::unordered_map<int, ui::nodes::Graph_Node *> graph_nodes;
 
 	int widgets_id_gen = 100;
 	int id_node_gen    = 100;
 
-	graph_node_res_manager();
-	void       add_node_id(int input_output_id, int graph_node_id);
-	void       add_node_ids(ui::nodes::graph_node *node);
-	ui::nodes::graph_node *get_node(int id);
-	ui::nodes::graph_node *get_node_by_input_output_id(int id);
-	pin_info   *get_pin_from_id(int id);
-	int        next_widget_id();
-	int        next_node_id();
+	Graph_Node_Res_Manager();
+	void       Add_Node_Id(int input_output_id, int graph_node_id);
+	void       Add_Node_Ids(ui::nodes::Graph_Node *node);
+	ui::nodes::Graph_Node *Get_Node(int id);
+	ui::nodes::Graph_Node *Get_Node_By_Input_Output_Id(int id);
+	Pin_Info   *Get_Pin_From_Id(int id);
+	int        Next_Widget_Id();
+	int        Next_Node_Id();
 };
 }        // namespace ui::nodes
 

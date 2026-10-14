@@ -7,9 +7,9 @@
 
 namespace engine
 {
-    struct descriptor_layout_builder
+    struct Descriptor_Layout_Builder
     {
-        void add_binding(uint32_t binding, vk::DescriptorType type, int count = 1)
+        void Add_Binding(uint32_t binding, vk::DescriptorType type, int count = 1)
         {
             auto new_binding = vk::DescriptorSetLayoutBinding()
             .setBinding(binding)
@@ -20,7 +20,7 @@ namespace engine
         }
 
 
-        vk::UniqueDescriptorSetLayout build_bindings(vk::Device device, vk::ShaderStageFlags stage_flags,
+        vk::UniqueDescriptorSetLayout Build_Bindings(vk::Device device, vk::ShaderStageFlags stage_flags,
                                                     void* p_next = nullptr,
                                                     vk::DescriptorSetLayoutCreateFlags flags =
                                                         vk::DescriptorSetLayoutCreateFlags())
@@ -34,11 +34,11 @@ namespace engine
                                           .setPBindings(bindings.data())
                                           .setBindingCount(static_cast<uint32_t>(bindings.size()))
                                           .setFlags(flags);
-            clear();
+            Clear();
             return device.createDescriptorSetLayoutUnique(dst_set_layout_create_info);
         }
 
-        void clear()
+        void Clear()
         {
             bindings.clear();
             unique_bindings.clear();
@@ -48,9 +48,9 @@ namespace engine
         
     };
 
-    struct descriptor_writer_builder
+    struct Descriptor_Writer_Builder
     {
-        void add_images_array(int binding, std::vector<engine::image_view*>& image_views, std::vector<engine::sampler*>& samplers, vk::ImageLayout layout,
+        void Add_Images_Array(int binding, std::vector<engine::Image_View*>& image_views, std::vector<engine::Sampler*>& samplers, vk::ImageLayout layout,
                            vk::DescriptorType type)
         {
             // Partially bound arrays may be empty, but Vulkan writes may not be.
@@ -80,7 +80,7 @@ namespace engine
 
             writes.push_back(dst_write);
         }
-        void add_write_image(int binding, engine::image_view* image_view_handle, vk::Sampler sampler,vk::ImageLayout layout, vk::DescriptorType type)
+        void Add_Write_Image(int binding, engine::Image_View* image_view_handle, vk::Sampler sampler,vk::ImageLayout layout, vk::DescriptorType type)
         {
 
             vk::DescriptorImageInfo& image_info = image_infos.emplace_back(vk::DescriptorImageInfo()
@@ -98,7 +98,7 @@ namespace engine
             writes.push_back(dst_write);
         }
         
-         void add_write_buffer(int binding, vk::DescriptorBufferInfo& descriptor, vk::DescriptorType type)
+         void Add_Write_Buffer(int binding, vk::DescriptorBufferInfo& descriptor, vk::DescriptorType type)
         {
             assert(descriptor.range != 0 && "Descriptor is not set");
             vk::DescriptorBufferInfo& buffer_info = buffer_infos.emplace_back(descriptor);
@@ -113,7 +113,7 @@ namespace engine
             writes.push_back(dst_write);
         }
         
-        void clear()
+        void Clear()
         {
             image_array_infos.clear();
             image_infos.clear();
@@ -121,14 +121,14 @@ namespace engine
             buffer_infos.clear();
         }
         
-        void update_set(vk::Device device, vk::DescriptorSet set)
+        void Update_Set(vk::Device device, vk::DescriptorSet set)
         {
             for (auto& write : writes)
             {
                 write.setDstSet(set);
             }
             device.updateDescriptorSets(static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-            clear();
+            Clear();
         }
         
         std::deque<std::vector<vk::DescriptorImageInfo>> image_array_infos;

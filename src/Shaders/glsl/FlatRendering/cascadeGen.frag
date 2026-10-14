@@ -10,7 +10,7 @@
 #include "../Utils/uMath.glsl"
 
 
-layout(push_constant)uniform push_constants{
+layout(push_constant)uniform Push_Constants{
     int cascade_index;
     int interval_size;
     int probe_size_px;

@@ -7,13 +7,13 @@
 
 namespace engine
 {
-    class profiler
+    class Profiler
     {
     public:
-        profiler() = default;
+        Profiler() = default;
 
 
-        void add_profiler_cpu_spot(uint32_t color, std::string name)
+        void Add_Profiler_Cpu_Spot(uint32_t color, std::string name)
         {
             auto now = std::chrono::high_resolution_clock::now();
             auto now_time = std::chrono::duration<double>(now.time_since_epoch()).count();
@@ -22,7 +22,7 @@ namespace engine
             cpu_update_info.emplace_back(legit::ProfilerTask{now_time, -1.0, name, color});
         }
         
-        void add_profiler_gpu_spot(uint32_t color, std::string name)
+        void Add_Profiler_Gpu_Spot(uint32_t color, std::string name)
         {
             auto now = std::chrono::high_resolution_clock::now();
             auto now_time = std::chrono::duration<double>(now.time_since_epoch()).count();
@@ -30,7 +30,7 @@ namespace engine
             gpu_names[name] = gpu_update_info.size();
             gpu_update_info.emplace_back(legit::ProfilerTask{now_time, -1.0, name, color});
         }
-        void end_profiler_cpu_spot(std::string name)
+        void End_Profiler_Cpu_Spot(std::string name)
         {
             assert(cpu_names.contains(name) &&"Profiler cpu task did not start");
             
@@ -41,7 +41,7 @@ namespace engine
             task.endTime = now_time;
         }
 
-        void end_profiler_gpu_spot(std::string name)
+        void End_Profiler_Gpu_Spot(std::string name)
         {
             
             assert(gpu_names.contains(name) &&"Profiler gpu task did not start");
@@ -52,17 +52,17 @@ namespace engine
             task.endTime = now_time;
         }
         
-        void start_profiler()
+        void Start_Profiler()
         {
             auto now = std::chrono::high_resolution_clock::now();
             start_frame_time = std::chrono::duration<double>(now.time_since_epoch()).count();
         }
-        void update_profiler()
+        void Update_Profiler()
         {
             cpu_tasks.resize(cpu_update_info.size());
             gpu_tasks.resize(gpu_update_info.size());
-            double cpu_start_time = get_first_tracked_start_time(cpu_update_info);
-            double gpu_start_time = get_first_tracked_start_time(gpu_update_info);
+            double cpu_start_time = Get_First_Tracked_Start_Time(cpu_update_info);
+            double gpu_start_time = Get_First_Tracked_Start_Time(gpu_update_info);
             for (int i = 0; i < cpu_tasks.size(); ++i)
             {
                 cpu_tasks[i] = legit::ProfilerTask();
@@ -84,11 +84,11 @@ namespace engine
             gpu_names.clear();
         }
 
-        static profiler* get_instance()
+        static Profiler* Get_Instance()
         {
             if (instance==nullptr)
             {
-                instance = new profiler();
+                instance = new Profiler();
             }
             return instance;
         }
@@ -101,10 +101,10 @@ namespace engine
         std::vector<legit::ProfilerTask> gpu_update_info;
         std::map<std::string, int> cpu_names;
         std::map<std::string, int> gpu_names;
-        static profiler* instance;
+        static Profiler* instance;
 
     private:
-        double get_first_tracked_start_time(const std::vector<legit::ProfilerTask>& tasks)
+        double Get_First_Tracked_Start_Time(const std::vector<legit::ProfilerTask>& tasks)
         {
             if (tasks.empty())
             {
@@ -119,7 +119,7 @@ namespace engine
             return first_start_time;
         }
     };
-    profiler* profiler::instance = nullptr;
+    Profiler* Profiler::instance = nullptr;
     
 }
 

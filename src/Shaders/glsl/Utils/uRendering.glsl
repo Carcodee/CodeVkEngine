@@ -10,9 +10,12 @@
 #define METALLIC_ROUGHNESS_OFFSET 6
 #define AO_OFFSET 7
 #define HEIGHT_OFFSET 8
-        
 
-vec3 u_screen_to_world_ndc(mat4 inv_proj, mat4 inv_view, float depth, vec2 screen_pos){
+
+
+
+
+vec3 U_Screen_To_World_Ndc(mat4 inv_proj, mat4 inv_view, float depth, vec2 screen_pos){
     vec4 ndc_pos = vec4(screen_pos, depth, 1.0);
     
     vec4 view_pos = inv_proj * ndc_pos;
@@ -21,7 +24,7 @@ vec3 u_screen_to_world_ndc(mat4 inv_proj, mat4 inv_view, float depth, vec2 scree
     vec4 world_pos = inv_view * view_pos;
     return vec3(world_pos.xyz);
 }
-vec3 u_screen_to_world(mat4 inv_proj, mat4 inv_view, float depth, vec2 screen_pos){
+vec3 U_Screen_To_World(mat4 inv_proj, mat4 inv_view, float depth, vec2 screen_pos){
     vec4 ndc_pos = vec4(1.0f);
     ndc_pos.x = 2 * screen_pos.x - 1.0f;
     ndc_pos.y = 2 * screen_pos.y - 1.0f;
@@ -34,7 +37,7 @@ vec3 u_screen_to_world(mat4 inv_proj, mat4 inv_view, float depth, vec2 screen_po
     return vec3(world_pos.xyz);
 }
 
-vec3 u_screen_to_view(mat4 inv_proj, float depth, vec2 screen_pos, vec2 screen_size){
+vec3 U_Screen_To_View(mat4 inv_proj, float depth, vec2 screen_pos, vec2 screen_size){
     vec4 ndc_pos = vec4(1.0f);
     ndc_pos.x = 2 * (screen_pos.x/screen_size.x) - 1.0f;
     ndc_pos.y = 2 * (screen_pos.y/screen_size.y) - 1.0f;
@@ -47,13 +50,13 @@ vec3 u_screen_to_view(mat4 inv_proj, float depth, vec2 screen_pos, vec2 screen_s
     
 }
 
-vec4 u_screen_to_view_ndc(mat4 inv_proj, float depth, vec2 ndc_coords){
+vec4 U_Screen_To_View_Ndc(mat4 inv_proj, float depth, vec2 ndc_coords){
     vec4 ndc_pos = vec4(ndc_coords, depth, 1.0);
     vec4 view_pos = inv_proj * ndc_pos;
     view_pos = view_pos / view_pos.w;
     return view_pos;
 }
-vec4 u_screen_to_view(mat4 inv_proj, float depth, vec2 screen_pos){
+vec4 U_Screen_To_View(mat4 inv_proj, float depth, vec2 screen_pos){
     vec4 ndc_pos = vec4(1.0f);
     ndc_pos.x = 2 * screen_pos.x - 1.0f;
     ndc_pos.y = 2 * screen_pos.y - 1.0f;
@@ -66,12 +69,12 @@ vec4 u_screen_to_view(mat4 inv_proj, float depth, vec2 screen_pos){
 }
 
 //linear depth
-float u_get_z_slice(float z, float near, float far, float num_slices) {
+float U_Get_Z_Slice(float z, float near, float far, float num_slices) {
     return max(log2(z) * num_slices / log2(far / near) - num_slices * log2(near) / log2(far / near), 0.0);
 }
 
 
-vec2 u_get_sprite_coord_in_atlas(int frame_index, ivec2 sprite_size_px, int rows, int cols, ivec2 frag_pos, ivec2 f_size){
+vec2 U_Get_Sprite_Coord_In_Atlas(int frame_index, ivec2 sprite_size_px, int rows, int cols, ivec2 frag_pos, ivec2 f_size){
     ivec2 frame_index_in_atlas = ivec2(frame_index % cols, frame_index / cols);
     
     vec2 grid_size_px = vec2(f_size) / vec2(sprite_size_px);
@@ -82,7 +85,7 @@ vec2 u_get_sprite_coord_in_atlas(int frame_index, ivec2 sprite_size_px, int rows
     
     return vec2(final_pos) / sprite_size;
 }
-mat3 u_rotation_from_quaternion(vec4 q) {
+mat3 U_Rotation_From_Quaternion(vec4 q) {
     float qx = q.y;
     float qy = q.z;
     float qz = q.w;
@@ -107,7 +110,7 @@ mat3 u_rotation_from_quaternion(vec4 q) {
 
     return rotation_matrix;
 }
-mat3 u_get_cov_3d(vec4 rots, vec3 scales, float scale_mod){
+mat3 U_Get_Cov_3d(vec4 rots, vec3 scales, float scale_mod){
 
     
     mat3 scale_matrix = mat3(
@@ -115,7 +118,7 @@ mat3 u_get_cov_3d(vec4 rots, vec3 scales, float scale_mod){
     0, scale_mod * scales.y, 0,
     0, 0, scale_mod * scales.z
     );
-    mat3 rot_matrix = u_rotation_from_quaternion(rots);
+    mat3 rot_matrix = U_Rotation_From_Quaternion(rots);
 
     mat3 m_matrix = scale_matrix * rot_matrix;
 
@@ -123,7 +126,7 @@ mat3 u_get_cov_3d(vec4 rots, vec3 scales, float scale_mod){
     
     return sigma; 
 }
-mat2 u_get_cov_2d(vec4 mean_view, float focal_x, float focal_y, float tan_fovx, float tan_fovy, mat3 cov_3d, mat4 viewmatrix)
+mat2 U_Get_Cov_2d(vec4 mean_view, float focal_x, float focal_y, float tan_fovx, float tan_fovy, mat3 cov_3d, mat4 viewmatrix)
 {
     vec4 t = mean_view;
     // why need this? Try remove this later

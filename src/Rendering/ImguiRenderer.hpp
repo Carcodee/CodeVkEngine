@@ -12,7 +12,7 @@ namespace ed = ax::NodeEditor;
 
 namespace imgui_renderer_ui
 {
-struct fonts
+struct Fonts
 {
 	ImFont *body    = nullptr;
 	ImFont *caption = nullptr;
@@ -20,37 +20,37 @@ struct fonts
 	ImFont *strong  = nullptr;
 };
 
-inline ImVec4 with_alpha(const ImVec4 &color, float alpha)
+inline ImVec4 With_Alpha(const ImVec4 &color, float alpha)
 {
 	return ImVec4(color.x, color.y, color.z, alpha);
 }
 
-inline ImVec4 accent_color()
+inline ImVec4 Accent_Color()
 {
 	return ImVec4(1.00f, 0.32f, 0.08f, 1.00f);
 }
 
-inline ImVec4 success_color()
+inline ImVec4 Success_Color()
 {
 	return ImVec4(0.78f, 0.82f, 0.74f, 1.00f);
 }
 
-inline ImVec4 selection_color()
+inline ImVec4 Selection_Color()
 {
 	return ImVec4(0.94f, 0.93f, 0.91f, 1.00f);
 }
 
-inline ImVec4 ink_color()
+inline ImVec4 Ink_Color()
 {
 	return ImVec4(0.075f, 0.070f, 0.072f, 1.00f);
 }
 
-inline ImVec4 raised_surface_color()
+inline ImVec4 Raised_Surface_Color()
 {
 	return ImVec4(0.095f, 0.087f, 0.088f, 0.92f);
 }
 
-inline fonts configure_fonts(const std::string &resources_path)
+inline Fonts Configure_Fonts(const std::string &resources_path)
 {
 	const std::string fonts_path  = resources_path + "\\Fonts\\Open_Sans\\static\\";
 	const std::string regular_ttf = fonts_path + "OpenSans-Regular.ttf";
@@ -59,7 +59,7 @@ inline fonts configure_fonts(const std::string &resources_path)
 	ImGuiIO &io = ImGui::GetIO();
 	io.Fonts->Clear();
 
-	fonts fonts{};
+	Fonts fonts{};
 	if (std::filesystem::exists(regular_ttf))
 	{
 		fonts.body    = io.Fonts->AddFontFromFileTTF(regular_ttf.c_str(), 16.0f);
@@ -93,7 +93,7 @@ inline fonts configure_fonts(const std::string &resources_path)
 	return fonts;
 }
 
-inline void apply_modern_theme()
+inline void Apply_Modern_Theme()
 {
 	ImGuiStyle &style = ImGui::GetStyle();
 	ImGui::StyleColorsDark(&style);
@@ -127,12 +127,12 @@ inline void apply_modern_theme()
 	style.WindowMenuButtonPosition = ImGuiDir_None;
 	style.ColorButtonPosition      = ImGuiDir_Right;
 
-	const ImVec4 accent      = accent_color();
+	const ImVec4 accent      = Accent_Color();
 	const ImVec4 text        = ImVec4(0.90f, 0.89f, 0.88f, 1.00f);
 	const ImVec4 text_muted   = ImVec4(0.50f, 0.47f, 0.47f, 1.00f);
 	const ImVec4 canvas      = ImVec4(0.055f, 0.050f, 0.052f, 0.88f);
 	const ImVec4 surface     = ImVec4(0.045f, 0.042f, 0.045f, 0.91f);
-	const ImVec4 surface_high = raised_surface_color();
+	const ImVec4 surface_high = Raised_Surface_Color();
 	const ImVec4 interaction = ImVec4(0.145f, 0.132f, 0.132f, 1.00f);
 	const ImVec4 border      = ImVec4(0.28f, 0.24f, 0.23f, 0.38f);
 	ImVec4      *colors      = style.Colors;
@@ -146,7 +146,7 @@ inline void apply_modern_theme()
 	colors[ImGuiCol_BorderShadow]         = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 	colors[ImGuiCol_FrameBg]              = surface_high;
 	colors[ImGuiCol_FrameBgHovered]       = interaction;
-	colors[ImGuiCol_FrameBgActive]        = with_alpha(accent, 0.22f);
+	colors[ImGuiCol_FrameBgActive]        = With_Alpha(accent, 0.22f);
 	colors[ImGuiCol_TitleBg]              = surface;
 	colors[ImGuiCol_TitleBgActive]        = surface;
 	colors[ImGuiCol_TitleBgCollapsed]     = surface;
@@ -154,25 +154,25 @@ inline void apply_modern_theme()
 	colors[ImGuiCol_ScrollbarBg]          = ImVec4(0.03f, 0.028f, 0.03f, 0.35f);
 	colors[ImGuiCol_ScrollbarGrab]        = ImVec4(0.28f, 0.25f, 0.25f, 0.82f);
 	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.34f, 0.32f, 0.92f);
-	colors[ImGuiCol_ScrollbarGrabActive]  = with_alpha(accent, 0.78f);
+	colors[ImGuiCol_ScrollbarGrabActive]  = With_Alpha(accent, 0.78f);
 	colors[ImGuiCol_CheckMark]            = accent;
-	colors[ImGuiCol_SliderGrab]           = with_alpha(accent, 0.78f);
+	colors[ImGuiCol_SliderGrab]           = With_Alpha(accent, 0.78f);
 	colors[ImGuiCol_SliderGrabActive]     = accent;
 	colors[ImGuiCol_Button]               = surface_high;
 	colors[ImGuiCol_ButtonHovered]        = interaction;
-	colors[ImGuiCol_ButtonActive]         = with_alpha(accent, 0.26f);
+	colors[ImGuiCol_ButtonActive]         = With_Alpha(accent, 0.26f);
 	colors[ImGuiCol_Header]               = surface_high;
 	colors[ImGuiCol_HeaderHovered]        = interaction;
-	colors[ImGuiCol_HeaderActive]         = with_alpha(accent, 0.24f);
+	colors[ImGuiCol_HeaderActive]         = With_Alpha(accent, 0.24f);
 	colors[ImGuiCol_Separator]            = border;
-	colors[ImGuiCol_SeparatorHovered]     = with_alpha(accent, 0.65f);
+	colors[ImGuiCol_SeparatorHovered]     = With_Alpha(accent, 0.65f);
 	colors[ImGuiCol_SeparatorActive]      = accent;
 	colors[ImGuiCol_ResizeGrip]           = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-	colors[ImGuiCol_ResizeGripHovered]    = with_alpha(accent, 0.65f);
+	colors[ImGuiCol_ResizeGripHovered]    = With_Alpha(accent, 0.65f);
 	colors[ImGuiCol_ResizeGripActive]     = accent;
 	colors[ImGuiCol_Tab]                  = surface;
 	colors[ImGuiCol_TabHovered]           = interaction;
-	colors[ImGuiCol_TabSelected]          = with_alpha(accent, 0.22f);
+	colors[ImGuiCol_TabSelected]          = With_Alpha(accent, 0.22f);
 	colors[ImGuiCol_TabDimmed]            = canvas;
 	colors[ImGuiCol_TabDimmedSelected]    = surface_high;
 	colors[ImGuiCol_PlotLines]            = accent;
@@ -181,22 +181,22 @@ inline void apply_modern_theme()
 	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.58f, 0.30f, 1.00f);
 	colors[ImGuiCol_TableHeaderBg]        = surface_high;
 	colors[ImGuiCol_TableBorderStrong]    = border;
-	colors[ImGuiCol_TableBorderLight]     = with_alpha(border, 0.50f);
+	colors[ImGuiCol_TableBorderLight]     = With_Alpha(border, 0.50f);
 	colors[ImGuiCol_TableRowBg]           = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 	colors[ImGuiCol_TableRowBgAlt]        = ImVec4(1.0f, 1.0f, 1.0f, 0.025f);
-	colors[ImGuiCol_TextSelectedBg]       = with_alpha(accent, 0.30f);
+	colors[ImGuiCol_TextSelectedBg]       = With_Alpha(accent, 0.30f);
 	colors[ImGuiCol_NavHighlight]         = accent;
 	colors[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.01f, 0.015f, 0.025f, 0.76f);
 }
 
-inline bool navigation_item(const char *label, bool selected)
+inline bool Navigation_Item(const char *label, bool selected)
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.08f, 0.5f));
-	ImGui::PushStyleColor(ImGuiCol_Text, selected ? ink_color() : ImGui::GetStyleColorVec4(ImGuiCol_Text));
-	ImGui::PushStyleColor(ImGuiCol_Button, selected ? selection_color() : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, selected ? selection_color() : raised_surface_color());
+	ImGui::PushStyleColor(ImGuiCol_Text, selected ? Ink_Color() : ImGui::GetStyleColorVec4(ImGuiCol_Text));
+	ImGui::PushStyleColor(ImGuiCol_Button, selected ? Selection_Color() : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, selected ? Selection_Color() : Raised_Surface_Color());
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-	                      selected ? ImVec4(0.83f, 0.81f, 0.79f, 1.0f) : with_alpha(accent_color(), 0.20f));
+	                      selected ? ImVec4(0.83f, 0.81f, 0.79f, 1.0f) : With_Alpha(Accent_Color(), 0.20f));
 	const bool pressed = ImGui::Button(label, ImVec2(ImGui::GetContentRegionAvail().x, 34.0f));
 	ImGui::PopStyleColor(4);
 	ImGui::PopStyleVar();
@@ -206,53 +206,53 @@ inline bool navigation_item(const char *label, bool selected)
 		const ImVec2 min = ImGui::GetItemRectMin();
 		const ImVec2 max = ImGui::GetItemRectMax();
 		ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(max.x - 14.0f, (min.y + max.y) * 0.5f),
-		                                            3.0f, ImGui::GetColorU32(accent_color()));
+		                                            3.0f, ImGui::GetColorU32(Accent_Color()));
 	}
 	return pressed;
 }
 }        // namespace imgui_renderer_ui
 
-class imgui_renderer
+class Imgui_Renderer
 {
   public:
-	struct imgui_dsets_array
+	struct Imgui_Dsets_Array
 	{
-		~imgui_dsets_array() = default;
-		imgui_dsets_array(engine::core *core, engine::descriptor_allocator *descriptor_allocator)
+		~Imgui_Dsets_Array() = default;
+		Imgui_Dsets_Array(engine::Core *core, engine::Descriptor_Allocator *descriptor_allocator)
 		{
 			this->core                = core;
 			this->descriptor_allocator = descriptor_allocator;
 		}
-		void add_set(std::string name)
+		void Add_Set(std::string name)
 		{
 			if (indexes.contains(name))
 			{
 				return;
 			}
-			engine::descriptor_layout_builder builder;
-			builder.add_binding(0, vk::DescriptorType::eCombinedImageSampler);
-			auto dst_layout = builder.build_bindings(core->logical_device.get(), vk::ShaderStageFlagBits::eFragment);
-			auto dset      = descriptor_allocator->allocate(core->logical_device.get(), dst_layout.get());
+			engine::Descriptor_Layout_Builder builder;
+			builder.Add_Binding(0, vk::DescriptorType::eCombinedImageSampler);
+			auto dst_layout = builder.Build_Bindings(core->logical_device.get(), vk::ShaderStageFlagBits::eFragment);
+			auto dset      = descriptor_allocator->Allocate(core->logical_device.get(), dst_layout.get());
 			indexes.try_emplace(name, dsets.size());
 			descriptor_set_layouts.emplace_back(std::move(dst_layout));
 			dsets.emplace_back(std::move(dset));
 		}
-		vk::DescriptorSet get_dset_by_name(std::string name)
+		vk::DescriptorSet Get_Dset_By_Name(std::string name)
 		{
 			return dsets.at(indexes.at(name)).get();
 		}
-		vk::DescriptorSetLayout get_layout_by_name(std::string name)
+		vk::DescriptorSetLayout Get_Layout_By_Name(std::string name)
 		{
 			return descriptor_set_layouts.at(indexes.at(name)).get();
 		}
 
-		engine::core                                      *core                = nullptr;
-		engine::descriptor_allocator                       *descriptor_allocator = nullptr;
+		engine::Core                                      *core                = nullptr;
+		engine::Descriptor_Allocator                       *descriptor_allocator = nullptr;
 		std::map<std::string, int>                 indexes;
 		std::vector<vk::UniqueDescriptorSet>       dsets;
 		std::vector<vk::UniqueDescriptorSetLayout> descriptor_set_layouts;
 	};
-	imgui_renderer(engine::render_graph *render_graph, ::window_provider *window_provider, std::map<std::string, std::unique_ptr<base_renderer>> &renderers)
+	Imgui_Renderer(engine::Render_Graph *render_graph, ::Window_Provider *window_provider, std::map<std::string, std::unique_ptr<Base_Renderer>> &renderers)
 	{
 		this->core        = render_graph->core;
 		this->render_graph = render_graph;
@@ -260,7 +260,7 @@ class imgui_renderer
 
 		for (const auto& entry : renderers)
 		{
-			if (auto* renderer = dynamic_cast<rendering::cfd_renderer*>(entry.second.get()))
+			if (auto* renderer = dynamic_cast<rendering::Cfd_Renderer*>(entry.second.get()))
 			{
 				this->cfd_renderer = renderer;
 				break;
@@ -269,19 +269,19 @@ class imgui_renderer
 
 		if (renderers.contains("ClusterRenderer"))
 		{
-			this->cluster_renderer = dynamic_cast<rendering::cluster_renderer *>(renderers.at("ClusterRenderer").get());
+			this->cluster_renderer = dynamic_cast<rendering::Cluster_Renderer *>(renderers.at("ClusterRenderer").get());
 		}
 		if (renderers.contains("FlatRenderer"))
 		{
-			this->flat_renderer = dynamic_cast<rendering::flat_renderer *>(renderers.at("FlatRenderer").get());
+			this->flat_renderer = dynamic_cast<rendering::Flat_Renderer *>(renderers.at("FlatRenderer").get());
 		}
 		if (renderers.contains("GSRenderer"))
 		{
-			this->gs_renderer = dynamic_cast<rendering::gs_renderer *>(renderers.at("GSRenderer").get());
+			this->gs_renderer = dynamic_cast<rendering::Gs_Renderer *>(renderers.at("GSRenderer").get());
 		}
 		this->window_provider = window_provider;
 
-		std::vector<engine::descriptor_allocator::pool_size_ratio> pool_size_ratios = {
+		std::vector<engine::Descriptor_Allocator::Pool_Size_Ratio> pool_size_ratios = {
 		    {vk::DescriptorType::eSampler, 1},
 		    {vk::DescriptorType::eCombinedImageSampler, 1},
 		    {vk::DescriptorType::eSampledImage, 1},
@@ -293,9 +293,9 @@ class imgui_renderer
 		    {vk::DescriptorType::eUniformBufferDynamic, 1},
 		    {vk::DescriptorType::eStorageBufferDynamic, 1},
 		    {vk::DescriptorType::eInputAttachment, 1}};
-		descriptor_allocator.begin_pool(core->logical_device.get(), 1000, pool_size_ratios);
+		descriptor_allocator.Begin_Pool(core->logical_device.get(), 1000, pool_size_ratios);
 
-		this->dsets_arrays = std::make_unique<imgui_dsets_array>(core, &descriptor_allocator);
+		this->dsets_arrays = std::make_unique<Imgui_Dsets_Array>(core, &descriptor_allocator);
 
 		ImGui::CreateContext();
 
@@ -305,8 +305,8 @@ class imgui_renderer
 		init_info.Instance                  = core->instance.get();
 		init_info.PhysicalDevice            = core->physical_device;
 		init_info.Device                    = core->logical_device.get();
-		init_info.Queue                     = core->queue_worker_manager->get_worker_queue("UI")->queue_handle;
-		init_info.QueueFamily               = core->queue_worker_manager->get_worker_queue("UI")->family_index;
+		init_info.Queue                     = core->queue_worker_manager->Get_Worker_Queue("UI")->queue_handle;
+		init_info.QueueFamily               = core->queue_worker_manager->Get_Worker_Queue("UI")->family_index;
 		init_info.DescriptorPool            = descriptor_allocator.pool.get();
 		init_info.MinImageCount             = 3;
 		init_info.ImageCount                = 3;
@@ -314,12 +314,12 @@ class imgui_renderer
 
 		init_info.PipelineRenderingCreateInfo                         = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
 		init_info.PipelineRenderingCreateInfo.colorAttachmentCount    = 1;
-		imgui_swapchain_format                                         = static_cast<VkFormat>(core->swapchain_ref->get_format());
+		imgui_swapchain_format                                         = static_cast<VkFormat>(core->swapchain_ref->Get_Format());
 		init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &imgui_swapchain_format;
 
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-		set_style();
+		Set_Style();
 
 		ImGui_ImplVulkan_Init(&init_info);
 
@@ -329,19 +329,19 @@ class imgui_renderer
 		config.SettingsFile = "Simple.json";
 		m_context           = ed::CreateEditor(&config);
 
-		std::string resources_path = systems::os::get_instance()->get_engine_resources_path();
+		std::string resources_path = systems::Os::Get_Instance()->Get_Engine_Resources_Path();
 		std::string file_name      = resources_path + "\\Images\\f3.png";
 	}
 	ed::EditorContext *m_context = nullptr;
-	void               start_node_editor()
+	void               Start_Node_Editor()
 	{
 		ed::SetCurrentEditor(m_context);
-		node_editor.init(render_graph, window_provider);
-		node_editor.draw();
+		node_editor.Init(render_graph, window_provider);
+		node_editor.Draw();
 		ed::SetCurrentEditor(nullptr);
 	}
 
-	void render_frame(vk::CommandBuffer command_buffer, vk::ImageView &image_view_handle)
+	void Render_Frame(vk::CommandBuffer command_buffer, vk::ImageView &image_view_handle)
 	{
 		curr_command_buffer                = &command_buffer;
 		static bool simulation_action_fail = false;
@@ -350,7 +350,7 @@ class imgui_renderer
 		};
 		if (!color_animator.stop)
 		{
-			if (const std::vector<glm::vec4> *frame = color_animator.use_cpu_frame())
+			if (const std::vector<glm::vec4> *frame = color_animator.Use_Cpu_Frame())
 			{
 				run_simulation_action(CodeCuda::FluidSimulation::C_MapImageToSmoke(
 				    static_cast<int>(color_animator.animation_info.sprite_size_px.x),
@@ -361,7 +361,7 @@ class imgui_renderer
 		}
 		if (!emitters.empty())
 		{
-			auto *cuda_node = render_graph->get_node("CudaNode");
+			auto *cuda_node = render_graph->Get_Node("CudaNode");
 			if (!cuda_node || !cuda_node->cuda_pipeline || !cuda_node->cuda_pipeline->context)
 			{
 				simulation_action_fail = true;
@@ -385,20 +385,20 @@ class imgui_renderer
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		render_debugger_window();
+		Render_Debugger_Window();
 
 		ImGui::Render();
-		engine::attachment_info vk_attachment_info = engine::get_color_attachment_info(blend_configs::b_opaque, glm::vec4(0.0f), core->swapchain_ref->get_format(), vk::AttachmentLoadOp::eLoad);
+		engine::Attachment_Info vk_attachment_info = engine::Get_Color_Attachment_Info(Blend_Configs::B_Opaque, glm::vec4(0.0f), core->swapchain_ref->Get_Format(), vk::AttachmentLoadOp::eLoad);
 		vk_attachment_info.vk_attachment_info.setImageView(image_view_handle);
 
 		std::vector<vk::RenderingAttachmentInfo> attachment_infos = {vk_attachment_info.vk_attachment_info};
 		vk::RenderingAttachmentInfo              depth_attachment;
 
-		dynamic_render_pass.set_render_info_unsafe(attachment_infos, window_provider->get_window_size(), &depth_attachment);
+		dynamic_render_pass.Set_Render_Info_Unsafe(attachment_infos, window_provider->Get_Window_Size(), &depth_attachment);
 
 		for (int i = 0; i < image_views_to_recover.size(); ++i)
 		{
-			transition_image(image_views_to_recover[i]->image_metadata, layout_patterns::graphics_read, image_views_to_recover[i]->get_subresource_range(), command_buffer);
+			Transition_Image(image_views_to_recover[i]->image_metadata, Layout_Patterns::Graphics_Read, image_views_to_recover[i]->Get_Subresource_Range(), command_buffer);
 		}
 
 		command_buffer.beginRendering(dynamic_render_pass.render_info);
@@ -407,55 +407,55 @@ class imgui_renderer
 
 		for (int i = 0; i < image_views_to_recover.size(); ++i)
 		{
-			transition_image(image_views_to_recover[i]->image_metadata, layout_patterns_to_recover[i], image_views_to_recover[i]->get_subresource_range(), command_buffer);
+			Transition_Image(image_views_to_recover[i]->image_metadata, layout_patterns_to_recover[i], image_views_to_recover[i]->Get_Subresource_Range(), command_buffer);
 		}
 
 		image_views_to_recover.clear();
 		layout_patterns_to_recover.clear();
 	}
-	enum class debugger_page
+	enum class Debugger_Page
 	{
-		render_graph,
-		engine,
-		textures,
-		fluid_simulation,
-		cluster_renderer,
-		radiance_cascades,
-		gaussian_splatting,
-		profiler
+		Render_Graph,
+		Engine,
+		Textures,
+		Fluid_Simulation,
+		Cluster_Renderer,
+		Radiance_Cascades,
+		Gaussian_Splatting,
+		Profiler
 	};
 
-	struct debugger_page_info
+	struct Debugger_Page_Info
 	{
 		const char *title;
 		const char *description;
 	};
 
-	debugger_page_info get_debugger_page_info() const
+	Debugger_Page_Info Get_Debugger_Page_Info() const
 	{
 		switch (active_page)
 		{
-			case debugger_page::render_graph:
+			case Debugger_Page::Render_Graph:
 				return {"Render graph", "Inspect passes, resources, and node connections."};
-			case debugger_page::engine:
+			case Debugger_Page::Engine:
 				return {"Engine overview", "Queues, execution order, and runtime scheduling."};
-			case debugger_page::textures:
+			case Debugger_Page::Textures:
 				return {"Texture inspector", "Browse images currently registered with the renderer."};
-			case debugger_page::fluid_simulation:
+			case Debugger_Page::Fluid_Simulation:
 				return {"Fluid simulation", "Control simulation inputs, tools, emitters, and solver parameters."};
-			case debugger_page::cluster_renderer:
+			case Debugger_Page::Cluster_Renderer:
 				return {"Cluster renderer", "Lighting, culling, camera, and render-node controls."};
-			case debugger_page::radiance_cascades:
+			case Debugger_Page::Radiance_Cascades:
 				return {"Radiance cascades", "Configure cascades, materials, lighting, and painting."};
-			case debugger_page::gaussian_splatting:
+			case Debugger_Page::Gaussian_Splatting:
 				return {"Gaussian splatting", "Inspect splat data, scale, camera, and sort state."};
-			case debugger_page::profiler:
+			case Debugger_Page::Profiler:
 				return {"Performance", "Review CPU and GPU timing for the current frame."};
 		}
 		return {"Engine", "Runtime tools and diagnostics."};
 	}
 
-	void render_application_header()
+	void Render_Application_Header()
 	{
 		const ImGuiIO &io = ImGui::GetIO();
 		if (ImGui::BeginChild("##application_header", ImVec2(0.0f, 54.0f), ImGuiChildFlags_None,
@@ -476,7 +476,7 @@ class imgui_renderer
 				ImGui::TextUnformatted("CODEVK");
 				ImGui::PopFont();
 				ImGui::SameLine();
-				ImGui::TextColored(imgui_renderer_ui::accent_color(), "RENDERER");
+				ImGui::TextColored(imgui_renderer_ui::Accent_Color(), "RENDERER");
 				ImGui::PushFont(fonts.caption);
 				ImGui::TextDisabled("ENGINE TOOLS");
 				ImGui::PopFont();
@@ -501,17 +501,17 @@ class imgui_renderer
 				ImGui::PushFont(fonts.caption);
 				ImGui::TextDisabled("STATUS");
 				ImGui::PopFont();
-				ImGui::TextColored(imgui_renderer_ui::accent_color(), "ACTIVE");
+				ImGui::TextColored(imgui_renderer_ui::Accent_Color(), "ACTIVE");
 				ImGui::EndTable();
 			}
 		}
 		ImGui::EndChild();
 	}
 
-	void render_sidebar()
+	void Render_Sidebar()
 	{
-		const debugger_page_info active_page_info = get_debugger_page_info();
-		auto                   navigate       = [this](const char *label, debugger_page page) {
+		const Debugger_Page_Info active_page_info = Get_Debugger_Page_Info();
+		auto                   navigate       = [this](const char *label, Debugger_Page page) {
             const bool selected = active_page == page;
             if (ImGui::Selectable(label, selected))
             {
@@ -529,76 +529,76 @@ class imgui_renderer
 		ImGui::SetNextItemWidth(-1.0f);
 		if (ImGui::BeginCombo("##workspace_page", active_page_info.title))
 		{
-			navigate("Render graph", debugger_page::render_graph);
-			navigate("Engine overview", debugger_page::engine);
-			navigate("Texture inspector", debugger_page::textures);
-			navigate("Fluid simulation", debugger_page::fluid_simulation);
+			navigate("Render graph", Debugger_Page::Render_Graph);
+			navigate("Engine overview", Debugger_Page::Engine);
+			navigate("Texture inspector", Debugger_Page::Textures);
+			navigate("Fluid simulation", Debugger_Page::Fluid_Simulation);
 			if (cluster_renderer)
 			{
-				navigate("Cluster lighting", debugger_page::cluster_renderer);
+				navigate("Cluster lighting", Debugger_Page::Cluster_Renderer);
 			}
 			if (flat_renderer)
 			{
-				navigate("Radiance cascades", debugger_page::radiance_cascades);
+				navigate("Radiance cascades", Debugger_Page::Radiance_Cascades);
 			}
 			if (gs_renderer)
 			{
-				navigate("Gaussian splatting", debugger_page::gaussian_splatting);
+				navigate("Gaussian splatting", Debugger_Page::Gaussian_Splatting);
 			}
-			navigate("Performance", debugger_page::profiler);
+			navigate("Performance", Debugger_Page::Profiler);
 			ImGui::EndCombo();
 		}
 	}
 
-	void render_active_page()
+	void Render_Active_Page()
 	{
 		switch (active_page)
 		{
-			case debugger_page::render_graph:
-				start_node_editor();
+			case Debugger_Page::Render_Graph:
+				Start_Node_Editor();
 				break;
-			case debugger_page::engine:
-				display_engine_info();
+			case Debugger_Page::Engine:
+				Display_Engine_Info();
 				break;
-			case debugger_page::textures:
-				display_all_textures();
+			case Debugger_Page::Textures:
+				Display_All_Textures();
 				break;
-			case debugger_page::fluid_simulation:
-				fluid_sim_info();
+			case Debugger_Page::Fluid_Simulation:
+				Fluid_Sim_Info();
 				break;
-			case debugger_page::cluster_renderer:
+			case Debugger_Page::Cluster_Renderer:
 				if (cluster_renderer)
 				{
-					cluster_renderer_info();
+					Cluster_Renderer_Info();
 				}
 				break;
-			case debugger_page::radiance_cascades:
+			case Debugger_Page::Radiance_Cascades:
 				if (flat_renderer)
 				{
-					r_cascades_info();
+					R_Cascades_Info();
 				}
 				break;
-			case debugger_page::gaussian_splatting:
+			case Debugger_Page::Gaussian_Splatting:
 				if (gs_renderer)
 				{
-					gs_renderer_info();
+					Gs_Renderer_Info();
 				}
 				break;
-			case debugger_page::profiler:
-				render_graph_profiler();
+			case Debugger_Page::Profiler:
+				Render_Graph_Profiler();
 				break;
 		}
 	}
 
-	void render_scene_viewport()
+	void Render_Scene_Viewport()
 	{
 		scene_viewport_valid   = false;
 		scene_viewport_hovered = false;
 
-		engine::image_view *scene_image = nullptr;
+		engine::Image_View *scene_image = nullptr;
 		if (render_graph && render_graph->resources_manager)
 		{
-			scene_image = render_graph->resources_manager->get_image_view_from_name("bf");
+			scene_image = render_graph->resources_manager->Get_Image_View_From_Name("bf");
 		}
 
 		if (!scene_image || !scene_image->image_metadata)
@@ -613,10 +613,10 @@ class imgui_renderer
 			return;
 		}
 
-		add_image("bf", scene_image);
+		Add_Image("bf", scene_image);
 
 		const ImVec2     available   = ImGui::GetContentRegionAvail();
-		const glm::uvec2 image_extent = scene_image->image_metadata->get_image_size();
+		const glm::uvec2 image_extent = scene_image->image_metadata->Get_Image_Size();
 		if (available.x <= 1.0f || available.y <= 1.0f || image_extent.x == 0 || image_extent.y == 0)
 		{
 			return;
@@ -634,7 +634,7 @@ class imgui_renderer
 		    cursor.y + (available.y - image_size.y) * 0.5f));
 
 		ImGui::Image(
-		    (ImTextureID) dsets_arrays->get_dset_by_name("bf"), image_size,
+		    (ImTextureID) dsets_arrays->Get_Dset_By_Name("bf"), image_size,
 		    ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 
 		scene_viewport_min     = ImGui::GetItemRectMin();
@@ -644,7 +644,7 @@ class imgui_renderer
 
 		ImDrawList *draw_list    = ImGui::GetWindowDrawList();
 		const ImU32 border_color = ImGui::GetColorU32(
-		    scene_viewport_hovered ? imgui_renderer_ui::accent_color() : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
+		    scene_viewport_hovered ? imgui_renderer_ui::Accent_Color() : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
 		draw_list->AddRect(scene_viewport_min, scene_viewport_max, border_color, 4.0f, 0,
 		                  scene_viewport_hovered ? 2.0f : 1.0f);
 
@@ -652,12 +652,12 @@ class imgui_renderer
 		const ImVec2 badge_max(badge_min.x + 122.0f, badge_min.y + 27.0f);
 		draw_list->AddRectFilled(badge_min, badge_max, IM_COL32(18, 17, 18, 220), 6.0f);
 		draw_list->AddCircleFilled(ImVec2(badge_min.x + 13.0f, badge_min.y + 13.5f), 3.0f,
-		                          ImGui::GetColorU32(imgui_renderer_ui::accent_color()));
+		                          ImGui::GetColorU32(imgui_renderer_ui::Accent_Color()));
 		draw_list->AddText(ImVec2(badge_min.x + 23.0f, badge_min.y + 5.0f),
 		                  IM_COL32(232, 229, 226, 255), "VIEWPORT  /  bf");
 	}
 
-	void render_debugger_window()
+	void Render_Debugger_Window()
 	{
 		const ImGuiViewport *main_viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(main_viewport->WorkPos, ImGuiCond_Always);
@@ -703,7 +703,7 @@ class imgui_renderer
 			                      ImGuiChildFlags_None,
 			                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 			{
-				render_scene_viewport();
+				Render_Scene_Viewport();
 			}
 			ImGui::EndChild();
 			ImGui::PopStyleColor();
@@ -730,7 +730,7 @@ class imgui_renderer
 			const ImVec2 splitter_max = ImGui::GetItemRectMax();
 			ImGui::GetWindowDrawList()->AddRectFilled(
 			    splitter_min, splitter_max,
-			    ImGui::GetColorU32(splitter_hovered || splitter_active ? imgui_renderer_ui::accent_color() : ImVec4(0.18f, 0.16f, 0.16f, 0.75f)));
+			    ImGui::GetColorU32(splitter_hovered || splitter_active ? imgui_renderer_ui::Accent_Color() : ImVec4(0.18f, 0.16f, 0.16f, 0.75f)));
 
 			ImGui::SameLine(0.0f, 0.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
@@ -738,12 +738,12 @@ class imgui_renderer
 			if (ImGui::BeginChild("##docked_inspector", ImVec2(inspector_panel_width, 0.0f),
 			                      ImGuiChildFlags_None))
 			{
-				render_application_header();
+				Render_Application_Header();
 				ImGui::Spacing();
-				render_sidebar();
+				Render_Sidebar();
 				ImGui::Spacing();
 
-				const debugger_page_info page_info = get_debugger_page_info();
+				const Debugger_Page_Info page_info = Get_Debugger_Page_Info();
 				ImGui::PushFont(fonts.heading);
 				ImGui::TextUnformatted(page_info.title);
 				ImGui::PopFont();
@@ -754,7 +754,7 @@ class imgui_renderer
 				if (ImGui::BeginChild("##page_content", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None,
 				                      ImGuiWindowFlags_HorizontalScrollbar))
 				{
-					render_active_page();
+					Render_Active_Page();
 				}
 				ImGui::EndChild();
 			}
@@ -766,16 +766,16 @@ class imgui_renderer
 		ImGui::PopStyleColor();
 		ImGui::PopStyleVar(2);
 	}
-	void render_graph_profiler()
+	void Render_Graph_Profiler()
 	{
-		profilers_window.cpuGraph.LoadFrameData(profiler::get_instance()->cpu_tasks.data(),
-		                                       profiler::get_instance()->cpu_tasks.size());
-		profilers_window.gpuGraph.LoadFrameData(profiler::get_instance()->gpu_tasks.data(),
-		                                       profiler::get_instance()->gpu_tasks.size());
+		profilers_window.cpuGraph.LoadFrameData(Profiler::Get_Instance()->cpu_tasks.data(),
+		                                       Profiler::Get_Instance()->cpu_tasks.size());
+		profilers_window.gpuGraph.LoadFrameData(Profiler::Get_Instance()->gpu_tasks.data(),
+		                                       Profiler::Get_Instance()->gpu_tasks.size());
 		profilers_window.RenderContent();
 	}
 
-	void add_smoke_pretty(CodeCuda::CodeCudaContext *context, const glm::vec2 mouse_position)
+	void Add_Smoke_Pretty(CodeCuda::CodeCudaContext *context, const glm::vec2 mouse_position)
 	{
 		if (!context || CodeCuda::FluidSimulation::s_width <= 0 || CodeCuda::FluidSimulation::s_height <= 0)
 		{
@@ -859,7 +859,7 @@ class imgui_renderer
 		pretty_smoke_last_color         = new_color;
 	}
 
-	void lattice_info()
+	void Lattice_Info()
 	{
 		if (!ImGui::CollapsingHeader("Lattice###fluid_lattice", ImGuiTreeNodeFlags_DefaultOpen))
 			return;
@@ -869,15 +869,15 @@ class imgui_renderer
 			return;
 		}
 
+		Pc_Voxel_Grid& lattice_config = cfd_renderer->voxel_grid.pc_voxel_grid;
 		if (!lattice_config_initialized)
 		{
-			lattice_config = cfd_renderer->voxel_grid.pc_voxel_grid;
 			lattice_config_initialized = true;
 		}
-
 		if (ImGui::BeginTable("##fluid_lattice_properties", 2,
 		                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
 		{
+			bool has_changed = false;
 			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
 			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 			auto property = [](const char* label) {
@@ -902,7 +902,7 @@ class imgui_renderer
 				lattice_config.dimensions = glm::uvec3(dimensions[0], dimensions[1], dimensions[2]);
 			}
 			property("Cell size");
-			ImGui::DragFloat("##lattice_cell_size", &lattice_config.cell_size,
+			 ImGui::DragFloat("##lattice_cell_size", &lattice_config.cell_size,
 			                                        0.01f, 0.0001f, 10000.0f, "%.4f",
 			                                        ImGuiSliderFlags_AlwaysClamp);
 			if (ImGui::IsItemHovered())
@@ -912,11 +912,11 @@ class imgui_renderer
 
 		const glm::vec3 extent = glm::vec3(lattice_config.dimensions) * lattice_config.cell_size;
 		const glm::vec3 maximum = lattice_config.origin + extent;
-		const uint64_t cells = lattice_config.get_size();
+		const uint64_t cells = lattice_config.Get_Size();
 		ImGui::TextDisabled("Extent: %.3f x %.3f x %.3f", extent.x, extent.y, extent.z);
 		ImGui::TextDisabled("Maximum corner: %.3f, %.3f, %.3f", maximum.x, maximum.y, maximum.z);
 		ImGui::TextDisabled("%llu cells", static_cast<unsigned long long>(cells));
-		if (!lattice_config.is_valid())
+		if (!lattice_config.Is_Valid())
 		{
 			ImGui::TextWrapped("Enter finite coordinates, positive cell size, and dimensions from 1 to 4096.");
 			return;
@@ -940,7 +940,7 @@ class imgui_renderer
 			              canvas_min.y + canvas_size.y * 0.5f + ((point.x + point.z) * 0.5f - point.y) * scale);
 		};
 		const ImU32 grid_color = ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.45f);
-		const ImU32 edge_color = ImGui::GetColorU32(imgui_renderer_ui::accent_color());
+		const ImU32 edge_color = ImGui::GetColorU32(imgui_renderer_ui::Accent_Color());
 		for (int axis = 0; axis < 3; ++axis)
 		{
 			const int next = (axis + 1) % 3;
@@ -971,9 +971,9 @@ class imgui_renderer
 		ImGui::Spacing();
 	}
 
-	void fluid_sim_info()
+	void Fluid_Sim_Info()
 	{
-		lattice_info();
+		Lattice_Info();
 		CodeCuda::FluidSimulation::sim_params fluid_sim_params{};
 		if (CodeCuda::FluidSimulation::C_GetSimulationParams(&fluid_sim_params) != CodeCuda::C_Res::OK)
 		{
@@ -998,7 +998,7 @@ class imgui_renderer
 		params_changed |= ImGui::Checkbox("GPU simulation", &fluid_sim_params.gpu_sim);
 
 		std::string resources_path =
-		    systems::os::get_instance()->get_engine_resources_path() + "\\Images";
+		    systems::Os::Get_Instance()->Get_Engine_Resources_Path() + "\\Images";
 
 		static std::vector<std::string> image_paths;
 		static std::string              selected_image_path;
@@ -1014,7 +1014,7 @@ class imgui_renderer
 		auto scan_sequence_folders = [&]() {
 			sequence_folder_paths.clear();
 			const std::filesystem::path engine_resources_path =
-			    systems::os::get_instance()->get_assets_path() + "\\Animations";
+			    systems::Os::Get_Instance()->Get_Assets_Path() + "\\Animations";
 			std::error_code scan_error;
 			for (std::filesystem::recursive_directory_iterator iterator(engine_resources_path, scan_error), end;
 			     iterator != end && !scan_error;
@@ -1246,7 +1246,7 @@ class imgui_renderer
 			        ImGuiWindowFlags_AlwaysVerticalScrollbar))
 			{
 				const std::filesystem::path animations_path =
-				    systems::os::get_instance()->get_assets_path() + "\\Animations";
+				    systems::Os::Get_Instance()->Get_Assets_Path() + "\\Animations";
 				for (int i = 0; i < static_cast<int>(sequence_folder_paths.size()); ++i)
 				{
 					const std::string &folder_path = sequence_folder_paths[i];
@@ -1270,7 +1270,7 @@ class imgui_renderer
 					if (ImGui::Button("Load", ImVec2(button_width, 24.0f)))
 					{
 						selected_sequence_folder_path = folder_path;
-						color_animator.load_frames_cpu(selected_sequence_folder_path, true);
+						color_animator.Load_Frames_Cpu(selected_sequence_folder_path, true);
 						color_animator.frame_spacing = sequence_frame_spacing;
 						color_animator.stop         = true;
 						sequence_load_failed = color_animator.images_frames_cpu.empty();
@@ -1314,7 +1314,7 @@ class imgui_renderer
 			ImGui::SameLine();
 			if (ImGui::Button("Clear##ColorSequence"))
 			{
-				color_animator.clear_cpu();
+				color_animator.Clear_Cpu();
 				sequence_load_failed = false;
 			}
 			if (!sequence_loaded)
@@ -1364,13 +1364,13 @@ class imgui_renderer
 				const bool selected = fluid_tool == tool_index;
 				if (selected)
 				{
-					const ImVec4 accent = imgui_renderer_ui::accent_color();
+					const ImVec4 accent = imgui_renderer_ui::Accent_Color();
 					ImGui::PushStyleColor(ImGuiCol_Button, accent);
 					ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
 					                      ImVec4(accent.x, accent.y, accent.z, 0.90f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive,
 					                      ImVec4(accent.x, accent.y, accent.z, 0.78f));
-					ImGui::PushStyleColor(ImGuiCol_Text, imgui_renderer_ui::ink_color());
+					ImGui::PushStyleColor(ImGuiCol_Text, imgui_renderer_ui::Ink_Color());
 				}
 
 				if (ImGui::Button(fluid_tools[tool_index], ImVec2(-FLT_MIN, 30.0f)))
@@ -1565,7 +1565,7 @@ class imgui_renderer
 			               viewport_height / std::max(1, CodeCuda::FluidSimulation::s_height)));
 			ImGui::GetForegroundDrawList()->AddCircle(
 			    mouse_position, radius_pixels,
-			    ImGui::GetColorU32(imgui_renderer_ui::accent_color()), 48, 1.5f);
+			    ImGui::GetColorU32(imgui_renderer_ui::Accent_Color()), 48, 1.5f);
 		}
 		if (fluid_tool_enabled && mouse_over_viewport &&
 		    ImGui::IsMouseDown(ImGuiMouseButton_Right))
@@ -1606,13 +1606,13 @@ class imgui_renderer
 					break;
 				case 6:
 				{
-					auto *cuda_node = render_graph ? render_graph->get_node("CudaNode") : nullptr;
+					auto *cuda_node = render_graph ? render_graph->Get_Node("CudaNode") : nullptr;
 					if (!cuda_node || !cuda_node->cuda_pipeline || !cuda_node->cuda_pipeline->context)
 					{
 						simulation_action_fail = true;
 						break;
 					}
-					add_smoke_pretty(cuda_node->cuda_pipeline->context,
+					Add_Smoke_Pretty(cuda_node->cuda_pipeline->context,
 					               glm::vec2(u * 1023.0f, (1.0f - v) * 1023.0f));
 					simulation_action_fail = false;
 					break;
@@ -1645,7 +1645,7 @@ class imgui_renderer
 				{
 					glm::vec4 col = glm::make_vec4(fluid_emitter_color);
 					glm::vec2 vel = glm::make_vec2(fluid_emitter_velocity_direction);
-					emitters.emplace_back(emitter{col, vel, fluid_brush_radius, x_position, y_position});
+					emitters.emplace_back(Emitter{col, vel, fluid_brush_radius, x_position, y_position});
 					break;
 				}
 				default:
@@ -1853,21 +1853,21 @@ class imgui_renderer
 		}
 	}
 
-	void set_style()
+	void Set_Style()
 	{
-		imgui_renderer_ui::apply_modern_theme();
-		fonts = imgui_renderer_ui::configure_fonts(systems::os::get_instance()->get_engine_resources_path());
+		imgui_renderer_ui::Apply_Modern_Theme();
+		fonts = imgui_renderer_ui::Configure_Fonts(systems::Os::Get_Instance()->Get_Engine_Resources_Path());
 	}
-	void display_general_engine_info()
+	void Display_General_Engine_Info()
 	{
-		display_engine_info();
-		display_all_textures();
+		Display_Engine_Info();
+		Display_All_Textures();
 	}
 
-	void render_metric_card(const char *id, const char *label, const std::string &value)
+	void Render_Metric_Card(const char *id, const char *label, const std::string &value)
 	{
 		ImGui::PushID(id);
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, imgui_renderer_ui::raised_surface_color());
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, imgui_renderer_ui::Raised_Surface_Color());
 		if (ImGui::BeginChild("##metric", ImVec2(0.0f, 62.0f), ImGuiChildFlags_None,
 		                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 		{
@@ -1883,7 +1883,7 @@ class imgui_renderer
 		ImGui::PopID();
 	}
 
-	void display_engine_info()
+	void Display_Engine_Info()
 	{
 		auto     *queue_worker_manager = core->queue_worker_manager.get();
 		const int engine_queue_count   = static_cast<int>(queue_worker_manager->workers_queues.size());
@@ -1902,13 +1902,13 @@ class imgui_renderer
 		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
 		{
 			ImGui::TableNextColumn();
-			render_metric_card("queues", "QUEUES", std::to_string(engine_queue_count));
+			Render_Metric_Card("queues", "QUEUES", std::to_string(engine_queue_count));
 			ImGui::TableNextColumn();
-			render_metric_card("passes", "RENDER PASSES", std::to_string(render_node_count));
+			Render_Metric_Card("passes", "RENDER PASSES", std::to_string(render_node_count));
 			ImGui::TableNextColumn();
-			render_metric_card("active", "ACTIVE PASSES", std::to_string(active_node_count));
+			Render_Metric_Card("active", "ACTIVE PASSES", std::to_string(active_node_count));
 			ImGui::TableNextColumn();
-			render_metric_card("batches", "QUEUE BATCHES", std::to_string(queue_batch_count));
+			Render_Metric_Card("batches", "QUEUE BATCHES", std::to_string(queue_batch_count));
 			ImGui::EndTable();
 		}
 
@@ -1974,18 +1974,18 @@ class imgui_renderer
 				ImGui::TextUnformatted(node ? node->worker_queue_name.c_str() : "-");
 				ImGui::TableSetColumnIndex(3);
 				const bool node_active = node && node->active;
-				ImGui::TextColored(node_active ? imgui_renderer_ui::success_color() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled),
+				ImGui::TextColored(node_active ? imgui_renderer_ui::Success_Color() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled),
 				                   "%s", node_active ? "Active" : "Inactive");
 			}
 			ImGui::EndTable();
 		}
 
-		display_render_graph_dag();
+		Display_Render_Graph_Dag();
 
-		display_queue_execution_timeline();
+		Display_Queue_Execution_Timeline();
 	}
 
-	void cluster_renderer_info()
+	void Cluster_Renderer_Info()
 	{
 		ImGui::SeparatorText("Light Info");
 
@@ -1997,7 +1997,7 @@ class imgui_renderer
 				point_light.pos.y = 0;
 			}
 			point_light.pos += glm::vec3(0.0f, 1.0f, 0.0f) * speed;
-			point_light.calculate_q_attenuation_from_radius();
+			point_light.Calculate_Q_Attenuation_From_Radius();
 		}
 		static float point_light_radiuses = 1.0f;
 		if (ImGui::SliderFloat("Point lights Radiuses", &point_light_radiuses, 1.0f, 20.0f))
@@ -2005,7 +2005,7 @@ class imgui_renderer
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
 				point_light.radius = point_light_radiuses;
-				point_light.calculate_q_attenuation_from_radius();
+				point_light.Calculate_Q_Attenuation_From_Radius();
 			}
 		}
 		static float point_quadratic_attenuation = 1.0f;
@@ -2014,7 +2014,7 @@ class imgui_renderer
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
 				point_light.q_attenuation = point_quadratic_attenuation;
-				point_light.calculate_radius_from_params();
+				point_light.Calculate_Radius_From_Params();
 				point_light_radiuses = point_light.radius;
 			}
 		}
@@ -2024,7 +2024,7 @@ class imgui_renderer
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
 				point_light.l_attenuation = point_light_linear_attenuation;
-				point_light.calculate_radius_from_params();
+				point_light.Calculate_Radius_From_Params();
 				point_light_radiuses = point_light.radius;
 			}
 		}
@@ -2034,7 +2034,7 @@ class imgui_renderer
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
 				point_light.intensity = point_light_intensity;
-				point_light.calculate_radius_from_params();
+				point_light.Calculate_Radius_From_Params();
 				point_light_radiuses = point_light.radius;
 			}
 		}
@@ -2060,7 +2060,7 @@ class imgui_renderer
 
 		ImGui::SeparatorText("Cull Info");
 
-		std::string cull_count = "Cull Count: " + std::to_string(rendering_res_manager::get_instance()->cull_count) + " / " + std::to_string(rendering_res_manager::get_instance()->indirect_draws_cmd_infos.size());
+		std::string cull_count = "Cull Count: " + std::to_string(Rendering_Res_Manager::Get_Instance()->cull_count) + " / " + std::to_string(Rendering_Res_Manager::Get_Instance()->indirect_draws_cmd_infos.size());
 
 		ImGui::Text("%s", cull_count.c_str());
 
@@ -2091,8 +2091,8 @@ class imgui_renderer
 		if (detached_cam)
 		{
 			cluster_renderer->curr_camera = &cluster_renderer->debug_cam;
-			cluster_renderer->debug_cam.update_cam();
-			cluster_renderer->debug_cam.rotate_camera();
+			cluster_renderer->debug_cam.Update_Cam();
+			cluster_renderer->debug_cam.Rotate_Camera();
 			static float yaw   = cluster_renderer->debug_cam.yaw;
 			static float pitch = cluster_renderer->debug_cam.pitch;
 
@@ -2114,24 +2114,24 @@ class imgui_renderer
 				cluster_renderer->debug_cam.yaw      = cluster_renderer->camera.yaw;
 				cluster_renderer->debug_cam.pitch    = cluster_renderer->camera.pitch;
 			};
-			cluster_renderer->debug_cam.update_cam();
-			cluster_renderer->debug_cam.rotate_camera();
+			cluster_renderer->debug_cam.Update_Cam();
+			cluster_renderer->debug_cam.Rotate_Camera();
 		}
 		else
 		{
 			cluster_renderer->curr_camera = &cluster_renderer->camera;
 		}
 
-		struct node_info
+		struct Node_Info
 		{
 			bool       *active;
 			std::string name;
 		};
-		static std::vector<node_info> node_infos;
+		static std::vector<Node_Info> node_infos;
 
 		for (auto &node : core->render_graph_ref->sequential_render_nodes)
 		{
-			node_infos.emplace_back(node_info{&node->active, node->pass_name});
+			node_infos.emplace_back(Node_Info{&node->active, node->pass_name});
 		}
 
 		ImGui::SeparatorText("Render Nodes");
@@ -2147,9 +2147,9 @@ class imgui_renderer
 		node_infos.clear();
 	}
 
-	void display_render_graph_dag();
+	void Display_Render_Graph_Dag();
 
-	void display_queue_execution_timeline()
+	void Display_Queue_Execution_Timeline()
 	{
 		ImGui::SeparatorText("Queue Execution Timeline");
 
@@ -2283,7 +2283,7 @@ class imgui_renderer
 				float node_x = min_pos.x + 9.0f;
 				for (int node_idx = 0; node_idx < batch.sorted_nodes.size(); ++node_idx)
 				{
-					engine::render_graph_node *node      = batch.sorted_nodes[node_idx];
+					engine::Render_Graph_Node *node      = batch.sorted_nodes[node_idx];
 					float            chip_width = std::min(96.0f, std::max(48.0f, (batch_width - 18.0f) / static_cast<float>(batch.sorted_nodes.size()) - 4.0f));
 					ImVec2           chip_min(node_x, min_pos.y + 41.0f);
 					ImVec2           chip_max(node_x + chip_width, chip_min.y + node_height);
@@ -2315,7 +2315,7 @@ class imgui_renderer
 				ImGui::Text("Nodes: %d", static_cast<int>(batch.sorted_nodes.size()));
 				for (int node_idx = 0; node_idx < batch.sorted_nodes.size(); ++node_idx)
 				{
-					engine::render_graph_node *node = batch.sorted_nodes[node_idx];
+					engine::Render_Graph_Node *node = batch.sorted_nodes[node_idx];
 					ImGui::BulletText("%02d. %s%s", node_idx, node ? node->pass_name.c_str() : "null", node && !node->active ? " (inactive)" : "");
 				}
 				ImGui::EndTooltip();
@@ -2342,7 +2342,7 @@ class imgui_renderer
 
 			for (int node_idx = 0; node_idx < selected_batch.sorted_nodes.size(); ++node_idx)
 			{
-				engine::render_graph_node *node = selected_batch.sorted_nodes[node_idx];
+				engine::Render_Graph_Node *node = selected_batch.sorted_nodes[node_idx];
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				ImGui::Text("%02d", node_idx);
@@ -2391,7 +2391,7 @@ class imgui_renderer
 		}
 	}
 
-	void painting_info()
+	void Painting_Info()
 	{
 		ImGui::SliderInt("Brush Radius", &flat_renderer->painting_pc.radius, 1, 100);
 
@@ -2404,22 +2404,22 @@ class imgui_renderer
 
 		if (ImGui::Button("Clear Canvas"))
 		{
-			resources_manager::get_instance()->request_storage_image_clear("PaintingLayer");
-			resources_manager::get_instance()->request_storage_image_clear("OccluderLayer");
-			resources_manager::get_instance()->request_storage_image_clear("DebugRaysLayer");
+			Resources_Manager::Get_Instance()->Request_Storage_Image_Clear("PaintingLayer");
+			Resources_Manager::Get_Instance()->Request_Storage_Image_Clear("OccluderLayer");
+			Resources_Manager::Get_Instance()->Request_Storage_Image_Clear("DebugRaysLayer");
 		}
 		for (int i = 0; i < flat_renderer->cascades_info.cascade_count; ++i)
 		{
 			std::string name = "radianceStorage_" + std::to_string(i);
-			resources_manager::get_instance()->request_storage_image_clear(name);
+			Resources_Manager::Get_Instance()->Request_Storage_Image_Clear(name);
 		}
 	}
-	void animator_info()
+	void Animator_Info()
 	{
 		int i = 0;
-		for (const auto &animator_pair : rendering_res_manager::get_instance()->animators_names)
+		for (const auto &animator_pair : Rendering_Res_Manager::Get_Instance()->animators_names)
 		{
-			auto        animator         = rendering_res_manager::get_instance()->get_animator_by_name(animator_pair.first);
+			auto        animator         = Rendering_Res_Manager::Get_Instance()->Get_Animator_By_Name(animator_pair.first);
 			std::string frame_spacing_name = animator_pair.first + ": Frame Spacing";
 			ImGui::SliderInt(frame_spacing_name.c_str(), &animator->frame_spacing, 1, 1000);
 
@@ -2443,7 +2443,7 @@ class imgui_renderer
 		}
 	}
 
-	void r_cascades_info()
+	void R_Cascades_Info()
 	{
 		// ImGui::Begin("Radiance Output Info");
 		//
@@ -2522,14 +2522,14 @@ class imgui_renderer
 		{
 			flat_renderer->material_index_selected = material_selected;
 		}
-		display_material(flat_renderer->background_materials.at(flat_renderer->material_index_selected));
+		Display_Material(flat_renderer->background_materials.at(flat_renderer->material_index_selected));
 
-		painting_info();
+		Painting_Info();
 
-		animator_info();
+		Animator_Info();
 	}
 
-	void gs_renderer_info()
+	void Gs_Renderer_Info()
 	{
 		if (!gs_renderer)
 			return;
@@ -2558,37 +2558,37 @@ class imgui_renderer
 
 		if (ImGui::Button("Update Sort"))
 		{
-			gs_renderer->re_sort();
+			gs_renderer->Re_Sort();
 		}
 	}
 
-	void add_image(std::string name, engine::image_view *image_view_handle)
+	void Add_Image(std::string name, engine::Image_View *image_view_handle)
 	{
 		if (name == "default_storage" || name == "default_tex")
 		{
 			return;
 		}
-		engine::sampler       *sampler    = resources_manager::get_instance()->shipper_sampler;
-		layout_patterns last_layout = image_view_handle->image_metadata->current_layout;
+		engine::Sampler       *sampler    = Resources_Manager::Get_Instance()->shipper_sampler;
+		Layout_Patterns last_layout = image_view_handle->image_metadata->current_layout;
 		layout_patterns_to_recover.push_back(last_layout);
 		image_views_to_recover.push_back(image_view_handle);
 
 		if (dsets_arrays->indexes.contains(name))
 		{
-			transition_image(image_view_handle->image_metadata, last_layout, image_view_handle->get_subresource_range(),
+			Transition_Image(image_view_handle->image_metadata, last_layout, image_view_handle->Get_Subresource_Range(),
 			                *curr_command_buffer);
 			return;
 		}
-		dsets_arrays->add_set(name);
-		engine::descriptor_writer_builder writer_builder;
-		writer_builder.add_write_image(0, image_view_handle, sampler->sampler_handle.get(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::DescriptorType::eCombinedImageSampler);
-		writer_builder.update_set(core->logical_device.get(), dsets_arrays->get_dset_by_name(name));
+		dsets_arrays->Add_Set(name);
+		engine::Descriptor_Writer_Builder writer_builder;
+		writer_builder.Add_Write_Image(0, image_view_handle, sampler->sampler_handle.get(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::DescriptorType::eCombinedImageSampler);
+		writer_builder.Update_Set(core->logical_device.get(), dsets_arrays->Get_Dset_By_Name(name));
 	}
-	void display_material(rendering::material *mat)
+	void Display_Material(rendering::Material *mat)
 	{
-		ui::texture_viewer texture_viewer_base_col;
-		texture_viewer_base_col.add_property(ui::drag);
-		texture_viewer_base_col.add_property(ui::drop);
+		ui::Texture_Viewer texture_viewer_base_col;
+		texture_viewer_base_col.Add_Property(ui::Drag);
+		texture_viewer_base_col.Add_Property(ui::Drop);
 		for (auto &texture : mat->textures_ref)
 		{
 			if (texture.second == nullptr)
@@ -2596,38 +2596,38 @@ class imgui_renderer
 				continue;
 			}
 			std::string name = mat->textures_strings.at(texture.first);
-			add_image(texture.second->name, texture.second);
-			engine::image_view *image_view_ref = texture_viewer_base_col.display_texture(name, texture.second, (ImTextureID) dsets_arrays->get_dset_by_name(texture.second->name), {50, 50});
+			Add_Image(texture.second->name, texture.second);
+			engine::Image_View *image_view_ref = texture_viewer_base_col.Display_Texture(name, texture.second, (ImTextureID) dsets_arrays->Get_Dset_By_Name(texture.second->name), {50, 50});
 			if (image_view_ref->name != texture.second->name)
 			{
 				texture.second = image_view_ref;
 			}
 		}
 	}
-	void add_all_images()
+	void Add_All_Images()
 	{
 		for (auto &image : render_graph->resources_manager->image_views)
 		{
-			add_image(image->name, image.get());
+			Add_Image(image->name, image.get());
 		}
 		for (auto &image : render_graph->resources_manager->storage_imgs_views)
 		{
-			add_image(image->name, image.get());
+			Add_Image(image->name, image.get());
 		}
 		for (auto &image : render_graph->resources_manager->image_shippers)
 		{
-			add_image(image->image_view_handle->name, image->image_view_handle.get());
+			Add_Image(image->image_view_handle->name, image->image_view_handle.get());
 		}
 	}
-	void display_all_textures()
+	void Display_All_Textures()
 	{
-		add_all_images();
+		Add_All_Images();
 		static char text_buff[256] = "";
 		ImGui::SetNextItemWidth(-1.0f);
 		ImGui::InputTextWithHint("##texture_filter", "Filter textures by name...", text_buff, 256);
 		std::string input(text_buff);
 
-		std::vector<engine::image_view *> visible_images;
+		std::vector<engine::Image_View *> visible_images;
 		for (auto &image : render_graph->resources_manager->image_views)
 		{
 			if (!input.empty() && image->name.find(input) == std::string::npos)
@@ -2683,11 +2683,11 @@ class imgui_renderer
 		if (ImGui::BeginTable("texture_card_grid", column_count,
 		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
 		{
-			for (engine::image_view *image_view_handle : visible_images)
+			for (engine::Image_View *image_view_handle : visible_images)
 			{
 				ImGui::TableNextColumn();
 				ImGui::PushID(image_view_handle);
-				ImGui::PushStyleColor(ImGuiCol_ChildBg, imgui_renderer_ui::raised_surface_color());
+				ImGui::PushStyleColor(ImGuiCol_ChildBg, imgui_renderer_ui::Raised_Surface_Color());
 				if (ImGui::BeginChild("##texture_card", ImVec2(0.0f, preview_size + 68.0f),
 				                      ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar))
 				{
@@ -2699,12 +2699,12 @@ class imgui_renderer
 						ImGui::SetTooltip("%s", image_view_handle->name.c_str());
 					}
 
-					const glm::uvec2 dimensions = image_view_handle->image_metadata->get_image_size();
+					const glm::uvec2 dimensions = image_view_handle->image_metadata->Get_Image_Size();
 					ImGui::TextDisabled("%u x %u", dimensions.x, dimensions.y);
 					const float preview_offset = std::max(0.0f, (ImGui::GetContentRegionAvail().x - preview_size) * 0.5f);
 					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + preview_offset);
 					ImGui::Image(
-					    (ImTextureID) dsets_arrays->get_dset_by_name(image_view_handle->name),
+					    (ImTextureID) dsets_arrays->Get_Dset_By_Name(image_view_handle->name),
 					    ImVec2(preview_size, preview_size), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 					if (ImGui::IsItemHovered())
 					{
@@ -2718,7 +2718,7 @@ class imgui_renderer
 			ImGui::EndTable();
 		}
 	}
-	void destroy()
+	void Destroy()
 	{
 		if (m_context)
 		{
@@ -2731,24 +2731,23 @@ class imgui_renderer
 	}
 
 	vk::CommandBuffer  *curr_command_buffer = nullptr;
-	dynamic_render_pass   dynamic_render_pass;
-	::window_provider     *window_provider;
-	engine::descriptor_allocator descriptor_allocator;
+	Dynamic_Render_Pass   dynamic_render_pass;
+	::Window_Provider     *window_provider;
+	engine::Descriptor_Allocator descriptor_allocator;
 	VkFormat            imgui_swapchain_format = VK_FORMAT_UNDEFINED;
-	engine::core               *core;
-	engine::render_graph        *render_graph;
+	engine::Core               *core;
+	engine::Render_Graph        *render_graph;
 
-	std::map<std::string, std::unique_ptr<base_renderer>> *renderers       = nullptr;
-	rendering::cluster_renderer                                      *cluster_renderer = nullptr;
-	rendering::flat_renderer                                         *flat_renderer    = nullptr;
-	rendering::gs_renderer                                           *gs_renderer      = nullptr;
-	rendering::cfd_renderer                                          *cfd_renderer     = nullptr;
-	pc_voxel_grid                                          lattice_config{};
+	std::map<std::string, std::unique_ptr<Base_Renderer>> *renderers       = nullptr;
+	rendering::Cluster_Renderer                                      *cluster_renderer = nullptr;
+	rendering::Flat_Renderer                                         *flat_renderer    = nullptr;
+	rendering::Gs_Renderer                                           *gs_renderer      = nullptr;
+	rendering::Cfd_Renderer                                          *cfd_renderer     = nullptr;
 	bool                                                  lattice_config_initialized = false;
 	ImGuiUtils::ProfilersWindow                           profilers_window{};
-	ui::rg_node_editor                                     node_editor;
-	imgui_renderer_ui::fonts                                fonts{};
-	debugger_page                                          active_page           = debugger_page::render_graph;
+	ui::Rg_Node_Editor                                     node_editor;
+	imgui_renderer_ui::Fonts                                fonts{};
+	Debugger_Page                                          active_page           = Debugger_Page::Render_Graph;
 	bool                                                  scene_viewport_valid   = false;
 	bool                                                  scene_viewport_hovered = false;
 	ImVec2                                                scene_viewport_min{};
@@ -2767,14 +2766,14 @@ class imgui_renderer
 	int                                                   pretty_smoke_brush_radius     = 18;
 	int                                                   pretty_smoke_preset          = 0;
 
-	std::unique_ptr<imgui_dsets_array> dsets_arrays;
-	std::vector<layout_patterns>      layout_patterns_to_recover;
-	std::vector<engine::image_view *>         image_views_to_recover;
+	std::unique_ptr<Imgui_Dsets_Array> dsets_arrays;
+	std::vector<Layout_Patterns>      layout_patterns_to_recover;
+	std::vector<engine::Image_View *>         image_views_to_recover;
 
 	std::vector<glm::vec4> image_pixels = {};
 	std::vector<int>       solid_mask   = {};
 	int                    width, height, channels;
-	struct emitter
+	struct Emitter
 	{
 		glm::vec4 color;
 		glm::vec2 velocity;
@@ -2782,14 +2781,14 @@ class imgui_renderer
 		int       x_pos;
 		int       y_pos;
 	};
-	animator_2d color_animator;
-	std::vector<emitter> emitters;
+	Animator_2d color_animator;
+	std::vector<Emitter> emitters;
 };
-inline void imgui_renderer::display_render_graph_dag()
+inline void Imgui_Renderer::Display_Render_Graph_Dag()
 {
 	ImGui::SeparatorText("Render Graph DAG");
 
-	std::vector<engine::render_graph_node *> graph_nodes = render_graph->sorted_by_dep_nodes;
+	std::vector<engine::Render_Graph_Node *> graph_nodes = render_graph->sorted_by_dep_nodes;
 	if (graph_nodes.empty())
 	{
 		graph_nodes = render_graph->sequential_render_nodes;
@@ -2802,7 +2801,7 @@ inline void imgui_renderer::display_render_graph_dag()
 
 	static std::string selected_node_name;
 
-	std::map<std::string, engine::render_graph_node *> node_by_name;
+	std::map<std::string, engine::Render_Graph_Node *> node_by_name;
 	std::map<std::string, int>               level_by_name;
 	std::map<std::string, int>               incoming_count_by_name;
 	std::map<std::string, int>               outgoing_count_by_name;
@@ -2877,7 +2876,7 @@ inline void imgui_renderer::display_render_graph_dag()
 		max_level                    = std::max(max_level, node_level);
 	}
 
-	std::vector<std::vector<engine::render_graph_node *>> nodes_by_level(max_level + 1);
+	std::vector<std::vector<engine::Render_Graph_Node *>> nodes_by_level(max_level + 1);
 	for (auto *node : graph_nodes)
 	{
 		if (!node)
@@ -2914,7 +2913,7 @@ inline void imgui_renderer::display_render_graph_dag()
 		float       y_offset     = std::max(0.0f, (canvas_size.y - padding.y * 2.0f - level_height) * 0.5f);
 		for (int row = 0; row < level_nodes.size(); ++row)
 		{
-			engine::render_graph_node *node = level_nodes[row];
+			engine::Render_Graph_Node *node = level_nodes[row];
 			ImVec2           min_pos(
                 origin.x + padding.x + level * (node_size.x + level_gap),
                 origin.y + padding.y + y_offset + row * (node_size.y + row_gap));
@@ -3012,8 +3011,8 @@ inline void imgui_renderer::display_render_graph_dag()
 
 	if (!selected_node_name.empty() && node_by_name.contains(selected_node_name))
 	{
-		engine::render_graph_node *selected_node = node_by_name.at(selected_node_name);
-		engine::gpu_pipeline     *shader_node   = selected_node->gpu_pipeline_ref;
+		engine::Render_Graph_Node *selected_node = node_by_name.at(selected_node_name);
+		engine::Gpu_Pipeline     *shader_node   = selected_node->gpu_pipeline_ref;
 
 		ImGui::SeparatorText("Selected Node");
 		if (ImGui::BeginTable("selected_render_graph_node", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
@@ -3042,7 +3041,7 @@ inline void imgui_renderer::display_render_graph_dag()
 				}
 			};
 
-			auto image_map_names = [](const std::unordered_map<std::string, engine::image_view *> &images) {
+			auto image_map_names = [](const std::unordered_map<std::string, engine::Image_View *> &images) {
 				std::string names;
 				for (const auto &image : images)
 				{
@@ -3064,7 +3063,7 @@ inline void imgui_renderer::display_render_graph_dag()
 				return names.empty() ? std::string("none") : names;
 			};
 
-			auto buffer_names = [](const std::unordered_map<std::string, buffer_key> &buffers) {
+			auto buffer_names = [](const std::unordered_map<std::string, Buffer_Key> &buffers) {
 				std::string names;
 				for (const auto &buffer : buffers)
 				{
@@ -3093,16 +3092,16 @@ inline void imgui_renderer::display_render_graph_dag()
 			add_row("Push constant bytes", shader_node ? std::to_string(shader_node->push_constant_size) : "n/a");
 			add_row("Color attachments", shader_node ? std::to_string(shader_node->out_col_attachments_bindings.size()) : "n/a");
 			add_row("Depth attachment", shader_node ? (shader_node->depth_attachment.format == vk::Format::eUndefined ? "none" : "present") : "n/a");
-			add_row("Framebuffer", std::to_string(selected_node->get_frame_buffer_size().x) + " x " + std::to_string(selected_node->get_frame_buffer_size().y));
-			add_row("Attachment outputs", std::to_string(selected_node->get_image_attachment_outputs().size()));
-			add_row("Attachment names", std::to_string(selected_node->get_image_attachment_names().size()));
-			add_row("Depth image", selected_node->get_depth_image() ? selected_node->get_depth_image()->name : "none");
-			add_row("Sampled images", std::to_string(selected_node->get_sampled_images().size()));
-			add_row("Sampled image names", image_map_names(selected_node->get_sampled_images()));
-			add_row("Storage images", std::to_string(selected_node->get_storage_images().size()));
-			add_row("Storage image names", image_map_names(selected_node->get_storage_images()));
-			add_row("Buffers", std::to_string(selected_node->get_buffers().size()));
-			add_row("Buffer names", buffer_names(selected_node->get_buffers()));
+			add_row("Framebuffer", std::to_string(selected_node->Get_Frame_Buffer_Size().x) + " x " + std::to_string(selected_node->Get_Frame_Buffer_Size().y));
+			add_row("Attachment outputs", std::to_string(selected_node->Get_Image_Attachment_Outputs().size()));
+			add_row("Attachment names", std::to_string(selected_node->Get_Image_Attachment_Names().size()));
+			add_row("Depth image", selected_node->Get_Depth_Image() ? selected_node->Get_Depth_Image()->name : "none");
+			add_row("Sampled images", std::to_string(selected_node->Get_Sampled_Images().size()));
+			add_row("Sampled image names", image_map_names(selected_node->Get_Sampled_Images()));
+			add_row("Storage images", std::to_string(selected_node->Get_Storage_Images().size()));
+			add_row("Storage image names", image_map_names(selected_node->Get_Storage_Images()));
+			add_row("Buffers", std::to_string(selected_node->Get_Buffers().size()));
+			add_row("Buffer names", buffer_names(selected_node->Get_Buffers()));
 			add_row("Descriptor cache", shader_node ? (shader_node->desc_cache ? "present" : "null") : "n/a");
 			add_row("Auto descriptor cache", shader_node ? (shader_node->configs.automatic_cache ? "true" : "false") : "n/a");
 			add_row("Manual add", shader_node ? (shader_node->configs.manual_add ? "true" : "false") : "n/a");

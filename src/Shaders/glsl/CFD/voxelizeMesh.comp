@@ -10,15 +10,15 @@
 #include "../Utils/uMath.glsl"
 
 
-layout (set = 0, binding = 1, scalar) buffer model_vertices{
+layout (set = 0, binding = 1, scalar) buffer Model_Vertices{
     vec3 vertex[];
 };
 
-layout (set = 0, binding = 2, scalar) buffer voxels{
+layout (set = 0, binding = 2, scalar) buffer Voxels{
     uint cells[];
 };
 
-layout(push_constant)uniform push_constants{
+layout(push_constant)uniform Push_Constants{
         vec3 origin;
         uvec3 dimensions;
         float cell_size;
@@ -26,5 +26,14 @@ layout(push_constant)uniform push_constants{
 
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
+
+    uint vertex_id = gl_GlobalInvocationID.x;
+    vec3 vertex_pos = vertex[vertex_id];
+
+
+
+    if(vertex_id < 1000){
+        atomicAdd(cells[vertex_id], 1);
+    }
 
 }

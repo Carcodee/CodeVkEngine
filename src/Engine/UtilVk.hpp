@@ -7,16 +7,16 @@
 
 namespace engine
 {
-     static surface_details get_surface_details(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface_khr)
+     static Surface_Details Get_Surface_Details(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface_khr)
      {
-         surface_details surface_details;
+         Surface_Details surface_details;
          surface_details.capabilities = physical_device.getSurfaceCapabilitiesKHR(surface_khr);
          surface_details.formats = physical_device.getSurfaceFormatsKHR(surface_khr);
          surface_details.present_modes = physical_device.getSurfacePresentModesKHR(surface_khr);
 
          return surface_details;
      }   
-	static uint32_t find_memory_type_index(vk::PhysicalDevice physical_device, uint32_t suitable_indices, vk::MemoryPropertyFlags memory_visibility)
+	static uint32_t Find_Memory_Type_Index(vk::PhysicalDevice physical_device, uint32_t suitable_indices, vk::MemoryPropertyFlags memory_visibility)
 	{
 		vk::PhysicalDeviceMemoryProperties available_mem_properties = physical_device.getMemoryProperties();
 
@@ -31,7 +31,7 @@ namespace engine
 		return uint32_t(-1);
 	}
 
-    static std::vector<uint32_t> get_byte_code(const std::string filepath)
+    static std::vector<uint32_t> Get_Byte_Code(const std::string filepath)
     {
      	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
@@ -49,7 +49,7 @@ namespace engine
      	
      	return bytecode;
     }
-	static void copy_buffer_to_image(vk::CommandBuffer command_buffer, vk::Buffer src_buffer,
+	static void Copy_Buffer_To_Image(vk::CommandBuffer command_buffer, vk::Buffer src_buffer,
                                   vk::Image* image, glm::uvec2 size)
     {
         auto image_subresource = vk::ImageSubresourceLayers()
@@ -69,7 +69,7 @@ namespace engine
     }
     
 
-    static void print_invalid_resource(std::string type, std::string resource_name)
+    static void Print_Invalid_Resource(std::string type, std::string resource_name)
     {
 	    std::string message = type + " with name \"" + resource_name + "\" does not exist\n";
      	std::cout <<message;

@@ -7,12 +7,12 @@
 
 namespace systems
 {
-template <typename value_type>
-struct i_serializable
+template <typename Value_Type>
+struct I_Serializable
 {
-	virtual ~i_serializable()                                 = default;
-	virtual nlohmann::json serialize()                       = 0;
-	virtual value_type             *deserialize(std::string filename) = 0;
+	virtual ~I_Serializable()                                 = default;
+	virtual nlohmann::json Serialize()                       = 0;
+	virtual Value_Type             *Deserialize(std::string filename) = 0;
 };
 }        // namespace systems
 

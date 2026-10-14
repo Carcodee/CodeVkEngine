@@ -17,74 +17,74 @@ namespace engine
 
 
     //maybe is worst to only use the dst instead of also getting the source
-    static image_access_pattern get_image_dst_pattern(layout_patterns pattern)
+    static Image_Access_Pattern Get_Image_Dst_Pattern(Layout_Patterns pattern)
     {
-        image_access_pattern access_pattern;
+        Image_Access_Pattern access_pattern;
         switch (pattern)
         {
-        case graphics_read:
+        case Graphics_Read:
             access_pattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
                 | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
                  | vk::PipelineStageFlagBits::eGeometryShader;
             access_pattern.access_mask = vk::AccessFlagBits::eShaderRead;
             access_pattern.layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-            access_pattern.queue_family_type = queue_family_types::graphics;
+            access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case graphics_write:
+        case Graphics_Write:
             access_pattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
                 | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
                  | vk::PipelineStageFlagBits::eGeometryShader;
             access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite;
             access_pattern.layout = vk::ImageLayout::eGeneral;
-            access_pattern.queue_family_type = queue_family_types::graphics;
+            access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case compute:
+        case Compute:
             access_pattern.stage = vk::PipelineStageFlagBits::eComputeShader;
             access_pattern.access_mask = vk::AccessFlagBits::eShaderRead;
             access_pattern.layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-            access_pattern.queue_family_type = queue_family_types::compute;
+            access_pattern.queue_family_type = Queue_Family_Types::Compute;
             break;
-        case compute_write:
+        case Compute_Write:
             access_pattern.stage = vk::PipelineStageFlagBits::eFragmentShader;
             access_pattern.access_mask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
             access_pattern.layout = vk::ImageLayout::eGeneral;
-            access_pattern.queue_family_type = queue_family_types::compute;
+            access_pattern.queue_family_type = Queue_Family_Types::Compute;
             break;
-        case transfer_src:
+        case Transfer_Src:
             access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
             access_pattern.access_mask = vk::AccessFlagBits::eTransferRead;
             access_pattern.layout = vk::ImageLayout::eTransferSrcOptimal;
-            access_pattern.queue_family_type = queue_family_types::transfer;
+            access_pattern.queue_family_type = Queue_Family_Types::Transfer;
             break;
-        case transfer_dst:
+        case Transfer_Dst:
             access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
             access_pattern.access_mask = vk::AccessFlagBits::eTransferWrite;
             access_pattern.layout = vk::ImageLayout::eTransferDstOptimal;
-            access_pattern.queue_family_type = queue_family_types::transfer;
+            access_pattern.queue_family_type = Queue_Family_Types::Transfer;
             break;
-        case color_attachment:
+        case Color_Attachment:
             access_pattern.stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
             access_pattern.access_mask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead;
             access_pattern.layout = vk::ImageLayout::eColorAttachmentOptimal;
-            access_pattern.queue_family_type = queue_family_types::graphics;
+            access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case depth_attachment:
+        case Depth_Attachment:
             access_pattern.stage = vk::PipelineStageFlagBits::eLateFragmentTests | vk::PipelineStageFlagBits::eEarlyFragmentTests;
             access_pattern.access_mask = vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead;
             access_pattern.layout = vk::ImageLayout::eDepthAttachmentOptimal;
-            access_pattern.queue_family_type = queue_family_types::graphics;
+            access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case present:
+        case Present:
             access_pattern.stage = vk::PipelineStageFlagBits::eBottomOfPipe;
             access_pattern.access_mask = vk::AccessFlags();
             access_pattern.layout = vk::ImageLayout::ePresentSrcKHR;
-            access_pattern.queue_family_type = queue_family_types::present;
+            access_pattern.queue_family_type = Queue_Family_Types::Present;
             break;
-        case empty:
+        case Empty:
             access_pattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
             access_pattern.access_mask = vk::AccessFlagBits::eNone;
             access_pattern.layout = vk::ImageLayout::eUndefined;
-            access_pattern.queue_family_type = queue_family_types::undefined;
+            access_pattern.queue_family_type = Queue_Family_Types::Undefined;
             break;
         default:
             assert(false && "Access pattern not known");
@@ -95,9 +95,9 @@ namespace engine
         return access_pattern;
         
     }
-    static bool is_image_transition_needed(layout_patterns src_pattern, layout_patterns dst_pattern)
+    static bool Is_Image_Transition_Needed(Layout_Patterns src_pattern, Layout_Patterns dst_pattern)
     {
-        if ((src_pattern == graphics_read) && (dst_pattern == graphics_read))
+        if ((src_pattern == Graphics_Read) && (dst_pattern == Graphics_Read))
         {
             return false;
         }
@@ -105,12 +105,12 @@ namespace engine
         
     }
 
-    static void transition_image(engine::image_data* image_metadata, layout_patterns dst_layout, vk::ImageSubresourceRange range, vk::CommandBuffer& command_buffer)
+    static void Transition_Image(engine::Image_Data* image_metadata, Layout_Patterns dst_layout, vk::ImageSubresourceRange range, vk::CommandBuffer& command_buffer)
     {
-        image_access_pattern image_pattern = get_image_dst_pattern(image_metadata->current_layout);
-        image_access_pattern dst_pattern = get_image_dst_pattern(dst_layout);
+        Image_Access_Pattern image_pattern = Get_Image_Dst_Pattern(image_metadata->current_layout);
+        Image_Access_Pattern dst_pattern = Get_Image_Dst_Pattern(dst_layout);
 
-        assert(dst_layout != layout_patterns::empty && "Right now the engine does not support transitions to empty states");
+        assert(dst_layout != Layout_Patterns::Empty && "Right now the engine does not support transitions to empty states");
         
         auto image_barrier = vk::ImageMemoryBarrier()
                             .setSrcAccessMask(image_pattern.access_mask)
@@ -124,48 +124,48 @@ namespace engine
         image_metadata->current_layout = dst_layout;
         image_metadata->current_pattern = dst_pattern;
     }
-    static buffer_access_pattern get_src_buffer_access_pattern(buffer_usage_types usage_type)
+    static Buffer_Access_Pattern Get_Src_Buffer_Access_Pattern(Buffer_Usage_Types usage_type)
     {
-        buffer_access_pattern buffer_access_pattern;
+        Buffer_Access_Pattern buffer_access_pattern;
 
         switch (usage_type)
         {
-        case b_vertex_buffer:
+        case B_Vertex_Buffer:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eVertexInput;
             buffer_access_pattern.access_mask = vk::AccessFlags();
-            buffer_access_pattern.queue_family_type = queue_family_types::graphics;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case b_graphics_write:
+        case B_Graphics_Write:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
                 | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
                  | vk::PipelineStageFlagBits::eGeometryShader;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite;
-            buffer_access_pattern.queue_family_type = queue_family_types::graphics;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case b_compute_write:
+        case B_Compute_Write:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eComputeShader;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite;
-            buffer_access_pattern.queue_family_type = queue_family_types::compute;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Compute;
             break;
-        case b_transfer_src:
+        case B_Transfer_Src:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eTransferWrite;
-            buffer_access_pattern.queue_family_type = queue_family_types::transfer;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Transfer;
             break;
-        case b_transfer_dst:
+        case B_Transfer_Dst:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
             buffer_access_pattern.access_mask = vk::AccessFlags();
-            buffer_access_pattern.queue_family_type = queue_family_types::transfer;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Transfer;
             break;
-        case b_draw_indirect:
+        case B_Draw_Indirect:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eDrawIndirect;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eIndirectCommandRead;
-            buffer_access_pattern.queue_family_type = queue_family_types::undefined;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Undefined;
             break;
-        case b_empty:
+        case B_Empty:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
             buffer_access_pattern.access_mask = vk::AccessFlags();
-            buffer_access_pattern.queue_family_type = queue_family_types::undefined;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Undefined;
             break;
         default:
             assert(false && "Buffer Access pattern not known");
@@ -175,48 +175,48 @@ namespace engine
         return buffer_access_pattern;
         
     }
-        static buffer_access_pattern get_dst_buffer_access_pattern(buffer_usage_types usage_type)
+        static Buffer_Access_Pattern Get_Dst_Buffer_Access_Pattern(Buffer_Usage_Types usage_type)
     {
-        buffer_access_pattern buffer_access_pattern;
+        Buffer_Access_Pattern buffer_access_pattern;
 
         switch (usage_type)
         {
-        case b_vertex_buffer:
+        case B_Vertex_Buffer:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eVertexInput;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eVertexAttributeRead;
-            buffer_access_pattern.queue_family_type = queue_family_types::graphics;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case b_graphics_write:
+        case B_Graphics_Write:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eVertexShader
                 | vk::PipelineStageFlagBits::eTessellationControlShader | vk::PipelineStageFlagBits::eTessellationEvaluationShader 
                  | vk::PipelineStageFlagBits::eGeometryShader;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
-            buffer_access_pattern.queue_family_type = queue_family_types::graphics;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Graphics;
             break;
-        case b_compute_write:
+        case B_Compute_Write:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eComputeShader;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
-            buffer_access_pattern.queue_family_type = queue_family_types::compute;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Compute;
             break;
-        case b_transfer_src:
+        case B_Transfer_Src:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eTransferWrite;
-            buffer_access_pattern.queue_family_type = queue_family_types::transfer;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Transfer;
             break;
-        case b_transfer_dst:
+        case B_Transfer_Dst:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eTransferRead;
-            buffer_access_pattern.queue_family_type = queue_family_types::transfer;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Transfer;
             break;
-        case b_draw_indirect:
+        case B_Draw_Indirect:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eDrawIndirect;
             buffer_access_pattern.access_mask = vk::AccessFlagBits::eIndirectCommandRead;
-            buffer_access_pattern.queue_family_type = queue_family_types::undefined;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Undefined;
             break;
-        case b_empty:
+        case B_Empty:
             buffer_access_pattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
             buffer_access_pattern.access_mask = vk::AccessFlags();
-            buffer_access_pattern.queue_family_type = queue_family_types::undefined;
+            buffer_access_pattern.queue_family_type = Queue_Family_Types::Undefined;
             break;
         default:
             assert(false && "Buffer Access pattern not known");
@@ -227,7 +227,7 @@ namespace engine
         
     }
 
-    static void create_mem_barrier(buffer_access_pattern src_barrier, buffer_access_pattern dst_barrier,
+    static void Create_Mem_Barrier(Buffer_Access_Pattern src_barrier, Buffer_Access_Pattern dst_barrier,
                                 vk::CommandBuffer& command_buffer)
     {
 
@@ -239,8 +239,8 @@ namespace engine
                                       nullptr, nullptr);
     }
         
-    static void create_buffer_barrier(buffer_access_pattern src_barrier, buffer_access_pattern dst_barrier,
-                                engine::buffer* buffer, vk::CommandBuffer& command_buffer)
+    static void Create_Buffer_Barrier(Buffer_Access_Pattern src_barrier, Buffer_Access_Pattern dst_barrier,
+                                engine::Buffer* buffer, vk::CommandBuffer& command_buffer)
     {
         vk::BufferMemoryBarrier buffer_memory_barrier{};
         buffer_memory_barrier.srcAccessMask = src_barrier.access_mask;

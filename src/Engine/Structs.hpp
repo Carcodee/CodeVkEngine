@@ -7,14 +7,14 @@
 namespace engine
 {
 // core
-struct queue_family_indices
+struct Queue_Family_Indices
 {
 	uint32_t transfer_family_index;
 	uint32_t compute_family_index;
 	uint32_t graphics_family_index;
 	uint32_t present_family_index;
 };
-struct window_desc
+struct Window_Desc
 {
 	HINSTANCE h_instance;
 	HWND      h_wnd;
@@ -22,18 +22,18 @@ struct window_desc
 
 // image
 
-struct sub_image_info
+struct Sub_Image_Info
 {
 	vk::ImageLayout curr_layout;
 };
-struct mip_info
+struct Mip_Info
 {
-	std::vector<sub_image_info> layer_infos;
+	std::vector<Sub_Image_Info> layer_infos;
 	glm::uvec3                size;
 };
 
 // swapChain
-struct surface_details
+struct Surface_Details
 {
 	vk::SurfaceCapabilitiesKHR        capabilities;
 	std::vector<vk::SurfaceFormatKHR> formats;
@@ -41,21 +41,21 @@ struct surface_details
 };
 
 // presentQueue
-struct frame_resources
+struct Frame_Resources
 {
 	vk::UniqueSemaphore image_acquired_semaphore;
 	vk::UniqueSemaphore rendering_finished_semaphore;
 	vk::UniqueFence     inflight_fence;
 };
 
-struct attachment_info : systems::i_serializable<engine::attachment_info>
+struct Attachment_Info : systems::I_Serializable<engine::Attachment_Info>
 {
 	
-	blend_configs blend_configs = {};
+	Blend_Configs blend_configs = {};
 	vk::RenderingAttachmentInfo vk_attachment_info = {};
 	vk::Format                  format         = vk::Format::eUndefined;
 
-	nlohmann::json serialize() override
+	nlohmann::json Serialize() override
 	{
 		nlohmann::json j = nlohmann::json{
 		    {"format", static_cast<int>(this->format)},        // Store format as an integer
@@ -69,9 +69,9 @@ struct attachment_info : systems::i_serializable<engine::attachment_info>
 		return j;
 	}
 	// Deserialization function for `AttachmentInfo`
-	engine::attachment_info *deserialize(std::string filename) override
+	engine::Attachment_Info *Deserialize(std::string filename) override
 	{
-		nlohmann::json json = systems::os::get_json_from_file(filename);
+		nlohmann::json json = systems::Os::Get_Json_From_File(filename);
 
 		this->format = static_cast<vk::Format>(json.at("format").get<int>());
 
@@ -85,7 +85,7 @@ struct attachment_info : systems::i_serializable<engine::attachment_info>
 		}
 		return this;
 	}
-	engine::attachment_info *get_from_json(nlohmann::json json)
+	engine::Attachment_Info *Get_From_Json(nlohmann::json json)
 	{
 		this->format = static_cast<vk::Format>(json.at("format").get<int>());
 
@@ -101,14 +101,14 @@ struct attachment_info : systems::i_serializable<engine::attachment_info>
 	}
 };
 
-struct image_access_pattern
+struct Image_Access_Pattern
 {
 	vk::PipelineStageFlags stage;
 	vk::AccessFlags        access_mask;
 	vk::ImageLayout        layout;
-	queue_family_types       queue_family_type;
+	Queue_Family_Types       queue_family_type;
 
-	image_access_pattern &operator=(const image_access_pattern &other)
+	Image_Access_Pattern &operator=(const Image_Access_Pattern &other)
 	{
 		layout          = other.layout;
 		stage           = other.stage;
@@ -117,14 +117,14 @@ struct image_access_pattern
 		return *this;
 	}
 };
-struct buffer_access_pattern
+struct Buffer_Access_Pattern
 {
 	vk::PipelineStageFlags stage;
 	vk::AccessFlags        access_mask;
-	queue_family_types       queue_family_type;
+	Queue_Family_Types       queue_family_type;
 };
 
-struct shader_resource
+struct Shader_Resource
 {
 	std::string        name;
 	uint32_t           binding;
@@ -133,7 +133,7 @@ struct shader_resource
 	vk::DescriptorType type;
 };
 
-struct draw_indirect_indexed_cmd
+struct Draw_Indirect_Indexed_Cmd
 {
 	uint32_t index_count;
 	uint32_t instance_count;
@@ -142,17 +142,17 @@ struct draw_indirect_indexed_cmd
 	uint32_t first_instance;
 };
 
-struct draw_indirect_cmd
+struct Draw_Indirect_Cmd
 {
 	uint32_t vertex_count;
 	uint32_t instance_count;
 	uint32_t first_index;
 	uint32_t first_instance;
 };
-struct graphics_pipeline_configs
+struct Graphics_Pipeline_Configs
 {
-	rasterization_configs rasterization_configs = rasterization_configs::r_fill;
-	topology_configs      topology_configs      = topology_configs::t_triangle;
+	Rasterization_Configs rasterization_configs = Rasterization_Configs::R_Fill;
+	Topology_Configs      topology_configs      = Topology_Configs::T_Triangle;
 };
 
 

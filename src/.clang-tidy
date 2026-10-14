@@ -3,6 +3,17 @@ HeaderFilterRegex: '[/\\]src[/\\].*'
 FormatStyle: none
 CheckOptions:
   readability-identifier-naming.DefaultCase: lower_case
+  readability-identifier-naming.ClassCase: Camel_Snake_Case
+  readability-identifier-naming.StructCase: Camel_Snake_Case
+  readability-identifier-naming.EnumCase: Camel_Snake_Case
+  readability-identifier-naming.EnumConstantCase: Camel_Snake_Case
+  readability-identifier-naming.FunctionCase: Camel_Snake_Case
+  readability-identifier-naming.MethodCase: Camel_Snake_Case
+  readability-identifier-naming.TypeAliasCase: Camel_Snake_Case
+  readability-identifier-naming.TypedefCase: Camel_Snake_Case
+  readability-identifier-naming.TypeTemplateParameterCase: Camel_Snake_Case
+  readability-identifier-naming.ConceptCase: Camel_Snake_Case
+  readability-identifier-naming.FunctionIgnoredRegexp: '^main$'
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
   readability-identifier-naming.GetConfigPerFile: false
   readability-identifier-naming.AggressiveDependentMemberLookup: true

@@ -1,4 +1,4 @@
-struct push_constants {
+struct Push_Constants {
     float4 color;
     int layer_selected;
     int painting;
@@ -8,8 +8,8 @@ struct push_constants {
 };
 
 [vk::push_constant]
-cbuffer push_constants_buffer{
-    push_constants pc;
+cbuffer Push_Constants_Buffer{
+    Push_Constants pc;
 }
 
 // Declare textures for painting layers
@@ -20,7 +20,7 @@ Sampler2D in_tex;
 
 // Entry point for compute shader
 [numthreads(1, 1, 1)]
-void main_cs(uint3 dtid : SV_DispatchThreadID) {
+void Main_Cs(uint3 dtid : SV_DispatchThreadID) {
   // Calculate position
   uint2 xy_screen = int2(dtid.x, dtid.y);
     int pos_x = int(dtid.x - float(pc.radius) / 2.0 + 1);

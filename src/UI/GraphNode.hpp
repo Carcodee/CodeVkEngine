@@ -10,59 +10,59 @@ namespace ui::nodes
 {
 
 namespace ed = ax::NodeEditor;
-enum node_type
+enum Node_Type
 {
-	n_root_node                = 1 << 0,
-	n_render_node              = 1 << 1,
-	n_vert_shader              = 1 << 2,
-	n_frag_shader              = 1 << 3,
-	n_comp_shader              = 1 << 4,
-	n_col_attachment_structure = 1 << 5,
-	n_depth_structure          = 1 << 6,
-	n_push_constant            = 1 << 7,
-	n_image_sampler            = 1 << 8,
-	n_image_storage            = 1 << 9,
-	n_depth_image_sampler      = 1 << 10,
-	n_vertex_input             = 1 << 11,
-	n_buffer                   = 1 << 12,
-	n_none                     = 1 << 13,
+	N_Root_Node                = 1 << 0,
+	N_Render_Node              = 1 << 1,
+	N_Vert_Shader              = 1 << 2,
+	N_Frag_Shader              = 1 << 3,
+	N_Comp_Shader              = 1 << 4,
+	N_Col_Attachment_Structure = 1 << 5,
+	N_Depth_Structure          = 1 << 6,
+	N_Push_Constant            = 1 << 7,
+	N_Image_Sampler            = 1 << 8,
+	N_Image_Storage            = 1 << 9,
+	N_Depth_Image_Sampler      = 1 << 10,
+	N_Vertex_Input             = 1 << 11,
+	N_Buffer                   = 1 << 12,
+	N_None                     = 1 << 13,
 };
-static std::map<node_type, std::string> node_type_strings{
-    {n_root_node, "N_ROOT_NODE"},
-    {n_render_node, "N_RENDER_NODE"},
-    {n_vert_shader, "N_VERT_SHADER"},
-    {n_frag_shader, "N_FRAG_SHADER"},
-    {n_comp_shader, "N_COMP_SHADER"},
-    {n_col_attachment_structure, "N_COL_ATTACHMENT_STRUCTURE"},
-    {n_depth_structure, "N_DEPTH_STRUCTURE"},
-    {n_push_constant, "N_PUSH_CONSTANT"},
-    {n_image_sampler, "N_IMAGE_SAMPLER"},
-    {n_image_storage, "N_IMAGE_STORAGE"},
-    {n_depth_image_sampler, "N_DEPTH_IMAGE_SAMPLER"},
-    {n_vertex_input, "N_VERTEX_INPUT"},
-    {n_buffer, "N_BUFFER"},
-    {n_none, "N_NONE"},
+static std::map<Node_Type, std::string> node_type_strings{
+    {N_Root_Node, "N_ROOT_NODE"},
+    {N_Render_Node, "N_RENDER_NODE"},
+    {N_Vert_Shader, "N_VERT_SHADER"},
+    {N_Frag_Shader, "N_FRAG_SHADER"},
+    {N_Comp_Shader, "N_COMP_SHADER"},
+    {N_Col_Attachment_Structure, "N_COL_ATTACHMENT_STRUCTURE"},
+    {N_Depth_Structure, "N_DEPTH_STRUCTURE"},
+    {N_Push_Constant, "N_PUSH_CONSTANT"},
+    {N_Image_Sampler, "N_IMAGE_SAMPLER"},
+    {N_Image_Storage, "N_IMAGE_STORAGE"},
+    {N_Depth_Image_Sampler, "N_DEPTH_IMAGE_SAMPLER"},
+    {N_Vertex_Input, "N_VERTEX_INPUT"},
+    {N_Buffer, "N_BUFFER"},
+    {N_None, "N_NONE"},
 };
 
-enum primitive_node_type
+enum Primitive_Node_Type
 {
-	int_value,
-	uint,
-	vec2,
-	vec3,
-	vec4,
-	size_value,
-	string_value
+	Int_Value,
+	Uint,
+	Vec2,
+	Vec3,
+	Vec4,
+	Size_Value,
+	String_Value
 };
 
-struct link_info
+struct Link_Info
 {
 	ed::LinkId id;
 	ed::PinId  input_id;
 	ed::PinId  output_id;
 };
 
-static bool is_valid_node_combination(node_type node_kind, node_type dst_node)
+static bool Is_Valid_Node_Combination(Node_Type node_kind, Node_Type dst_node)
 {
 	if (node_kind & dst_node)
 	{
@@ -70,97 +70,97 @@ static bool is_valid_node_combination(node_type node_kind, node_type dst_node)
 	}
 	return false;
 }
-static std::set<node_type> get_node_type(node_type node_kind)
+static std::set<Node_Type> Get_Node_Type(Node_Type node_kind)
 {
-	std::set<node_type> nodes_find = {};
-	if (node_kind & n_root_node)
+	std::set<Node_Type> nodes_find = {};
+	if (node_kind & N_Root_Node)
 	{
-		nodes_find.insert(n_root_node);
+		nodes_find.insert(N_Root_Node);
 	}
-	if (node_kind & n_render_node)
+	if (node_kind & N_Render_Node)
 	{
-		nodes_find.insert(n_render_node);
+		nodes_find.insert(N_Render_Node);
 	}
-	if (node_kind & n_vert_shader)
+	if (node_kind & N_Vert_Shader)
 	{
-		nodes_find.insert(n_vert_shader);
+		nodes_find.insert(N_Vert_Shader);
 	}
-	if (node_kind & n_frag_shader)
+	if (node_kind & N_Frag_Shader)
 	{
-		nodes_find.insert(n_frag_shader);
+		nodes_find.insert(N_Frag_Shader);
 	}
-	if (node_kind & n_comp_shader)
+	if (node_kind & N_Comp_Shader)
 	{
-		nodes_find.insert(n_comp_shader);
+		nodes_find.insert(N_Comp_Shader);
 	}
-	if (node_kind & n_col_attachment_structure)
+	if (node_kind & N_Col_Attachment_Structure)
 	{
-		nodes_find.insert(n_col_attachment_structure);
+		nodes_find.insert(N_Col_Attachment_Structure);
 	}
-	if (node_kind & n_depth_structure)
+	if (node_kind & N_Depth_Structure)
 	{
-		nodes_find.insert(n_depth_structure);
+		nodes_find.insert(N_Depth_Structure);
 	}
-	if (node_kind & n_push_constant)
+	if (node_kind & N_Push_Constant)
 	{
-		nodes_find.insert(n_push_constant);
+		nodes_find.insert(N_Push_Constant);
 	}
-	if (node_kind & n_image_sampler)
+	if (node_kind & N_Image_Sampler)
 	{
-		nodes_find.insert(n_image_sampler);
+		nodes_find.insert(N_Image_Sampler);
 	}
-	if (node_kind & n_image_storage)
+	if (node_kind & N_Image_Storage)
 	{
-		nodes_find.insert(n_image_storage);
+		nodes_find.insert(N_Image_Storage);
 	}
-	if (node_kind & n_depth_image_sampler)
+	if (node_kind & N_Depth_Image_Sampler)
 	{
-		nodes_find.insert(n_depth_image_sampler);
+		nodes_find.insert(N_Depth_Image_Sampler);
 	}
-	if (node_kind & n_vertex_input)
+	if (node_kind & N_Vertex_Input)
 	{
-		nodes_find.insert(n_vertex_input);
+		nodes_find.insert(N_Vertex_Input);
 	}
-	if (node_kind & n_buffer)
+	if (node_kind & N_Buffer)
 	{
-		nodes_find.insert(n_buffer);
+		nodes_find.insert(N_Buffer);
 	}
 	if (nodes_find.empty())
 	{
-		nodes_find.insert(n_none);
-		systems::logger::get_instance()->log_message("There was no nodes finded in nodeType structure");
+		nodes_find.insert(N_None);
+		systems::Logger::Get_Instance()->Log_Message("There was no nodes finded in nodeType structure");
 	}
 	return nodes_find;
 }
-struct pin_info
+struct Pin_Info
 {
 	std::string name{};
-	node_type    node_kind = n_none;
+	Node_Type    node_kind = N_None;
 	std::any    data     = std::any();
 	ed::PinKind pin_kind{};
 	int         id        = -1;
-	pin_info    *linked_pin = nullptr;
-	pin_info(std::string name, node_type node_kind)
+	Pin_Info    *linked_pin = nullptr;
+	Pin_Info(std::string name, Node_Type node_kind)
 	{
 		this->name     = name;
 		this->node_kind = node_kind;
 	}
 
-	bool has_data()
+	bool Has_Data()
 	{
 		return data.has_value();
 	}
 
-	template <typename value_type>
-	value_type get_data()
+	template <typename Value_Type>
+	Value_Type Get_Data()
 	{
-		assert(has_data() && "Pin does not have data");
-		return std::any_cast<value_type>(data);
+		assert(Has_Data() && "Pin does not have data");
+		return std::any_cast<Value_Type>(data);
 	}
 
-	void draw()
+	void Draw()
 	{
-		assert(node_kind != n_none);
+		assert(node_kind != N_None);
 		if (id > -1)
 			ImGui::PushID(id);
 
@@ -182,13 +182,13 @@ struct pin_info
 };
 
 // enums
-struct enum_selectable
+struct Enum_Selectable
 {
 	std::string              name;
 	std::vector<std::string> options;
 	int                      selected_idx;
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		ImGui::PushItemWidth(100.0);
 		if (id > -1)
@@ -205,19 +205,19 @@ struct enum_selectable
 		ImGui::PopItemWidth();
 	}
 
-	template <typename value_type>
-	value_type get_enum_from_index(std::map<int, value_type> &map)
+	template <typename Value_Type>
+	Value_Type Get_Enum_From_Index(std::map<int, Value_Type> &map)
 	{
 		return map.at(selected_idx);
 	}
 };
 
-struct text_input
+struct Text_Input
 {
 	std::string name;
 	std::string content;
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		ImGui::PushItemWidth(100.0);
 		if (id > -1)
@@ -235,26 +235,26 @@ struct text_input
 	}
 };
 
-struct primitive_input
+struct Primitive_Input
 {
 	std::string       name;
-	primitive_node_type primitive_type;
+	Primitive_Node_Type primitive_type;
 	std::any          content;
 
-	bool has_data()
+	bool Has_Data()
 	{
 		return content.has_value();
 	}
 
-	template <typename value_type>
-	value_type get_data()
+	template <typename Value_Type>
+	Value_Type Get_Data()
 	{
-		assert(has_data() && "Primitive has no data");
-		value_type data = std::any_cast<value_type>(content);
+		assert(Has_Data() && "Primitive has no data");
+		Value_Type data = std::any_cast<Value_Type>(content);
 		return data;
 	}
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		ImGui::PushItemWidth(100.0);
 		if (id > -1)
@@ -270,39 +270,39 @@ struct primitive_input
 		std::any    result;
 		switch (primitive_type)
 		{
-			case int_value:
-				int_data = get_data<int>();
+			case Int_Value:
+				int_data = Get_Data<int>();
 				ImGui::InputInt(name.c_str(), &int_data, 1, 100);
 				result = int_data;
 				break;
-			case uint:
-				u_intdata = get_data<int>();
+			case Uint:
+				u_intdata = Get_Data<int>();
 				ImGui::InputInt(name.c_str(), &u_intdata, 1, 100);
 				result = u_intdata;
 				break;
-			case vec2:
-				vec2_data = get_data<glm::vec2>();
+			case Vec2:
+				vec2_data = Get_Data<glm::vec2>();
 				ImGui::InputFloat2(name.c_str(), glm::value_ptr(vec2_data));
 				result = vec2_data;
 				break;
-			case vec3:
-				vec3_data = get_data<glm::vec3>();
+			case Vec3:
+				vec3_data = Get_Data<glm::vec3>();
 				ImGui::InputFloat3(name.c_str(), glm::value_ptr(vec3_data));
 				result = vec3_data;
 				break;
-			case vec4:
-				vec4_data = get_data<glm::vec4>();
+			case Vec4:
+				vec4_data = Get_Data<glm::vec4>();
 				ImGui::InputFloat4(name.c_str(), glm::value_ptr(vec4_data));
 				result = vec4_data;
 				break;
-			case size_value:
-				size_data = get_data<size_t>();
+			case Size_Value:
+				size_data = Get_Data<size_t>();
 				size_temp = static_cast<int>(size_data);
 				ImGui::InputInt(name.c_str(), &size_temp);
 				size_data = static_cast<size_t>(size_temp);
 				result   = size_data;
 				break;
-			case string_value:
+			case String_Value:
 				assert(false && "Invalid case");
 				break;
 			default:
@@ -318,15 +318,15 @@ struct primitive_input
 
 // any
 // fix this
-struct scrollable
+struct Scrollable
 {
 	std::string           name;
-	primitive_node_type     primitive_type;
+	Primitive_Node_Type     primitive_type;
 	std::vector<std::any> content;
 	int                   selected_idx    = 0;
 	int                   item_hightlight = 0;
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		int                      int_data = -1;
 		std::vector<std::string> items;
@@ -337,19 +337,19 @@ struct scrollable
 		{
 			switch (primitive_type)
 			{
-				case int_value:
+				case Int_Value:
 					int_data    = std::any_cast<int>(item);
 					string_data = std::to_string(int_data).c_str();
-				case uint:
+				case Uint:
 					assert(false && "Invalid case");
 					break;
-				case vec3:
+				case Vec3:
 					assert(false && "Invalid case");
 					break;
-				case vec2:
+				case Vec2:
 					assert(false && "Invalid case");
 					break;
-				case string_value:
+				case String_Value:
 					string_data = std::any_cast<std::string>(item).c_str();
 				default:
 					break;
@@ -374,128 +374,128 @@ struct scrollable
 		ImGui::PopItemWidth();
 	}
 
-	template <typename value_type>
-	value_type get_current()
+	template <typename Value_Type>
+	Value_Type Get_Current()
 	{
-		return std::any_cast<value_type>(content.at(selected_idx));
+		return std::any_cast<Value_Type>(content.at(selected_idx));
 	}
 };
-enum widget_type
+enum Widget_Type
 {
-	w_selectable,
-	w_text_input,
-	w_primitive
+	W_Selectable,
+	W_Text_Input,
+	W_Primitive
 };
-struct dynamic_structure
+struct Dynamic_Structure
 {
-	struct node_widgets_infos
+	struct Node_Widgets_Infos
 	{
 		union
 		{
-			enum_selectable selectable_info;
-			text_input      text_input_info;
-			primitive_input primitive_info;
+			Enum_Selectable selectable_info;
+			Text_Input      text_input_info;
+			Primitive_Input primitive_info;
 		};
 
-		widget_type type;
+		Widget_Type type;
 
-		node_widgets_infos()
+		Node_Widgets_Infos()
 		{
 		}
 
-		node_widgets_infos(const node_widgets_infos &other) :
+		Node_Widgets_Infos(const Node_Widgets_Infos &other) :
 		    type(other.type)
 		{
 			switch (type)
 			{
-				case w_selectable:
-					new (&selectable_info) enum_selectable(other.selectable_info);
+				case W_Selectable:
+					new (&selectable_info) Enum_Selectable(other.selectable_info);
 					break;
-				case w_text_input:
-					new (&text_input_info) text_input(other.text_input_info);
+				case W_Text_Input:
+					new (&text_input_info) Text_Input(other.text_input_info);
 					break;
-				case w_primitive:
-					new (&primitive_info) primitive_input(other.primitive_info);
+				case W_Primitive:
+					new (&primitive_info) Primitive_Input(other.primitive_info);
 					break;
 			}
 		}
 
-		node_widgets_infos(const node_widgets_infos &&other) noexcept :
+		Node_Widgets_Infos(const Node_Widgets_Infos &&other) noexcept :
 		    type(other.type)
 		{
 			switch (type)
 			{
-				case w_selectable:
-					new (&selectable_info) enum_selectable(std::move(other.selectable_info));
+				case W_Selectable:
+					new (&selectable_info) Enum_Selectable(std::move(other.selectable_info));
 					break;
-				case w_text_input:
-					new (&text_input_info) text_input(std::move(other.text_input_info));
+				case W_Text_Input:
+					new (&text_input_info) Text_Input(std::move(other.text_input_info));
 					break;
-				case w_primitive:
-					new (&primitive_info) primitive_input(std::move(other.primitive_info));
+				case W_Primitive:
+					new (&primitive_info) Primitive_Input(std::move(other.primitive_info));
 					break;
 			}
 		}
 
-		~node_widgets_infos()
+		~Node_Widgets_Infos()
 		{
-			destroy();
+			Destroy();
 		}
 
-		void destroy()
+		void Destroy()
 		{
 			switch (type)
 			{
-				case w_selectable:
-					selectable_info.~enum_selectable();
+				case W_Selectable:
+					selectable_info.~Enum_Selectable();
 					break;
-				case w_text_input:
-					text_input_info.~text_input();
+				case W_Text_Input:
+					text_input_info.~Text_Input();
 					break;
-				case w_primitive:
-					primitive_info.~primitive_input();
+				case W_Primitive:
+					primitive_info.~Primitive_Input();
 					break;
 			}
 		}
 
-		node_widgets_infos &operator=(const node_widgets_infos &other)
+		Node_Widgets_Infos &operator=(const Node_Widgets_Infos &other)
 		{
 			if (this != &other)
 			{
-				destroy();
+				Destroy();
 				type = other.type;
 				switch (type)
 				{
-					case w_selectable:
-						new (&selectable_info) enum_selectable(other.selectable_info);
+					case W_Selectable:
+						new (&selectable_info) Enum_Selectable(other.selectable_info);
 						break;
-					case w_text_input:
-						new (&text_input_info) text_input(other.text_input_info);
+					case W_Text_Input:
+						new (&text_input_info) Text_Input(other.text_input_info);
 						break;
-					case w_primitive:
-						new (&primitive_info) primitive_input(other.primitive_info);
+					case W_Primitive:
+						new (&primitive_info) Primitive_Input(other.primitive_info);
 						break;
 				}
 			}
 			return *this;
 		}
 
-		node_widgets_infos &operator=(const node_widgets_infos &&other) noexcept
+		Node_Widgets_Infos &operator=(const Node_Widgets_Infos &&other) noexcept
 		{
 			if (this != &other)
 			{
-				destroy();
+				Destroy();
 				type = other.type;
 				switch (type)
 				{
-					case w_selectable:
-						new (&selectable_info) enum_selectable(std::move(other.selectable_info));
+					case W_Selectable:
+						new (&selectable_info) Enum_Selectable(std::move(other.selectable_info));
 						break;
-					case w_text_input:
-						new (&text_input_info) text_input(std::move(other.text_input_info));
+					case W_Text_Input:
+						new (&text_input_info) Text_Input(std::move(other.text_input_info));
 						break;
-					case w_primitive:
-						new (&primitive_info) primitive_input(std::move(other.primitive_info));
+					case W_Primitive:
+						new (&primitive_info) Primitive_Input(std::move(other.primitive_info));
 						break;
 				}
 			}
@@ -503,55 +503,55 @@ struct dynamic_structure
 		}
 	};
 	std::string                     name;
-	std::map<int, node_widgets_infos> widgets_infos;
+	std::map<int, Node_Widgets_Infos> widgets_infos;
 
-	dynamic_structure(const dynamic_structure &other)
+	Dynamic_Structure(const Dynamic_Structure &other)
 	{
 		this->name         = other.name;
 		this->widgets_infos = other.widgets_infos;
 	}
 
-	dynamic_structure(const std::string &name, enum_selectable &selectable)
+	Dynamic_Structure(const std::string &name, Enum_Selectable &selectable)
 	{
 		this->name                      = name;
-		node_widgets_infos base_widget_info = {};
-		base_widget_info.type             = w_selectable;
-		new (&base_widget_info.selectable_info) enum_selectable(selectable);
+		Node_Widgets_Infos base_widget_info = {};
+		base_widget_info.type             = W_Selectable;
+		new (&base_widget_info.selectable_info) Enum_Selectable(selectable);
 		widgets_infos.try_emplace(widgets_infos.size(), std::move(base_widget_info));
 	}
 
-	dynamic_structure(const std::string &name, text_input &text_input_info)
+	Dynamic_Structure(const std::string &name, Text_Input &text_input_info)
 	{
 		this->name                      = name;
-		node_widgets_infos base_widget_info = {};
-		base_widget_info.type             = w_text_input;
-		new (&base_widget_info.text_input_info) text_input(text_input_info);
+		Node_Widgets_Infos base_widget_info = {};
+		base_widget_info.type             = W_Text_Input;
+		new (&base_widget_info.text_input_info) Text_Input(text_input_info);
 		widgets_infos.try_emplace(widgets_infos.size(), std::move(base_widget_info));
 	}
 
-	dynamic_structure(const std::string &name, primitive_input &primitive_info)
+	Dynamic_Structure(const std::string &name, Primitive_Input &primitive_info)
 	{
 		this->name                      = name;
-		node_widgets_infos base_widget_info = {};
-		base_widget_info.type             = w_primitive;
-		new (&base_widget_info.primitive_info) primitive_input(primitive_info);
+		Node_Widgets_Infos base_widget_info = {};
+		base_widget_info.type             = W_Primitive;
+		new (&base_widget_info.primitive_info) Primitive_Input(primitive_info);
 		widgets_infos.try_emplace(widgets_infos.size(), std::move(base_widget_info));
 	}
 
-	~dynamic_structure()
+	~Dynamic_Structure()
 	{
 		for (auto &widget : widgets_infos)
 		{
-			widget.second.destroy();
+			widget.second.Destroy();
 		}
 	}
 
-	void add_option()
+	void Add_Option()
 	{
 		widgets_infos.try_emplace(widgets_infos.size(), widgets_infos.at(0));
 	}
 
-	void remove_last()
+	void Remove_Last()
 	{
 		if (widgets_infos.size() == 1)
 		{
@@ -565,11 +565,11 @@ struct dynamic_structure
 		}
 		else
 		{
-			systems::logger::get_instance()->log("Invalid Key");
+			systems::Logger::Get_Instance()->Log("Invalid Key");
 		}
 	}
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		if (id > -1)
 			ImGui::PushID(id);
@@ -579,12 +579,12 @@ struct dynamic_structure
 		ImGui::PushItemWidth(20);
 		if (ImGui::Button("+"))
 		{
-			add_option();
+			Add_Option();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("-"))
 		{
-			remove_last();
+			Remove_Last();
 		}
 		ImGui::PopItemWidth();
 		int w_id = 0;
@@ -592,14 +592,14 @@ struct dynamic_structure
 		{
 			switch (widget_info.second.type)
 			{
-				case w_selectable:
-					widget_info.second.selectable_info.draw(w_id++);
+				case W_Selectable:
+					widget_info.second.selectable_info.Draw(w_id++);
 					break;
-				case w_text_input:
-					widget_info.second.text_input_info.draw(w_id++);
+				case W_Text_Input:
+					widget_info.second.text_input_info.Draw(w_id++);
 					break;
-				case w_primitive:
-					widget_info.second.primitive_info.draw(w_id++);
+				case W_Primitive:
+					widget_info.second.primitive_info.Draw(w_id++);
 					break;
 			}
 		}
@@ -608,18 +608,18 @@ struct dynamic_structure
 	}
 };
 
-struct multi_option
+struct Multi_Option
 {
 	std::string                     name;
 	std::map<int, std::string>      options;
-	std::map<int, text_input>        input_texts;
-	std::map<int, enum_selectable>   selectables;
-	std::map<int, scrollable>       scrollables;
-	std::map<int, dynamic_structure> dynamic_structures;
+	std::map<int, Text_Input>        input_texts;
+	std::map<int, Enum_Selectable>   selectables;
+	std::map<int, Scrollable>       scrollables;
+	std::map<int, Dynamic_Structure> dynamic_structures;
 	int                             selected_idx = 0;
 
-	multi_option(const std::string &name, std::vector<std::string> options, std::map<int, text_input> input_texts,
-	            std::map<int, enum_selectable> selectables, std::map<int, scrollable> scrollables, std::map<int, dynamic_structure> dynamic_structures)
+	Multi_Option(const std::string &name, std::vector<std::string> options, std::map<int, Text_Input> input_texts,
+	            std::map<int, Enum_Selectable> selectables, std::map<int, Scrollable> scrollables, std::map<int, Dynamic_Structure> dynamic_structures)
 	{
 		this->name = name;
 		for (int i = 0; i < options.size(); ++i)
@@ -632,7 +632,7 @@ struct multi_option
 		this->dynamic_structures = dynamic_structures;
 	}
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		if (id > -1)
 			ImGui::PushID(id);
@@ -644,28 +644,28 @@ struct multi_option
 			}
 		}
 		if (input_texts.contains(selected_idx))
-			input_texts.at(selected_idx).draw();
+			input_texts.at(selected_idx).Draw();
 
 		if (selectables.contains(selected_idx))
-			selectables.at(selected_idx).draw();
+			selectables.at(selected_idx).Draw();
 
 		if (scrollables.contains(selected_idx))
-			scrollables.at(selected_idx).draw();
+			scrollables.at(selected_idx).Draw();
 
 		if (dynamic_structures.contains(selected_idx))
-			dynamic_structures.at(selected_idx).draw();
+			dynamic_structures.at(selected_idx).Draw();
 
 		if (id > -1)
 			ImGui::PopID();
 	}
 };
-struct button
+struct Button
 {
 	std::string name;
 
 	std::function<void()> action;
 
-	void draw(const int &id = -1)
+	void Draw(const int &id = -1)
 	{
 		if (id > -1)
 			ImGui::PushID(id);
@@ -679,26 +679,26 @@ struct button
 	}
 };
 
-struct graph_node
+struct Graph_Node
 {
-	engine::render_graph                      *render_graph;
-	::window_provider                           *window_provider;
-	std::unordered_map<int, pin_info>          input_nodes;
-	std::unordered_map<int, pin_info>          output_nodes;
-	std::unordered_map<int, enum_selectable>   selectables;
-	std::unordered_map<int, text_input>        text_inputs;
-	std::unordered_map<int, primitive_input>   primitives;
-	std::unordered_map<int, scrollable>       scrollables;
-	std::unordered_map<int, ui::nodes::multi_option>      multi_options;
-	std::unordered_map<int, dynamic_structure> dynamic_structures;
+	engine::Render_Graph                      *render_graph;
+	::Window_Provider                           *window_provider;
+	std::unordered_map<int, Pin_Info>          input_nodes;
+	std::unordered_map<int, Pin_Info>          output_nodes;
+	std::unordered_map<int, Enum_Selectable>   selectables;
+	std::unordered_map<int, Text_Input>        text_inputs;
+	std::unordered_map<int, Primitive_Input>   primitives;
+	std::unordered_map<int, Scrollable>       scrollables;
+	std::unordered_map<int, ui::nodes::Multi_Option>      multi_options;
+	std::unordered_map<int, Dynamic_Structure> dynamic_structures;
 	// since all ids are not repeated this will represent properly all the widgets
 
 	std::unordered_map<int, bool> drawable_widgets;
 	std::unordered_map<int, bool> add_more_widgets;
 
-	std::unordered_map<int, node_type>     graph_nodes_links;
-	std::unordered_map<int, ui::nodes::graph_node *> *graph_nodes_ref       = nullptr;
-	graph_node_res_manager                  *graph_node_res_manager = nullptr;
+	std::unordered_map<int, Node_Type>     graph_nodes_links;
+	std::unordered_map<int, ui::nodes::Graph_Node *> *graph_nodes_ref       = nullptr;
+	Graph_Node_Res_Manager                  *graph_node_res_manager = nullptr;
 
 	std::string name;
 	glm::vec2   pos;
@@ -709,14 +709,14 @@ struct graph_node
 	bool        valid        = false;
 	bool        first_frame   = true;
 
-	std::unordered_map<std::string, std::function<void(ui::nodes::graph_node &)> *> callbacks;
+	std::unordered_map<std::string, std::function<void(ui::nodes::Graph_Node &)> *> callbacks;
 
-	void update_info();
+	void Update_Info();
 
-	template <typename f, typename s>
-	std::vector<std::pair<f, s>> get_vector_from_map(std::unordered_map<f, s> &map)
+	template <typename F, typename S>
+	std::vector<std::pair<F, S>> Get_Vector_From_Map(std::unordered_map<F, S> &map)
 	{
-		std::vector<std::pair<f, s>> copied_map = {};
+		std::vector<std::pair<F, S>> copied_map = {};
 		for (auto it = map.begin(); it != map.end(); ++it)
 		{
 			copied_map.push_back(*it);
@@ -724,43 +724,43 @@ struct graph_node
 		return copied_map;
 	}
 
-	void sort();
+	void Sort();
 
-	int run_callback(std::string callback);
+	int Run_Callback(std::string callback);
 
-	void draw();
+	void Draw();
 
-	void toggle_draw(int id, bool draw_condition);
+	void Toggle_Draw(int id, bool draw_condition);
 
-	void recompile_node();
+	void Recompile_Node();
 
-	int add_link(int id, node_type node_kind = n_none);
+	int Add_Link(int id, Node_Type node_kind = N_None);
 
-	std::map<node_type, ui::nodes::graph_node *> get_graph_node_ref(node_type node_kind);
+	std::map<Node_Type, ui::nodes::Graph_Node *> Get_Graph_Node_Ref(Node_Type node_kind);
 
-	pin_info *get_input_data_by_id(int id);
+	Pin_Info *Get_Input_Data_By_Id(int id);
 
-	pin_info *get_input_data_by_name(const std::string &name);
+	Pin_Info *Get_Input_Data_By_Name(const std::string &name);
 
-	pin_info *get_output_data_by_id(int id);
+	Pin_Info *Get_Output_Data_By_Id(int id);
 
-	pin_info *get_output_data_by_name(const std::string &name);
+	Pin_Info *Get_Output_Data_By_Name(const std::string &name);
 
-	bool has_output(node_type type);
+	bool Has_Output(Node_Type type);
 
-	bool has_input(node_type type);
+	bool Has_Input(Node_Type type);
 
-	void set_ouput_data(const std::string &name, std::any data);
+	void Set_Ouput_Data(const std::string &name, std::any data);
 
-	void set_ouput_data(int id, std::any data);
+	void Set_Ouput_Data(int id, std::any data);
 
-	scrollable *get_scrollable(const std::string &name);
+	Scrollable *Get_Scrollable(const std::string &name);
 
-	ui::nodes::multi_option *get_multi_option(const std::string name);
+	ui::nodes::Multi_Option *Get_Multi_Option(const std::string name);
 
-	text_input *get_text_input(const std::string &name);
+	Text_Input *Get_Text_Input(const std::string &name);
 
-	dynamic_structure *get_dynamic_structure(const std::string &name);
+	Dynamic_Structure *Get_Dynamic_Structure(const std::string &name);
 };
 
 }        // namespace ui::nodes

@@ -21,37 +21,37 @@ layout(location = 4) in vec2 screen_uv;
 
 layout (set = 0, binding = 0) uniform sampler2D textures[];
 
-layout (set = 0, binding = 1, scalar) readonly  buffer materials_packed_buffer{
-    u_material_packed[] materials_packed;
+layout (set = 0, binding = 1, scalar) readonly  buffer Materials_Packed_Buffer{
+    U_Material_Packed[] materials_packed;
 };
-layout (set = 0, binding = 2) readonly buffer mesh_materials_ids{
+layout (set = 0, binding = 2) readonly buffer Mesh_Materials_Ids{
     int[] mesh_mat_ids;
 };
 
-void get_texture(int offset, out vec4 value){
+void Get_Texture(int offset, out vec4 value){
     value = vec4(0);
     if(offset > -1){
         value = texture(textures[offset], text_coord);
     }
 }
 
-void unpack_material(out u_material_packed mat){
+void Unpack_Material(out U_Material_Packed mat){
     int mat_id = mesh_mat_ids[id];
     mat = materials_packed[mat_id];
 }
 
 void main() {
-    u_material_packed material;
+    U_Material_Packed material;
     int issd =0;
-    unpack_material(material);
+    Unpack_Material(material);
     
     vec4 albedo; 
-    get_texture(material.albedo_offset, albedo);
+    Get_Texture(material.albedo_offset, albedo);
     if(albedo ==vec4(0)){albedo = material.diff;}
     
     
     vec4 material_normal;
-    get_texture(material.normal_offset, material_normal);
+    Get_Texture(material.normal_offset, material_normal);
     
     if(material_normal ==vec4(0)){
 //        material_normal = vec4(norm, 1.0);
@@ -62,7 +62,7 @@ void main() {
     }
 
     vec4 met_roughness;
-    get_texture(material.met_roughness_offset, met_roughness);
+    Get_Texture(material.met_roughness_offset, met_roughness);
     if(met_roughness == vec4(0)){met_roughness = vec4(0.0,material.roughness_factor, material.metallic_factor, 1.0);}
 
     colors = albedo;

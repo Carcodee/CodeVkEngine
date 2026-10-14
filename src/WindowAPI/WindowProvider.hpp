@@ -7,10 +7,10 @@
 #define WINDOW_PROVIDER_HPP
 #include <glm/vec2.hpp>
 
-class window_provider
+class Window_Provider
 {
   public:
-	window_provider(int width, int height, const char *name)
+	Window_Provider(int width, int height, const char *name)
 	{
 		current_width       = width;
 		current_height      = height;
@@ -18,7 +18,7 @@ class window_provider
 		framebuffer_resized = false;
 	}
 
-	void init_glfw()
+	void Init_Glfw()
 	{
 		glfwInit();
 
@@ -26,32 +26,32 @@ class window_provider
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		window = glfwCreateWindow(current_width, current_height, name, nullptr, nullptr);
 		glfwSetWindowUserPointer(window, this);
-		glfwSetWindowSizeCallback(window, framebuffer_resize_callback_glfw);
+		glfwSetWindowSizeCallback(window, Framebuffer_Resize_Callback_Glfw);
 	}
 
-	bool window_should_close()
+	bool Window_Should_Close()
 	{
 		should_close = glfwWindowShouldClose(window);
 		return should_close;
 	}
 
-	void destroy_window()
+	void Destroy_Window()
 	{
 		glfwDestroyWindow(window);
 	}
-	void terminate()
+	void Terminate()
 	{
 		glfwTerminate();
 	}
-	void poll_events()
+	void Poll_Events()
 	{
 		glfwPollEvents();
 	}
-	double get_time()
+	double Get_Time()
 	{
 		return glfwGetTime();
 	}
-	glm::uvec2 get_window_size()
+	glm::uvec2 Get_Window_Size()
 	{
 		return glm::uvec2(current_width, current_height);
 	}
@@ -62,9 +62,9 @@ class window_provider
 	int         current_height;
 	const char *name;
 
-	static void framebuffer_resize_callback_glfw(GLFWwindow *window, int width, int height)
+	static void Framebuffer_Resize_Callback_Glfw(GLFWwindow *window, int width, int height)
 	{
-		auto instance                = reinterpret_cast<::window_provider *>(glfwGetWindowUserPointer(window));
+		auto instance                = reinterpret_cast<::Window_Provider *>(glfwGetWindowUserPointer(window));
 		instance->current_width       = width;
 		instance->current_height      = height;
 		instance->framebuffer_resized = true;

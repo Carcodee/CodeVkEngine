@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 pos;
 
-layout(push_constant)uniform push_constants{
+layout(push_constant)uniform Push_Constants{
     mat4 model;
     mat4 proj_view;
 }pc;

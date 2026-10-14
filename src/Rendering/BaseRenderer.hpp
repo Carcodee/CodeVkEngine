@@ -7,14 +7,14 @@
 
 namespace rendering
 {
-class base_renderer
+class Base_Renderer
 {
   public:
-	virtual ~base_renderer()                   = default;
-	virtual void recreate_swap_chain_resources() = 0;
-	virtual void set_render_operation()         = 0;
+	virtual ~Base_Renderer()                   = default;
+	virtual void Recreate_Swap_Chain_Resources() = 0;
+	virtual void Set_Render_Operation()         = 0;
 	// maybe remove this
-	virtual void reload_shaders() = 0;
+	virtual void Reload_Shaders() = 0;
 };
 }        // namespace rendering
 #endif        // BASE_RENDERER_HPP

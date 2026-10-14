@@ -7,10 +7,10 @@
 
 namespace systems
 {
-struct file_info
+struct File_Info
 {
 	// lastTime write it
-	file_info(const std::string &path, std::function<void()> on_change_callback)
+	File_Info(const std::string &path, std::function<void()> on_change_callback)
 	{
 		assert(std::filesystem::exists(path) && "invalid path");
 
@@ -21,7 +21,7 @@ struct file_info
 		this->modified         = false;
 		last_time_check          = std::filesystem::last_write_time(this->path);
 	}
-	file_info(const std::string &path)
+	File_Info(const std::string &path)
 	{
 		assert(std::filesystem::exists(path) && "invalid path");
 
@@ -31,7 +31,7 @@ struct file_info
 		this->modified  = false;
 		last_time_check   = std::filesystem::last_write_time(this->path);
 	}
-	void check_last_time_write()
+	void Check_Last_Time_Write()
 	{
 		auto f_time = std::filesystem::last_write_time(this->path);
 		if (f_time != last_time_check)
@@ -44,7 +44,7 @@ struct file_info
 			// }
 		}
 	}
-	void invalidate()
+	void Invalidate()
 	{
 		modified = false;
 	}

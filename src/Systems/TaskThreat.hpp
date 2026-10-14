@@ -7,21 +7,21 @@
 #define TASK_THREAT_HPP
 namespace systems
 {
-class task_thread
+class Task_Thread
 {
   public:
-	task_thread() = default;
-	~task_thread()
+	Task_Thread() = default;
+	~Task_Thread()
 	{
-		stop();
+		Stop();
 	};
 
-	task_thread(const task_thread &)            = delete;
-	task_thread &operator=(const task_thread &) = delete;
-	task_thread(task_thread &&)                 = default;
-	task_thread &operator=(task_thread &&)      = default;
+	Task_Thread(const Task_Thread &)            = delete;
+	Task_Thread &operator=(const Task_Thread &) = delete;
+	Task_Thread(Task_Thread &&)                 = default;
+	Task_Thread &operator=(Task_Thread &&)      = default;
 
-	void run()
+	void Run()
 	{
 		while (running)
 		{
@@ -41,11 +41,11 @@ class task_thread
 			task();
 		}
 	}
-	void start()
+	void Start()
 	{
-		asset_threat = std::thread(&task_thread::run, this);
+		asset_threat = std::thread(&Task_Thread::Run, this);
 	}
-	void stop()
+	void Stop()
 	{
 		running = false;
 		condition_variable.notify_one();
@@ -54,7 +54,7 @@ class task_thread
 			asset_threat.join();
 		}
 	}
-	void add_pre_rendering_task(std::function<void()> task)
+	void Add_Pre_Rendering_Task(std::function<void()> task)
 	{
 		{
 			std::lock_guard<std::mutex> lock_guard(queue_mutex);

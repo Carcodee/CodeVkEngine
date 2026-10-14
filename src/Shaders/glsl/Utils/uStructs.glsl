@@ -3,7 +3,7 @@
 
 //Lights
 
-struct u_point_light{
+struct U_Point_Light{
     vec3 pos;
     vec3 col;
     float radius;
@@ -12,7 +12,7 @@ struct u_point_light{
     float q_attenuation;
 };
 
-struct u_dir_light{
+struct U_Dir_Light{
     vec3 pos;
     vec3 col;
     float intensity;
@@ -22,17 +22,17 @@ struct u_dir_light{
 
 //Util
 
-struct u_array_indexer{
+struct U_Array_Indexer{
     int offset;
     int size;
 };
 
-struct u_frustum{
+struct U_Frustum{
     vec4 planes[6];
     vec3 points[8];
 };
 
-struct u_material_packed{
+struct U_Material_Packed{
     vec4 diff;
     float albedo_factor;
     float normal_factor;
@@ -49,7 +49,7 @@ struct u_material_packed{
     int met_roughness_offset;
 };
 
-struct u_draw_indirect_indexed_cmd
+struct U_Draw_Indirect_Indexed_Cmd
 {
     uint index_count;
     uint instance_count;
@@ -58,18 +58,18 @@ struct u_draw_indirect_indexed_cmd
     uint first_instance;
 };
 
-struct u_sphere{
+struct U_Sphere{
     vec3 center;
     float radius;
 };
 
-struct u_merge_cascades_info{
+struct U_Merge_Cascades_Info{
     ivec2 probe_centers_positions_px;
     ivec2 probe_sizes_px;
     int dir_indices;
 };
 
-struct u_sprite_animation_info{
+struct U_Sprite_Animation_Info{
     ivec2 sprite_size_px;
     int rows;
     int cols;
@@ -78,7 +78,7 @@ struct u_sprite_animation_info{
     float interp_val;
     bool is_atlas;
 };
-struct u_radiance_cascades_configs
+struct U_Radiance_Cascades_Configs
 {
     int radiance_pow;
     int normal_map_pow;
@@ -86,7 +86,7 @@ struct u_radiance_cascades_configs
     int roughness_pow;
 };
 
-struct u_pbr_context{
+struct U_Pbr_Context{
     vec3 col;
     vec3 normal;
     vec3 f0;

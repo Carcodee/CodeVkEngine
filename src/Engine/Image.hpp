@@ -7,15 +7,15 @@
 
 namespace engine
 {
-    static bool is_depth_format(vk::Format format)
+    static bool Is_Depth_Format(vk::Format format)
     {
         return (format >= vk::Format::eD16Unorm && format < vk::Format::eD32SfloatS8Uint);
     }
 
-    static vk::ImageUsageFlags get_general_usage_flags(vk::Format format)
+    static vk::ImageUsageFlags Get_General_Usage_Flags(vk::Format format)
     {
         vk::ImageUsageFlags usage_flags = vk::ImageUsageFlagBits::eSampled;
-        if (is_depth_format(format))
+        if (Is_Depth_Format(format))
         {
             usage_flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment |vk::ImageUsageFlagBits::eSampled;
         }else
@@ -33,23 +33,23 @@ namespace engine
     static const vk::ImageUsageFlags color_image_usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     static const vk::ImageUsageFlags depth_image_usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
-    class swap_chain;
-    class image;
+    class Swap_Chain;
+    class Image;
 
-    class image_data
+    class Image_Data
     {
     public:
-        glm::uvec3 get_mip_size(uint32_t mip_level)
+        glm::uvec3 Get_Mip_Size(uint32_t mip_level)
         {
             return mip_infos[mip_level].size;
         }
     	
-        glm::uvec2 get_image_size()
+        glm::uvec2 Get_Image_Size()
         {
             return glm::uvec2(base_size.x, base_size.y);
         }
 
-        image_data(vk::Image image_handle, vk::ImageType image_type, glm::uvec3 size, uint32_t mip_count,
+        Image_Data(vk::Image image_handle, vk::ImageType image_type, glm::uvec3 size, uint32_t mip_count,
                   uint32_t array_layers_count, vk::Format format, vk::ImageLayout layout)
         {
             this->image_handle = image_handle;
@@ -58,17 +58,17 @@ namespace engine
             this->array_layers_count = array_layers_count;
             this->image_type = image_type;
 
-            current_layout = empty;
+            current_layout = Empty;
             current_pattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
             current_pattern.access_mask = vk::AccessFlagBits::eNone;
             current_pattern.layout = vk::ImageLayout::eUndefined;
-            current_pattern.queue_family_type = queue_family_types::undefined;
+            current_pattern.queue_family_type = Queue_Family_Types::Undefined;
 
             this->base_size= size;
 
             for (size_t mip_level = 0; mip_level < mips_count; mip_level++)
             {
-                mip_info mip_info;
+                Mip_Info mip_info;
                 mip_info.size = this->base_size;
                 mip_info.size.x /= 2;
                 if (image_type == vk::ImageType::e2D)
@@ -82,7 +82,7 @@ namespace engine
 
                 mip_infos.push_back(mip_info);
             }
-            if (is_depth_format(format))
+            if (Is_Depth_Format(format))
             {
                 this->aspect_flags =vk::ImageAspectFlagBits::eDepth;
                 
@@ -91,12 +91,12 @@ namespace engine
                 this->aspect_flags =vk::ImageAspectFlagBits::eColor;
             }
         }
-        void set_debug_name(std::string debug_name_param)
+        void Set_Debug_Name(std::string debug_name_param)
         {
             this->debug_name = debug_name_param;
         }
 
-        std::vector<mip_info> mip_infos;
+        std::vector<Mip_Info> mip_infos;
         vk::ImageAspectFlags aspect_flags;
         vk::Image image_handle;
         vk::Format format;
@@ -104,19 +104,19 @@ namespace engine
         vk::ImageType image_type;
         uint32_t mips_count;
         uint32_t array_layers_count;
-        layout_patterns current_layout;
-        image_access_pattern current_pattern;
+        Layout_Patterns current_layout;
+        Image_Access_Pattern current_pattern;
         
         std::string debug_name;
-        friend class image;
-        friend class swap_chain;
+        friend class Image;
+        friend class Swap_Chain;
     };
 
-    class image
+    class Image
     {
     public:
 
-        static vk::ImageCreateInfo create_info2d(glm::uvec2 size, uint32_t mips_count, uint32_t arrays_layer_count,
+        static vk::ImageCreateInfo Create_Info2d(glm::uvec2 size, uint32_t mips_count, uint32_t arrays_layer_count,
                                                 vk::Format format, vk::ImageUsageFlags usage)
         {
             auto layout = vk::ImageLayout::eUndefined;
@@ -133,7 +133,7 @@ namespace engine
             return image_info;
         }
 
-        static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t arrays_layer_count,
+        static vk::ImageCreateInfo Create_Info_Volume(glm::uvec3 size, uint32_t mips_count, uint32_t arrays_layer_count,
                                                     vk::Format format, vk::ImageUsageFlags usage)
         {
             auto layout = vk::ImageLayout::eUndefined;
@@ -151,17 +151,17 @@ namespace engine
             return image_info;
         }
 
-        image(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::ImageCreateInfo image_info,
+        Image(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::ImageCreateInfo image_info,
               vk::MemoryPropertyFlags mem_flags = vk::MemoryPropertyFlagBits::eDeviceLocal)
         {
             image_handle = logical_device.createImageUnique(image_info);
             glm::uvec3 size = {image_info.extent.width, image_info.extent.height, image_info.extent.depth};
-            image_metadata.reset(new engine::image_data(image_handle.get(), image_info.imageType, size, image_info.mipLevels, image_info.arrayLayers, image_info.format, image_info.initialLayout));
+            image_metadata.reset(new engine::Image_Data(image_handle.get(), image_info.imageType, size, image_info.mipLevels, image_info.arrayLayers, image_info.format, image_info.initialLayout));
             vk::MemoryRequirements image_mem_req= logical_device.getImageMemoryRequirements(image_handle.get());
 
             auto alloc_info = vk::MemoryAllocateInfo()
             .setAllocationSize(image_mem_req.size)
-            .setMemoryTypeIndex(find_memory_type_index(physical_device, image_mem_req.memoryTypeBits, mem_flags));
+            .setMemoryTypeIndex(Find_Memory_Type_Index(physical_device, image_mem_req.memoryTypeBits, mem_flags));
 
             image_memory = logical_device.allocateMemoryUnique(alloc_info);
             
@@ -169,7 +169,7 @@ namespace engine
             
         }
 
-        std::unique_ptr<engine::image_data> image_metadata;
+        std::unique_ptr<engine::Image_Data> image_metadata;
         vk::UniqueImage image_handle;
         vk::UniqueDeviceMemory image_memory;
     };

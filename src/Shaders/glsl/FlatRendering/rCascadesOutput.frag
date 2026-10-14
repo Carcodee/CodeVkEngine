@@ -15,7 +15,7 @@ layout (location = 0) in vec2 text_coord;
 
 layout(location = 0) out vec4 out_color;
 
-layout(push_constant) uniform push_constants{
+layout(push_constant) uniform Push_Constants{
     int cascades_count;
     int probe_size_px;
     int interval_count;
@@ -31,8 +31,8 @@ layout (set = 0, binding = 2, rgba8) uniform image2D radiances[];
 layout (set = 0, binding = 3) uniform sampler2D test_image;
 layout (set = 0, binding = 4) uniform sampler2D sprite_anims[];
 
-layout (set = 0, binding = 5, scalar) buffer sprite_info{
-    u_sprite_animation_info sprite_anim_info;
+layout (set = 0, binding = 5, scalar) buffer Sprite_Info{
+    U_Sprite_Animation_Info sprite_anim_info;
 };
 
 layout (set = 0, binding = 6) uniform sampler2D mat_textures[];
@@ -40,12 +40,12 @@ layout (set = 0, binding = 6) uniform sampler2D mat_textures[];
 
 #define CASCADE_SIZE 5
 
-vec4 merge_intervals(vec4 near, vec4 far){
+vec4 Merge_Intervals(vec4 near, vec4 far){
     vec3 radiance = near.rgb + (far.rgb * near.a);
     return vec4(radiance, near.a * far.a);
 }
 
-vec4 cast_interval(vec2 interval_start, vec2 interval_end, int cascade_index, vec2 f_size){
+vec4 Cast_Interval(vec2 interval_start, vec2 interval_end, int cascade_index, vec2 f_size){
     vec4 accumulated_radiance = vec4(0.0, 0.0, 0.0, 1.0);
     float step_size = 1.0;
     vec2 dir = normalize(interval_end - interval_start) * step_size;
@@ -62,10 +62,10 @@ vec4 cast_interval(vec2 interval_start, vec2 interval_end, int cascade_index, ve
         vec4 sample_col_image= texture(test_image,text_coord_pos);
 
         int size = sprite_anim_info.rows * sprite_anim_info.cols;
-        vec2 sprite_pos = u_get_sprite_coord_in_atlas(sprite_anim_info.current_frame, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(pos), ivec2(f_size));
+        vec2 sprite_pos = U_Get_Sprite_Coord_In_Atlas(sprite_anim_info.current_frame, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(pos), ivec2(f_size));
         vec4 sprite_col = texture(sprite_anims[0], vec2(sprite_pos));
         ///debug
-        vec3 cascade_col = u_hsl_to_rgb(float(sprite_anim_info.current_frame) / 36.0, 0.8, 0.4);
+        vec3 cascade_col = U_Hsl_To_Rgb(float(sprite_anim_info.current_frame) / 36.0, 0.8, 0.4);
 //        if(cascade_index == 3){
 //            imageStore(painting_layers[2], ivec2(pos), vec4(cascade_col, 1.0));
 //        }       
@@ -114,15 +114,15 @@ vec4 cast_interval(vec2 interval_start, vec2 interval_end, int cascade_index, ve
     return accumulated_radiance;
 }
 
-float interval_scale(int cascade_index){
+float Interval_Scale(int cascade_index){
     if(cascade_index<= 0){
         return 0.0;
     }
     return float(1 << (2 * cascade_index));
 }
 
-vec2 interval_range(int cascade_index, float base_lenght){
-    return base_lenght * vec2(interval_scale(cascade_index), interval_scale(cascade_index + 1));
+vec2 Interval_Range(int cascade_index, float base_lenght){
+    return base_lenght * vec2(Interval_Scale(cascade_index), Interval_Scale(cascade_index + 1));
 }
 
 
@@ -154,10 +154,10 @@ void main() {
         if(distance(probe_pos, vec2(gl_FragCoord.xy)) < 0.1){
             continue;
         }
-        vec2 interval_range = interval_range(i, pc.base_interval_length);
+        vec2 interval_range = Interval_Range(i, pc.base_interval_length);
         vec2 interval_start = probe_pos + texel_dir * interval_range.x;
         vec2 interval_end = probe_pos + texel_dir * interval_range.y;
-        vec4 radiance = cast_interval(interval_start, interval_end, i, vec2(f_size));
+        vec4 radiance = Cast_Interval(interval_start, interval_end, i, vec2(f_size));
         
         ivec2 dir_pos = ivec2((probe_center_grid - vec2(0.5)) * grid_size) + ivec2(dir_index % grid_size, dir_index / grid_size);
         vec2 dir_col = vec2(dir_pos) / vec2(f_size);

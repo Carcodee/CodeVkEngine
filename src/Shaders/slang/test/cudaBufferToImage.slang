@@ -10,7 +10,7 @@ RWStructuredBuffer <float> simulation_buffer;
 
 [[vk::binding(3, 0)]]
 RWStructuredBuffer <float> simulation_buffer_info;
-float3 color_map_speed(float speed)
+float3 Color_Map_Speed(float speed)
 {
     // Based on your observed velocity:
     // average magnitude roughly 0.08 to 0.10
@@ -86,7 +86,7 @@ float3 color_map_speed(float speed)
 }
 // Entry point for compute shader
 [numthreads(8, 8, 1)]
-void main_cs(uint3 dtid : SV_DispatchThreadID) {
+void Main_Cs(uint3 dtid : SV_DispatchThreadID) {
   // Calculate position
 
   uint x = dtid.x;
@@ -108,7 +108,7 @@ void main_cs(uint3 dtid : SV_DispatchThreadID) {
 
   float2 uv = float2(float(x)/1023.0f, float(y)/1023.0f);
   //float rescalled_v = (value - 0.05f) / (0.8f- 0.15f);
-  float3 value_interp = color_map_speed(value_vel);
+  float3 value_interp = Color_Map_Speed(value_vel);
   float max_col = max(value_interp.x, (max(value_interp.y, value_interp.z)));
 
   bool show = false;

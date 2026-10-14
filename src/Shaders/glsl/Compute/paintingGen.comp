@@ -9,7 +9,7 @@
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
 
-layout(push_constant) uniform push_constants{
+layout(push_constant) uniform Push_Constants{
     vec4 color;
     int layer_selected;
     int painting;

@@ -7,13 +7,13 @@
 
 namespace engine
 {
-    class swap_chain;
+    class Swap_Chain;
 
-    class image_view
+    class Image_View
     {
     public:
 
-        image_view(vk::Device logical_device, engine::image_data* image_metadata,
+        Image_View(vk::Device logical_device, engine::Image_Data* image_metadata,
                   uint32_t base_mip_level, uint32_t mip_level_count, uint32_t base_array_layer, uint32_t array_layers_count)
         {
             this->image_metadata = image_metadata;
@@ -56,7 +56,7 @@ namespace engine
             this->image_view_handle = logical_device.createImageViewUnique(image_view_create_info);
         }
 
-        image_view(vk::Device logical_device, engine::image_data* image_metadata,
+        Image_View(vk::Device logical_device, engine::Image_Data* image_metadata,
                   uint32_t base_mip_level, uint32_t mip_level_count, uint32_t base_array_layer, uint32_t array_layers_count,
                   std::string name, int32_t id)
         {
@@ -104,7 +104,7 @@ namespace engine
 
 
         //cubemaps
-        image_view(vk::PhysicalDevice physical_device, vk::Device logical_device, engine::image_data* image_metadata,
+        Image_View(vk::PhysicalDevice physical_device, vk::Device logical_device, engine::Image_Data* image_metadata,
                   uint32_t mip_level_count, uint32_t base_mip_level)
         {
             this->image_metadata = image_metadata;
@@ -135,12 +135,12 @@ namespace engine
 
             this->image_view_handle = logical_device.createImageViewUnique(image_view_create_info);
         }
-        void recreate(engine::image_data* new_image_data)
+        void Recreate(engine::Image_Data* new_image_data)
         {
             image_metadata = new_image_data;
-            recreate();
+            Recreate();
         }
-        vk::ImageSubresourceRange get_subresource_range()
+        vk::ImageSubresourceRange Get_Subresource_Range()
         {
             auto sub_resource_range = vk::ImageSubresourceRange()
 									.setLayerCount(this->array_layers_count)
@@ -153,7 +153,7 @@ namespace engine
         }
     	
     private:
-        vk::ImageViewType get_view_type() const
+        vk::ImageViewType Get_View_Type() const
     	{
             switch (image_metadata->image_type)
     		{
@@ -171,13 +171,13 @@ namespace engine
     				return vk::ImageViewType::e2D;
     		}
     	}
-        void recreate()
+        void Recreate()
         {
             vk::ImageViewCreateInfo create_info{};
             create_info.setImage(image_metadata->image_handle)
 					  .setFormat(image_metadata->format)
-					  .setViewType(get_view_type())
-					  .setSubresourceRange(get_subresource_range());
+					  .setViewType(Get_View_Type())
+					  .setSubresourceRange(Get_Subresource_Range());
 
             image_view_handle = logical_device.createImageViewUnique(create_info);
         }
@@ -192,9 +192,9 @@ namespace engine
         int32_t id;
 
         vk::UniqueImageView image_view_handle;
-        engine::image_data* image_metadata;
+        engine::Image_Data* image_metadata;
         
-        friend class swap_chain;
+        friend class Swap_Chain;
     };
 }
 

@@ -8,13 +8,13 @@
 #include "../Utils/uMath.glsl"
 #include "../Utils/uRendering.glsl"
 
-layout (set = 0, binding = 0, scalar) writeonly buffer indirect_cmds_buffer{
-    u_draw_indirect_indexed_cmd[] indirect_cmds;
+layout (set = 0, binding = 0, scalar) writeonly buffer Indirect_Cmds_Buffer{
+    U_Draw_Indirect_Indexed_Cmd[] indirect_cmds;
 };
-layout (set = 0, binding = 1, scalar) buffer meshes_spheres_buffer{
-    u_sphere[] meshes_spheres;
+layout (set = 0, binding = 1, scalar) buffer Meshes_Spheres_Buffer{
+    U_Sphere[] meshes_spheres;
 };
-layout(set = 0, binding = 2, scalar) uniform cam_props{
+layout(set = 0, binding = 2, scalar) uniform Cam_Props{
     mat4 inv_proj;
     mat4 inv_view;
     vec3 cam_pos;
@@ -22,8 +22,8 @@ layout(set = 0, binding = 2, scalar) uniform cam_props{
     float z_far;
 }c_props;
 
-layout(set = 0, binding = 3, scalar) uniform cull_info_uniform{
-    u_frustum frustum;
+layout(set = 0, binding = 3, scalar) uniform Cull_Info_Uniform{
+    U_Frustum frustum;
 }cull_info;
 
 
@@ -31,7 +31,7 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main(){
 
-    u_frustum cam_frustum = cull_info.frustum;
+    U_Frustum cam_frustum = cull_info.frustum;
     
     vec3 eye = vec3(0.0);
 
@@ -41,14 +41,14 @@ void main(){
     for(int i = 0; i < 5; i++){
         int idx = i;
 //        vec4 view_space_pos = -inverse(c_props.inv_view) * vec4(0.0, 0.0, 0.0, 1.0);
-//        if(!u_sphere_inside_plane(view_space_pos.xyz , 1.0f, cam_frustum.planes[idx].xyz, cam_frustum.planes[idx].w)){
+//        if(!U_Sphere_Inside_Plane(view_space_pos.xyz , 1.0f, cam_frustum.planes[idx].xyz, cam_frustum.planes[idx].w)){
 //            instance_count_to_add = 0;
 //            break;
 //        }
         if(distance(view_space_pos.xyz, eye) < meshes_spheres[thread_id].radius ){
             break;
         }
-        if(!u_sphere_inside_plane(view_space_pos.xyz , meshes_spheres[thread_id].radius, cam_frustum.planes[i].xyz, cam_frustum.planes[i].w)){
+        if(!U_Sphere_Inside_Plane(view_space_pos.xyz , meshes_spheres[thread_id].radius, cam_frustum.planes[i].xyz, cam_frustum.planes[i].w)){
             instance_count_to_add = 0;
             break;
         }

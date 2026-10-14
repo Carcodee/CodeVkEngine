@@ -12,15 +12,15 @@
 namespace engine
 {
 
-    static vk::PrimitiveTopology get_topology(topology_configs topology_configs)
+    static vk::PrimitiveTopology Get_Topology(Topology_Configs topology_configs)
     {
         switch (topology_configs)
         {
-        case t_triangle:
+        case T_Triangle:
             return vk::PrimitiveTopology::eTriangleList;
-        case t_point_list:
+        case T_Point_List:
             return vk::PrimitiveTopology::ePointList;
-        case t_patch_list:
+        case T_Patch_List:
             return vk::PrimitiveTopology::ePatchList;
         default:
             assert(false);
@@ -28,12 +28,12 @@ namespace engine
         }
         
     }
-    static vk::PipelineRasterizationStateCreateInfo get_rasterization_info(rasterization_configs configs)
+    static vk::PipelineRasterizationStateCreateInfo Get_Rasterization_Info(Rasterization_Configs configs)
     {
         auto rasterization_info = vk::PipelineRasterizationStateCreateInfo();
 
         switch (configs) {
-        case r_fill:
+        case R_Fill:
             rasterization_info.setDepthClampEnable(VK_FALSE)
                              .setRasterizerDiscardEnable(VK_FALSE)
                              .setPolygonMode(vk::PolygonMode::eFill)
@@ -41,7 +41,7 @@ namespace engine
                              .setFrontFace(vk::FrontFace::eClockwise)
                              .setLineWidth(1.0f);
             break;
-        case r_line:
+        case R_Line:
             rasterization_info.setDepthClampEnable(VK_FALSE)
                              .setRasterizerDiscardEnable(VK_FALSE)
                              .setPolygonMode(vk::PolygonMode::eLine)
@@ -49,7 +49,7 @@ namespace engine
                              .setFrontFace(vk::FrontFace::eClockwise)
                              .setLineWidth(1.0f);
             break;
-        case r_point:
+        case R_Point:
             rasterization_info.setDepthClampEnable(VK_FALSE)
                              .setRasterizerDiscardEnable(VK_FALSE)
                              .setPolygonMode(vk::PolygonMode::ePoint)
@@ -65,21 +65,21 @@ namespace engine
     }
 
 
-    static vk::PipelineColorBlendAttachmentState get_blend_attachment_state(blend_configs configs)
+    static vk::PipelineColorBlendAttachmentState Get_Blend_Attachment_State(Blend_Configs configs)
     {
         auto blend_attachment_state = vk::PipelineColorBlendAttachmentState();
         switch (configs)
         {
-        case b_none:
+        case B_None:
             blend_attachment_state.setColorWriteMask(vk::ColorComponentFlags{})
                                 .setBlendEnable(VK_FALSE);
             break;
-        case b_opaque:
+        case B_Opaque:
             blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                                     vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
                                 .setBlendEnable(VK_FALSE);
             break;
-        case b_add:
+        case B_Add:
             blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
                                     vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
                                 .setBlendEnable(VK_TRUE)
@@ -88,7 +88,7 @@ namespace engine
                                 .setSrcColorBlendFactor(vk::BlendFactor::eOne)
                                 .setDstColorBlendFactor(vk::BlendFactor::eOne);
             break;
-        case b_mix:
+        case B_Mix:
             blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
                                     vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
                                 .setBlendEnable(VK_TRUE)
@@ -97,7 +97,7 @@ namespace engine
                                 .setSrcColorBlendFactor(vk::BlendFactor::eOne)
                                 .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
             break;
-        case b_alpha_blend:
+        case B_Alpha_Blend:
             blend_attachment_state.setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
                                     vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
                                 .setBlendEnable(VK_TRUE)
@@ -115,7 +115,7 @@ namespace engine
         return blend_attachment_state;
     }
 
-    static vk::PipelineDepthStencilStateCreateInfo get_depth_stencil(depth_configs configs)
+    static vk::PipelineDepthStencilStateCreateInfo Get_Depth_Stencil(Depth_Configs configs)
     {
         auto depth_stencil_create_info = vk::PipelineDepthStencilStateCreateInfo()
                                       .setDepthTestEnable(VK_TRUE)
@@ -125,14 +125,14 @@ namespace engine
                                       .setStencilTestEnable(VK_FALSE);
         switch (configs)
         {
-        case d_enable:
+        case D_Enable:
             depth_stencil_create_info
                 .setDepthTestEnable(VK_TRUE)
                 .setDepthWriteEnable(VK_TRUE)
                 .setDepthCompareOp(vk::CompareOp::eLess)
                 .setDepthBoundsTestEnable(VK_FALSE);
             break;
-        case d_disable:
+        case D_Disable:
             depth_stencil_create_info
                 .setDepthTestEnable(VK_FALSE)
                 .setDepthWriteEnable(VK_TRUE)
@@ -147,17 +147,17 @@ namespace engine
         return depth_stencil_create_info;
     }
 
-    class graphics_pipeline
+    class Graphics_Pipeline
     {
     public:
-        graphics_pipeline(vk::Device& logical_device,
-                         std::map<shader_stage, shader*>& shaders,
+        Graphics_Pipeline(vk::Device& logical_device,
+                         std::map<Shader_Stage, Shader*>& shaders,
                          vk::PipelineLayout pipeline_layout,
                          vk::PipelineRenderingCreateInfo dynamic_render_pass,
-                         engine::graphics_pipeline_configs pipeline_display_info,
-                         std::vector<blend_configs>& blend_configs,
-                         depth_configs depth_configs,
-                         engine::vertex_input& vertex_layout,
+                         engine::Graphics_Pipeline_Configs pipeline_display_info,
+                         std::vector<Blend_Configs>& blend_configs,
+                         Depth_Configs depth_configs,
+                         engine::Vertex_Input& vertex_layout,
                          vk::PipelineCache pipeline_cache = nullptr)
         {
             assert(!vertex_layout.input_description.empty()&&"vertexInput is empty");
@@ -172,7 +172,7 @@ namespace engine
             int stage_index = 0;
             for (auto& shader : shaders)
             {
-                if (shader.first == s_vert)
+                if (shader.first == S_Vert)
                 {
                     vert_shader_stage = vk::PipelineShaderStageCreateInfo()
                                       .setModule(shader.second->s_module.get()->shader_module_handle.get())
@@ -180,7 +180,7 @@ namespace engine
                                       .setPName("main");
                     shader_stages[stage_index] = vert_shader_stage;
                 }
-                if (shader.first == s_frag)
+                if (shader.first == S_Frag)
                 {
                     frag_shader_stage = vk::PipelineShaderStageCreateInfo()
                                       .setModule(shader.second->s_module.get()->shader_module_handle.get())
@@ -188,7 +188,7 @@ namespace engine
                                       .setPName("main");
                     shader_stages[stage_index] = frag_shader_stage;
                 }
-                if (shader.first == s_tess_control)
+                if (shader.first == S_Tess_Control)
                 {
                     tesc_shader_stage = vk::PipelineShaderStageCreateInfo()
                                       .setModule(shader.second->s_module.get()->shader_module_handle.get())
@@ -196,7 +196,7 @@ namespace engine
                                       .setPName("main");
                     shader_stages[stage_index] = tesc_shader_stage;
                 }
-                if (shader.first == s_tess_eval)
+                if (shader.first == S_Tess_Eval)
                 {
                     tese_shader_stage = vk::PipelineShaderStageCreateInfo()
                                       .setModule(shader.second->s_module.get()->shader_module_handle.get())
@@ -204,7 +204,7 @@ namespace engine
                                       .setPName("main");
                     shader_stages[stage_index] = tese_shader_stage;
                 }
-                if (shader.first == s_geom)
+                if (shader.first == S_Geom)
                 {
                     geom_shader_stage = vk::PipelineShaderStageCreateInfo()
                                       .setModule(shader.second->s_module.get()->shader_module_handle.get())
@@ -219,10 +219,10 @@ namespace engine
             
             
             auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo()
-                                 .setTopology(get_topology(pipeline_display_info.topology_configs))
+                                 .setTopology(Get_Topology(pipeline_display_info.topology_configs))
                                  .setPrimitiveRestartEnable(VK_FALSE);
 
-            auto rasterization = get_rasterization_info(pipeline_display_info.rasterization_configs);
+            auto rasterization = Get_Rasterization_Info(pipeline_display_info.rasterization_configs);
 
             vk::DynamicState dynamic_states[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
@@ -244,15 +244,15 @@ namespace engine
                                 .setPVertexAttributeDescriptions(vertex_layout.input_description.data());
 
             vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info;
-            if (depth_configs != d_none)
+            if (depth_configs != D_None)
             {
-                 depth_stencil_state_create_info = get_depth_stencil(depth_configs);
+                 depth_stencil_state_create_info = Get_Depth_Stencil(depth_configs);
             }
 
             std::vector<vk::PipelineColorBlendAttachmentState> blend_states;
             for (auto blend_config : blend_configs)
             {
-                vk::PipelineColorBlendAttachmentState blend_state = get_blend_attachment_state(blend_config);
+                vk::PipelineColorBlendAttachmentState blend_state = Get_Blend_Attachment_State(blend_config);
                 blend_states.push_back(blend_state);
                 
             }
@@ -278,9 +278,9 @@ namespace engine
                                     .setBasePipelineHandle(VK_NULL_HANDLE)
                                     .setBasePipelineIndex(-1);
             
-            if (shaders.contains(s_tess_control))
+            if (shaders.contains(S_Tess_Control))
             {
-                if (pipeline_display_info.topology_configs != topology_configs::t_patch_list)
+                if (pipeline_display_info.topology_configs != Topology_Configs::T_Patch_List)
                 {
                     assert(false && "cant create tesselation shader without triangle patch list");
                 }
@@ -299,10 +299,10 @@ namespace engine
         vk::PipelineLayout pipeline_layout;
     };
 
-    class compute_pipeline
+    class Compute_Pipeline
     {
     public:
-        compute_pipeline(vk::Device logical_device, vk::ShaderModule compute_module, vk::PipelineLayout pipeline_layout, vk::PipelineCache pipeline_cache = nullptr)
+        Compute_Pipeline(vk::Device logical_device, vk::ShaderModule compute_module, vk::PipelineLayout pipeline_layout, vk::PipelineCache pipeline_cache = nullptr)
         {
             assert(compute_module != nullptr&& "Compute shader module is empty");
             this->pipeline_layout = pipeline_layout;

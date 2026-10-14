@@ -8,10 +8,10 @@
 
 namespace rendering
 {
-    class rendering_res_manager
+    class Rendering_Res_Manager
     {
     public:
-        void load_ply(std::string path, std::vector<glm::vec3>& positions)
+        void Load_Ply(std::string path, std::vector<glm::vec3>& positions)
         {
             // Construct the data object by reading from file
             assert(std::filesystem::path(path).extension() == ".ply" && "Invalid PLY file");
@@ -24,7 +24,7 @@ namespace rendering
             // std::vector<std::vector<size_t>> fInd = ply_in.getFaceIndices<size_t>();
         }
 
-        void load_gs(std::string path, std::vector<gaussian_splat>& splats)
+        void Load_Gs(std::string path, std::vector<Gaussian_Splat>& splats)
         {
             // Construct the data object by reading from file
             assert(std::filesystem::path(path).extension() == ".ply" && "Invalid PLY file");
@@ -70,7 +70,7 @@ namespace rendering
 
             for (int i = 0; i < x_pos.size(); ++i)
             {
-                splats.emplace_back(gaussian_splat{
+                splats.emplace_back(Gaussian_Splat{
                     x_pos[i], y_pos[i], z_pos[i],
                     nx[i], ny[i], nz[i],
                     fdc0[i], fdc1[i], fdc2[i],
@@ -87,11 +87,11 @@ namespace rendering
             }
         }
 
-        void load_gltf(std::string path, rendering::model& model, bool compact_indices)
+        void Load_Gltf(std::string path, rendering::Model& model, bool compact_indices)
         {
             if (!std::filesystem::exists(path))
             {
-                systems::logger::get_instance()->log_message("Path do not exist: " + path);
+                systems::Logger::Get_Instance()->Log_Message("Path do not exist: " + path);
                 return;
             }
             tinygltf::Model gltf_model;
@@ -99,7 +99,7 @@ namespace rendering
             std::string warn;
             tinygltf::TinyGLTF gltf_context;
             gltf_context.LoadASCIIFromFile(&gltf_model, &err, &warn, path);
-            rendering::node_mat* root_node = new rendering::node_mat();
+            rendering::Node_Mat* root_node = new rendering::Node_Mat();
 
             model.mesh_count = (int)gltf_model.meshes.size();
             for (auto& scene : gltf_model.scenes)
@@ -108,22 +108,22 @@ namespace rendering
                 {
                     if (compact_indices)
                     {
-                        load_gltf_node_contiguous_mesh(gltf_model, gltf_model.nodes[node], root_node, model);
+                        Load_Gltf_Node_Contiguous_Mesh(gltf_model, gltf_model.nodes[node], root_node, model);
                     }
                     else
                     {
-                        load_gltf_node(gltf_model, gltf_model.nodes[node], root_node, model);
+                        Load_Gltf_Node(gltf_model, gltf_model.nodes[node], root_node, model);
                     }
                 }
             }
-            model.set_world_matrices();
-            model.set_meshes_spheres();
-            load_gltf_materials(gltf_model, path);
-            systems::logger::get_instance()->log_message("Model loader Errors: " + err);
-            systems::logger::get_instance()->log_message("Model loader Warns: " + warn);
+            model.Set_World_Matrices();
+            model.Set_Meshes_Spheres();
+            Load_Gltf_Materials(gltf_model, path);
+            systems::Logger::Get_Instance()->Log_Message("Model loader Errors: " + err);
+            systems::Logger::Get_Instance()->Log_Message("Model loader Warns: " + warn);
         }
 
-        void load_gltf_node(tinygltf::Model& gltf_model, tinygltf::Node& node, rendering::node_mat* parent_node_mat, rendering::model& model)
+        void Load_Gltf_Node(tinygltf::Model& gltf_model, tinygltf::Node& node, rendering::Node_Mat* parent_node_mat, rendering::Model& model)
         {
             glm::mat4 node_matrix = glm::mat4(1.0f);
             if (node.scale.size() == 3)
@@ -144,13 +144,13 @@ namespace rendering
                 node_matrix = glm::make_mat4(node.matrix.data());
             }
 
-            rendering::node_mat* node_material = new rendering::node_mat();
+            rendering::Node_Mat* node_material = new rendering::Node_Mat();
             node_material->parent_node = parent_node_mat;
             node_material->matrix = node_matrix;
 
             for (auto& child : node.children)
             {
-                load_gltf_node(gltf_model, gltf_model.nodes[child], node_material, model);
+                Load_Gltf_Node(gltf_model, gltf_model.nodes[child], node_material, model);
             }
 
             if (node.mesh > -1)
@@ -163,7 +163,7 @@ namespace rendering
                 if (curr_mesh.primitives[0].material > -1)
                 {
                     model.materials.push_back(
-                        get_instance()->materials.size() + curr_mesh.primitives[0].material);
+                        Get_Instance()->materials.size() + curr_mesh.primitives[0].material);
                 }
                 else
                 {
@@ -218,7 +218,7 @@ namespace rendering
                         glm::vec3 max = glm::vec3();
                         for (int i = 0; i < vertex_count; ++i)
                         {
-                            engine::m_vertex_3d vertex{};
+                            engine::M_Vertex_3d vertex{};
                             glm::vec3 pos = glm::make_vec3(&pos_buff[i * 3]);
                             vertex.pos = pos;
                             vertex.normal = normals_buff ? glm::make_vec3(&normals_buff[i * 3]) : glm::vec3(0.0f);
@@ -240,7 +240,7 @@ namespace rendering
                         }
                         glm::vec3 center = glm::vec3((min + max) * 0.5f);
                         float radius = glm::distance(center, max);
-                        model.meshes_spheres.emplace_back(sphere{center, radius});
+                        model.meshes_spheres.emplace_back(Sphere{center, radius});
                     }
                     // indices
                     {
@@ -293,8 +293,8 @@ namespace rendering
             }
         }
 
-        void load_gltf_node_contiguous_mesh(tinygltf::Model& gltf_model, tinygltf::Node& node, rendering::node_mat* parent_node_mat,
-                                        rendering::model& model)
+        void Load_Gltf_Node_Contiguous_Mesh(tinygltf::Model& gltf_model, tinygltf::Node& node, rendering::Node_Mat* parent_node_mat,
+                                        rendering::Model& model)
         {
             glm::mat4 node_matrix = glm::mat4(1.0f);
             if (node.scale.size() == 3)
@@ -315,13 +315,13 @@ namespace rendering
                 node_matrix = glm::make_mat4(node.matrix.data());
             }
 
-            rendering::node_mat* node_material = new rendering::node_mat();
+            rendering::Node_Mat* node_material = new rendering::Node_Mat();
             node_material->parent_node = parent_node_mat;
             node_material->matrix = node_matrix;
 
             for (auto& child : node.children)
             {
-                load_gltf_node_contiguous_mesh(gltf_model, gltf_model.nodes[child], node_material, model);
+                Load_Gltf_Node_Contiguous_Mesh(gltf_model, gltf_model.nodes[child], node_material, model);
             }
 
             if (node.mesh > -1)
@@ -333,7 +333,7 @@ namespace rendering
 
                 if (curr_mesh.primitives[0].material > -1)
                 {
-                    model.materials.push_back(get_instance()->materials.size() + curr_mesh.primitives[0].material);
+                    model.materials.push_back(Get_Instance()->materials.size() + curr_mesh.primitives[0].material);
                 }
                 else
                 {
@@ -386,7 +386,7 @@ namespace rendering
                         model.vertices.reserve(vertex_count);
                         for (int i = 0; i < vertex_count; ++i)
                         {
-                            engine::m_vertex_3d vertex{};
+                            engine::M_Vertex_3d vertex{};
                             glm::vec3 pos = glm::make_vec3(&pos_buff[i * 3]);
                             vertex.pos = pos;
                             vertex.normal = normals_buff ? glm::make_vec3(&normals_buff[i * 3]) : glm::vec3(0.0f);
@@ -450,7 +450,7 @@ namespace rendering
             }
         }
 
-        void load_gltf_materials(tinygltf::Model& model, std::string model_path, std::string model_path_abs = "")
+        void Load_Gltf_Materials(tinygltf::Model& model, std::string model_path, std::string model_path_abs = "")
         {
             std::string model_folder;
             std::filesystem::path path(model_path);
@@ -462,16 +462,16 @@ namespace rendering
             }
             if (!std::filesystem::exists(model_path))
             {
-                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_warn);
-                systems::logger::get_instance()->log_message("Texture path does not exist at: " + model_path);
+                systems::Logger::Get_Instance()->Set_Log_Preferences(systems::Log_Level::L_Warn);
+                systems::Logger::Get_Instance()->Log_Message("Texture path does not exist at: " + model_path);
                 return;
             };
 
             for (int i = 0; i < model.materials.size(); ++i)
             {
                 tinygltf::Material& gltf_mat = model.materials[i];
-                std::string material_name = "Material_" + get_instance()->materials.size();
-                rendering::material* material = get_instance()->push_material(material_name);
+                std::string material_name = "Material_" + Get_Instance()->materials.size();
+                rendering::Material* material = Get_Instance()->Push_Material(material_name);
                 material->material_packed_data.diff = glm::vec4(gltf_mat.pbrMetallicRoughness.baseColorFactor[0],
                                                               gltf_mat.pbrMetallicRoughness.baseColorFactor[1],
                                                               gltf_mat.pbrMetallicRoughness.baseColorFactor[2],
@@ -490,69 +490,69 @@ namespace rendering
                 }
                 if (gltf_mat.pbrMetallicRoughness.baseColorTexture.index > -1)
                 {
-                    std::string texture_path = get_gltf_texture_path(
+                    std::string texture_path = Get_Gltf_Texture_Path(
                         model_folder,
                         model.images[model.textures[gltf_mat.pbrMetallicRoughness.baseColorTexture.index].source].uri);
                     if (!texture_path.empty())
                     {
-                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
-                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        engine::Image_Shipper* texture = engine::Resources_Manager::Get_Instance()->Batch_Shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::Graphics_Read);
                         material->material_packed_data.diff = glm::vec4(1.0f);
                         material->material_packed_data.albedo_factor = 1.0f;
-                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
-                        material->set_texture(albedo, id);
+                        int id = engine::Resources_Manager::Get_Instance()->Get_Shipper_Id(texture_path);
+                        material->Set_Texture(Albedo, id);
                     }
                 }
                 if (gltf_mat.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
                 {
-                    std::string texture_path = get_gltf_texture_path(
+                    std::string texture_path = Get_Gltf_Texture_Path(
                         model_folder,
                         model.images[model.textures[gltf_mat.pbrMetallicRoughness.metallicRoughnessTexture.index].source]
                         .uri);
                     if (!texture_path.empty())
                     {
-                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
-                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        engine::Image_Shipper* texture = engine::Resources_Manager::Get_Instance()->Batch_Shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::Graphics_Read);
                         material->material_packed_data.diff = glm::vec4(1.0f);
                         material->material_packed_data.albedo_factor = 1.0f;
-                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
-                        material->set_texture(metallic_roughness, id);
+                        int id = engine::Resources_Manager::Get_Instance()->Get_Shipper_Id(texture_path);
+                        material->Set_Texture(Metallic_Roughness, id);
                     }
                 }
                 if (gltf_mat.emissiveTexture.index > -1)
                 {
-                    std::string texture_path = get_gltf_texture_path(
+                    std::string texture_path = Get_Gltf_Texture_Path(
                         model_folder,
                         model.images[model.textures[gltf_mat.emissiveTexture.index].source].uri);
                     if (!texture_path.empty())
                     {
-                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
-                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        engine::Image_Shipper* texture = engine::Resources_Manager::Get_Instance()->Batch_Shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::Graphics_Read);
                         material->material_packed_data.diff = glm::vec4(1.0f);
                         material->material_packed_data.albedo_factor = 1.0f;
-                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
-                        material->set_texture(emission, id);
+                        int id = engine::Resources_Manager::Get_Instance()->Get_Shipper_Id(texture_path);
+                        material->Set_Texture(Emission, id);
                     }
                 }
                 if (gltf_mat.normalTexture.index > -1)
                 {
-                    std::string texture_path = get_gltf_texture_path(
+                    std::string texture_path = Get_Gltf_Texture_Path(
                         model_folder,
                         model.images[model.textures[gltf_mat.normalTexture.index].source].uri);
                     if (!texture_path.empty())
                     {
-                        engine::image_shipper* texture = engine::resources_manager::get_instance()->batch_shipper(
-                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::graphics_read);
+                        engine::Image_Shipper* texture = engine::Resources_Manager::Get_Instance()->Batch_Shipper(
+                            texture_path, texture_path, 1, 1, engine::g_shipper_format, engine::Graphics_Read);
                         material->material_packed_data.diff = glm::vec4(1.0f);
                         material->material_packed_data.albedo_factor = 1.0f;
-                        int id = engine::resources_manager::get_instance()->get_shipper_id(texture_path);
-                        material->set_texture(normal, id);
+                        int id = engine::Resources_Manager::Get_Instance()->Get_Shipper_Id(texture_path);
+                        material->Set_Texture(Normal, id);
                     }
                 }
             }
         }
 
-        std::string get_gltf_texture_path(std::string model_path, std::string uri_path)
+        std::string Get_Gltf_Texture_Path(std::string model_path, std::string uri_path)
         {
             if (std::filesystem::exists(uri_path))
             {
@@ -567,59 +567,59 @@ namespace rendering
             return "";
         }
 
-        rendering::material* push_material(std::string name)
+        rendering::Material* Push_Material(std::string name)
         {
-            rendering::material* material;
+            rendering::Material* material;
             if (!materials_names.contains(name))
             {
-                materials.emplace_back(std::make_unique<rendering::material>());
+                materials.emplace_back(std::make_unique<rendering::Material>());
                 material = materials.back().get();
                 material_packed_data.emplace_back(&material->material_packed_data);
             }
             else
             {
-                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_warn);
-                systems::logger::get_instance()->log_message(
+                systems::Logger::Get_Instance()->Set_Log_Preferences(systems::Log_Level::L_Warn);
+                systems::Logger::Get_Instance()->Log_Message(
                     "Material with name: \"" + name + "\" already exist returning that material");
-                material = get_material_from_name(name);
+                material = Get_Material_From_Name(name);
             }
             return material;
         }
 
-        static rendering_res_manager* get_instance()
+        static Rendering_Res_Manager* Get_Instance()
         {
             if (instance == nullptr)
             {
-                instance = new rendering_res_manager();
+                instance = new Rendering_Res_Manager();
             }
             return instance;
         }
 
-        rendering::material* get_material_from_name(std::string name)
+        rendering::Material* Get_Material_From_Name(std::string name)
         {
             if (!materials_names.contains(name))
             {
-                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_error);
-                systems::logger::get_instance()->log_message("Material with name: \"" + name + "\" does not exist");
+                systems::Logger::Get_Instance()->Set_Log_Preferences(systems::Log_Level::L_Error);
+                systems::Logger::Get_Instance()->Log_Message("Material with name: \"" + name + "\" does not exist");
                 return nullptr;
             }
             return materials.at(materials_names.at(name)).get();
         }
 
-        int get_material_id(std::string name)
+        int Get_Material_Id(std::string name)
         {
             if (!materials_names.contains(name))
             {
-                systems::logger::get_instance()->set_log_preferences(systems::log_level::l_error);
-                systems::logger::get_instance()->log_message("Material with name: \"" + name + "\" does not exist");
+                systems::Logger::Get_Instance()->Set_Log_Preferences(systems::Log_Level::L_Error);
+                systems::Logger::Get_Instance()->Log_Message("Material with name: \"" + name + "\" does not exist");
                 return -1;
             }
             return materials_names.at(name);
         }
 
-        std::vector<rendering::material_packed_data> get_material_data()
+        std::vector<rendering::Material_Packed_Data> Get_Material_Data()
         {
-            std::vector<rendering::material_packed_data> material_packed_datas;
+            std::vector<rendering::Material_Packed_Data> material_packed_datas;
             material_packed_datas.reserve(material_packed_data.size());
             for (auto& material_packed_data : material_packed_data)
             {
@@ -628,24 +628,24 @@ namespace rendering
             return material_packed_datas;
         }
 
-        rendering::model* get_model(std::string path)
+        rendering::Model* Get_Model(std::string path)
         {
             if (models_names.contains(path))
             {
                 return models.at(models_names.at(path)).get();
             }
             models_names.try_emplace(path, models.size());
-            rendering::model* model = models.emplace_back(std::make_unique<rendering::model>()).get();
+            rendering::Model* model = models.emplace_back(std::make_unique<rendering::Model>()).get();
             model->id = models.size() - 1;
-            load_gltf(path, *model, false);
+            Load_Gltf(path, *model, false);
 
             std::string vert_buff_name = "VertBuff_" + std::to_string(model->id);
             std::string index_buff_name = "IndexBuff_" + std::to_string(model->id);
-            model->vert_buffer = engine::resources_manager::get_instance()->get_stage_buffer(
+            model->vert_buffer = engine::Resources_Manager::Get_Instance()->Get_Stage_Buffer(
                 vert_buff_name, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
-                sizeof(engine::m_vertex_3d) * model->vertices.size(), sizeof(engine::m_vertex_3d),
+                sizeof(engine::M_Vertex_3d) * model->vertices.size(), sizeof(engine::M_Vertex_3d),
                 model->vertices.data());
-            model->index_buffer = engine::resources_manager::get_instance()->get_stage_buffer(
+            model->index_buffer = engine::Resources_Manager::Get_Instance()->Get_Stage_Buffer(
                 index_buff_name, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
                 sizeof(uint32_t) * model->indices.size(), sizeof(uint32_t),
                 model->indices.data());
@@ -653,46 +653,46 @@ namespace rendering
             return model;
         }
 
-        animator_2d* get_animator(std::string name, std::string path, int frame_spacing, rendering::animator_info animation_info)
+        Animator_2d* Get_Animator(std::string name, std::string path, int frame_spacing, rendering::Animator_Info animation_info)
         {
             if (animators_names.contains(name))
             {
-                systems::logger::get_instance()->log("Invalid name for animator");
+                systems::Logger::Get_Instance()->Log("Invalid name for animator");
                 return nullptr;
             }
             animators_names.try_emplace(name, animators.size());
-            animators.emplace_back(std::make_unique<animator_2d>());
+            animators.emplace_back(std::make_unique<Animator_2d>());
             if (animation_info.is_atlas)
             {
-                animators.back()->load_atlas(path, frame_spacing, animation_info);
+                animators.back()->Load_Atlas(path, frame_spacing, animation_info);
             }
             else
             {
-                animators.back()->load_frames(path, frame_spacing);
+                animators.back()->Load_Frames(path, frame_spacing);
             }
             return animators.back().get();
         }
 
-        animator_2d* get_animator_by_name(std::string name)
+        Animator_2d* Get_Animator_By_Name(std::string name)
         {
             if (!animators_names.contains(name))
             {
-                systems::logger::get_instance()->log("Invalid name for animator");
+                systems::Logger::Get_Instance()->Log("Invalid name for animator");
                 return nullptr;
             }
             return animators.at(animators_names.at(name)).get();
         }
 
-        void build_indirect_buffers()
+        void Build_Indirect_Buffers()
         {
             indirect_draws_cmd_infos.clear();
             for (auto& pair : indirect_models_to_draw)
             {
-                rendering::model* model = pair.second;
+                rendering::Model* model = pair.second;
 
                 for (int j = 0; j < model->mesh_count; ++j)
                 {
-                    engine::draw_indirect_indexed_cmd indirect_cmd{};
+                    engine::Draw_Indirect_Indexed_Cmd indirect_cmd{};
                     indirect_cmd.first_index = model->first_indices[j];
                     indirect_cmd.first_instance = 0;
                     indirect_cmd.index_count = model->indices_count[j];
@@ -701,21 +701,21 @@ namespace rendering
                     indirect_draws_cmd_infos.emplace_back(indirect_cmd);
                 }
             }
-            indirect_draw_buffer = engine::resources_manager::get_instance()->get_buffer(
-                engine::resources_manager::buffer_params{
-                    "indirect_cmds_buffer", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
+            indirect_draw_buffer = engine::Resources_Manager::Get_Instance()->Get_Buffer(
+                engine::Resources_Manager::Buffer_Params{
+                    "Indirect_Cmds_Buffer", vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eStorageBuffer,
                     vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-                    sizeof(engine::draw_indirect_indexed_cmd) * indirect_draws_cmd_infos.size(),
-                    sizeof(engine::draw_indirect_indexed_cmd), indirect_draws_cmd_infos.data()
+                    sizeof(engine::Draw_Indirect_Indexed_Cmd) * indirect_draws_cmd_infos.size(),
+                    sizeof(engine::Draw_Indirect_Indexed_Cmd), indirect_draws_cmd_infos.data()
                 });
         }
 
-        void update_resources()
+        void Update_Resources()
         {
-            flush_indirect_buffers();
+            Flush_Indirect_Buffers();
         }
 
-        void flush_indirect_buffers()
+        void Flush_Indirect_Buffers()
         {
             if (indirect_draws_cmd_infos.empty())
             {
@@ -724,10 +724,10 @@ namespace rendering
             cull_count = 0;
             if (indirect_draw_buffer->mapped_mem != nullptr)
             {
-                indirect_draw_buffer->unmap();
-                engine::draw_indirect_indexed_cmd* infos = nullptr;
-                infos = reinterpret_cast<engine::draw_indirect_indexed_cmd*>(indirect_draw_buffer->map());
-                for (int i = 0; i < rendering_res_manager::get_instance()->indirect_draws_cmd_infos.size(); ++i)
+                indirect_draw_buffer->Unmap();
+                engine::Draw_Indirect_Indexed_Cmd* infos = nullptr;
+                infos = reinterpret_cast<engine::Draw_Indirect_Indexed_Cmd*>(indirect_draw_buffer->Map());
+                for (int i = 0; i < Rendering_Res_Manager::Get_Instance()->indirect_draws_cmd_infos.size(); ++i)
                 {
                     if (infos->instance_count > 0)
                     {
@@ -735,35 +735,35 @@ namespace rendering
                     }
                     ++infos;
                 }
-                indirect_draw_buffer->unmap();
+                indirect_draw_buffer->Unmap();
             }
             for (int i = 0; i < indirect_draws_cmd_infos.size(); ++i)
             {
                 indirect_draws_cmd_infos[i].instance_count = 0;
             }
-            indirect_draw_buffer = engine::resources_manager::get_instance()->set_buffer(
-                "indirect_cmds_buffer", sizeof(engine::draw_indirect_indexed_cmd) * indirect_draws_cmd_infos.size(),
-                sizeof(engine::draw_indirect_indexed_cmd), indirect_draws_cmd_infos.data());
+            indirect_draw_buffer = engine::Resources_Manager::Get_Instance()->Set_Buffer(
+                "Indirect_Cmds_Buffer", sizeof(engine::Draw_Indirect_Indexed_Cmd) * indirect_draws_cmd_infos.size(),
+                sizeof(engine::Draw_Indirect_Indexed_Cmd), indirect_draws_cmd_infos.data());
         }
 
-        rendering::model* push_model_to_indirect_batch(std::string name)
+        rendering::Model* Push_Model_To_Indirect_Batch(std::string name)
         {
             if (indirect_models_to_draw.contains(name))
             {
                 return indirect_models_to_draw.at(name);
             }
-            rendering::model* model = get_model(name);
+            rendering::Model* model = Get_Model(name);
             indirect_models_to_draw.try_emplace(name, model);
             return model;
         }
 
-        rendering::model* push_model_to_individual_draw(std::string name)
+        rendering::Model* Push_Model_To_Individual_Draw(std::string name)
         {
             if (individual_draw_models.contains(name))
             {
                 return individual_draw_models.at(name);
             }
-            rendering::model* model = get_model(name);
+            rendering::Model* model = Get_Model(name);
             individual_draw_models.try_emplace(name, model);
             return model;
         }
@@ -773,25 +773,25 @@ namespace rendering
         std::map<std::string, int> textures_names;
         std::map<std::string, int> animators_names;
 
-        std::vector<std::unique_ptr<rendering::material>> materials;
-        std::vector<rendering::material_packed_data*> material_packed_data;
-        std::vector<std::unique_ptr<rendering::model>> models;
-        std::vector<std::unique_ptr<animator_2d>> animators;
-        engine::buffer* indirect_draw_buffer;
-        std::map<std::string, rendering::model*> individual_draw_models;
-        std::map<std::string, rendering::model*> indirect_models_to_draw;
-        std::vector<engine::draw_indirect_indexed_cmd> indirect_draws_cmd_infos;
+        std::vector<std::unique_ptr<rendering::Material>> materials;
+        std::vector<rendering::Material_Packed_Data*> material_packed_data;
+        std::vector<std::unique_ptr<rendering::Model>> models;
+        std::vector<std::unique_ptr<Animator_2d>> animators;
+        engine::Buffer* indirect_draw_buffer;
+        std::map<std::string, rendering::Model*> individual_draw_models;
+        std::map<std::string, rendering::Model*> indirect_models_to_draw;
+        std::vector<engine::Draw_Indirect_Indexed_Cmd> indirect_draws_cmd_infos;
         int cull_count = 0;
 
-        rendering_res_manager()
+        Rendering_Res_Manager()
         {
         };
-        ~rendering_res_manager() = default;
+        ~Rendering_Res_Manager() = default;
 
     private:
-        static rendering_res_manager* instance;
+        static Rendering_Res_Manager* instance;
     };
 
-    rendering_res_manager* rendering_res_manager::instance = nullptr;
+    Rendering_Res_Manager* Rendering_Res_Manager::instance = nullptr;
 } // namespace rendering
 #endif        // RENDERING_RES_MANAGER_HPP

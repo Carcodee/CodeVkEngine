@@ -9,21 +9,21 @@
 namespace ui::nodes
 {
 
-void ui::nodes::graph_node::update_info()
+void ui::nodes::Graph_Node::Update_Info()
 {
 	if (!update_data)
 	{
 		return;
 	}
 	// unoptimall
-	sort();
+	Sort();
 }
 
-void ui::nodes::graph_node::sort()
+void ui::nodes::Graph_Node::Sort()
 {
-	std::vector<std::pair<int, pin_info>> inputs_map = get_vector_from_map(input_nodes);
+	std::vector<std::pair<int, Pin_Info>> inputs_map = Get_Vector_From_Map(input_nodes);
 	std::sort(inputs_map.begin(), inputs_map.end(),
-	          [](std::pair<int, pin_info> &a, std::pair<int, pin_info> &b) {
+	          [](std::pair<int, Pin_Info> &a, std::pair<int, Pin_Info> &b) {
 		          return a.second.node_kind < b.second.node_kind;
 	          });
 	input_nodes.clear();
@@ -37,20 +37,20 @@ void ui::nodes::graph_node::sort()
 	}
 }
 
-int ui::nodes::graph_node::run_callback(std::string callback)
+int ui::nodes::Graph_Node::Run_Callback(std::string callback)
 {
 	if (!callbacks.contains(callback) || callbacks.at(callback) == nullptr)
 	{
-		systems::logger::get_instance()->log_message(callback + " Does not exist");
+		systems::Logger::Get_Instance()->Log_Message(callback + " Does not exist");
 		return 1;
 	}
 	(*callbacks.at(callback))(*this);
 	return 0;
 }
 
-void ui::nodes::graph_node::draw()
+void ui::nodes::Graph_Node::Draw()
 {
-	update_info();
+	Update_Info();
 	if (first_frame)
 	{
 		ed::SetNodePosition(node_id, ImVec2(pos.x, pos.y));
@@ -66,7 +66,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &input : input_nodes)
 	{
 		if (drawable_widgets.at(input.second.id))
-			input.second.draw();
+			input.second.Draw();
 		if (add_more_widgets.contains(input.second.id))
 		{
 			if (ImGui::Button("+"))
@@ -78,9 +78,9 @@ void ui::nodes::graph_node::draw()
 	}
 	while (!added_widgets.empty())
 	{
-		int      id        = graph_node_res_manager->next_widget_id();
-		pin_info &copied_pin = input_nodes.at(added_widgets.front());
-		pin_info  pin_info(copied_pin.name + "_" + std::to_string(id), copied_pin.node_kind);
+		int      id        = graph_node_res_manager->Next_Widget_Id();
+		Pin_Info &copied_pin = input_nodes.at(added_widgets.front());
+		Pin_Info  pin_info(copied_pin.name + "_" + std::to_string(id), copied_pin.node_kind);
 		pin_info.data    = std::any();
 		pin_info.pin_kind = copied_pin.pin_kind;
 		pin_info.id      = id;
@@ -93,7 +93,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &selectable : selectables)
 	{
 		if (drawable_widgets.at(selectable.first))
-			selectable.second.draw(selectable.first);
+			selectable.second.Draw(selectable.first);
 
 		if (add_more_widgets.contains(selectable.first))
 		{
@@ -102,7 +102,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &t_input : text_inputs)
 	{
 		if (drawable_widgets.at(t_input.first))
-			t_input.second.draw(t_input.first);
+			t_input.second.Draw(t_input.first);
 
 		if (add_more_widgets.contains(t_input.first))
 		{
@@ -111,7 +111,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &primitive_info : primitives)
 	{
 		if (drawable_widgets.at(primitive_info.first))
-			primitive_info.second.draw(primitive_info.first);
+			primitive_info.second.Draw(primitive_info.first);
 
 		if (add_more_widgets.contains(primitive_info.first))
 		{
@@ -121,7 +121,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &scrollable : scrollables)
 	{
 		if (drawable_widgets.at(scrollable.first))
-			scrollable.second.draw(scrollable.first);
+			scrollable.second.Draw(scrollable.first);
 
 		if (add_more_widgets.contains(scrollable.first))
 		{
@@ -130,7 +130,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &multi_option : multi_options)
 	{
 		if (drawable_widgets.at(multi_option.first))
-			multi_option.second.draw(multi_option.first);
+			multi_option.second.Draw(multi_option.first);
 
 		if (add_more_widgets.contains(multi_option.first))
 		{
@@ -139,7 +139,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &dynamic_structure : dynamic_structures)
 	{
 		if (drawable_widgets.at(dynamic_structure.first))
-			dynamic_structure.second.draw(dynamic_structure.first);
+			dynamic_structure.second.Draw(dynamic_structure.first);
 
 		if (add_more_widgets.contains(dynamic_structure.first))
 		{
@@ -149,7 +149,7 @@ void ui::nodes::graph_node::draw()
 	for (auto &output : output_nodes)
 	{
 		if (drawable_widgets.at(output.first))
-			output.second.draw();
+			output.second.Draw();
 		if (add_more_widgets.contains(output.second.id))
 		{
 			if (ImGui::Button("+"))
@@ -161,9 +161,9 @@ void ui::nodes::graph_node::draw()
 	}
 	while (!added_widgets.empty())
 	{
-		int      id        = graph_node_res_manager->next_widget_id();
-		pin_info &copied_pin = output_nodes.at(added_widgets.front());
-		pin_info  pin_info(copied_pin.name + "_" + std::to_string(id), copied_pin.node_kind);
+		int      id        = graph_node_res_manager->Next_Widget_Id();
+		Pin_Info &copied_pin = output_nodes.at(added_widgets.front());
+		Pin_Info  pin_info(copied_pin.name + "_" + std::to_string(id), copied_pin.node_kind);
 		pin_info.data    = std::any();
 		pin_info.pin_kind = copied_pin.pin_kind;
 		pin_info.id      = id;
@@ -178,21 +178,21 @@ void ui::nodes::graph_node::draw()
 	first_frame = false;
 }
 
-void ui::nodes::graph_node::toggle_draw(int id, bool draw_condition)
+void ui::nodes::Graph_Node::Toggle_Draw(int id, bool draw_condition)
 {
 	assert(drawable_widgets.contains(id) && "Invalid Id");
 	drawable_widgets.at(id) = draw_condition;
 }
 
-void ui::nodes::graph_node::recompile_node()
+void ui::nodes::Graph_Node::Recompile_Node()
 {
 	valid = false;
-	run_callback("output_c");
+	Run_Callback("output_c");
 }
 
-int ui::nodes::graph_node::add_link(int id, node_type node_kind)
+int ui::nodes::Graph_Node::Add_Link(int id, Node_Type node_kind)
 {
-	if (node_kind != n_none && !graph_nodes_links.contains(id))
+	if (node_kind != N_None && !graph_nodes_links.contains(id))
 	{
 		graph_nodes_links.try_emplace(id, node_kind);
 		return 0;
@@ -200,20 +200,20 @@ int ui::nodes::graph_node::add_link(int id, node_type node_kind)
 	return 1;
 }
 
-std::map<node_type, ui::nodes::graph_node *> ui::nodes::graph_node::get_graph_node_ref(node_type node_kind)
+std::map<Node_Type, ui::nodes::Graph_Node *> ui::nodes::Graph_Node::Get_Graph_Node_Ref(Node_Type node_kind)
 {
-	std::map<node_type, ui::nodes::graph_node *> graph_nodes;
+	std::map<Node_Type, ui::nodes::Graph_Node *> graph_nodes;
 	for (auto node_id : graph_nodes_links)
 	{
-		if (is_valid_node_combination(node_id.second, node_kind))
+		if (Is_Valid_Node_Combination(node_id.second, node_kind))
 		{
-			systems::logger::get_instance()->log_message("Returning: " + node_type_strings.at(node_kind));
+			systems::Logger::Get_Instance()->Log_Message("Returning: " + node_type_strings.at(node_kind));
 			graph_nodes.try_emplace(node_id.second, graph_node_res_manager->graph_nodes.at(node_id.second));
 		}
 	}
 	return graph_nodes;
 }
-pin_info *ui::nodes::graph_node::get_input_data_by_id(int id)
+Pin_Info *ui::nodes::Graph_Node::Get_Input_Data_By_Id(int id)
 {
 	if (!input_nodes.contains(id))
 	{
@@ -222,7 +222,7 @@ pin_info *ui::nodes::graph_node::get_input_data_by_id(int id)
 	return &input_nodes.at(id);
 }
 
-pin_info *ui::nodes::graph_node::get_input_data_by_name(const std::string &name)
+Pin_Info *ui::nodes::Graph_Node::Get_Input_Data_By_Name(const std::string &name)
 {
 	for (auto &node : input_nodes)
 	{
@@ -234,7 +234,7 @@ pin_info *ui::nodes::graph_node::get_input_data_by_name(const std::string &name)
 	return nullptr;
 }
 
-pin_info *ui::nodes::graph_node::get_output_data_by_id(int id)
+Pin_Info *ui::nodes::Graph_Node::Get_Output_Data_By_Id(int id)
 {
 	if (!output_nodes.contains(id))
 	{
@@ -243,7 +243,7 @@ pin_info *ui::nodes::graph_node::get_output_data_by_id(int id)
 	return &output_nodes.at(id);
 }
 
-pin_info *ui::nodes::graph_node::get_output_data_by_name(const std::string &name)
+Pin_Info *ui::nodes::Graph_Node::Get_Output_Data_By_Name(const std::string &name)
 {
 	for (auto &node : output_nodes)
 	{
@@ -255,7 +255,7 @@ pin_info *ui::nodes::graph_node::get_output_data_by_name(const std::string &name
 	return nullptr;
 }
 
-bool ui::nodes::graph_node::has_output(node_type type)
+bool ui::nodes::Graph_Node::Has_Output(Node_Type type)
 {
 	for (auto &output : output_nodes)
 	{
@@ -266,7 +266,7 @@ bool ui::nodes::graph_node::has_output(node_type type)
 	}
 	return false;
 }
-bool ui::nodes::graph_node::has_input(node_type type)
+bool ui::nodes::Graph_Node::Has_Input(Node_Type type)
 {
 	for (auto &input : input_nodes)
 	{
@@ -278,17 +278,17 @@ bool ui::nodes::graph_node::has_input(node_type type)
 	return false;
 }
 
-void ui::nodes::graph_node::set_ouput_data(const std::string &name, std::any data)
+void ui::nodes::Graph_Node::Set_Ouput_Data(const std::string &name, std::any data)
 {
-	get_output_data_by_name(name)->data = data;
+	Get_Output_Data_By_Name(name)->data = data;
 }
 
-void ui::nodes::graph_node::set_ouput_data(int id, std::any data)
+void ui::nodes::Graph_Node::Set_Ouput_Data(int id, std::any data)
 {
-	get_output_data_by_id(id)->data = data;
+	Get_Output_Data_By_Id(id)->data = data;
 }
 
-scrollable *ui::nodes::graph_node::get_scrollable(const std::string &name)
+Scrollable *ui::nodes::Graph_Node::Get_Scrollable(const std::string &name)
 {
 	for (auto &scrollable : scrollables)
 	{
@@ -301,7 +301,7 @@ scrollable *ui::nodes::graph_node::get_scrollable(const std::string &name)
 	return nullptr;
 }
 
-ui::nodes::multi_option *ui::nodes::graph_node::get_multi_option(const std::string name)
+ui::nodes::Multi_Option *ui::nodes::Graph_Node::Get_Multi_Option(const std::string name)
 {
 	for (auto &multi_option : multi_options)
 	{
@@ -314,7 +314,7 @@ ui::nodes::multi_option *ui::nodes::graph_node::get_multi_option(const std::stri
 	return nullptr;
 }
 
-text_input *ui::nodes::graph_node::get_text_input(const std::string &name)
+Text_Input *ui::nodes::Graph_Node::Get_Text_Input(const std::string &name)
 {
 	for (auto &text_input : text_inputs)
 	{
@@ -326,7 +326,7 @@ text_input *ui::nodes::graph_node::get_text_input(const std::string &name)
 	return nullptr;
 }
 
-dynamic_structure *ui::nodes::graph_node::get_dynamic_structure(const std::string &name)
+Dynamic_Structure *ui::nodes::Graph_Node::Get_Dynamic_Structure(const std::string &name)
 {
 	for (auto &dynamic_structure : dynamic_structures)
 	{

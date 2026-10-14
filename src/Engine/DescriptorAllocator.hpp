@@ -7,21 +7,21 @@
 
 namespace engine
 {
-    class descriptor_allocator
+    class Descriptor_Allocator
     {
     public:
-        struct pool_size_ratio
+        struct Pool_Size_Ratio
         {
             vk::DescriptorType type;
             float ratio;
         };
 
-        descriptor_allocator()
+        Descriptor_Allocator()
         {
             
         }
         
-        void begin_pool(vk::Device logical_device, uint32_t max_sets, std::span<pool_size_ratio> pool_ratios)
+        void Begin_Pool(vk::Device logical_device, uint32_t max_sets, std::span<Pool_Size_Ratio> pool_ratios)
         {
             std::vector<vk::DescriptorPoolSize> pool_sizes;
             for (auto& ratio : pool_ratios)
@@ -42,7 +42,7 @@ namespace engine
 
 
         }
-        vk::UniqueDescriptorSet allocate(vk::Device logical_device, vk::DescriptorSetLayout dst_set_layout)
+        vk::UniqueDescriptorSet Allocate(vk::Device logical_device, vk::DescriptorSetLayout dst_set_layout)
         {
             auto dst_set_create_info = vk::DescriptorSetAllocateInfo()
             .setDescriptorPool(pool.get())
@@ -54,11 +54,11 @@ namespace engine
             return std::move(sets.front());
         }
 
-        void clear_pool(vk::Device device)
+        void Clear_Pool(vk::Device device)
         {
             device.resetDescriptorPool(this->pool.get()); 
         }
-        void destroy_pool()
+        void Destroy_Pool()
         {
             pool.release();
         }

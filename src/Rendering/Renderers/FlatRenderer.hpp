@@ -10,26 +10,26 @@ namespace rendering
 {
 using namespace engine;
 
-class flat_renderer : public base_renderer
+class Flat_Renderer : public Base_Renderer
 {
   public:
-	flat_renderer(engine::core *core, ::window_provider *window_provider)
+	Flat_Renderer(engine::Core *core, ::Window_Provider *window_provider)
 	{
 		this->core           = core;
 		this->render_graph    = core->render_graph_ref;
 		this->window_provider = window_provider;
-		create_resources();
-		create_buffers();
-		create_pipelines();
+		Create_Resources();
+		Create_Buffers();
+		Create_Pipelines();
 	}
 
-	void create_resources()
+	void Create_Resources()
 	{
 		cascades_info.cascade_count       = 5;
 		cascades_info.probe_size_px        = 2;
 		cascades_info.interval_count      = 2;
 		cascades_info.base_interval_length = 1;
-		auto image_info                  = engine::image::create_info2d(glm::uvec2(rc_resolution_w, rc_resolution_h), 1, 1,
+		auto image_info                  = engine::Image::Create_Info2d(glm::uvec2(rc_resolution_w, rc_resolution_h), 1, 1,
 		                                                      engine::g_32b_format,
 		                                                      vk::ImageUsageFlagBits::eColorAttachment |
 		                                                          vk::ImageUsageFlagBits::eSampled);
@@ -37,7 +37,7 @@ class flat_renderer : public base_renderer
 		for (int i = 0; i < cascades_info.cascade_count; ++i)
 		{
 			std::string name      = "CascadeAttachment_" + std::to_string(i);
-			engine::image_view  *image_view_handle = resources_manager::get_instance()->get_image(name, image_info, 0, 0);
+			engine::Image_View  *image_view_handle = Resources_Manager::Get_Instance()->Get_Image(name, image_info, 0, 0);
 			cascades_attachments_images_views.emplace_back(image_view_handle);
 		}
 
@@ -51,16 +51,16 @@ class flat_renderer : public base_renderer
 
 		painting_pc.radius = 20;
 
-		auto       storage_image_info = engine::image::create_info2d(glm::uvec2(rc_resolution_w, rc_resolution_h), 1, 1,
+		auto       storage_image_info = engine::Image::Create_Info2d(glm::uvec2(rc_resolution_w, rc_resolution_h), 1, 1,
 		                                                          engine::g_32b_format,
 		                                                          vk::ImageUsageFlagBits::eStorage |
 		                                                              vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
-		engine::image_view *light_layer       = resources_manager::get_instance()->get_image("PaintingLayer", storage_image_info, 0, 0);
-		engine::image_view *occluder_layer    = resources_manager::get_instance()->get_image(
+		engine::Image_View *light_layer       = Resources_Manager::Get_Instance()->Get_Image("PaintingLayer", storage_image_info, 0, 0);
+		engine::Image_View *occluder_layer    = Resources_Manager::Get_Instance()->Get_Image(
             "OccluderLayer", storage_image_info, 0, 0);
-		engine::image_view *debug_layer        = resources_manager::get_instance()->get_image("DebugRaysLayer", storage_image_info, 0, 0);
-		engine::image_view *fluid_sim_layer     = resources_manager::get_instance()->get_image("FluidSimLayer", storage_image_info, 0, 0);
-		engine::image_view *fluid_sim_layer_info = resources_manager::get_instance()->get_image("FluidSimInfoLayer", storage_image_info, 0, 0);
+		engine::Image_View *debug_layer        = Resources_Manager::Get_Instance()->Get_Image("DebugRaysLayer", storage_image_info, 0, 0);
+		engine::Image_View *fluid_sim_layer     = Resources_Manager::Get_Instance()->Get_Image("FluidSimLayer", storage_image_info, 0, 0);
+		engine::Image_View *fluid_sim_layer_info = Resources_Manager::Get_Instance()->Get_Image("FluidSimInfoLayer", storage_image_info, 0, 0);
 		painting_layers.push_back(light_layer);
 		painting_layers.push_back(occluder_layer);
 		painting_layers.push_back(debug_layer);
@@ -70,55 +70,55 @@ class flat_renderer : public base_renderer
 		for (int i = 0; i < cascades_info.cascade_count; ++i)
 		{
 			std::string name      = "radianceStorage_" + std::to_string(i);
-			engine::image_view  *image_view_handle = resources_manager::get_instance()->get_image(name, storage_image_info, 0, 0);
+			engine::Image_View  *image_view_handle = Resources_Manager::Get_Instance()->Get_Image(name, storage_image_info, 0, 0);
 			radiances_images.emplace_back(image_view_handle);
 		}
 
-		std::string resources_path = systems::os::get_instance()->get_engine_resources_path();
-		std::string asset_path     = systems::os::get_instance()->get_assets_path();
+		std::string resources_path = systems::Os::Get_Instance()->Get_Engine_Resources_Path();
+		std::string asset_path     = systems::Os::Get_Instance()->Get_Assets_Path();
 
-		test_image = resources_manager::get_instance()->get_shipper("test_image",
+		test_image = Resources_Manager::Get_Instance()->Get_Shipper("test_image",
 		                                                        resources_path + "\\Images\\VulkanLogo.png", 1, 1,
 		                                                        engine::g_shipper_format,
-		                                                        layout_patterns::graphics_read);
+		                                                        Layout_Patterns::Graphics_Read);
 
 		std::filesystem::path dir_entry(asset_path + "\\Textures\\RCascadesTextures");
 
 		int i = 0;
 		for (auto &path_view : std::filesystem::directory_iterator(dir_entry))
 		{
-			rendering::material *background_material = rendering_res_manager::get_instance()->push_material(
+			rendering::Material *background_material = Rendering_Res_Manager::Get_Instance()->Push_Material(
 			    "RCascadesMat_" + std::to_string(i++));
 			std::string path   = path_view.path().string();
-			engine::image_view  *col_ref = resources_manager::get_instance()->get_shipper(
+			engine::Image_View  *col_ref = Resources_Manager::Get_Instance()->Get_Shipper(
                                                                    path + "\\Albedo.png", path + "\\Albedo.png", 1, 1, engine::g_shipper_format,
-                                                                   layout_patterns::graphics_read)
+                                                                   Layout_Patterns::Graphics_Read)
 			                        ->image_view_handle.get();
-			background_material->set_texture(texture_type::albedo, col_ref);
+			background_material->Set_Texture(Texture_Type::Albedo, col_ref);
 
-			engine::image_view *norm_ref = resources_manager::get_instance()->get_shipper(
+			engine::Image_View *norm_ref = Resources_Manager::Get_Instance()->Get_Shipper(
 			                                                        path + "\\Normal.png", path + "\\Normal.png", 1, 1,
-			                                                        engine::g_shipper_format, layout_patterns::graphics_read)
+			                                                        engine::g_shipper_format, Layout_Patterns::Graphics_Read)
 			                         ->image_view_handle.get();
-			background_material->set_texture(texture_type::normal, norm_ref);
+			background_material->Set_Texture(Texture_Type::Normal, norm_ref);
 
-			engine::image_view *roughness_ref = resources_manager::get_instance()->get_shipper(
+			engine::Image_View *roughness_ref = Resources_Manager::Get_Instance()->Get_Shipper(
 			                                                             path + "\\Roughness.png", path + "\\Roughness.png", 1, 1,
-			                                                             engine::g_shipper_format, layout_patterns::graphics_read)
+			                                                             engine::g_shipper_format, Layout_Patterns::Graphics_Read)
 			                              ->image_view_handle.get();
-			background_material->set_texture(texture_type::roughness, roughness_ref);
+			background_material->Set_Texture(Texture_Type::Roughness, roughness_ref);
 
-			engine::image_view *ao_ref = resources_manager::get_instance()->get_shipper(
+			engine::Image_View *ao_ref = Resources_Manager::Get_Instance()->Get_Shipper(
 			                                                      path + "\\Ao.png", path + "\\Ao.png", 1, 1,
-			                                                      engine::g_shipper_format, layout_patterns::graphics_read)
+			                                                      engine::g_shipper_format, Layout_Patterns::Graphics_Read)
 			                       ->image_view_handle.get();
-			background_material->set_texture(texture_type::ao, ao_ref);
+			background_material->Set_Texture(Texture_Type::Ao, ao_ref);
 
-			engine::image_view *height_ref = resources_manager::get_instance()->get_shipper(
+			engine::Image_View *height_ref = Resources_Manager::Get_Instance()->Get_Shipper(
 			                                                          path + "\\Height.png", path + "\\Height.png", 1, 1,
-			                                                          engine::g_shipper_format, layout_patterns::graphics_read)
+			                                                          engine::g_shipper_format, Layout_Patterns::Graphics_Read)
 			                           ->image_view_handle.get();
-			background_material->set_texture(texture_type::height, height_ref);
+			background_material->Set_Texture(Texture_Type::Height, height_ref);
 			background_materials.emplace_back(background_material);
 		}
 		material_index_selected = 0;
@@ -127,8 +127,8 @@ class flat_renderer : public base_renderer
 		// assetPath + "\\Animations\\SmokeFreePack_v2\\Compressed\\512\\Smoke_4_512-sheet.png",
 		// glm::uvec2(512, 512), 7, 7, 10);
 
-		rendering::animator_info animation_info = {glm::uvec2(512, 512), 7, 7, -1, -1, -1, true};
-		test_sprite_anim            = rendering_res_manager::get_instance()->get_animator("TestAnim",
+		rendering::Animator_Info animation_info = {glm::uvec2(512, 512), 7, 7, -1, -1, -1, true};
+		test_sprite_anim            = Rendering_Res_Manager::Get_Instance()->Get_Animator("TestAnim",
 		                                                                            asset_path +
 		                                                                                "\\Animations\\SmokeFreePack_v2\\Compressed\\512\\Smoke_4_512-sheet.png",
 		                                                                            30, animation_info);
@@ -137,191 +137,191 @@ class flat_renderer : public base_renderer
 			// The optional smoke atlas is not distributed with the engine.
 			// ImageShipper owns and frees this pixel after uploading it.
 			auto *transparent_pixel = std::calloc(4, 1);
-			auto *fallback = resources_manager::get_instance()->get_shipper(
+			auto *fallback = Resources_Manager::Get_Instance()->Get_Shipper(
 			    "EmptySmokeAtlas", transparent_pixel, 1, 1, 4, 1, 1,
-			    engine::g_shipper_format, layout_patterns::graphics_read);
+			    engine::g_shipper_format, Layout_Patterns::Graphics_Read);
 			test_sprite_anim->images_frames.push_back(fallback->image_view_handle.get());
 			test_sprite_anim->animation_info = {glm::uvec2(1), 1, 1, 0, 1, 0.0f, true};
 			test_sprite_anim->stop = true;
 		}
 	}
 
-	void create_buffers()
+	void Create_Buffers()
 	{
-		quad_vert_buffer_ref = resources_manager::get_instance()->get_stage_buffer(
+		quad_vert_buffer_ref = Resources_Manager::Get_Instance()->Get_Stage_Buffer(
 		                                                       "QuadRcVertices", vk::BufferUsageFlagBits::eVertexBuffer,
-		                                                       sizeof(vertex_2d) * vertex_2d::get_quad_vertices().size(), sizeof(vertex_2d),
-		                                                       vertex_2d::get_quad_vertices().data())
+		                                                       sizeof(Vertex_2d) * Vertex_2d::Get_Quad_Vertices().size(), sizeof(Vertex_2d),
+		                                                       Vertex_2d::Get_Quad_Vertices().data())
 		                        ->device_buffer.get();
-		quad_index_buffer_ref = resources_manager::get_instance()->get_stage_buffer(
+		quad_index_buffer_ref = Resources_Manager::Get_Instance()->Get_Stage_Buffer(
 		                                                        "QuadRcIndices", vk::BufferUsageFlagBits::eIndexBuffer,
-		                                                        sizeof(uint32_t) * vertex_2d::get_quad_indices().size(), sizeof(uint32_t),
-		                                                        vertex_2d::get_quad_indices().data())
+		                                                        sizeof(uint32_t) * Vertex_2d::Get_Quad_Indices().size(), sizeof(uint32_t),
+		                                                        Vertex_2d::Get_Quad_Indices().data())
 		                         ->device_buffer.get();
 	}
 
-	void create_pipelines()
+	void Create_Pipelines()
 	{
 		auto        logical_device = core->logical_device.get();
-		std::string shader_path    = systems::os::get_instance()->get_shaders_path();
+		std::string shader_path    = systems::Os::Get_Instance()->Get_Shaders_Path();
 
-		auto cuda_buffer = render_graph->resources_manager->get_buffer(engine::resources_manager::buffer_params{
-		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * rc_resolution_w * rc_resolution_h, sizeof(float) * 4, nullptr, engine::resources_manager::buffer_type::external});
+		auto cuda_buffer = render_graph->resources_manager->Get_Buffer(engine::Resources_Manager::Buffer_Params{
+		    "CudaBuffer", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * 4 * rc_resolution_w * rc_resolution_h, sizeof(float) * 4, nullptr, engine::Resources_Manager::Buffer_Type::External});
 
-		auto cuda_buffer_vel = render_graph->resources_manager->get_buffer(engine::resources_manager::buffer_params{
-		    "CudaBufferVel", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * rc_resolution_w * rc_resolution_h, sizeof(float), nullptr, engine::resources_manager::buffer_type::external});
+		auto cuda_buffer_vel = render_graph->resources_manager->Get_Buffer(engine::Resources_Manager::Buffer_Params{
+		    "CudaBufferVel", vk::BufferUsageFlagBits::eStorageBuffer, {}, sizeof(float) * rc_resolution_w * rc_resolution_h, sizeof(float), nullptr, engine::Resources_Manager::Buffer_Type::External});
 
-		auto cuda_pi = render_graph->add_cuda_pipeline("CudaCopySmoke");
+		auto cuda_pi = render_graph->Add_Cuda_Pipeline("CudaCopySmoke");
 		cuda_pi
-		    ->c_export_buffer(cuda_buffer)
-		    ->c_set_kernel_function(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(0).GetKernelFunct())
-		    ->c_build_cuda_pipeline();
-		auto cuda_node = render_graph->add_cuda_pass(cuda_pi, "CudaNode");
+		    ->C_Export_Buffer(cuda_buffer)
+		    ->C_Set_Kernel_Function(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(0).GetKernelFunct())
+		    ->C_Build_Cuda_Pipeline();
+		auto cuda_node = render_graph->Add_Cuda_Pass(cuda_pi, "CudaNode");
 
-		auto cuda_pi_vel = render_graph->add_cuda_pipeline("CudaCopyVel");
+		auto cuda_pi_vel = render_graph->Add_Cuda_Pipeline("CudaCopyVel");
 		cuda_pi_vel
-		    ->c_export_buffer(cuda_buffer_vel)
-		    ->c_set_kernel_function(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(1).GetKernelFunct())
-		    ->c_build_cuda_pipeline();
+		    ->C_Export_Buffer(cuda_buffer_vel)
+		    ->C_Set_Kernel_Function(*CodeCuda::FluidSimulation::C_GetKernelLauncherMappers(1).GetKernelFunct())
+		    ->C_Build_Cuda_Pipeline();
 
-		auto cuda_vel = render_graph->add_cuda_pass(cuda_pi_vel, "CudaVelNode");
+		auto cuda_vel = render_graph->Add_Cuda_Pass(cuda_pi_vel, "CudaVelNode");
 
 		//
 
-		paint_comp_shader = render_graph->resources_manager->get_shader(
-		    shader_path + "\\slang\\test\\paintingGen.slang", s_comp);
-		auto *painting_gpu_pipeline = render_graph->add_gpu_pipeline("PaintingCompute");
-		painting_gpu_pipeline->g_set_comp_shader(paint_comp_shader);
-		painting_gpu_pipeline->g_set_push_constant_size(sizeof(painting_pc));
-		painting_gpu_pipeline->g_build_gpu_pipeline();
+		paint_comp_shader = render_graph->resources_manager->Get_Shader(
+		    shader_path + "\\slang\\test\\paintingGen.slang", S_Comp);
+		auto *painting_gpu_pipeline = render_graph->Add_Gpu_Pipeline("PaintingCompute");
+		painting_gpu_pipeline->G_Set_Comp_Shader(paint_comp_shader);
+		painting_gpu_pipeline->G_Set_Push_Constant_Size(sizeof(painting_pc));
+		painting_gpu_pipeline->G_Build_Gpu_Pipeline();
 
-		auto *painting_node = render_graph->add_pass(painting_gpu_pipeline, painting_pass_name, "Graphics");
-		painting_node->g_add_storage_resource(painting_layers[0]);
-		painting_node->g_add_storage_resource(painting_layers[1]);
-		painting_node->g_add_storage_resource(painting_layers[2]);
+		auto *painting_node = render_graph->Add_Pass(painting_gpu_pipeline, painting_pass_name, "Graphics");
+		painting_node->G_Add_Storage_Resource(painting_layers[0]);
+		painting_node->G_Add_Storage_Resource(painting_layers[1]);
+		painting_node->G_Add_Storage_Resource(painting_layers[2]);
 
-		auto cuda_buffer_imports = render_graph->resources_manager->get_shader(
-		    shader_path + "\\slang\\test\\cudaBufferToImage.slang", s_comp);
+		auto cuda_buffer_imports = render_graph->resources_manager->Get_Shader(
+		    shader_path + "\\slang\\test\\cudaBufferToImage.slang", S_Comp);
 
-		auto *import_buffer_node = render_graph->add_pass("CudaBufferImporterNode");
-		import_buffer_node->g_set_comp_shader(cuda_buffer_imports);
-		import_buffer_node->g_add_storage_resource(painting_layers[3]);
-		import_buffer_node->g_add_storage_resource(painting_layers[4]);
-		import_buffer_node->depends_on(cuda_node);
-		import_buffer_node->depends_on(cuda_vel);
-		import_buffer_node->build_render_graph_node();
+		auto *import_buffer_node = render_graph->Add_Pass("CudaBufferImporterNode");
+		import_buffer_node->G_Set_Comp_Shader(cuda_buffer_imports);
+		import_buffer_node->G_Add_Storage_Resource(painting_layers[3]);
+		import_buffer_node->G_Add_Storage_Resource(painting_layers[4]);
+		import_buffer_node->Depends_On(cuda_node);
+		import_buffer_node->Depends_On(cuda_vel);
+		import_buffer_node->Build_Render_Graph_Node();
 
-		engine::vertex_input    vertex_layout = vertex_2d::get_vertex_input();
-		engine::attachment_info col_info     = get_color_attachment_info(blend_configs::b_opaque,
+		engine::Vertex_Input    vertex_layout = Vertex_2d::Get_Vertex_Input();
+		engine::Attachment_Info col_info     = Get_Color_Attachment_Info(Blend_Configs::B_Opaque,
             glm::vec4(0.0f), vk::Format::eR32G32B32A32Sfloat);
 
-		probes_vert_shader = render_graph->resources_manager->get_shader(
-		    shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", s_vert);
-		probes_frag_shader = render_graph->resources_manager->get_shader(
+		probes_vert_shader = render_graph->resources_manager->Get_Shader(
+		    shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", S_Vert);
+		probes_frag_shader = render_graph->resources_manager->Get_Shader(
 		    shader_path + "\\spirvGlsl\\FlatRendering\\cascadeGen.frag.spv",
-		    s_frag);
+		    S_Frag);
 
-		auto probes_gen_gpu_pipeline = render_graph->add_gpu_pipeline("ProbesGenShader");
-		probes_gen_gpu_pipeline->g_set_configs({true});
-		probes_gen_gpu_pipeline->g_set_push_constant_size(sizeof(painting_pc));
-		probes_gen_gpu_pipeline->g_set_vert_shader(probes_vert_shader);
-		probes_gen_gpu_pipeline->g_set_frag_shader(probes_frag_shader);
-		probes_gen_gpu_pipeline->g_set_vertex_input(vertex_layout);
-		probes_gen_gpu_pipeline->g_add_color_attachment_output(0, col_info);
-		probes_gen_gpu_pipeline->g_build_gpu_pipeline();
+		auto probes_gen_gpu_pipeline = render_graph->Add_Gpu_Pipeline("ProbesGenShader");
+		probes_gen_gpu_pipeline->G_Set_Configs({true});
+		probes_gen_gpu_pipeline->G_Set_Push_Constant_Size(sizeof(painting_pc));
+		probes_gen_gpu_pipeline->G_Set_Vert_Shader(probes_vert_shader);
+		probes_gen_gpu_pipeline->G_Set_Frag_Shader(probes_frag_shader);
+		probes_gen_gpu_pipeline->G_Set_Vertex_Input(vertex_layout);
+		probes_gen_gpu_pipeline->G_Add_Color_Attachment_Output(0, col_info);
+		probes_gen_gpu_pipeline->G_Build_Gpu_Pipeline();
 
 		for (int i = 0; i < cascades_info.cascade_count; ++i)
 		{
 			std::string name = "ProbesGen_" + std::to_string(i);
 			probes_gen_pass_names.push_back(name);
-			auto render_node = render_graph->add_pass(probes_gen_gpu_pipeline, name, "Graphics_Test");
-			render_node->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
-			render_node->g_set_color_image_attachment_binding(0, cascades_attachments_images_views[i]);
-			render_node->depends_on(painting_pass_name);
+			auto render_node = render_graph->Add_Pass(probes_gen_gpu_pipeline, name, "Graphics_Test");
+			render_node->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+			render_node->G_Set_Color_Image_Attachment_Binding(0, cascades_attachments_images_views[i]);
+			render_node->Depends_On(painting_pass_name);
 		}
 
-		vert_shader = render_graph->resources_manager->get_shader(
-		    shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", s_vert);
-		frag_shader = render_graph->resources_manager->get_shader(
+		vert_shader = render_graph->resources_manager->Get_Shader(
+		    shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", S_Vert);
+		frag_shader = render_graph->resources_manager->Get_Shader(
 		    shader_path + "\\spirvGlsl\\FlatRendering\\rCascadesOutput.frag.spv",
-		    s_frag);
+		    S_Frag);
 
 		// This pass writes storage images only; disable fragment color writes.
-		engine::attachment_info output_col_info = get_color_attachment_info(blend_configs::b_none,
-		    glm::vec4(0.0f), core->swapchain_ref->get_format());
+		engine::Attachment_Info output_col_info = Get_Color_Attachment_Info(Blend_Configs::B_None,
+		    glm::vec4(0.0f), core->swapchain_ref->Get_Format());
 
-		auto cascades_gpu_pipeline = render_graph->add_gpu_pipeline("CascadesGPUPipeline");
-		cascades_gpu_pipeline->g_set_vert_shader(vert_shader);
-		cascades_gpu_pipeline->g_set_frag_shader(frag_shader);
-		cascades_gpu_pipeline->g_set_push_constant_size(sizeof(rc_pc));
-		cascades_gpu_pipeline->g_set_vertex_input(vertex_layout);
-		cascades_gpu_pipeline->g_add_color_attachment_output(0, output_col_info);
-		cascades_gpu_pipeline->g_build_gpu_pipeline();
+		auto cascades_gpu_pipeline = render_graph->Add_Gpu_Pipeline("CascadesGPUPipeline");
+		cascades_gpu_pipeline->G_Set_Vert_Shader(vert_shader);
+		cascades_gpu_pipeline->G_Set_Frag_Shader(frag_shader);
+		cascades_gpu_pipeline->G_Set_Push_Constant_Size(sizeof(rc_pc));
+		cascades_gpu_pipeline->G_Set_Vertex_Input(vertex_layout);
+		cascades_gpu_pipeline->G_Add_Color_Attachment_Output(0, output_col_info);
+		cascades_gpu_pipeline->G_Build_Gpu_Pipeline();
 
-		auto render_node = render_graph->add_pass(cascades_gpu_pipeline, r_cascades_pass_name);
-		render_node->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+		auto render_node = render_graph->Add_Pass(cascades_gpu_pipeline, r_cascades_pass_name);
+		render_node->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
 		for (int i = 0; i < cascades_info.cascade_count; ++i)
 		{
-			render_node->depends_on("ProbesGen_" + std::to_string(i));
+			render_node->Depends_On("ProbesGen_" + std::to_string(i));
 		}
 
-		engine::attachment_info merge_col_info = get_color_attachment_info( blend_configs::b_none,
-		    glm::vec4(0.0f), core->swapchain_ref->get_format(), vk::AttachmentLoadOp::eLoad,
+		engine::Attachment_Info merge_col_info = Get_Color_Attachment_Info( Blend_Configs::B_None,
+		    glm::vec4(0.0f), core->swapchain_ref->Get_Format(), vk::AttachmentLoadOp::eLoad,
 		    vk::AttachmentStoreOp::eStore);
 
-		merge_vert_shader = render_graph->resources_manager->get_shader(shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", s_vert);
-		merge_frag_shader = render_graph->resources_manager->get_shader(shader_path + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", s_frag);
+		merge_vert_shader = render_graph->resources_manager->Get_Shader(shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", S_Vert);
+		merge_frag_shader = render_graph->resources_manager->Get_Shader(shader_path + "\\spirvGlsl\\FlatRendering\\cascadesMerge.frag.spv", S_Frag);
 
-		auto shader_node = render_graph->add_gpu_pipeline("MergeShader");
-		shader_node->g_set_vert_shader(merge_vert_shader);
-		shader_node->g_set_frag_shader(merge_frag_shader);
-		shader_node->g_set_push_constant_size(sizeof(rc_pc));
-		shader_node->g_set_vertex_input(vertex_layout);
-		shader_node->g_add_color_attachment_output(0, merge_col_info);
-		shader_node->g_build_gpu_pipeline();
+		auto shader_node = render_graph->Add_Gpu_Pipeline("MergeShader");
+		shader_node->G_Set_Vert_Shader(merge_vert_shader);
+		shader_node->G_Set_Frag_Shader(merge_frag_shader);
+		shader_node->G_Set_Push_Constant_Size(sizeof(rc_pc));
+		shader_node->G_Set_Vertex_Input(vertex_layout);
+		shader_node->G_Add_Color_Attachment_Output(0, merge_col_info);
+		shader_node->G_Build_Gpu_Pipeline();
 
 		for (int i = cascades_info.cascade_count - 2; i >= 0; i--)
 		{
 			std::string name            = r_merge_pass_name + "_" + std::to_string(i);
-			auto        merge_render_node = render_graph->add_pass(shader_node, name, "Graphics");
-			merge_render_node->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
-			merge_render_node->g_add_storage_resource(radiances_images[i]);
-			merge_render_node->g_add_storage_resource(radiances_images[i + 1]);
-			merge_render_node->depends_on(r_cascades_pass_name);
+			auto        merge_render_node = render_graph->Add_Pass(shader_node, name, "Graphics");
+			merge_render_node->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+			merge_render_node->G_Add_Storage_Resource(radiances_images[i]);
+			merge_render_node->G_Add_Storage_Resource(radiances_images[i + 1]);
+			merge_render_node->Depends_On(r_cascades_pass_name);
 			if (i < cascades_info.cascade_count - 2)
 			{
 				std::string dependancy_name = r_merge_pass_name + "_" + std::to_string(i + 1);
 			}
 		}
 
-		result_vert_shader = render_graph->resources_manager->get_shader(
-		    shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", s_vert);
-		result_frag_shader = render_graph->resources_manager->get_shader(
+		result_vert_shader = render_graph->resources_manager->Get_Shader(
+		    shader_path + "\\spirvGlsl\\Common\\Quad.vert.spv", S_Vert);
+		result_frag_shader = render_graph->resources_manager->Get_Shader(
 		    shader_path +
 		        "\\spirvGlsl\\FlatRendering\\cascadesResult.frag.spv",
-		    s_frag);
+		    S_Frag);
 
 		
-		engine::attachment_info result_col_info = get_color_attachment_info(blend_configs::b_opaque,
-			glm::vec4(0.0f), core->swapchain_ref->get_format());
-		auto result_gpu_pipeline = render_graph->add_gpu_pipeline("ResultCascadesShader");
-		result_gpu_pipeline->g_set_vert_shader(result_vert_shader);
-		result_gpu_pipeline->g_set_frag_shader(result_frag_shader);
-		result_gpu_pipeline->g_set_vertex_input(vertex_2d::get_vertex_input());
-		result_gpu_pipeline->g_set_push_constant_size(sizeof(rc_pc));
-		result_gpu_pipeline->g_add_color_attachment_output(0, result_col_info);
+		engine::Attachment_Info result_col_info = Get_Color_Attachment_Info(Blend_Configs::B_Opaque,
+			glm::vec4(0.0f), core->swapchain_ref->Get_Format());
+		auto result_gpu_pipeline = render_graph->Add_Gpu_Pipeline("ResultCascadesShader");
+		result_gpu_pipeline->G_Set_Vert_Shader(result_vert_shader);
+		result_gpu_pipeline->G_Set_Frag_Shader(result_frag_shader);
+		result_gpu_pipeline->G_Set_Vertex_Input(Vertex_2d::Get_Vertex_Input());
+		result_gpu_pipeline->G_Set_Push_Constant_Size(sizeof(rc_pc));
+		result_gpu_pipeline->G_Add_Color_Attachment_Output(0, result_col_info);
 
-		auto result_node = render_graph->add_pass(result_gpu_pipeline, result_pass_name, "Graphics");
-		result_node->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
-		result_node->depends_on(r_merge_pass_name + "_" + std::to_string(0));
-		result_node->build_render_graph_node();
+		auto result_node = render_graph->Add_Pass(result_gpu_pipeline, result_pass_name, "Graphics");
+		result_node->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+		result_node->Depends_On(r_merge_pass_name + "_" + std::to_string(0));
+		result_node->Build_Render_Graph_Node();
 	}
 
-	void recreate_swap_chain_resources() override
+	void Recreate_Swap_Chain_Resources() override
 	{
 	}
 
-	void set_render_operation() override
+	void Set_Render_Operation() override
 	{
 		auto painting_render_op = new std::function<void()>(
 		    [this]() {
@@ -338,27 +338,27 @@ class flat_renderer : public base_renderer
 			    // }
 
 			    auto &render_node = render_graph->render_nodes.at(painting_pass_name);
-			    render_node->g_set_storage_image_array("painting_layers", painting_layers);
-			    render_node->get_curr_cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
+			    render_node->G_Set_Storage_Image_Array("painting_layers", painting_layers);
+			    render_node->Get_Curr_Cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
 			                                           vk::ShaderStageFlagBits::eCompute,
 			                                           0, sizeof(painting_pc), &painting_pc);
-			    render_node->get_curr_cmd().dispatch(painting_pc.radius, painting_pc.radius, 1);
+			    render_node->Get_Curr_Cmd().dispatch(painting_pc.radius, painting_pc.radius, 1);
 		    });
 
-		render_graph->get_node(painting_pass_name)->g_set_render_operation(painting_render_op);
+		render_graph->Get_Node(painting_pass_name)->G_Set_Render_Operation(painting_render_op);
 
 		auto import_cuda_buffer_node_op = new std::function<void()>(
 		    [this]() {
 			    auto &render_node = render_graph->render_nodes.at("CudaBufferImporterNode");
-			    render_node->g_set_storage_image("out_image", painting_layers[3]);
-			    render_node->g_set_storage_image("out_image_simulation_info", painting_layers[4]);
-			    render_node->g_set_buffer("simulation_buffer", render_graph->resources_manager->get_buff_from_name("CudaBuffer"));
-			    render_node->g_set_buffer("simulation_buffer_info", render_graph->resources_manager->get_buff_from_name("CudaBufferVel"));
+			    render_node->G_Set_Storage_Image("out_image", painting_layers[3]);
+			    render_node->G_Set_Storage_Image("out_image_simulation_info", painting_layers[4]);
+			    render_node->G_Set_Buffer("simulation_buffer", render_graph->resources_manager->Get_Buff_From_Name("CudaBuffer"));
+			    render_node->G_Set_Buffer("simulation_buffer_info", render_graph->resources_manager->Get_Buff_From_Name("CudaBufferVel"));
 
-			    render_node->get_curr_cmd().dispatch((rc_resolution_w + rc_resolution_w - 1) / 8, (rc_resolution_h + rc_resolution_h - 1) / 8, 1);
+			    render_node->Get_Curr_Cmd().dispatch((rc_resolution_w + rc_resolution_w - 1) / 8, (rc_resolution_h + rc_resolution_h - 1) / 8, 1);
 		    });
 
-		render_graph->get_node("CudaBufferImporterNode")->g_set_render_operation(import_cuda_buffer_node_op);
+		render_graph->Get_Node("CudaBufferImporterNode")->G_Set_Render_Operation(import_cuda_buffer_node_op);
 
 		for (int i = 0; i < cascades_info.cascade_count; ++i)
 		{
@@ -377,17 +377,17 @@ class flat_renderer : public base_renderer
 				    probes_gen_pc.probe_size_px  = grid_size_pc;
 				    auto &render_node         = render_graph->render_nodes.at(probes_gen_pass_names[idx]);
 
-				    render_node->get_curr_cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
+				    render_node->Get_Curr_Cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
 				                                           vk::ShaderStageFlagBits::eVertex |
 				                                               vk::ShaderStageFlagBits::eFragment,
 				                                           0, sizeof(probes_gen_pc), &probes_gen_pc);
 				    vk::DeviceSize offset = 0;
-				    render_node->get_curr_cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
-				    render_node->get_curr_cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0,
+				    render_node->Get_Curr_Cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
+				    render_node->Get_Curr_Cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0,
 				                                             vk::IndexType::eUint32);
-				    render_node->get_curr_cmd().drawIndexed(vertex_2d::get_quad_indices().size(), 1, 0, 0, 0);
+				    render_node->Get_Curr_Cmd().drawIndexed(Vertex_2d::Get_Quad_Indices().size(), 1, 0, 0, 0);
 			    });
-			render_graph->get_node(probes_gen_pass_names[i])->g_set_render_operation(probes_gen_op);
+			render_graph->Get_Node(probes_gen_pass_names[i])->G_Set_Render_Operation(probes_gen_op);
 		}
 
 		auto radiance_output_task = new std::function<void()>([this]() {
@@ -400,34 +400,34 @@ class flat_renderer : public base_renderer
 
 			auto *curr_image = render_graph->current_back_buffer;
 			auto &render_node = render_graph->render_nodes.at(r_cascades_pass_name);
-			render_node->g_set_color_image_attachment_binding(0, curr_image);
-			render_graph->get_node(r_cascades_pass_name)->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+			render_node->G_Set_Color_Image_Attachment_Binding(0, curr_image);
+			render_graph->Get_Node(r_cascades_pass_name)->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
 		});
 		auto radiance_output_op   = new std::function<void()>(
             [this]() {
                 auto &render_node = render_graph->render_nodes.at(r_cascades_pass_name);
-                render_node->g_set_sampler_array("cascades", cascades_attachments_images_views);
-                render_node->g_set_storage_image_array("painting_layers", painting_layers);
-                render_node->g_set_storage_image_array("radiances", radiances_images);
-                render_node->g_set_sampler("test_image", test_image->image_view_handle.get());
-                render_node->g_set_sampler_array("sprite_anims", test_sprite_anim->images_frames);
-                render_node->g_set_buffer("sprite_info", test_sprite_anim->animation_info);
-                render_node->g_set_sampler_array("mat_textures",
-			                                    background_materials.at(material_index_selected)->convert_textures_to_vec());
+                render_node->G_Set_Sampler_Array("cascades", cascades_attachments_images_views);
+                render_node->G_Set_Storage_Image_Array("painting_layers", painting_layers);
+                render_node->G_Set_Storage_Image_Array("radiances", radiances_images);
+                render_node->G_Set_Sampler("test_image", test_image->image_view_handle.get());
+                render_node->G_Set_Sampler_Array("sprite_anims", test_sprite_anim->images_frames);
+                render_node->G_Set_Buffer("Sprite_Info", test_sprite_anim->animation_info);
+                render_node->G_Set_Sampler_Array("mat_textures",
+			                                    background_materials.at(material_index_selected)->Convert_Textures_To_Vec());
 
                 vk::DeviceSize offset = 0;
-                render_node->get_curr_cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
-                render_node->get_curr_cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0, vk::IndexType::eUint32);
+                render_node->Get_Curr_Cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
+                render_node->Get_Curr_Cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0, vk::IndexType::eUint32);
 
-                render_node->get_curr_cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
+                render_node->Get_Curr_Cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
 			                                             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                             0, sizeof(rc_pc), &rc_pc);
 
-                render_node->get_curr_cmd().drawIndexed(vertex_2d::get_quad_indices().size(), 1, 0,
+                render_node->Get_Curr_Cmd().drawIndexed(Vertex_2d::Get_Quad_Indices().size(), 1, 0,
 			                                           0, 0);
             });
-		render_graph->get_node(r_cascades_pass_name)->g_set_render_operation(radiance_output_op);
-		render_graph->get_node(r_cascades_pass_name)->add_pre_rendering_task(radiance_output_task);
+		render_graph->Get_Node(r_cascades_pass_name)->G_Set_Render_Operation(radiance_output_op);
+		render_graph->Get_Node(r_cascades_pass_name)->Add_Pre_Rendering_Task(radiance_output_task);
 
 		for (int i = cascades_info.cascade_count - 2; i >= 0; i--)
 		{
@@ -436,131 +436,131 @@ class flat_renderer : public base_renderer
                 int         idx       = i;
                 std::string merge_name = r_merge_pass_name + "_" + std::to_string(idx);
                 auto       *curr_image = render_graph->current_back_buffer;
-                render_graph->get_node(merge_name)->g_set_color_image_attachment_binding(0, curr_image);
-                render_graph->get_node(merge_name)->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+                render_graph->Get_Node(merge_name)->G_Set_Color_Image_Attachment_Binding(0, curr_image);
+                render_graph->Get_Node(merge_name)->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
             });
 			auto        merge_render_op     = new std::function<void()>(
                 [this, i]() {
                     int         idx        = i;
                     std::string merge_name  = r_merge_pass_name + "_" + std::to_string(idx);
                     auto       &render_node = render_graph->render_nodes.at(merge_name);
-                    render_node->g_set_sampler_array("cascades", cascades_attachments_images_views);
-                    render_node->g_set_storage_image_array("radiances", radiances_images);
+                    render_node->G_Set_Sampler_Array("cascades", cascades_attachments_images_views);
+                    render_node->G_Set_Storage_Image_Array("radiances", radiances_images);
 
                     rc_pc.cascade_index = idx;
 
                     vk::DeviceSize offset = 0;
-                    render_node->get_curr_cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
-                    render_node->get_curr_cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0,
+                    render_node->Get_Curr_Cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
+                    render_node->Get_Curr_Cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0,
 				                                                        vk::IndexType::eUint32);
 
-                    render_node->get_curr_cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
+                    render_node->Get_Curr_Cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
 				                                                      vk::ShaderStageFlagBits::eVertex |
 				                                                          vk::ShaderStageFlagBits::eFragment,
 				                                                      0, sizeof(rc_pc), &rc_pc);
-                    render_node->get_curr_cmd().drawIndexed(vertex_2d::get_quad_indices().size(), 1, 0,
+                    render_node->Get_Curr_Cmd().drawIndexed(Vertex_2d::Get_Quad_Indices().size(), 1, 0,
 				                                                    0, 0);
                 });
-			render_graph->get_node(merge_name_cascades)->g_set_render_operation(merge_render_op);
-			render_graph->get_node(merge_name_cascades)->add_pre_rendering_task(merge_task);
+			render_graph->Get_Node(merge_name_cascades)->G_Set_Render_Operation(merge_render_op);
+			render_graph->Get_Node(merge_name_cascades)->Add_Pre_Rendering_Task(merge_task);
 		}
 
 		auto result_task     = new std::function<void()>([this]() {
             auto *curr_image = render_graph->current_back_buffer;
-            render_graph->get_node(result_pass_name)->g_set_color_image_attachment_binding(0, curr_image);
-            render_graph->get_node(result_pass_name)->g_set_framebuffer_size(glm::uvec2(rc_resolution_w, rc_resolution_h));
+            render_graph->Get_Node(result_pass_name)->G_Set_Color_Image_Attachment_Binding(0, curr_image);
+            render_graph->Get_Node(result_pass_name)->G_Set_Framebuffer_Size(glm::uvec2(rc_resolution_w, rc_resolution_h));
         });
 		auto result_render_op = new std::function<void()>(
 		    [this]() {
 			    auto &render_node = render_graph->render_nodes.at(result_pass_name);
-			    render_node->g_set_storage_image_array("painting_layers", painting_layers);
-			    render_node->g_set_storage_image_array("radiances", radiances_images);
-			    render_node->g_set_sampler("test_image", test_image->image_view_handle.get());
-			    render_node->g_set_sampler_array("sprite_anims", test_sprite_anim->images_frames);
-			    render_node->g_set_buffer("sprite_info", test_sprite_anim->animation_info);
-			    render_node->g_set_sampler_array("mat_textures",
-			                                  background_materials.at(material_index_selected)->convert_textures_to_vec());
-			    render_node->g_set_buffer("light_info", light);
-			    render_node->g_set_buffer("r_configs_uniform", r_configs);
+			    render_node->G_Set_Storage_Image_Array("painting_layers", painting_layers);
+			    render_node->G_Set_Storage_Image_Array("radiances", radiances_images);
+			    render_node->G_Set_Sampler("test_image", test_image->image_view_handle.get());
+			    render_node->G_Set_Sampler_Array("sprite_anims", test_sprite_anim->images_frames);
+			    render_node->G_Set_Buffer("Sprite_Info", test_sprite_anim->animation_info);
+			    render_node->G_Set_Sampler_Array("mat_textures",
+			                                  background_materials.at(material_index_selected)->Convert_Textures_To_Vec());
+			    render_node->G_Set_Buffer("Light_Info", light);
+			    render_node->G_Set_Buffer("R_Configs_Uniform", r_configs);
 
 			    vk::DeviceSize offset = 0;
-			    render_node->get_curr_cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
-			    render_node->get_curr_cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0, vk::IndexType::eUint32);
+			    render_node->Get_Curr_Cmd().bindVertexBuffers(0, 1, &quad_vert_buffer_ref->buffer_handle.get(), &offset);
+			    render_node->Get_Curr_Cmd().bindIndexBuffer(quad_index_buffer_ref->buffer_handle.get(), 0, vk::IndexType::eUint32);
 
-			    render_node->get_curr_cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
+			    render_node->Get_Curr_Cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
 			                                           vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			                                           0, sizeof(rc_pc), &rc_pc);
 
-			    render_node->get_curr_cmd().drawIndexed(vertex_2d::get_quad_indices().size(), 1, 0,
+			    render_node->Get_Curr_Cmd().drawIndexed(Vertex_2d::Get_Quad_Indices().size(), 1, 0,
 			                                         0, 0);
-			    test_sprite_anim->use_frame();
+			    test_sprite_anim->Use_Frame();
 		    });
-		render_graph->get_node(result_pass_name)->g_set_render_operation(result_render_op);
-		render_graph->get_node(result_pass_name)->add_pre_rendering_task(result_task);
+		render_graph->Get_Node(result_pass_name)->G_Set_Render_Operation(result_render_op);
+		render_graph->Get_Node(result_pass_name)->Add_Pre_Rendering_Task(result_task);
 	}
 
-	void reload_shaders() override
+	void Reload_Shaders() override
 	{
-		auto *painting_node = render_graph->get_node(painting_pass_name);
-		painting_node->g_recreate_resources();
+		auto *painting_node = render_graph->Get_Node(painting_pass_name);
+		painting_node->G_Recreate_Resources();
 		for (int i = 0; i < cascades_info.cascade_count; ++i)
 		{
-			auto *gen_node = render_graph->get_node(probes_gen_pass_names[i]);
-			gen_node->g_recreate_resources();
+			auto *gen_node = render_graph->Get_Node(probes_gen_pass_names[i]);
+			gen_node->G_Recreate_Resources();
 		}
-		auto *output_node = render_graph->get_node(r_cascades_pass_name);
-		output_node->g_recreate_resources();
+		auto *output_node = render_graph->Get_Node(r_cascades_pass_name);
+		output_node->G_Recreate_Resources();
 		for (int i = cascades_info.cascade_count - 2; i >= 0; i--)
 		{
 			std::string name      = r_merge_pass_name + "_" + std::to_string(i);
-			auto       *merge_node = render_graph->get_node(name);
-			merge_node->g_recreate_resources();
+			auto       *merge_node = render_graph->Get_Node(name);
+			merge_node->G_Recreate_Resources();
 		}
-		auto *result_node = render_graph->get_node(result_pass_name);
-		result_node->g_recreate_resources();
+		auto *result_node = render_graph->Get_Node(result_pass_name);
+		result_node->G_Recreate_Resources();
 	}
 
-	engine::core           *core;
-	engine::render_graph    *render_graph;
-	::window_provider *window_provider;
+	engine::Core           *core;
+	engine::Render_Graph    *render_graph;
+	::Window_Provider *window_provider;
 
 	std::string painting_pass_name  = "PaintingPass";
 	std::string r_cascades_pass_name = "rCascadesPass";
 	std::string r_merge_pass_name    = "rMergePass";
 	std::string result_pass_name    = "resultPass";
 
-	shader *result_vert_shader;
-	shader *result_frag_shader;
+	Shader *result_vert_shader;
+	Shader *result_frag_shader;
 
-	shader                  *merge_vert_shader;
-	shader                  *merge_frag_shader;
-	std::vector<engine::image_view *> radiances_images;
+	Shader                  *merge_vert_shader;
+	Shader                  *merge_frag_shader;
+	std::vector<engine::Image_View *> radiances_images;
 
-	shader *vert_shader;
-	shader *frag_shader;
+	Shader *vert_shader;
+	Shader *frag_shader;
 
 	std::vector<std::string> probes_gen_pass_names;
-	shader                  *probes_vert_shader;
-	shader                  *probes_frag_shader;
-	std::vector<engine::image_view *> cascades_attachments_images_views;
+	Shader                  *probes_vert_shader;
+	Shader                  *probes_frag_shader;
+	std::vector<engine::Image_View *> cascades_attachments_images_views;
 
-	shader                  *paint_comp_shader;
-	std::vector<engine::image_view *> painting_layers;
-	std::vector<rendering::material *>  background_materials;
+	Shader                  *paint_comp_shader;
+	std::vector<engine::Image_View *> painting_layers;
+	std::vector<rendering::Material *>  background_materials;
 	int                      material_index_selected = 0;
-	engine::image_shipper            *test_image;
+	engine::Image_Shipper            *test_image;
 
-	engine::buffer *quad_vert_buffer_ref;
-	engine::buffer *quad_index_buffer_ref;
+	engine::Buffer *quad_vert_buffer_ref;
+	engine::Buffer *quad_index_buffer_ref;
 
-	animator_2d *test_sprite_anim;
+	Animator_2d *test_sprite_anim;
 
-	directional_light        light{glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, 0.0, 1.0), 0.01f};
-	painting_pc              painting_pc;
-	rc_pc                    rc_pc;
-	radiance_cascades_configs r_configs{};
-	probes_gen_pc             probes_gen_pc;
-	cascades_info            cascades_info;
+	Directional_Light        light{glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, 0.0, 1.0), 0.01f};
+	Painting_Pc              painting_pc;
+	Rc_Pc                    rc_pc;
+	Radiance_Cascades_Configs r_configs{};
+	Probes_Gen_Pc             probes_gen_pc;
+	Cascades_Info            cascades_info;
 	int                     rc_resolution_w = 1024;
 	int                     rc_resolution_h = 1024;
 };

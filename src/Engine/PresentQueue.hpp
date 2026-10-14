@@ -8,24 +8,24 @@
 
 namespace engine
 {
-struct present_queue
+struct Present_Queue
 {
   public:
-	present_queue(engine::core *core, window_desc window_desc, uint32_t images_count, vk::PresentModeKHR preferred_mode, glm::uvec2 window_size)
+	Present_Queue(engine::Core *core, Window_Desc window_desc, uint32_t images_count, vk::PresentModeKHR preferred_mode, glm::uvec2 window_size)
 	{
 		this->core                = core;
-		this->swap_chain           = core->create_swapchain(preferred_mode, images_count, window_desc, window_size);
-		this->swapchain_image_views = swap_chain->get_image_views();
+		this->swap_chain           = core->Create_Swapchain(preferred_mode, images_count, window_desc, window_size);
+		this->swapchain_image_views = swap_chain->Get_Image_Views();
 		this->swapchain_rect       = vk::Rect2D(vk::Offset2D(), swap_chain->extent);
 		this->image_index          = -1;
 	}
-	engine::image_view *acquire_image(vk::Semaphore signal_semaphore)
+	engine::Image_View *Acquire_Image(vk::Semaphore signal_semaphore)
 	{
-		auto res         = swap_chain->acquire_next_image(signal_semaphore);
+		auto res         = swap_chain->Acquire_Next_Image(signal_semaphore);
 		this->image_index = res.value;
 		return swapchain_image_views[image_index];
 	}
-	void present_image(vk::Semaphore wait_semaphore)
+	void Present_Image(vk::Semaphore wait_semaphore)
 	{
 		vk::SwapchainKHR swapchains[]     = {swap_chain.get()->swapchain_handle.get()};
 		vk::Semaphore    wait_semaphores[] = {wait_semaphore};
@@ -38,65 +38,65 @@ struct present_queue
 		                       .setWaitSemaphoreCount(1)
 		                       .setPWaitSemaphores(wait_semaphores);
 
-		auto res = core->queue_worker_manager->get_worker_queue("Present")->queue_handle.presentKHR(present_info);
+		auto res = core->queue_worker_manager->Get_Worker_Queue("Present")->queue_handle.presentKHR(present_info);
 	}
 
-	vk::Extent2D get_image_size()
+	vk::Extent2D Get_Image_Size()
 	{
 		return swap_chain.get()->extent;
 	}
-	engine::core                      *core;
-	std::unique_ptr<engine::swap_chain> swap_chain;
-	std::vector<engine::image_view *>   swapchain_image_views;
+	engine::Core                      *core;
+	std::unique_ptr<engine::Swap_Chain> swap_chain;
+	std::vector<engine::Image_View *>   swapchain_image_views;
 	uint32_t                   image_index;
 	vk::Rect2D                 swapchain_rect;
 };
 
-struct in_flight_queue
+struct In_Flight_Queue
 {
-	in_flight_queue(engine::core *core, engine::render_graph *render_graph, window_desc window_desc, uint32_t inflight_count, vk::PresentModeKHR preferred_mode, glm::uvec2 window_size)
+	In_Flight_Queue(engine::Core *core, engine::Render_Graph *render_graph, Window_Desc window_desc, uint32_t inflight_count, vk::PresentModeKHR preferred_mode, glm::uvec2 window_size)
 	{
 		this->core        = core;
 		this->render_graph = render_graph;
-		presentation_queue.reset(new engine::present_queue(this->core, window_desc, inflight_count, preferred_mode, window_size));
+		presentation_queue.reset(new engine::Present_Queue(this->core, window_desc, inflight_count, preferred_mode, window_size));
 
-		core->queue_worker_manager->allocate_cmds(inflight_count);
+		core->queue_worker_manager->Allocate_Cmds(inflight_count);
 
 		for (int frame_index = 0; frame_index < inflight_count; frame_index++)
 		{
-			engine::frame_resources frame;
-			frame.inflight_fence              = core->create_fence(true);
-			frame.image_acquired_semaphore     = core->create_vulkan_semaphore();
-			frame.rendering_finished_semaphore = core->create_vulkan_semaphore();
+			engine::Frame_Resources frame;
+			frame.inflight_fence              = core->Create_Fence(true);
+			frame.image_acquired_semaphore     = core->Create_Vulkan_Semaphore();
+			frame.rendering_finished_semaphore = core->Create_Vulkan_Semaphore();
 			frame_state.push_back(std::move(frame));
 		}
 		frame_index = 0;
-		core->queue_worker_manager->set_frame_index(frame_index);
+		core->queue_worker_manager->Set_Frame_Index(frame_index);
 	}
-	void begin_frame()
+	void Begin_Frame()
 	{
 		auto &curr_frame = frame_state[frame_index];
 		{
-			core->wait_for_fence(curr_frame.inflight_fence.get());
-			core->reset_fence(curr_frame.inflight_fence.get());
+			core->Wait_For_Fence(curr_frame.inflight_fence.get());
+			core->Reset_Fence(curr_frame.inflight_fence.get());
 		}
 		{
-			current_swapchain_image_view = presentation_queue->acquire_image(curr_frame.image_acquired_semaphore.get());
+			current_swapchain_image_view = presentation_queue->Acquire_Image(curr_frame.image_acquired_semaphore.get());
 		}
-		core->queue_worker_manager->begin_cmds();
+		core->queue_worker_manager->Begin_Cmds();
 		render_graph->current_back_buffer_swapchain = current_swapchain_image_view;
 		render_graph->frame_index                 = frame_index;
 		// add pass info from my data
 	}
 	
-	void sync_queues()
+	void Sync_Queues()
 	{
 		auto &curr_frame = frame_state[frame_index];
 		for (int i = 0; i < render_graph->sorted_queue_batches.size(); ++i)
 		{
 			if (render_graph->sorted_queue_batches.size() == 1)
 			{
-				auto                  *queue_ref           = render_graph->core->queue_worker_manager->get_worker_queue(render_graph->sorted_queue_batches[0].queue_name);
+				auto                  *queue_ref           = render_graph->core->queue_worker_manager->Get_Worker_Queue(render_graph->sorted_queue_batches[0].queue_name);
 				vk::Semaphore          wait_semaphores[]   = {curr_frame.image_acquired_semaphore.get()};
 				vk::PipelineStageFlags wait_stages[]       = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 				vk::Semaphore          signal_semaphores[] = {curr_frame.rendering_finished_semaphore.get()};
@@ -113,14 +113,14 @@ struct in_flight_queue
 				queue_ref->queue_handle.submit({submit_info}, curr_frame.inflight_fence.get());
 				break;
 			}
-			auto *queue_ref = render_graph->core->queue_worker_manager->get_worker_queue(render_graph->sorted_queue_batches[i].queue_name);
+			auto *queue_ref = render_graph->core->queue_worker_manager->Get_Worker_Queue(render_graph->sorted_queue_batches[i].queue_name);
 			if (i == 0)
 			{
 				//in case the next queue is cuda we need to signal that queue
-				worker_queue* queue_to_signal_ref = queue_ref;
+				Worker_Queue* queue_to_signal_ref = queue_ref;
 				if (render_graph->sorted_queue_batches[i + 1].queue_name == "CUDA")
 				{
-					queue_to_signal_ref = render_graph->core->queue_worker_manager->get_worker_queue(render_graph->sorted_queue_batches[i + 1].queue_name);
+					queue_to_signal_ref = render_graph->core->queue_worker_manager->Get_Worker_Queue(render_graph->sorted_queue_batches[i + 1].queue_name);
 				}
 				assert(queue_ref->name != "CUDA" && "First queue must never be cuda");
 				vk::Semaphore          wait_semaphores[] = {curr_frame.image_acquired_semaphore.get()};
@@ -147,7 +147,7 @@ struct in_flight_queue
 			}
 			if (i == render_graph->sorted_queue_batches.size() - 1)
 			{
-				worker_queue *last_queue_ref = render_graph->core->queue_worker_manager->get_worker_queue(render_graph->sorted_queue_batches[i - 1].queue_name);
+				Worker_Queue *last_queue_ref = render_graph->core->queue_worker_manager->Get_Worker_Queue(render_graph->sorted_queue_batches[i - 1].queue_name);
 				assert(queue_ref->name != "CUDA" && "Last queue must never be cuda");
 				vk::Semaphore          wait_semaphores[] = {last_queue_ref->timeline_sem.get()};
 				vk::PipelineStageFlags wait_stages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
@@ -172,20 +172,20 @@ struct in_flight_queue
 				continue;
 			}
 
-			worker_queue *last_queue_ref = render_graph->core->queue_worker_manager->get_worker_queue(render_graph->sorted_queue_batches[i - 1].queue_name);
+			Worker_Queue *last_queue_ref = render_graph->core->queue_worker_manager->Get_Worker_Queue(render_graph->sorted_queue_batches[i - 1].queue_name);
 			if (queue_ref->name == "CUDA")
 			{
 				// this is the only context where cuda queues should appear
-				render_graph->sorted_queue_batches[i].execute_cuda(core);
+				render_graph->sorted_queue_batches[i].Execute_Cuda(core);
 			}
 			else
 			{
 				
 				//in case the next queue is cuda we need to signal that queue
-				worker_queue* queue_to_signal_ref = queue_ref;
+				Worker_Queue* queue_to_signal_ref = queue_ref;
 				if (render_graph->sorted_queue_batches[i + 1].queue_name == "CUDA")
 				{
-					queue_to_signal_ref = render_graph->core->queue_worker_manager->get_worker_queue(render_graph->sorted_queue_batches[i + 1].queue_name);
+					queue_to_signal_ref = render_graph->core->queue_worker_manager->Get_Worker_Queue(render_graph->sorted_queue_batches[i + 1].queue_name);
 				}
 				vk::Semaphore          wait_semaphores[] = {last_queue_ref->timeline_sem.get()};
 				vk::PipelineStageFlags wait_stages[]     = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
@@ -212,25 +212,25 @@ struct in_flight_queue
 				queue_ref->queue_handle.submit({submit_info});
 			}
 		}
-		presentation_queue->present_image(curr_frame.rendering_finished_semaphore.get());
+		presentation_queue->Present_Image(curr_frame.rendering_finished_semaphore.get());
 	}
 
-	void end_frame()
+	void End_Frame()
 	{
 
 		std::vector<std::string> queue_names;
 
-		transition_image(current_swapchain_image_view->image_metadata, present, current_swapchain_image_view->get_subresource_range(),
+		Transition_Image(current_swapchain_image_view->image_metadata, Present, current_swapchain_image_view->Get_Subresource_Range(),
 		                render_graph->sorted_queue_batches.back().command_buffer);
 
-		core->queue_worker_manager->end_cmds();
+		core->queue_worker_manager->End_Cmds();
 		
-		sync_queues();
+		Sync_Queues();
 		
 		frame_index = (frame_index + 1) % frame_state.size();
-		core->queue_worker_manager->set_frame_index(frame_index);
+		core->queue_worker_manager->Set_Frame_Index(frame_index);
 	}
-	void begin_parallel_threads()
+	void Begin_Parallel_Threads()
 	{
 		for (auto &worker : core->queue_worker_manager.get()->workers_queues)
 		{
@@ -239,15 +239,15 @@ struct in_flight_queue
 				continue;
 			}
 			std::function<void()> worker_start_task([&worker, this] {
-				// worker.second.command_buffers = std::move(core->allocate_command_buffers(worker.second.worker_command_pool.get(), 1));
+				// worker.second.command_buffers = std::Move(core->Allocate_Command_Buffers(worker.second.worker_command_pool.get(), 1));
 				// auto buffer_begin_info         = vk::CommandBufferBeginInfo()
 				//                            .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 			});
-			worker.second.task_threat.add_pre_rendering_task(worker_start_task);
+			worker.second.task_threat.Add_Pre_Rendering_Task(worker_start_task);
 		}
 	}
 
-	void end_parallel_threads()
+	void End_Parallel_Threads()
 	{
 		for (auto &worker : core->queue_worker_manager.get()->workers_queues)
 		{
@@ -257,17 +257,17 @@ struct in_flight_queue
 			}
 			std::function<void()> worker_start_task([&worker, this] {
 			});
-			worker.second.task_threat.add_pre_rendering_task(worker_start_task);
+			worker.second.task_threat.Add_Pre_Rendering_Task(worker_start_task);
 		}
 	}
 
-	std::vector<engine::frame_resources> frame_state;
+	std::vector<engine::Frame_Resources> frame_state;
 	size_t                      frame_index;
 
-	engine::core                         *core;
-	engine::render_graph                  *render_graph;
-	std::unique_ptr<engine::present_queue> presentation_queue;
-	engine::image_view                    *current_swapchain_image_view;
+	engine::Core                         *core;
+	engine::Render_Graph                  *render_graph;
+	std::unique_ptr<engine::Present_Queue> presentation_queue;
+	engine::Image_View                    *current_swapchain_image_view;
 };
 
 }        // namespace engine

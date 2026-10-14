@@ -26,42 +26,42 @@ CONST int windows_height = 1024;
 #define ENGINE_ENABLE_DEBUGGING
 
 
-void create_renderers(engine::core* core, ::window_provider* window_provider, std::map<std::string, std::unique_ptr<rendering::base_renderer>>& renderers)
+void Create_Renderers(engine::Core* core, ::Window_Provider* window_provider, std::map<std::string, std::unique_ptr<rendering::Base_Renderer>>& renderers)
 {
-    renderers.try_emplace("ClusterRenderer", std::make_unique<rendering::cluster_renderer>(
+    renderers.try_emplace("ClusterRenderer", std::make_unique<rendering::Cluster_Renderer>(
     core, window_provider));
-    rendering::cluster_renderer* cluster_renderer = dynamic_cast<rendering::cluster_renderer*>(renderers.at("ClusterRenderer").get());
-    cluster_renderer->set_render_operation();
+    rendering::Cluster_Renderer* cluster_renderer = dynamic_cast<rendering::Cluster_Renderer*>(renderers.at("ClusterRenderer").get());
+    cluster_renderer->Set_Render_Operation();
 
-	renderers.try_emplace("CFDRenderer", std::make_unique<rendering::cfd_renderer>(core, window_provider));
-	rendering::cfd_renderer* cfd_renderer = dynamic_cast<rendering::cfd_renderer*>(renderers.at("CFDRenderer").get());
-	cfd_renderer->set_render_operation();
+	renderers.try_emplace("CFDRenderer", std::make_unique<rendering::Cfd_Renderer>(core, window_provider));
+	rendering::Cfd_Renderer* cfd_renderer = dynamic_cast<rendering::Cfd_Renderer*>(renderers.at("CFDRenderer").get());
+	cfd_renderer->Set_Render_Operation();
 
-    // renderers.try_emplace("HairRenderer", std::make_unique<rendering::hair_renderer>(core, window_provider));
-    // rendering::hair_renderer* hair_renderer = dynamic_cast<rendering::hair_renderer*>(renderers.at("HairRenderer").get());
-    // hair_renderer->set_render_operation();
+    // renderers.try_emplace("HairRenderer", std::make_unique<rendering::Hair_Renderer>(core, window_provider));
+    // rendering::Hair_Renderer* hair_renderer = dynamic_cast<rendering::Hair_Renderer*>(renderers.at("HairRenderer").get());
+    // hair_renderer->Set_Render_Operation();
     //
-    // renderers.try_emplace("GSRenderer", std::make_unique<rendering::gs_renderer>(core, window_provider));
-    // rendering::gs_renderer* gs_renderer = dynamic_cast<rendering::gs_renderer*>(renderers.at("GSRenderer").get());
-    // gs_renderer->set_render_operation();
+    // renderers.try_emplace("GSRenderer", std::make_unique<rendering::Gs_Renderer>(core, window_provider));
+    // rendering::Gs_Renderer* gs_renderer = dynamic_cast<rendering::Gs_Renderer*>(renderers.at("GSRenderer").get());
+    // gs_renderer->Set_Render_Operation();
     
-    // renderers.try_emplace("FlatRenderer", std::make_unique<rendering::flat_renderer>(core, window_provider));
-    // rendering::flat_renderer* flat_renderer = dynamic_cast<rendering::flat_renderer*>(renderers.at("FlatRenderer").get());
-    // flat_renderer->set_render_operation();
+    // renderers.try_emplace("FlatRenderer", std::make_unique<rendering::Flat_Renderer>(core, window_provider));
+    // rendering::Flat_Renderer* flat_renderer = dynamic_cast<rendering::Flat_Renderer*>(renderers.at("FlatRenderer").get());
+    // flat_renderer->Set_Render_Operation();
 
 
     //
-    // renderers.try_emplace("GIRenderer", std::make_unique<rendering::gi_renderer>(core, window_provider));
-    // rendering::gi_renderer* gi_renderer = dynamic_cast<rendering::gi_renderer*>(renderers.at("GIRenderer").get());
-    // gi_renderer->set_render_operation();
+    // renderers.try_emplace("GIRenderer", std::make_unique<rendering::Gi_Renderer>(core, window_provider));
+    // rendering::Gi_Renderer* gi_renderer = dynamic_cast<rendering::Gi_Renderer*>(renderers.at("GIRenderer").get());
+    // gi_renderer->Set_Render_Operation();
 }
-void run(::window_provider* window_provider)
+void Run(::Window_Provider* window_provider)
 {
 	CodeCuda::C_InitEngine();
 	
     int image_count = 3;
 
-    engine::window_desc window_desc = {};
+    engine::Window_Desc window_desc = {};
     window_desc.h_instance = GetModuleHandle(NULL);
     window_desc.h_wnd = glfwGetWin32Window(window_provider->window);
 	
@@ -73,110 +73,110 @@ void run(::window_provider* window_provider)
     const char* glfw_extensions[] = {"VK_KHR_surface", "VK_KHR_win32_surface"};
     uint32_t glfw_extension_count = sizeof(glfw_extensions) / sizeof(glfw_extensions[0]);
 
-    std::unique_ptr<engine::core> core = std::make_unique<engine::core>(
+    std::unique_ptr<engine::Core> core = std::make_unique<engine::Core>(
         glfw_extensions, glfw_extension_count, &window_desc, enable_debugging);
 	
 
-    std::unique_ptr<engine::render_graph> render_graph = core->create_render_graph();
+    std::unique_ptr<engine::Render_Graph> render_graph = core->Create_Render_Graph();
 
-    std::unique_ptr<engine::in_flight_queue> in_flight_queue = std::make_unique<engine::in_flight_queue>(
+    std::unique_ptr<engine::In_Flight_Queue> in_flight_queue = std::make_unique<engine::In_Flight_Queue>(
         core.get(), render_graph.get(), window_desc, image_count, vk::PresentModeKHR::eMailbox,
-        window_provider->get_window_size());
+        window_provider->Get_Window_Size());
 
-    engine::resources_manager* resources_manager = engine::resources_manager::get_instance(core.get());
+    engine::Resources_Manager* resources_manager = engine::Resources_Manager::Get_Instance(core.get());
     
-    render_graph->create_res_manager();
+    render_graph->Create_Res_Manager();
 	
-	rendering::rendering_res_manager* rendering_res_manager = rendering::rendering_res_manager::get_instance();
-    // rendering::ModelLoader::get_instance(core.get());
+	rendering::Rendering_Res_Manager* rendering_res_manager = rendering::Rendering_Res_Manager::Get_Instance();
+    // rendering::ModelLoader::Get_Instance(core.get());
     
-    std::map<std::string, std::unique_ptr<rendering::base_renderer>> renderers;
-    create_renderers(core.get(), window_provider, renderers);
+    std::map<std::string, std::unique_ptr<rendering::Base_Renderer>> renderers;
+    Create_Renderers(core.get(), window_provider, renderers);
 
-    std::unique_ptr<rendering::imgui_renderer> imgui_renderer =nullptr;
+    std::unique_ptr<rendering::Imgui_Renderer> imgui_renderer =nullptr;
 	
 	if (render_graph->debug_ui)
 	{
-		imgui_renderer = std::make_unique<rendering::imgui_renderer>(render_graph.get(), window_provider, renderers);
+		imgui_renderer = std::make_unique<rendering::Imgui_Renderer>(render_graph.get(), window_provider, renderers);
 	}
 	
-    std::unique_ptr<rendering::debug_renderer> debug_renderer = std::make_unique<rendering::debug_renderer>(
+    std::unique_ptr<rendering::Debug_Renderer> debug_renderer = std::make_unique<rendering::Debug_Renderer>(
         core.get(), window_provider, renderers);
 	   
-    debug_renderer->set_render_operation();
+    debug_renderer->Set_Render_Operation();
 	
-	render_graph->create_utility();
+	render_graph->Create_Utility();
 
+	rendering::Cfd_Renderer* cfd_renderer = dynamic_cast<rendering::Cfd_Renderer*>(renderers.at("CFDRenderer").get());
     //todo: error here
-    while (!window_provider->window_should_close())
+    while (!window_provider->Window_Should_Close())
     {
         //handle time and frames better
-        float time = window_provider->get_time();
+        float time = window_provider->Get_Time();
         delta_time = time - previous_time;
         previous_time = time;
-        auto profiler = engine::profiler::get_instance();
-        profiler->start_profiler();
+        auto profiler = engine::Profiler::Get_Instance();
+        profiler->Start_Profiler();
         
-        window_provider->poll_events();
+        window_provider->Poll_Events();
         {
-            glm::uvec2 window_size = window_provider->get_window_size();
+            glm::uvec2 window_size = window_provider->Get_Window_Size();
             if (core->resize_requested || window_provider->framebuffer_resized)
             {
                 std::cout << "recreated swapchain\n";
-                core->wait_idle();
+                core->Wait_Idle();
                 in_flight_queue.reset();
-                in_flight_queue = std::make_unique<engine::in_flight_queue>(
+                in_flight_queue = std::make_unique<engine::In_Flight_Queue>(
                     core.get(), render_graph.get(), window_desc, image_count, vk::PresentModeKHR::eMailbox,
                     window_size);
                 window_provider->framebuffer_resized = false;
                 core->resize_requested = false;
                 //unused for now
-             // render_graph->update_all_from_meta_data();
+             // render_graph->Update_All_From_Meta_Data();
             	//this is problematic because recreating the image right now modify the pointer location
-             render_graph->recreate_frame_resources();
+             render_graph->Recreate_Frame_Resources();
                 // render_graph->BuildRenderOperations();
              //    for (auto& renderer : renderers)
              //    {
-             //        renderer.second->set_render_operation();
+             //        renderer.second->Set_Render_Operation();
              //    }
-             //    debug_renderer->set_render_operation();
+             //    debug_renderer->Set_Render_Operation();
             }
             try
             {
                 if (ImGui::IsKeyPressed(ImGuiKey_N, false))
                 {
-                    // render_graph->resources_manager->files_manager->check_all_changes();
+                    // render_graph->resources_manager->files_manager->Check_All_Changes();
                     //unused for now
-                    // render_graph->update_all_from_meta_data();
+                    // render_graph->Update_All_From_Meta_Data();
                 }
                 if (ImGui::IsKeyPressed(ImGuiKey_R, false))
                 {
                     //each shader is handling his recompilation process.
-                    render_graph->recreate_node_pipelines();
+                    render_graph->Recreate_Node_Pipelines();
                 }
                 if (ImGui::IsKeyPressed(ImGuiKey_0, false))
                 {
-                    render_graph->debug_shaders_compilation();
+                    render_graph->Debug_Shaders_Compilation();
                 }
-
-                rendering_res_manager->update_resources();
-                core->render_graph_ref->prepare_rendering();
+                rendering_res_manager->Update_Resources();
+                core->render_graph_ref->Prepare_Rendering();
             	
-                // in_flight_queue->begin_parallel_threads();
-                in_flight_queue->begin_frame();
+                // in_flight_queue->Begin_Parallel_Threads();
+                in_flight_queue->Begin_Frame();
             	
-                core->render_graph_ref->execute_rendering();
+                core->render_graph_ref->Execute_Rendering();
                 if (imgui_renderer != nullptr)
             	{
-					profiler->add_profiler_cpu_spot(legit::Colors::alizarin, "Imgui");
-                    imgui_renderer->render_frame(core->queue_worker_manager->get_worker_queue("UI")->get_current_cmd(0),
+					profiler->Add_Profiler_Cpu_Spot(legit::Colors::alizarin, "Imgui");
+                    imgui_renderer->Render_Frame(core->queue_worker_manager->Get_Worker_Queue("UI")->Get_Current_Cmd(0),
 											   in_flight_queue->current_swapchain_image_view->image_view_handle.get());
-					profiler->end_profiler_cpu_spot("Imgui");
+					profiler->End_Profiler_Cpu_Spot("Imgui");
             	}
-                resources_manager->end_frame_dynamic_updates(render_graph->sorted_queue_batches.back().command_buffer);
-                // in_flight_queue->end_parallel_threads();
-                in_flight_queue->end_frame();
-                render_graph->end_rendering();
+                resources_manager->End_Frame_Dynamic_Updates(render_graph->sorted_queue_batches.back().command_buffer);
+                // in_flight_queue->End_Parallel_Threads();
+                in_flight_queue->End_Frame();
+                render_graph->End_Rendering();
             }
             catch (vk::OutOfDateKHRError err)
             {
@@ -184,31 +184,31 @@ void run(::window_provider* window_provider)
             }
         }
 
-        profiler->add_profiler_gpu_spot(legit::Colors::amethyst, "WaitIdle");
-        core->wait_idle();
-        profiler->end_profiler_gpu_spot("WaitIdle");
-        profiler->update_profiler();
+        profiler->Add_Profiler_Gpu_Spot(legit::Colors::amethyst, "WaitIdle");
+        core->Wait_Idle();
+        profiler->End_Profiler_Gpu_Spot("WaitIdle");
+        profiler->Update_Profiler();
     }
 	if (imgui_renderer != nullptr)
 	{
-		imgui_renderer->destroy();
+		imgui_renderer->Destroy();
 	}
-    render_graph->serialize_all();
-    engine::resources_manager::get_instance()->destroy_resources();
-    window_provider->destroy_window();
+    render_graph->Serialize_All();
+    engine::Resources_Manager::Get_Instance()->Destroy_Resources();
+    window_provider->Destroy_Window();
 	
 	CodeCuda::C_ShutDownEngine();
 }
 
 int main()
 {
-    std::unique_ptr<::window_provider> window_provider = std::make_unique<::window_provider>(
+    std::unique_ptr<::Window_Provider> window_provider = std::make_unique<::Window_Provider>(
         windows_width, windows_height, "Vulkan Engine Template");
-    window_provider->init_glfw();
+    window_provider->Init_Glfw();
 
-    run(window_provider.get());
+    Run(window_provider.get());
 
-    window_provider->terminate();
+    window_provider->Terminate();
 
     return 0;
 }

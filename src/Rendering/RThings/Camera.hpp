@@ -7,32 +7,32 @@
 
 namespace rendering
 {
-class camera
+class Camera
 {
   public:
-	struct matrices
+	struct Matrices
 	{
 		glm::mat4 perspective;
 		glm::mat4 view;
 	} matrices;
-	struct camera_properties
+	struct Camera_Properties
 	{
 		float z_near  = 0;
 		float z_far   = 0;
 		float aspect = 0;
 		float fov    = 0;
 	};
-	enum camera_mode
+	enum Camera_Mode
 	{
-		e_fixed,
-		e_free
+		E_Fixed,
+		E_Free
 	};
 
-	camera(glm::vec3 cam_pos = glm::vec3(0.0f), camera_mode mode = e_free, glm::uvec2 aspect = glm::uvec2(800, 600),
+	Camera(glm::vec3 cam_pos = glm::vec3(0.0f), Camera_Mode mode = E_Free, glm::uvec2 aspect = glm::uvec2(800, 600),
 	       glm::vec3 look_at = glm::vec3(0.0f))
 	{
-		set_look_at(look_at);
-		set_perspective(45.0f, (float) aspect.x / (float) aspect.y, 0.1f, 512.0f);
+		Set_Look_At(look_at);
+		Set_Perspective(45.0f, (float) aspect.x / (float) aspect.y, 0.1f, 512.0f);
 		this->position    = cam_pos;
 		this->current_mode = mode;
 		this->mouse_input  = glm::vec2(0.0);
@@ -46,16 +46,16 @@ class camera
 		// }
 	}
 
-	void move(float delta_time, glm::vec2 input)
+	void Move(float delta_time, glm::vec2 input)
 	{
 		position += forward * input.y * movement_speed * delta_time;
 		position += right * input.x * movement_speed * delta_time;
 	}
-	void update_cam()
+	void Update_Cam()
 	{
 		matrices.view = glm::lookAt(position, position + forward, up);
 	}
-	void rotate_camera()
+	void Rotate_Camera()
 	{
 		// todo: add input handler
 		float current_x = mouse_input.x;
@@ -98,7 +98,7 @@ class camera
 		up      = normalize(cross(right, forward));
 	}
 
-	void set_perspective(float fov, float aspect, float znear, float zfar)
+	void Set_Perspective(float fov, float aspect, float znear, float zfar)
 	{
 		matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
 		matrices.perspective[1][1] *= -1;
@@ -109,14 +109,14 @@ class camera
 		this->camera_properties.z_far   = zfar;
 	}
 
-	void set_look_at(glm::vec3 target_position)
+	void Set_Look_At(glm::vec3 target_position)
 	{
 		this->look_at  = target_position;
 		matrices.view = glm::lookAt(position,
 		                            look_at,
 		                            world_up);
 	}
-	glm::mat4 get_view_proj()
+	glm::mat4 Get_View_Proj()
 	{
 		return matrices.perspective * matrices.view;
 	}
@@ -135,11 +135,11 @@ class camera
 	float     last_y = 0;
 	float     sens  = 0.4f;
 
-	camera_properties camera_properties{};
+	Camera_Properties camera_properties{};
 
 	bool       first_mouse = true;
 	bool       inverse_y   = false;
-	camera_mode current_mode;
+	Camera_Mode current_mode;
 	float      movement_speed = 5.0f;
 };
 }        // namespace rendering

@@ -7,7 +7,7 @@
 namespace engine
 {
 
-    static vk::UniqueSurfaceKHR create_win32_surface(vk::Instance instance, window_desc window_desc)
+    static vk::UniqueSurfaceKHR Create_Win32_Surface(vk::Instance instance, Window_Desc window_desc)
     {
 
         auto surface_create_info = vk::Win32SurfaceCreateInfoKHR()

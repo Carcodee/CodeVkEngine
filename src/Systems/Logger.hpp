@@ -8,49 +8,49 @@
 
 namespace systems
 {
-enum class log_level
+enum class Log_Level
 {
-	l_none  = 0,
-	l_error = 1,
-	l_warn  = 2,
-	l_info  = 3,
-	l_debug = 4
+	L_None  = 0,
+	L_Error = 1,
+	L_Warn  = 2,
+	L_Info  = 3,
+	L_Debug = 4
 };
 
-enum class log_output
+enum class Log_Output
 {
-	console,
-	file
+	Console,
+	File
 };
 
 /**
  * Logger Class Used to Output Details of Current Application Flow
  */
-class logger
+class Logger
 {
   public:
-	void set_log_preferences(log_level    level       = log_level::l_error,
+	void Set_Log_Preferences(Log_Level    level       = Log_Level::L_Error,
 	                       std::string log_file_name = "",
-	                       log_output   output      = log_output::console)
+	                       Log_Output   output      = Log_Output::Console)
 	{
 		log_level  = level;
 		log_output = output;
 
-		if (log_output == log_output::file && !log_file_name.empty())
+		if (log_output == Log_Output::File && !log_file_name.empty())
 		{
 			log_file.open(log_file_name);
 			if (!log_file.good())
 			{
 				std::cerr << "Can't Open Log File" << std::endl;
-				log_output = log_output::console;
+				log_output = Log_Output::Console;
 			}
 		}
 	}
-	static std::shared_ptr<logger> get_instance()
+	static std::shared_ptr<Logger> Get_Instance()
 	{
 		if (logger_instance == nullptr)
 		{
-			logger_instance = std::shared_ptr<logger>(new logger());
+			logger_instance = std::shared_ptr<Logger>(new Logger());
 		}
 
 		return logger_instance;
@@ -63,7 +63,7 @@ class logger
 	 * @param message: log Message
 	 * @param message_level: log Level, log_level::DEBUG by default
 	 */
-	void log(std::string message, log_level message_level = log_level::l_debug, std::string code_file = "", int code_line = 0)
+	void Log(std::string message, Log_Level message_level = Log_Level::L_Debug, std::string code_file = "", int code_line = 0)
 	{
 		if (message_level <= log_level)
 		{
@@ -71,16 +71,16 @@ class logger
 			// Set Log Level Name
 			switch (message_level)
 			{
-				case log_level::l_debug:
+				case Log_Level::L_Debug:
 					log_type = "DEBUG: ";
 					break;
-				case log_level::l_info:
+				case Log_Level::L_Info:
 					log_type = "INFO: ";
 					break;
-				case log_level::l_warn:
+				case Log_Level::L_Warn:
 					log_type = "WARN: ";
 					break;
-				case log_level::l_error:
+				case Log_Level::L_Error:
 					log_type = "L_ERROR: ";
 					break;
 				default:
@@ -97,43 +97,43 @@ class logger
 				message = log_type + code_file + message;
 			}
 
-			log_message(message);
+			Log_Message(message);
 		}
 	}
-	log_level get_log_level(const std::string &log_level)
+	Log_Level Get_Log_Level(const std::string &log_level)
 	{
 		if (log_level == "DEBUG")
 		{
-			return log_level::l_debug;
+			return Log_Level::L_Debug;
 		}
 		else if (log_level == "INFO")
 		{
-			return log_level::l_info;
+			return Log_Level::L_Info;
 		}
 		else if (log_level == "WARN")
 		{
-			return log_level::l_error;
+			return Log_Level::L_Error;
 		}
 		else if (log_level == "L_ERROR")
 		{
-			return log_level::l_error;
+			return Log_Level::L_Error;
 		}
-		return log_level::l_none;
+		return Log_Level::L_None;
 	}
 
-	log_output get_log_output(const std::string &log_output)
+	Log_Output Get_Log_Output(const std::string &log_output)
 	{
 		if (log_output == "FILE")
 		{
-			return log_output::file;
+			return Log_Output::File;
 		}
 		// If corrupted string passed output will be on console
-		return log_output::console;
+		return Log_Output::Console;
 	}
 
-	void log_message(const std::string &message)
+	void Log_Message(const std::string &message)
 	{
-		if (log_output == log_output::file)
+		if (log_output == Log_Output::File)
 		{
 			log_file << message << std::endl;
 		}
@@ -143,10 +143,10 @@ class logger
 		}
 	}
 
-	void log_vec(const glm::vec3 vec)
+	void Log_Vec(const glm::vec3 vec)
 	{
 		std::string message = "Position: (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ", " + std::to_string(vec.z) + ")";
-		if (log_output == log_output::file)
+		if (log_output == Log_Output::File)
 		{
 			log_file << message << std::endl;
 		}
@@ -156,10 +156,10 @@ class logger
 		}
 	}
 
-	void log_vec(const glm::vec2 vec)
+	void Log_Vec(const glm::vec2 vec)
 	{
 		std::string message = "Position: (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ")";
-		if (log_output == log_output::file)
+		if (log_output == Log_Output::File)
 		{
 			log_file << message << std::endl;
 		}
@@ -170,14 +170,14 @@ class logger
 	}
 
   private:
-	log_level      log_level;
-	log_output     log_output;
+	Log_Level      log_level;
+	Log_Output     log_output;
 	std::ofstream log_file;
 
-	static std::shared_ptr<logger> logger_instance;
+	static std::shared_ptr<Logger> logger_instance;
 };
 
-std::shared_ptr<logger> logger::logger_instance = nullptr;
+std::shared_ptr<Logger> Logger::logger_instance = nullptr;
 
 }        // namespace systems
 

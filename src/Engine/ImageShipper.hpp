@@ -10,9 +10,9 @@
 
 namespace engine
 {
-    struct image_shipper
+    struct Image_Shipper
     {
-        bool set_data_from_path(const std::string &path)
+        bool Set_Data_From_Path(const std::string &path)
         {
             int width = 0, height = 0, channels = 0;
             stbi_uc* pixels_data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -30,42 +30,42 @@ namespace engine
 			return true;
         }
 
-        void set_data_raw(void* data, int width, int height, vk::DeviceSize size)
+        void Set_Data_Raw(void* data, int width, int height, vk::DeviceSize size)
         {
             this->data = data;
             image_size = {width, height};
             this->size =size;
         }
 
-        void build_image(engine::core* core, engine::sampler* sampler, uint32_t array_layers_count, uint32_t mips_count, vk::Format format, layout_patterns dst_pattern, std::string name, int32_t id, std::string queue_name = "Graphics")
+        void Build_Image(engine::Core* core, engine::Sampler* sampler, uint32_t array_layers_count, uint32_t mips_count, vk::Format format, Layout_Patterns dst_pattern, std::string name, int32_t id, std::string queue_name = "Graphics")
         {
             assert(this->data && "variable \"data\" is not set or is invalid");
-            vk::ImageUsageFlags usage = get_general_usage_flags(format);
-            vk::ImageCreateInfo create_info = engine::image::create_info2d(image_size, mips_count, array_layers_count, format, usage);
+            vk::ImageUsageFlags usage = Get_General_Usage_Flags(format);
+            vk::ImageCreateInfo create_info = engine::Image::Create_Info2d(image_size, mips_count, array_layers_count, format, usage);
             
 
-            image = std::make_unique<engine::image>(core->physical_device, core->logical_device.get(), create_info);
+            image = std::make_unique<engine::Image>(core->physical_device, core->logical_device.get(), create_info);
 
-            image_view_handle = std::make_unique<engine::image_view>(core->logical_device.get(), image->image_metadata.get(),
+            image_view_handle = std::make_unique<engine::Image_View>(core->logical_device.get(), image->image_metadata.get(),
                                                     0, mips_count, 0, array_layers_count, name, id);
 
             
-            auto command_executor = std::make_unique<execute_once_command>(core, queue_name);
-            auto command_buffer = command_executor->begin_command_buffer();
-            std::unique_ptr<engine::buffer> staged_buffer = std::make_unique<engine::buffer>(core->physical_device, core->logical_device.get(), vk::BufferUsageFlagBits::eTransferSrc,
+            auto command_executor = std::make_unique<Execute_Once_Command>(core, queue_name);
+            auto command_buffer = command_executor->Begin_Command_Buffer();
+            std::unique_ptr<engine::Buffer> staged_buffer = std::make_unique<engine::Buffer>(core->physical_device, core->logical_device.get(), vk::BufferUsageFlagBits::eTransferSrc,
                                                     vk::MemoryPropertyFlagBits::eHostVisible |
                                                     vk::MemoryPropertyFlagBits::eHostCoherent, size, 0);
             
-            void* buffer_mem_block = staged_buffer->map();
+            void* buffer_mem_block = staged_buffer->Map();
             memcpy(buffer_mem_block, this->data, size);
-            staged_buffer->unmap();
+            staged_buffer->Unmap();
             
-            transition_image(image->image_metadata.get(), transfer_dst, image_view_handle->get_subresource_range(), command_buffer);
-            copy_buffer_to_image(command_buffer, staged_buffer->buffer_handle.get(), &image_view_handle->image_metadata->image_handle,
+            Transition_Image(image->image_metadata.get(), Transfer_Dst, image_view_handle->Get_Subresource_Range(), command_buffer);
+            Copy_Buffer_To_Image(command_buffer, staged_buffer->buffer_handle.get(), &image_view_handle->image_metadata->image_handle,
                               image_size);
             
-            transition_image(image_view_handle->image_metadata, dst_pattern, image_view_handle->get_subresource_range(), command_buffer);
-            command_executor->end_command_buffer();
+            Transition_Image(image_view_handle->image_metadata, dst_pattern, image_view_handle->Get_Subresource_Range(), command_buffer);
+            command_executor->End_Command_Buffer();
 
             if (data)
             {
@@ -74,7 +74,7 @@ namespace engine
             }
             this->sampler = sampler;
         }
-        void build_cpu_image(std::string name, int32_t id, bool flip_y = false)
+        void Build_Cpu_Image(std::string name, int32_t id, bool flip_y = false)
         {
             assert(this->data && "variable \"data\" is not set or is invalid");
             image_cpu.resize(static_cast<size_t>(image_size.x) * image_size.y);
@@ -102,21 +102,21 @@ namespace engine
         	}
         }
     	
-        std::vector<glm::vec4> ship_image_cpu()
+        std::vector<glm::vec4> Ship_Image_Cpu()
         {
             return std::move(image_cpu);
         }
 
-        std::unique_ptr<engine::image> ship_image()
+        std::unique_ptr<engine::Image> Ship_Image()
         {
             return std::move(image);
         }
-        std::unique_ptr<engine::image_view> ship_image_view()
+        std::unique_ptr<engine::Image_View> Ship_Image_View()
         {
             return std::move(image_view_handle);
         }
         
-        void clear()
+        void Clear()
         {
             if (data)
             {
@@ -127,9 +127,9 @@ namespace engine
     	
         std::vector<glm::vec4> image_cpu;
     	
-        std::unique_ptr<engine::image> image;
-        std::unique_ptr<engine::image_view> image_view_handle;
-        engine::sampler* sampler = nullptr;
+        std::unique_ptr<engine::Image> image;
+        std::unique_ptr<engine::Image_View> image_view_handle;
+        engine::Sampler* sampler = nullptr;
         void* data = nullptr;
         glm::vec2 image_size{};
         vk::DeviceSize size = 0;

@@ -8,21 +8,21 @@
 namespace systems
 {
 // template singleton for imput system, why is this here? :D
-class input_system
+class Input_System
 {
-	input_system();
-	static input_system *get_instance()
+	Input_System();
+	static Input_System *Get_Instance()
 	{
 		if (instance == nullptr)
 		{
-			instance = new input_system;
+			instance = new Input_System;
 		}
 		return instance;
 	}
-	static input_system *instance;
+	static Input_System *instance;
 };
 
-input_system *input_system::instance = nullptr;
+Input_System *Input_System::instance = nullptr;
 
 }        // namespace systems
 

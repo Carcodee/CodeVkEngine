@@ -9,12 +9,12 @@ namespace engine
 {
 
 // TODO: set base configs
-static engine::attachment_info get_color_attachment_info(blend_configs blend_configs, glm::vec4 clear_col = glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
+static engine::Attachment_Info Get_Color_Attachment_Info(Blend_Configs blend_configs, glm::vec4 clear_col = glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
                                              vk::Format            format  = g_32b_format,
                                              vk::AttachmentLoadOp  load_op  = vk::AttachmentLoadOp::eClear,
                                              vk::AttachmentStoreOp store_op = vk::AttachmentStoreOp::eStore)
 {
-	engine::attachment_info vk_attachment_info;
+	engine::Attachment_Info vk_attachment_info;
 	vk_attachment_info.blend_configs = blend_configs;
 	vk_attachment_info.vk_attachment_info = vk::RenderingAttachmentInfo()
 	                                    .setImageView(nullptr)
@@ -30,9 +30,9 @@ static engine::attachment_info get_color_attachment_info(blend_configs blend_con
 	return vk_attachment_info;
 }
 
-static engine::attachment_info get_depth_attachment_info(vk::Format format = vk::Format::eD32Sfloat)
+static engine::Attachment_Info Get_Depth_Attachment_Info(vk::Format format = vk::Format::eD32Sfloat)
 {
-	engine::attachment_info vk_attachment_info;
+	engine::Attachment_Info vk_attachment_info;
 	vk_attachment_info.vk_attachment_info = vk::RenderingAttachmentInfo()
 	                                    .setImageView(nullptr)
 	                                    .setImageLayout(vk::ImageLayout::eDepthAttachmentOptimal)
@@ -44,10 +44,10 @@ static engine::attachment_info get_depth_attachment_info(vk::Format format = vk:
 	return vk_attachment_info;
 }
 
-struct dynamic_render_pass
+struct Dynamic_Render_Pass
 {
   public:
-	void set_pipeline_rendering_info(uint32_t                color_attachment_count,
+	void Set_Pipeline_Rendering_Info(uint32_t                color_attachment_count,
 	                              std::vector<vk::Format> color_formats,
 	                              vk::Format              depth_format = vk::Format::eUndefined)
 	{
@@ -65,7 +65,7 @@ struct dynamic_render_pass
 		                                  .setDepthAttachmentFormat(this->depth_format)
 		                                  .setStencilAttachmentFormat(vk::Format::eUndefined);
 	}
-	void set_render_info(std::vector<vk::RenderingAttachmentInfo> &color_attachments,
+	void Set_Render_Info(std::vector<vk::RenderingAttachmentInfo> &color_attachments,
 	                   glm::uvec2 framebuffer_size, vk::RenderingAttachmentInfo *depth_attachment)
 	{
 		for (auto &element : color_attachments)
@@ -86,7 +86,7 @@ struct dynamic_render_pass
 		}
 	}
 
-	void set_render_info_unsafe(std::vector<vk::RenderingAttachmentInfo> &color_attachments,
+	void Set_Render_Info_Unsafe(std::vector<vk::RenderingAttachmentInfo> &color_attachments,
 	                         glm::uvec2 framebuffer_size, vk::RenderingAttachmentInfo *depth_attachment)
 	{
 		for (auto &element : color_attachments)
@@ -103,7 +103,7 @@ struct dynamic_render_pass
 			render_info.setPDepthAttachment(depth_attachment);
 		}
 	}
-	void set_viewport(glm::uvec2 viewport_size, glm::uvec2 scissor_size)
+	void Set_Viewport(glm::uvec2 viewport_size, glm::uvec2 scissor_size)
 	{
 		viewport
 		    .setX(0.0f)
@@ -116,7 +116,7 @@ struct dynamic_render_pass
 		    .setOffset({0, 0})
 		    .setExtent({scissor_size.x, scissor_size.y});
 	}
-	void reset()
+	void Reset()
 	{
 		color_formats.clear();
 		depth_format                 = vk::Format::eUndefined;

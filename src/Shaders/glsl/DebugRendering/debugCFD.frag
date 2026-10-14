@@ -9,10 +9,18 @@
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
 
+layout(location = 0) in flat uint in_count;
+
 layout(location = 0) out vec4 out_color;
+
 
 void main() {
 
-    out_color = vec4(1.0, 0.0, 0.0, 1.0);
+    uint count = in_count;
+    if(count > 0){
+        out_color = vec4(1.0, 0.0, 0.0, 0.8);
+    }else{
+        out_color = vec4(0.5, 0.5, 0.0, 0.4);
+    }
 
 }

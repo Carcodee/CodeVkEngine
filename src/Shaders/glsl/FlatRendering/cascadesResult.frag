@@ -14,7 +14,7 @@ layout (location = 0) in vec2 text_coord;
 layout(location = 0) out vec4 out_color;
 
 
-layout(push_constant) uniform push_constants{
+layout(push_constant) uniform Push_Constants{
     int cascades_count;
     int probe_size_px;
     int interval_count;
@@ -32,18 +32,18 @@ layout (set = 0, binding = 3) uniform sampler2D test_image;
 layout (set = 0, binding = 4) uniform sampler2D sprite_anims[];
 layout (set = 0, binding = 5) uniform sampler2D mat_textures[];
 
-layout (set = 0, binding = 6, scalar) buffer sprite_info{
-    u_sprite_animation_info sprite_anim_info;
+layout (set = 0, binding = 6, scalar) buffer Sprite_Info{
+    U_Sprite_Animation_Info sprite_anim_info;
 };
 
 
-layout (set = 0, binding = 7, scalar) uniform light_info{
+layout (set = 0, binding = 7, scalar) uniform Light_Info{
     vec3 pos;
     vec3 col;
     float intensity;
 }ubo;
-layout (set = 0, binding = 8, scalar) uniform r_configs_uniform{
-    u_radiance_cascades_configs configs;
+layout (set = 0, binding = 8, scalar) uniform R_Configs_Uniform{
+    U_Radiance_Cascades_Configs configs;
 }r_configs;
 
 
@@ -101,8 +101,8 @@ void main() {
     vec4 debug= imageLoad(painting_layers[2], coord);
 
     int size = sprite_anim_info.rows * sprite_anim_info.cols;
-    vec2 sprite_pos = u_get_sprite_coord_in_atlas(sprite_anim_info.current_frame, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(gl_FragCoord.xy), f_size);
-    vec2 sprite_pos1 = u_get_sprite_coord_in_atlas((sprite_anim_info.current_frame + 1) % size, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(gl_FragCoord.xy), f_size);
+    vec2 sprite_pos = U_Get_Sprite_Coord_In_Atlas(sprite_anim_info.current_frame, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(gl_FragCoord.xy), f_size);
+    vec2 sprite_pos1 = U_Get_Sprite_Coord_In_Atlas((sprite_anim_info.current_frame + 1) % size, sprite_anim_info.sprite_size_px, sprite_anim_info.rows, sprite_anim_info.cols, ivec2(gl_FragCoord.xy), f_size);
     vec4 sprite_col = texture(sprite_anims[0], vec2(sprite_pos));
     vec4 sprite_col1 = texture(sprite_anims[0], vec2(sprite_pos1));
     
@@ -114,7 +114,7 @@ void main() {
     vec4 ao = texture(mat_textures[AO_OFFSET], text_coord) * 2.0;
     vec4 height = texture(mat_textures[HEIGHT_OFFSET], text_coord);
 
-    u_radiance_cascades_configs configs = r_configs.configs;
+    U_Radiance_Cascades_Configs configs = r_configs.configs;
 //    out_color = (base_col * ao.x * height.x) * vec4(diff, 1.0);
     float normal_map_combined =pow(float(configs.normal_map_pow), (normal_map.x * normal_map.y * normal_map.z));
     float specular = pow(configs.specular_pow ,max(0.0, normal_map_combined));

@@ -75,11 +75,11 @@ for /r slang/ %%I in (*.slang) do (
     @echo compiling slang %%I
     @echo To !out_name!
     
-    findstr /c:"main_cs" "%%I" >nul && (
-        %slang_comp_exe% -target spirv -profile glsl_450 -preserve-params -stage compute -entry main_cs "%%I" -o "!out_name!"_CS.spv || set "error_found=1"
+    findstr /c:"Main_Cs" "%%I" >nul && (
+        %slang_comp_exe% -target spirv -profile glsl_450 -preserve-params -stage compute -entry Main_Cs "%%I" -o "!out_name!"_CS.spv || set "error_found=1"
     ) || (
-        %slang_comp_exe% -target spirv -profile glsl_450 -preserve-params -stage vertex -entry main_vs "%%I" -o "!out_name!"_VS.spv || set "error_found=1"
-        %slang_comp_exe% -target spirv -profile glsl_450 -preserve-params -stage fragment -entry main_fs "%%I" -o "!out_name!"_FS.spv || set "error_found=1"
+        %slang_comp_exe% -target spirv -profile glsl_450 -preserve-params -stage vertex -entry Main_Vs "%%I" -o "!out_name!"_VS.spv || set "error_found=1"
+        %slang_comp_exe% -target spirv -profile glsl_450 -preserve-params -stage fragment -entry Main_Fs "%%I" -o "!out_name!"_FS.spv || set "error_found=1"
     )
 )
 if defined error_found (

@@ -12,7 +12,7 @@ layout (set = 0, binding = 2) uniform sampler2D textures[];
 
 layout(set = 0, binding = 3, rgba32f) uniform image2D storages_imgs[];
 
-layout(set = 0, binding = 4, std140) uniform camera{
+layout(set = 0, binding = 4, std140) uniform Camera{
     mat4 model;
     mat4 proj_view;
 }c_props_uniform;

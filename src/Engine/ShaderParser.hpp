@@ -20,23 +20,23 @@
 
 namespace engine
 {
-    enum shader_stage
+    enum Shader_Stage
     {
-        s_vert,
-        s_frag,
-        s_tess_control,
-        s_tess_eval,
-        s_geom,
-        s_comp,
-        s_unknown
+        S_Vert,
+        S_Frag,
+        S_Tess_Control,
+        S_Tess_Eval,
+        S_Geom,
+        S_Comp,
+        S_Unknown
     };
 
-    enum shader_compiler
+    enum Shader_Compiler
     {
-        c_glsl,
-        c_slang
+        C_Glsl,
+        C_Slang
     };
-    static bool is_glsl_valid_extension(const std::string extension)
+    static bool Is_Glsl_Valid_Extension(const std::string extension)
     {
         if (extension == ".comp" || extension == ".vert" || extension == ".frag" || extension == ".tesc" || extension ==
             ".tese" || extension == ".geom" )
@@ -46,7 +46,7 @@ namespace engine
         return false;
     }
     
-    static std::string convert_shader_path_to_spirv(const std::filesystem::path& file_path, shader_stage stage)
+    static std::string Convert_Shader_Path_To_Spirv(const std::filesystem::path& file_path, Shader_Stage stage)
     {
         assert(
             (file_path.extension() == ".slang" ||
@@ -59,7 +59,7 @@ namespace engine
                 file_path.extension() == ".spv") && "Path is not a shader");
         if (file_path.extension().string() == ".spv")
         {
-            systems::logger::get_instance()->log_message("Shader is already spv no conversion needed");
+            systems::Logger::Get_Instance()->Log_Message("Shader is already spv no conversion needed");
             return file_path.string();
         }
         std::filesystem::path shader_path(file_path);
@@ -83,58 +83,58 @@ namespace engine
                 std::string extension = ".slang";
                 switch (stage)
                 {
-                case s_vert:
+                case S_Vert:
                     extension += "_VS.spv";
                     break;
-                case s_frag:
+                case S_Frag:
                     extension += "_FS.spv";
                     break;
-                case s_tess_control:
+                case S_Tess_Control:
                     assert(false && "Unsupported slang stage");
                     extension += "_TESC.spv";
                     break;
-                case s_tess_eval:
+                case S_Tess_Eval:
                     assert(false && "Unsupported slang stage");
                     extension += "_TESE.spv";
                     break;
-                case s_geom:
+                case S_Geom:
                     extension += "_GEOM.spv";
                     break;
-                case s_comp:
+                case S_Comp:
                     extension += "_CS.spv";
                     break;
-                case s_unknown:
+                case S_Unknown:
                     assert(false && "invalid stage");
                     break;
                 }
                 spirv_path /= file_name_no_ext + extension;
             }
-            else if (dirs_parts.string() == filename && is_glsl_valid_extension(dirs_parts.extension().string()))
+            else if (dirs_parts.string() == filename && Is_Glsl_Valid_Extension(dirs_parts.extension().string()))
             {
                 int first_dot_pos = dirs_parts.string().find_first_of('.');
                 std::string file_name_no_ext = dirs_parts.string().substr(0, first_dot_pos);
                 std::string extension = dirs_parts.extension().string();
                 switch (stage)
                 {
-                case s_vert:
+                case S_Vert:
                     extension += ".spv";
                     break;
-                case s_frag:
+                case S_Frag:
                     extension += ".spv";
                     break;
-                case s_tess_control:
+                case S_Tess_Control:
                     extension += ".spv";
                     break;
-                case s_tess_eval:
+                case S_Tess_Eval:
                     extension += ".spv";
                     break;
-                case s_geom:
+                case S_Geom:
                     extension += ".spv";
                     break;
-                case s_comp:
+                case S_Comp:
                     extension += ".spv";
                     break;
-                case s_unknown:
+                case S_Unknown:
                     assert(false && "invalid stage");
                     break;
                 }
@@ -148,7 +148,7 @@ namespace engine
         return spirv_path.string();
     }
         
-    static std::string convert_spirv_to_shader_path(const std::filesystem::path& file_path, shader_stage stage)
+    static std::string Convert_Spirv_To_Shader_Path(const std::filesystem::path& file_path, Shader_Stage stage)
     {
         assert(file_path.extension() == ".spv" && "Path is not spirv");
         bool glsl = false;
@@ -175,25 +175,25 @@ namespace engine
                     {
                         switch (stage)
                         {
-                        case s_vert:
+                        case S_Vert:
                             extension = ".vert";
                             break;
-                        case s_frag:
+                        case S_Frag:
                             extension = ".frag";
                             break;
-                        case s_tess_control:
+                        case S_Tess_Control:
                             extension = ".tesc";
                             break;
-                        case s_tess_eval:
+                        case S_Tess_Eval:
                             extension = ".tese";
                             break;
-                        case s_geom:
+                        case S_Geom:
                             extension = ".geom";
                             break;
-                        case s_comp:
+                        case S_Comp:
                             extension = ".comp";
                             break;
-                        case s_unknown:
+                        case S_Unknown:
                             extension = ".invalid";
                             break;
                         }
@@ -210,28 +210,28 @@ namespace engine
         return shader_path.string();
     }
 
-    static std::vector<uint32_t> compile_slang_into_spirv(const std::string& out_file, const std::string& code,
-                                                  const std::string& entry_point, shader_stage stage)
+    static std::vector<uint32_t> Compile_Slang_Into_Spirv(const std::string& out_file, const std::string& code,
+                                                  const std::string& entry_point, Shader_Stage stage)
     {
         SlangStage slang_stage = SLANG_STAGE_NONE;
         switch (stage)
         {
-        case s_vert:
+        case S_Vert:
             slang_stage = SLANG_STAGE_VERTEX;
             break;
-        case s_frag:
+        case S_Frag:
             slang_stage = SLANG_STAGE_FRAGMENT;
             break;
-        case s_tess_control:
+        case S_Tess_Control:
             assert(false&& "unsuported stage");
-        case s_tess_eval:
+        case S_Tess_Eval:
             assert(false&& "unsuported stage");
-        case s_geom:
+        case S_Geom:
             slang_stage = SLANG_STAGE_GEOMETRY;
-        case s_comp:
+        case S_Comp:
             slang_stage = SLANG_STAGE_COMPUTE;
             break;
-        case s_unknown:
+        case S_Unknown:
             assert(false&& "unsuported stage");
             break;
         }
@@ -273,7 +273,7 @@ namespace engine
         if (spirv_code)
         {
             const char* spirv_code_data =  reinterpret_cast<const char*>(spirv_code);
-            systems::os::write_file(out_file,spirv_code_data , spirv_size);
+            systems::Os::Write_File(out_file,spirv_code_data , spirv_size);
             const uint32_t* spirv_words = reinterpret_cast<const uint32_t*>(spirv_code);
             size_t word_count = spirv_size / sizeof(uint32_t);;
             return std::vector<uint32_t>(spirv_words, spirv_words + word_count);
@@ -286,40 +286,40 @@ namespace engine
         return std::vector<uint32_t>();
     }
 
-    static std::string get_slang_entry_point(shader_stage stage)
+    static std::string Get_Slang_Entry_Point(Shader_Stage stage)
     {
         std::string entry_point = "";
         switch (stage)
         {
-        case s_vert:
-            entry_point = "main_vs";
+        case S_Vert:
+            entry_point = "Main_Vs";
             break;
-        case s_frag:
-            entry_point = "main_fs";
+        case S_Frag:
+            entry_point = "Main_Fs";
             break;
-        case s_comp:
-            entry_point = "main_cs";
+        case S_Comp:
+            entry_point = "Main_Cs";
             break;
-        case s_tess_control:
+        case S_Tess_Control:
             assert(false && "uknown stage");
             break;
-        case s_tess_eval:
+        case S_Tess_Eval:
             assert(false && "uknown stage");
             break;
-        case s_geom:
+        case S_Geom:
             entry_point = "main_gs";
             break;
-        case s_unknown:
+        case S_Unknown:
             assert(false && "uknown stage");
             break;
         }
         return entry_point;
     }
 
-    static void compile_glsl_into_spirv(const std::string& out_file, const std::string& path)
+    static void Compile_Glsl_Into_Spirv(const std::string& out_file, const std::string& path)
     {
-        std::string temp_file_path = systems::os::get_instance()->get_shaders_path() + "\\tempFile.bat";
-        systems::os::create_file_at(temp_file_path);
+        std::string temp_file_path = systems::Os::Get_Instance()->Get_Shaders_Path() + "\\tempFile.bat";
+        systems::Os::Create_File_At(temp_file_path);
 
         // Start constructing the batch file content
         std::string command = R"(@echo off
@@ -338,7 +338,7 @@ set "error_found="
         pause
 )
 )";
-        systems::os::write_file(temp_file_path, command.c_str(), command.size());
+        systems::Os::Write_File(temp_file_path, command.c_str(), command.size());
 
         int result = std::system(temp_file_path.c_str());
         if (result != 0)
@@ -348,12 +348,12 @@ set "error_found="
 
         std::remove(temp_file_path.c_str());
     }
-    class shader_parser
+    class Shader_Parser
     {
 
     public:
 
-        shader_parser(std::vector<uint32_t>& byte_code, bool slang_resource_names = false, std::string shader_name = "")
+        Shader_Parser(std::vector<uint32_t>& byte_code, bool slang_resource_names = false, std::string shader_name = "")
         {
             this->shader_name = shader_name;
             
@@ -369,26 +369,26 @@ set "error_found="
                 switch (model)
                 {
                 case spv::ExecutionModelVertex:
-                    stage = s_vert;
+                    stage = S_Vert;
                     break;
                 case spv::ExecutionModelFragment:
-                    stage = s_frag;
+                    stage = S_Frag;
                     break;
                 case spv::ExecutionModelTessellationControl:
-                    stage = s_tess_control;
+                    stage = S_Tess_Control;
                     break;
                 case spv::ExecutionModelTessellationEvaluation:
-                    stage = s_tess_eval;
+                    stage = S_Tess_Eval;
                     break;
                 case spv::ExecutionModelGeometry:
-                    stage = s_geom;
+                    stage = S_Geom;
                     break;
                 case spv::ExecutionModelGLCompute:
-                    stage = s_comp;
+                    stage = S_Comp;
                     break;
                 default:
                     std::cout << "Unknown shader stage\n";
-                    stage = s_unknown;
+                    stage = S_Unknown;
                     break;
                 }
             }
@@ -396,7 +396,7 @@ set "error_found="
 
             for (auto& resource : resources.uniform_buffers)
             {
-                std::string name = get_buffer_resource_name(glsl, resource, slang_resource_names);
+                std::string name = Get_Buffer_Resource_Name(glsl, resource, slang_resource_names);
                 uint32_t binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
                 uint32_t set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
                 bool array = false;
@@ -405,13 +405,13 @@ set "error_found="
                 {
                     array = true;
                 }
-                uniform_buffers.emplace_back(shader_resource{name, binding, set, array, vk::DescriptorType::eUniformBuffer});
+                uniform_buffers.emplace_back(Shader_Resource{name, binding, set, array, vk::DescriptorType::eUniformBuffer});
 
 
             }
              for (auto& resource : resources.storage_buffers)
             {
-                std::string name = get_buffer_resource_name(glsl, resource, slang_resource_names);
+                std::string name = Get_Buffer_Resource_Name(glsl, resource, slang_resource_names);
                 uint32_t binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
                 uint32_t set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
                 bool array = false;
@@ -420,7 +420,7 @@ set "error_found="
                 {
                     array = true;
                 }
-                storage_buffers.emplace_back(shader_resource{name, binding, set, array, vk::DescriptorType::eStorageBuffer});
+                storage_buffers.emplace_back(Shader_Resource{name, binding, set, array, vk::DescriptorType::eStorageBuffer});
             }
             for (auto& resource : resources.sampled_images)
             {
@@ -435,7 +435,7 @@ set "error_found="
                     array = true;
                 }
                 
-                sampled_images.emplace_back(shader_resource{name, binding, set, array, vk::DescriptorType::eCombinedImageSampler});
+                sampled_images.emplace_back(Shader_Resource{name, binding, set, array, vk::DescriptorType::eCombinedImageSampler});
             }
             
             for (auto& resource : resources.storage_images)
@@ -450,13 +450,13 @@ set "error_found="
                     array = true;
                 }
                 
-                storage_images.emplace_back(shader_resource{name, binding, set, array, vk::DescriptorType::eStorageImage});
+                storage_images.emplace_back(Shader_Resource{name, binding, set, array, vk::DescriptorType::eStorageImage});
             }
             
         }
 
 
-        void get_binding(std::vector<shader_resource>& resources, descriptor_layout_builder& builder)
+        void Get_Binding(std::vector<Shader_Resource>& resources, Descriptor_Layout_Builder& builder)
         {
             for (auto& resource : resources)
             {
@@ -464,11 +464,11 @@ set "error_found="
                 {
                     continue;
                 }
-                builder.add_binding(resource.binding, resource.type);
+                builder.Add_Binding(resource.binding, resource.type);
             }
         }
 
-        void get_binding(std::vector<shader_resource>& resources, std::vector<shader_resource>& unique_resources, std::set<uint32_t> unique_bindings)
+        void Get_Binding(std::vector<Shader_Resource>& resources, std::vector<Shader_Resource>& unique_resources, std::set<uint32_t> unique_bindings)
         {
             for (auto& resource : resources)
             {
@@ -480,55 +480,55 @@ set "error_found="
                 unique_resources.emplace_back(resource);
             }
         }
-        void get_layout(descriptor_layout_builder& builder)
+        void Get_Layout(Descriptor_Layout_Builder& builder)
         {
             std::set<uint32_t> repeated_bindings;
-            get_binding(sampled_images, builder);
-            get_binding(storage_images, builder);
-            get_binding(uniform_buffers, builder);
-            get_binding(storage_buffers, builder);
+            Get_Binding(sampled_images, builder);
+            Get_Binding(storage_images, builder);
+            Get_Binding(uniform_buffers, builder);
+            Get_Binding(storage_buffers, builder);
         }
 
-        void get_layout(std::vector<shader_resource>& unique_resources)
+        void Get_Layout(std::vector<Shader_Resource>& unique_resources)
         {
             std::set<uint32_t> unique_bindings;
-            get_binding(sampled_images, unique_resources, unique_bindings);
-            get_binding(storage_images, unique_resources, unique_bindings);
-            get_binding(uniform_buffers,unique_resources, unique_bindings);
-            get_binding(storage_buffers,unique_resources, unique_bindings);
+            Get_Binding(sampled_images, unique_resources, unique_bindings);
+            Get_Binding(storage_images, unique_resources, unique_bindings);
+            Get_Binding(uniform_buffers,unique_resources, unique_bindings);
+            Get_Binding(storage_buffers,unique_resources, unique_bindings);
         }
 
-        vk::ShaderStageFlags get_vk_stage()
+        vk::ShaderStageFlags Get_Vk_Stage()
         {
             switch (stage)
             {
-            case s_vert:
+            case S_Vert:
                 return vk::ShaderStageFlagBits::eVertex;
-            case s_frag:
+            case S_Frag:
                 return vk::ShaderStageFlagBits::eFragment;
-            case s_tess_control:
+            case S_Tess_Control:
                 return vk::ShaderStageFlagBits::eTessellationControl;
-            case s_tess_eval:
+            case S_Tess_Eval:
                 return vk::ShaderStageFlagBits::eTessellationEvaluation;
-            case s_geom:
+            case S_Geom:
                 return vk::ShaderStageFlagBits::eGeometry;
-            case s_comp:
+            case S_Comp:
                 return vk::ShaderStageFlagBits::eCompute;
-            case s_unknown:
+            case S_Unknown:
                 assert(false&& "not valid stage");
                 break;
             }
         }
 
-        std::vector<shader_resource> uniform_buffers;
-        std::vector<shader_resource> storage_buffers;
-        std::vector<shader_resource> sampled_images;
-        std::vector<shader_resource> storage_images;
-        shader_stage stage;
+        std::vector<Shader_Resource> uniform_buffers;
+        std::vector<Shader_Resource> storage_buffers;
+        std::vector<Shader_Resource> sampled_images;
+        std::vector<Shader_Resource> storage_images;
+        Shader_Stage stage;
         std::string shader_name;
 
     private:
-        static std::string get_buffer_resource_name(spirv_cross::CompilerGLSL& glsl,
+        static std::string Get_Buffer_Resource_Name(spirv_cross::CompilerGLSL& glsl,
                                                  const spirv_cross::Resource& resource,
                                                  bool slang_resource_names)
         {
@@ -544,39 +544,39 @@ set "error_found="
         }
     };
 
-    class shader
+    class Shader
     {
     public:
-        shader(vk::Device logical_device, const std::string& path, shader_stage stage)
+        Shader(vk::Device logical_device, const std::string& path, Shader_Stage stage)
         {
             assert(std::filesystem::exists(path) && "Path does not exist");
             this->stage = stage;
-            handle_path_received(path);
+            Handle_Path_Received(path);
             assert(std::filesystem::path(this->spirv_path).extension() == ".spv" && "spv must be .spv filetypes");
             this->logical_device = logical_device;
-            std::vector<uint32_t> byte_code = get_byte_code(spirv_path);
-            s_parser = std::make_unique<shader_parser>(byte_code, is_slang_shader(), this->path);
-            s_module = std::make_unique<shader_module>(logical_device, byte_code);
-            shader_file_info = std::make_unique<systems::file_info>(this->path);
+            std::vector<uint32_t> byte_code = Get_Byte_Code(spirv_path);
+            s_parser = std::make_unique<Shader_Parser>(byte_code, Is_Slang_Shader(), this->path);
+            s_module = std::make_unique<Shader_Module>(logical_device, byte_code);
+            shader_file_info = std::make_unique<systems::File_Info>(this->path);
         }
 
-        bool reload()
+        bool Reload()
         {
-            shader_file_info->check_last_time_write();
+            shader_file_info->Check_Last_Time_Write();
             if (!shader_file_info->modified)
             {
                 return false;
             }
-            std::string code = systems::os::read_file(path);
+            std::string code = systems::Os::Read_File(path);
             std::vector<uint32_t> byte_code;
             if (std::filesystem::path(path).extension() == ".slang")
             {
-                std::string entry_point = get_slang_entry_point(stage);
-                byte_code = compile_slang_into_spirv(spirv_path, code, entry_point, stage);
+                std::string entry_point = Get_Slang_Entry_Point(stage);
+                byte_code = Compile_Slang_Into_Spirv(spirv_path, code, entry_point, stage);
                 if (byte_code.empty())
                 {
-                    systems::logger::get_instance()->log_message("Byte code compilation is empty in: ("+path+")");
-                    byte_code = get_byte_code(spirv_path);
+                    systems::Logger::Get_Instance()->Log_Message("Byte code compilation is empty in: ("+path+")");
+                    byte_code = Get_Byte_Code(spirv_path);
                 }
             }
             else if (std::filesystem::path(path).extension() == ".frag"
@@ -587,8 +587,8 @@ set "error_found="
                 || std::filesystem::path(path).extension() == ".comp")
             {
                 
-                compile_glsl_into_spirv(spirv_path, path);
-                byte_code = get_byte_code(spirv_path);
+                Compile_Glsl_Into_Spirv(spirv_path, path);
+                byte_code = Get_Byte_Code(spirv_path);
             }else
             {
                 assert(false && "invalid shader file extension");
@@ -596,17 +596,17 @@ set "error_found="
             
             s_parser.reset();
             s_module.reset();
-            s_parser = std::make_unique<shader_parser>(byte_code, is_slang_shader(), path);
-            s_module = std::make_unique<shader_module>(logical_device, byte_code);
-            systems::logger::get_instance()->log_message("Shader compiled: "+ path);
-            systems::logger::get_instance()->log_message("SPIRV: "+ spirv_path);
-            shader_file_info->invalidate();
+            s_parser = std::make_unique<Shader_Parser>(byte_code, Is_Slang_Shader(), path);
+            s_module = std::make_unique<Shader_Module>(logical_device, byte_code);
+            systems::Logger::Get_Instance()->Log_Message("Shader compiled: "+ path);
+            systems::Logger::Get_Instance()->Log_Message("SPIRV: "+ spirv_path);
+            shader_file_info->Invalidate();
         	return true;
         }
 
 
 
-        void handle_path_received(const std::string& path)
+        void Handle_Path_Received(const std::string& path)
         {
             std::filesystem::path file_path(path);
             bool glsl = false;
@@ -614,7 +614,7 @@ set "error_found="
             {
                 std::string shader_path= "";
             
-                shader_path = convert_spirv_to_shader_path(file_path, stage);
+                shader_path = Convert_Spirv_To_Shader_Path(file_path, stage);
                 assert((std::filesystem::exists(shader_path) && shader_path != file_path) && "invalid shader path");
                 this->path = shader_path;
                 this->spirv_path = path;
@@ -629,18 +629,18 @@ set "error_found="
             {
 
                 std::string spirv_path ="";
-                spirv_path = convert_shader_path_to_spirv(file_path, stage);
+                spirv_path = Convert_Shader_Path_To_Spirv(file_path, stage);
 
                 if (std::filesystem::exists(file_path) && !std::filesystem::exists(spirv_path))
                 {
                     if (file_path.extension() == ".slang")
                     {
-                        std::string entry_point = get_slang_entry_point(stage);
-                        std::string code = systems::os::read_file(file_path.string());
-                        compile_slang_into_spirv(spirv_path, code, entry_point, stage);
+                        std::string entry_point = Get_Slang_Entry_Point(stage);
+                        std::string code = systems::Os::Read_File(file_path.string());
+                        Compile_Slang_Into_Spirv(spirv_path, code, entry_point, stage);
                     }else
                     {
-                        compile_glsl_into_spirv(spirv_path, path);
+                        Compile_Glsl_Into_Spirv(spirv_path, path);
                     }
                 }
                 assert((std::filesystem::exists(spirv_path) && (spirv_path != file_path) && "invalid shader path"));
@@ -650,17 +650,17 @@ set "error_found="
             
         }
         
-        std::unique_ptr<shader_parser> s_parser;
-        std::unique_ptr<shader_module> s_module;
+        std::unique_ptr<Shader_Parser> s_parser;
+        std::unique_ptr<Shader_Module> s_module;
         vk::Device logical_device;
-        shader_stage stage;
+        Shader_Stage stage;
         //spirv path
         std::string path;
         std::string spirv_path;
-        std::unique_ptr<systems::file_info> shader_file_info;
+        std::unique_ptr<systems::File_Info> shader_file_info;
 
     private:
-        bool is_slang_shader() const
+        bool Is_Slang_Shader() const
         {
             return std::filesystem::path(path).extension() == ".slang";
         }

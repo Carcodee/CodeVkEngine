@@ -8,11 +8,11 @@
 namespace engine
 {
     
-    class shader_module
+    class Shader_Module
     {
         
     public:
-        shader_module(vk::Device device, std::vector<uint32_t>& byte_code)
+        Shader_Module(vk::Device device, std::vector<uint32_t>& byte_code)
         {
             
             auto shader_module_create_info = vk::ShaderModuleCreateInfo()
