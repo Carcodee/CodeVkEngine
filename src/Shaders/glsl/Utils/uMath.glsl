@@ -246,6 +246,7 @@ vec3 U_Compute_Sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
     //    assert(all(lessThanEqual(c, vec3(159.0))), "invalid sh: %f %f %f\n", c);
     return c;
 }
+
 mat4 Grid_3d_Pos_From_1d(float cell_size, uvec3 dimensions, vec3 origin, uint cell_id){
 
     uvec3 pos_in_grid = uvec3(cell_id % dimensions.x, (cell_id / dimensions.x) % dimensions.y, cell_id / (dimensions.x * dimensions.y));

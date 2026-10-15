@@ -267,6 +267,88 @@ namespace engine
             }
         }
 
+        struct Buffer_Inspection_Entry
+        {
+            std::string key;
+            std::string name;
+            const char* kind;
+            engine::Buffer* buffer;
+        };
+
+        // Return fresh references each time: dynamic buffers may be replaced on resize.
+        std::vector<Buffer_Inspection_Entry> Get_Inspectable_Buffers() const
+        {
+            std::vector<Buffer_Inspection_Entry> entries;
+            entries.reserve(buffers.size() + staged_buffers.size() * 2);
+            for (const auto& [name, index] : buffer_names)
+            {
+                if (index >= 0 && static_cast<size_t>(index) < buffers.size() && buffers[index])
+                    entries.push_back({"buffer:" + name, name, "Buffer", buffers[index].get()});
+            }
+            for (const auto& [name, index] : staged_buffer_names)
+            {
+                if (index < 0 || static_cast<size_t>(index) >= staged_buffers.size() || !staged_buffers[index])
+                    continue;
+                const auto& staged = staged_buffers[index];
+                if (staged->device_buffer)
+                    entries.push_back({"device:" + name, name, "Staged device", staged->device_buffer.get()});
+                if (staged->staging_buffer)
+                    entries.push_back({"upload:" + name, name, "Staging upload", staged->staging_buffer.get()});
+            }
+            std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+                return a.name == b.name ? a.key < b.key : a.name < b.name;
+            });
+            return entries;
+        }
+
+        // Synchronous diagnostic readback. Call between frames, after GPU/CUDA work
+        // completes and before CPU updates overwrite the next frame's inputs.
+        // queue_name must belong to the source buffer's current owning queue family.
+        std::vector<uint8_t> Read_Buffer(const engine::Buffer& source, vk::DeviceSize offset,
+                                         vk::DeviceSize size, const std::string& queue_name = "Graphics")
+        {
+            if (offset > source.device_size || size > source.device_size - offset)
+                throw std::out_of_range("Buffer readback range is outside the buffer.");
+            if (!size)
+                return {};
+            if (!(source.usage_flags & vk::BufferUsageFlagBits::eTransferSrc))
+                throw std::runtime_error("Buffer was not created with transfer-source usage.");
+            if (source.logical_device != core->logical_device.get())
+                throw std::runtime_error("Buffer belongs to a different Vulkan device.");
+            if (!core->queue_worker_manager->Use_Queue(queue_name))
+                throw std::runtime_error("Buffer readback queue is unavailable.");
+
+            std::vector<uint8_t> bytes(static_cast<size_t>(size));
+            engine::Buffer readback(core->physical_device, core->logical_device.get(),
+                                    vk::BufferUsageFlagBits::eTransferDst,
+                                    vk::MemoryPropertyFlagBits::eHostVisible |
+                                        vk::MemoryPropertyFlagBits::eHostCoherent,
+                                    size, 1);
+            core->Wait_Idle();
+            Execute_Once_Command executor(core, queue_name);
+            auto command_buffer = executor.Begin_Command_Buffer();
+            const auto before_copy = vk::MemoryBarrier()
+                .setSrcAccessMask(vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eHostWrite)
+                .setDstAccessMask(vk::AccessFlagBits::eTransferRead);
+            command_buffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eHost,
+                vk::PipelineStageFlagBits::eTransfer, {}, before_copy, {}, {});
+            const auto region = vk::BufferCopy().setSrcOffset(offset).setDstOffset(0).setSize(size);
+            command_buffer.copyBuffer(source.buffer_handle.get(), readback.buffer_handle.get(), region);
+            // A queue wait alone does not make device writes visible to host reads.
+            const auto to_host = vk::MemoryBarrier()
+                .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                .setDstAccessMask(vk::AccessFlagBits::eHostRead);
+            command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                            vk::PipelineStageFlagBits::eHost, {}, to_host, {}, {});
+            executor.End_Command_Buffer();
+            // Only map the coherent readback allocation. Leave persistent source mappings intact.
+            const void* mapped = readback.Map();
+            memcpy(bytes.data(), mapped, bytes.size());
+            readback.Unmap();
+            return bytes;
+        }
+
         engine::Buffer* Get_Buffer(Buffer_Params params)
         {
             assert(core != nullptr && "core must be set");
@@ -342,7 +424,7 @@ namespace engine
                 {
                     memset(buffer_ref_to_change->mapped_mem, 0,  device_size);
                 }
-                if (buffer_ref_to_change->usage_flags == vk::BufferUsageFlagBits::eStorageBuffer)
+                if ((buffer_ref_to_change->usage_flags & ~vk::BufferUsageFlags(vk::BufferUsageFlagBits::eTransferSrc)) == vk::BufferUsageFlagBits::eStorageBuffer)
                 {
                     buffer_ref_to_change->Unmap();
                 }

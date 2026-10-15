@@ -11,10 +11,12 @@
 
 
 layout (set = 0, binding = 1, scalar) buffer Model_Vertices{
-    vec3 vertex[];
+    U_Vertex vertex[];
 };
-
-layout (set = 0, binding = 2, scalar) buffer Voxels{
+layout (set = 0, binding = 2, scalar) buffer Model_Mats{
+    mat4 models[];
+};
+layout (set = 0, binding = 3, scalar) buffer Voxels{
     uint cells[];
 };
 
@@ -27,13 +29,28 @@ layout(push_constant)uniform Push_Constants{
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
 
-    uint vertex_id = gl_GlobalInvocationID.x;
-    vec3 vertex_pos = vertex[vertex_id];
+    uint vertex_idx = gl_GlobalInvocationID.x;
+    U_Vertex vertex_ref = vertex[vertex_idx];
+    mat4 model = models[vertex_ref.id];
+    vec4 vertex_pos_ws = model * vec4(vertex_ref.pos, 1.0);
+    int collision_idx = -1;
+    for(int idx = 0; idx < (voxel_grid.dimensions.x * voxel_grid.dimensions.y * voxel_grid.dimensions.z); idx++){
+        mat4 model = Grid_3d_Pos_From_1d(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, idx);
+        vec3 cell_ws_pos = vec3(model[3][0], model[3][1], model[3][2]);
+        vec3 half_size = vec3(model[0][0], model[1][1], model[2][2]) / 2.0f;
+        vec3 min = cell_ws_pos - half_size;
+        vec3 max = cell_ws_pos + half_size;
+        min = U_Min(min, max);
+        max = U_Max(min, max);
+        bool is_inside = U_Aabb(min, max, vec3(vertex_pos_ws.x, vertex_pos_ws.y, vertex_pos_ws.z));
+        if(is_inside){
+            collision_idx = idx;
+            break;
+        }
+    }
 
-
-
-    if(vertex_id < 1000){
-        atomicAdd(cells[vertex_id], 1);
+    if(collision_idx > -1){
+        atomicAdd(cells[collision_idx], 1);
     }
 
 }

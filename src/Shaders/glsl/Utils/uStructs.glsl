@@ -93,6 +93,13 @@ struct U_Pbr_Context{
     float metallic;
     float roughness;
 };
+struct U_Vertex{
+    vec3 pos;
+    vec3 normal;
+    vec3 tangent;
+    vec2 uv;
+    int       id;
+};
 //End Util
 
 #endif 

@@ -62,9 +62,19 @@ namespace rendering
             voxelizer_node->G_Set_Render_Operation(new std::function<void()>(
                 [this, model_to_voxelize]()
                 {
+                    std::vector<glm::mat4> model_mats;
+                        for (auto &model : Rendering_Res_Manager::Get_Instance()->models)
+                    {
+                        for (int i = 0; i < model->models_mat.size(); ++i)
+                        {
+                            model_mats.push_back(model->models_mat[i]);
+                        }
+                    }
+
                     auto& render_node = render_graph->render_nodes.at("voxelizer");
 
                     render_node->G_Set_Buffer("Model_Vertices", model_to_voxelize->vert_buffer->device_buffer.get());
+                    render_node->G_Set_Buffer("Model_Mats", model_mats);
                     render_node->G_Set_Buffer("Voxels", render_graph->resources_manager->Get_Buff_From_Name(voxel_grid.name));
                     render_node->Get_Curr_Cmd().pushConstants(render_node->gpu_pipeline_ref->pipeline_layout.get(),
                                                            vk::ShaderStageFlagBits::eCompute,

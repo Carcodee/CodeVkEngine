@@ -12,7 +12,7 @@ class Buffer
   public:
 	void *Map()
 	{
-		mapped_mem = logical_device.mapMemory(device_mem_handle.get(), 0, device_size);
+		mapped_mem = logical_device.mapMemory(device_mem_handle.get(), 0, VK_WHOLE_SIZE);
 		return mapped_mem;
 	}
 
@@ -27,7 +27,7 @@ class Buffer
 		auto mapped_mem_range = vk::MappedMemoryRange()
 		                          .setMemory(device_mem_handle.get())
 		                          .setOffset(offset)
-		                          .setSize(device_size);
+		                          .setSize(VK_WHOLE_SIZE);
 		logical_device.flushMappedMemoryRanges(mapped_mem_range);
 	}
 	void Invlidate(vk::DeviceSize offset = 0)
@@ -35,7 +35,7 @@ class Buffer
 		auto mapped_mem_range = vk::MappedMemoryRange()
 		                          .setMemory(device_mem_handle.get())
 		                          .setOffset(offset)
-		                          .setSize(device_size);
+		                          .setSize(VK_WHOLE_SIZE);
 		logical_device.invalidateMappedMemoryRanges(mapped_mem_range);
 	}
 	void Setup_Descriptor(vk::DeviceSize offset = 0)
@@ -58,6 +58,8 @@ class Buffer
 		this->logical_device    = logical_device;
 		this->physical_device   = physical_device;
 		this->device_size       = device_size;
+		// Engine buffers can be copied to a host-visible snapshot for inspection.
+		buffer_usage_flags |= vk::BufferUsageFlagBits::eTransferSrc;
 		this->usage_flags       = buffer_usage_flags;
 		this->is_external = is_external;
 		this->stride = stride;
@@ -90,17 +92,19 @@ class Buffer
 			mem_alloc_info.pNext = &export_allocate_info;
 		}
 
+		this->mem_property_flags = physical_device.getMemoryProperties()
+		                               .memoryTypes[mem_alloc_info.memoryTypeIndex].propertyFlags;
 		device_mem_handle = logical_device.allocateMemoryUnique(mem_alloc_info);
 
 		if (data != nullptr)
 		{
 			Map();
 			memcpy(mapped_mem, data, device_size);
-			Unmap();
-			if (!(mem_property_flags & vk::MemoryPropertyFlagBits::eHostCoherent))
+			if (!(this->mem_property_flags & vk::MemoryPropertyFlagBits::eHostCoherent))
 			{
 				Flush();
 			}
+			Unmap();
 		}
 		if ((buffer_usage_flags & vk::BufferUsageFlagBits::eStorageBuffer) || (buffer_usage_flags &
 		                                                                     vk::BufferUsageFlagBits::eUniformBuffer))

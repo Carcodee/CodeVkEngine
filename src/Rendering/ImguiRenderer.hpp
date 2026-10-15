@@ -5,6 +5,8 @@
 #ifndef IMGUI_RENDERER_HPP
 #define IMGUI_RENDERER_HPP
 #include "CodeCuda.cuh"
+#include <cstdio>
+#include <cstring>
 
 namespace rendering
 {
@@ -343,6 +345,7 @@ class Imgui_Renderer
 
 	void Render_Frame(vk::CommandBuffer command_buffer, vk::ImageView &image_view_handle)
 	{
+		buffer_inspection_requested = false;
 		curr_command_buffer                = &command_buffer;
 		static bool simulation_action_fail = false;
 		auto        run_simulation_action  = [](CodeCuda::C_Res result) {
@@ -418,6 +421,7 @@ class Imgui_Renderer
 		Render_Graph,
 		Engine,
 		Textures,
+		Buffers,
 		Fluid_Simulation,
 		Cluster_Renderer,
 		Radiance_Cascades,
@@ -441,6 +445,8 @@ class Imgui_Renderer
 				return {"Engine overview", "Queues, execution order, and runtime scheduling."};
 			case Debugger_Page::Textures:
 				return {"Texture inspector", "Browse images currently registered with the renderer."};
+			case Debugger_Page::Buffers:
+				return {"Buffer inspector", "Browse engine buffers and inspect completed GPU results."};
 			case Debugger_Page::Fluid_Simulation:
 				return {"Fluid simulation", "Control simulation inputs, tools, emitters, and solver parameters."};
 			case Debugger_Page::Cluster_Renderer:
@@ -532,6 +538,7 @@ class Imgui_Renderer
 			navigate("Render graph", Debugger_Page::Render_Graph);
 			navigate("Engine overview", Debugger_Page::Engine);
 			navigate("Texture inspector", Debugger_Page::Textures);
+			navigate("Buffer inspector", Debugger_Page::Buffers);
 			navigate("Fluid simulation", Debugger_Page::Fluid_Simulation);
 			if (cluster_renderer)
 			{
@@ -562,6 +569,9 @@ class Imgui_Renderer
 				break;
 			case Debugger_Page::Textures:
 				Display_All_Textures();
+				break;
+			case Debugger_Page::Buffers:
+				Display_All_Buffers();
 				break;
 			case Debugger_Page::Fluid_Simulation:
 				Fluid_Sim_Info();
@@ -2619,6 +2629,251 @@ class Imgui_Renderer
 			Add_Image(image->image_view_handle->name, image->image_view_handle.get());
 		}
 	}
+	// Called after the frame's GPU work has completed, before the next CPU updates.
+	void Capture_Buffer_Inspector()
+	{
+		if (!buffer_inspection_requested || active_page != Debugger_Page::Buffers)
+			return;
+		buffer_inspection_requested = false;
+		buffer_inspection_bytes.clear();
+		buffer_inspection_error.clear();
+		buffer_inspection_last_capture = ImGui::GetTime();
+		try
+		{
+			auto* resources = render_graph->resources_manager;
+			const auto entries = resources->Get_Inspectable_Buffers();
+			const auto selected = std::find_if(entries.begin(), entries.end(), [this](const auto& entry) {
+				return entry.key == buffer_inspection_key;
+			});
+			if (selected == entries.end())
+				throw std::runtime_error("The selected buffer is no longer available.");
+			const auto& source = *selected->buffer;
+			buffer_inspection_source = source.buffer_handle.get();
+			buffer_inspection_source_size = source.device_size;
+			if (buffer_inspection_offset >= source.device_size)
+				buffer_inspection_offset = 0;
+			buffer_inspection_snapshot_offset = buffer_inspection_offset;
+			const auto size = std::min<vk::DeviceSize>(buffer_inspection_page_size,
+			                                          source.device_size - buffer_inspection_offset);
+
+			// Buffers are exclusive: use the last Vulkan queue that bound the resource.
+			// Staging uploads and vertex/index buffers use the graphics queue.
+			std::string queue_name = "Graphics";
+			for (const auto& batch : render_graph->sorted_queue_batches)
+			{
+				if (batch.queue_name == "CUDA")
+					continue;
+				for (const auto* node : batch.sorted_nodes)
+				{
+					if (!node || !node->active || !node->gpu_pipeline_ref || !node->gpu_pipeline_ref->desc_cache)
+						continue;
+					for (const auto& [binding, buffer] : node->gpu_pipeline_ref->desc_cache->buffers_resources)
+					{
+						if (buffer == &source)
+							queue_name = batch.queue_name;
+					}
+				}
+			}
+			buffer_inspection_bytes = resources->Read_Buffer(source, buffer_inspection_offset, size, queue_name);
+		}
+		catch (const std::exception& error)
+		{
+			buffer_inspection_error = error.what();
+		}
+	}
+
+	void Display_Buffer_Contents()
+	{
+		const char* formats[] = {"Hex / ASCII", "uint8", "uint16", "uint32", "int32", "float32", "float64"};
+		ImGui::SetNextItemWidth(150.0f);
+		ImGui::Combo("View as", &buffer_inspection_format, formats, IM_ARRAYSIZE(formats));
+		const size_t element_sizes[] = {1, 1, 2, 4, 4, 4, 8};
+		const size_t element_size = element_sizes[buffer_inspection_format];
+		const bool hex = buffer_inspection_format == 0;
+		const size_t row_size = hex ? 16 : element_size * 4;
+		const int row_count = static_cast<int>((buffer_inspection_bytes.size() + row_size - 1) / row_size);
+		if (!ImGui::BeginTable("##buffer_data", hex ? 3 : 5,
+		                      ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV |
+		                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX |
+		                          ImGuiTableFlags_SizingFixedFit,
+		                      ImVec2(0.0f, std::max(150.0f, ImGui::GetContentRegionAvail().y))))
+			return;
+		ImGui::TableSetupScrollFreeze(1, 1);
+		ImGui::TableSetupColumn("Byte offset");
+		if (hex)
+		{
+			ImGui::TableSetupColumn("Hex");
+			ImGui::TableSetupColumn("ASCII");
+		}
+		else
+		{
+			ImGui::TableSetupColumn("[0]");
+			ImGui::TableSetupColumn("[1]");
+			ImGui::TableSetupColumn("[2]");
+			ImGui::TableSetupColumn("[3]");
+		}
+		ImGui::TableHeadersRow();
+		ImGuiListClipper clipper;
+		clipper.Begin(row_count);
+		while (clipper.Step())
+		{
+			for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
+			{
+				const size_t start = static_cast<size_t>(row) * row_size;
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Text("%llu", static_cast<unsigned long long>(buffer_inspection_snapshot_offset + start));
+				if (hex)
+				{
+					char hex_text[49] = {};
+					char ascii[17] = {};
+					const size_t count = std::min<size_t>(16, buffer_inspection_bytes.size() - start);
+					for (size_t i = 0; i < count; ++i)
+					{
+						const uint8_t byte = buffer_inspection_bytes[start + i];
+						std::snprintf(hex_text + i * 3, 4, "%02X ", static_cast<unsigned>(byte));
+						ascii[i] = byte >= 32 && byte < 127 ? static_cast<char>(byte) : '.';
+					}
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(hex_text);
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(ascii);
+					continue;
+				}
+				for (size_t column = 0; column < 4; ++column)
+				{
+					ImGui::TableNextColumn();
+					const size_t index = start + column * element_size;
+					if (index + element_size > buffer_inspection_bytes.size())
+					{
+						ImGui::TextDisabled("--");
+						continue;
+					}
+					const uint8_t* data = buffer_inspection_bytes.data() + index;
+					// memcpy permits arbitrary byte offsets without unaligned typed loads.
+					switch (buffer_inspection_format)
+					{
+						case 1: ImGui::Text("%u", static_cast<unsigned>(*data)); break;
+						case 2: { uint16_t value; std::memcpy(&value, data, sizeof(value)); ImGui::Text("%u", static_cast<unsigned>(value)); break; }
+						case 3: { uint32_t value; std::memcpy(&value, data, sizeof(value)); ImGui::Text("%u", value); break; }
+						case 4: { int32_t value; std::memcpy(&value, data, sizeof(value)); ImGui::Text("%d", value); break; }
+						case 5: { float value; std::memcpy(&value, data, sizeof(value)); ImGui::Text("%.9g", static_cast<double>(value)); break; }
+						case 6: { double value; std::memcpy(&value, data, sizeof(value)); ImGui::Text("%.17g", value); break; }
+					}
+				}
+			}
+		}
+		ImGui::EndTable();
+	}
+
+	void Display_All_Buffers()
+	{
+		const auto entries = render_graph->resources_manager->Get_Inspectable_Buffers();
+		buffer_inspection_filter.Draw("Filter buffers", -1.0f);
+		ImGui::TextDisabled("%zu buffers (including staged device and upload allocations)", entries.size());
+		if (entries.empty())
+		{
+			buffer_inspection_bytes.clear();
+			buffer_inspection_key.clear();
+			ImGui::TextDisabled("No engine buffers are available.");
+			return;
+		}
+		bool selection_changed = false;
+		if (ImGui::BeginTable("##engine_buffers", 3,
+		                      ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable |
+		                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp,
+		                      ImVec2(0.0f, 180.0f)))
+		{
+			ImGui::TableSetupScrollFreeze(0, 1);
+			ImGui::TableSetupColumn("Buffer", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+			ImGui::TableSetupColumn("Allocation");
+			ImGui::TableSetupColumn("Bytes");
+			ImGui::TableHeadersRow();
+			for (const auto& entry : entries)
+			{
+				if (!buffer_inspection_filter.PassFilter(entry.name.c_str()))
+					continue;
+				ImGui::PushID(entry.key.c_str());
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				if (ImGui::Selectable(entry.name.c_str(), entry.key == buffer_inspection_key,
+				                      ImGuiSelectableFlags_SpanAllColumns))
+				{
+					selection_changed = entry.key != buffer_inspection_key;
+					buffer_inspection_key = entry.key;
+				}
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(entry.kind);
+				ImGui::TableNextColumn();
+				ImGui::Text("%llu", static_cast<unsigned long long>(entry.buffer->device_size));
+				ImGui::PopID();
+			}
+			ImGui::EndTable();
+		}
+		const auto selected = std::find_if(entries.begin(), entries.end(), [this](const auto& entry) {
+			return entry.key == buffer_inspection_key;
+		});
+		if (selected == entries.end())
+		{
+			buffer_inspection_bytes.clear();
+			ImGui::TextDisabled("Select a buffer to inspect its contents.");
+			return;
+		}
+		const auto& source = *selected->buffer;
+		const bool source_changed = selection_changed || buffer_inspection_source != source.buffer_handle.get() ||
+		                            buffer_inspection_source_size != source.device_size;
+		if (source_changed)
+		{
+			buffer_inspection_offset = 0;
+			buffer_inspection_source = source.buffer_handle.get();
+			buffer_inspection_source_size = source.device_size;
+		}
+		ImGui::SeparatorText(selected->name.c_str());
+		ImGui::Text("Size: %llu bytes   Stride: %llu   Elements: %llu",
+		            static_cast<unsigned long long>(source.device_size),
+		            static_cast<unsigned long long>(source.stride),
+		            static_cast<unsigned long long>(source.stride ? source.device_size / source.stride : 0));
+		ImGui::TextWrapped("Usage: %s", vk::to_string(source.usage_flags).c_str());
+		ImGui::TextWrapped("Memory: %s", vk::to_string(source.mem_property_flags).c_str());
+		ImGui::Checkbox("Live refresh", &buffer_inspection_live);
+		ImGui::SameLine();
+		bool refresh = ImGui::Button("Refresh snapshot") || source_changed;
+		const uint64_t old_offset = buffer_inspection_offset;
+		ImGui::SetNextItemWidth(155.0f);
+		ImGui::InputScalar("Byte offset", ImGuiDataType_U64, &buffer_inspection_offset);
+		const uint64_t last_offset = source.device_size ? source.device_size - 1 : 0;
+		buffer_inspection_offset = std::min(buffer_inspection_offset, last_offset);
+		ImGui::BeginDisabled(buffer_inspection_offset == 0);
+		if (ImGui::Button("Previous 4 KiB"))
+			buffer_inspection_offset -= std::min(buffer_inspection_offset, buffer_inspection_page_size);
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		ImGui::BeginDisabled(source.device_size - buffer_inspection_offset <= buffer_inspection_page_size);
+		if (ImGui::Button("Next 4 KiB"))
+			buffer_inspection_offset += buffer_inspection_page_size;
+		ImGui::EndDisabled();
+		if (source_changed || old_offset != buffer_inspection_offset)
+		{
+			buffer_inspection_bytes.clear();
+			buffer_inspection_error.clear();
+			refresh = true;
+		}
+		if (refresh || (buffer_inspection_live && ImGui::GetTime() - buffer_inspection_last_capture >= 0.25))
+			buffer_inspection_requested = true;
+		if (!buffer_inspection_error.empty())
+			ImGui::TextWrapped("Readback failed: %s", buffer_inspection_error.c_str());
+		if (buffer_inspection_bytes.empty())
+		{
+			ImGui::TextDisabled(source.device_size ? "Waiting for a completed frame snapshot..." : "Buffer is empty.");
+			return;
+		}
+		ImGui::TextDisabled("Snapshot: bytes %llu - %llu (%.1f s ago)",
+		                    static_cast<unsigned long long>(buffer_inspection_snapshot_offset),
+		                    static_cast<unsigned long long>(buffer_inspection_snapshot_offset + buffer_inspection_bytes.size() - 1),
+		                    ImGui::GetTime() - buffer_inspection_last_capture);
+		Display_Buffer_Contents();
+	}
+
 	void Display_All_Textures()
 	{
 		Add_All_Images();
@@ -2729,6 +2984,20 @@ class Imgui_Renderer
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}
+
+	static constexpr uint64_t buffer_inspection_page_size = 4096;
+	ImGuiTextFilter buffer_inspection_filter;
+	std::string buffer_inspection_key;
+	std::string buffer_inspection_error;
+	std::vector<uint8_t> buffer_inspection_bytes;
+	vk::Buffer buffer_inspection_source;
+	vk::DeviceSize buffer_inspection_source_size = 0;
+	uint64_t buffer_inspection_offset = 0;
+	uint64_t buffer_inspection_snapshot_offset = 0;
+	double buffer_inspection_last_capture = -1.0;
+	int buffer_inspection_format = 0;
+	bool buffer_inspection_live = true;
+	bool buffer_inspection_requested = false;
 
 	vk::CommandBuffer  *curr_command_buffer = nullptr;
 	Dynamic_Render_Pass   dynamic_render_pass;

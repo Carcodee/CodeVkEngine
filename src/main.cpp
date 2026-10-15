@@ -186,6 +186,11 @@ void Run(::Window_Provider* window_provider)
 
         profiler->Add_Profiler_Gpu_Spot(legit::Colors::amethyst, "WaitIdle");
         core->Wait_Idle();
+        if (imgui_renderer)
+        {
+            // Capture completed GPU output before next frame's CPU buffer updates.
+            imgui_renderer->Capture_Buffer_Inspector();
+        }
         profiler->End_Profiler_Gpu_Spot("WaitIdle");
         profiler->Update_Profiler();
     }

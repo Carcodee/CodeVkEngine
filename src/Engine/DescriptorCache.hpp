@@ -271,6 +271,7 @@ namespace engine
         void Set_Buffer(std::string name, std::vector<Value_Type>& buffer_data)
         {
             engine::Buffer* buffer_ref = Get_Buffer_By_Name(name);
+            assert(buffer_data.data() != nullptr && "Buffer sets from here should never be nullptrs");
             if (buffer_ref==nullptr){return;}
             // resources_manager_ref->Set_Stage_Buffer(
             //     name,
