@@ -30,6 +30,9 @@ layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
 
     uint vertex_idx = gl_GlobalInvocationID.x;
+    if(vertex_idx > 100000){
+        return;
+    }
     U_Vertex vertex_ref = vertex[vertex_idx];
     mat4 model = models[vertex_ref.id];
     vec4 vertex_pos_ws = model * vec4(vertex_ref.pos, 1.0);
@@ -43,6 +46,7 @@ void main() {
         min = U_Min(min, max);
         max = U_Max(min, max);
         bool is_inside = U_Aabb(min, max, vec3(vertex_pos_ws.x, vertex_pos_ws.y, vertex_pos_ws.z));
+        
         if(is_inside){
             collision_idx = idx;
             break;

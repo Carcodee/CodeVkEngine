@@ -178,7 +178,7 @@ bool U_Aabb(vec3 min_aabb, vec3 max_aabb, vec3 pos){
     bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
     bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
     bool z_check = bool(pos.z > min_aabb.z && pos.z < max_aabb.z);
-    return x_check && y_check;
+    return x_check && y_check && z;
 }
 
 bool U_Aabb_Sphere(vec2 min, vec2 max, vec2 sphere_pos, float r){
