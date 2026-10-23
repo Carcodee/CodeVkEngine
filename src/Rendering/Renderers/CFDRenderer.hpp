@@ -101,9 +101,10 @@ namespace rendering
             struct Pc_Voxel_Proj
             {
                 glm::uvec3 dimensions = glm::uvec3{10, 10, 10};
-                float cell_size = 0.5f;
-                uint32_t dimension_selected;
+                glm::uvec3 plane_selected = glm::uvec3{1, 1, 0};
                 uint32_t selected_dimension_offset;
+                float cell_size = 0.5f;
+                uint32_t padding;
             };
 
             auto* proj_voxel_slice_node = render_graph->Add_Pass("proj_voxel_slice_node");
@@ -127,6 +128,10 @@ namespace rendering
                 [this]()
                 {
                     auto node = render_graph->Get_Node("proj_voxel_slice_node");
+
+                    node->G_Set_Buffer(
+                        "Voxels", render_graph->resources_manager->Get_Buff_From_Name(voxel_grid.name));
+
                     vk::DeviceSize offset = 0;
                     node->Get_Curr_Cmd().bindVertexBuffers(
                         0, 1, &render_graph->resources_manager->Get_Staged_Buff_From_Name("quad_default")->device_buffer
@@ -136,12 +141,17 @@ namespace rendering
                         render_graph->resources_manager->Get_Staged_Buff_From_Name("quad_index_default")->device_buffer
                                     ->buffer_handle.get(), 0,
                         vk::IndexType::eUint32);
+
                     Pc_Voxel_Proj pc_voxel_proj = {};
                     pc_voxel_proj.dimensions = voxel_grid.pc_voxel_grid.dimensions;
                     pc_voxel_proj.cell_size = voxel_grid.pc_voxel_grid.cell_size;
+
+
                     // 0 == x, 1 == y, 2 == z
-                    pc_voxel_proj.dimension_selected = 1;
+                    pc_voxel_proj.plane_selected = glm::uvec3(1, 1, 0);
                     pc_voxel_proj.selected_dimension_offset = 0;
+
+                    systems::Logger::Get_Instance()->Log_Vec(voxel_grid.pc_voxel_grid.origin);
                     node->Get_Curr_Cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
                                                        vk::ShaderStageFlagBits::eVertex |
                                                        vk::ShaderStageFlagBits::eFragment,

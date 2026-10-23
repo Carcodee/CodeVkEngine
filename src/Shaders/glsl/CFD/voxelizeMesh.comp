@@ -38,7 +38,7 @@ void main() {
     vec4 vertex_pos_ws = model * vec4(vertex_ref.pos, 1.0);
     int collision_idx = -1;
     for(int idx = 0; idx < (voxel_grid.dimensions.x * voxel_grid.dimensions.y * voxel_grid.dimensions.z); idx++){
-        mat4 model = Grid_3d_Pos_From_1d(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, idx);
+        mat4 model = U_Grid_3d_Pos_From_1d(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, idx);
         vec3 cell_ws_pos = vec3(model[3][0], model[3][1], model[3][2]);
         vec3 half_size = vec3(model[0][0], model[1][1], model[2][2]) / 2.0f;
         vec3 min = cell_ws_pos - half_size;

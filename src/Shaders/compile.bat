@@ -86,6 +86,7 @@ if defined error_found (
     echo.
     echo Errors were found during compilation.
     popd
+    pause
     exit /b 1
 )
 popd

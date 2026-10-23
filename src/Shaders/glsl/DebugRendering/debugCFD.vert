@@ -23,8 +23,8 @@ layout (set = 0, binding = 0, scalar) buffer Voxels{
 };
 
 void main() {
-
-    mat4 model = Grid_3d_Pos_From_1d(pc.cell_size, pc.dimensions, pc.origin, gl_InstanceIndex);
+    mat4 model = U_Grid_3d_Pos_From_1d(pc.cell_size, pc.dimensions, pc.origin, gl_InstanceIndex);
     gl_Position = pc.proj_view * model * vec4(pos, 1.0f);
     out_count = cells[gl_InstanceIndex];
+    
 }

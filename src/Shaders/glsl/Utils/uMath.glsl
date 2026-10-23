@@ -178,7 +178,7 @@ bool U_Aabb(vec3 min_aabb, vec3 max_aabb, vec3 pos){
     bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
     bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
     bool z_check = bool(pos.z > min_aabb.z && pos.z < max_aabb.z);
-    return x_check && y_check && z;
+    return x_check && y_check && z_check;
 }
 
 bool U_Aabb_Sphere(vec2 min, vec2 max, vec2 sphere_pos, float r){
@@ -246,8 +246,14 @@ vec3 U_Compute_Sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
     //    assert(all(lessThanEqual(c, vec3(159.0))), "invalid sh: %f %f %f\n", c);
     return c;
 }
+uint U_Grid_To_Linear_Idx(uvec3 dimensions, uvec3 pos){
 
-mat4 Grid_3d_Pos_From_1d(float cell_size, uvec3 dimensions, vec3 origin, uint cell_id){
+    return pos.z * (dimensions.x + dimensions.y) + (pos.y * dimensions.x) + pos.x;
+}
+
+
+
+mat4 U_Grid_3d_Pos_From_1d(float cell_size, uvec3 dimensions, vec3 origin, uint cell_id){
 
     uvec3 pos_in_grid = uvec3(cell_id % dimensions.x, (cell_id / dimensions.x) % dimensions.y, cell_id / (dimensions.x * dimensions.y));
     vec3 offset= vec3(pos_in_grid.x, pos_in_grid.y, pos_in_grid.z) * cell_size;
@@ -258,8 +264,8 @@ mat4 Grid_3d_Pos_From_1d(float cell_size, uvec3 dimensions, vec3 origin, uint ce
     model[2][2] = cell_size;
 
     model[3][0] = origin.x + offset.x;
-    model[3][1] = origin.z + offset.y;
-    model[3][2] = origin.y + offset.z;
+    model[3][1] = origin.y + offset.y;
+    model[3][2] = origin.z + offset.z;
     return model;
 }
 #endif 

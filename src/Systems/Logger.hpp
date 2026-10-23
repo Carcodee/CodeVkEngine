@@ -142,10 +142,22 @@ class Logger
 			std::cout << message << std::endl;
 		}
 	}
+	void Log_Vec(const glm::uvec3 vec)
+	{
+		std::string message = "Vector(uints): (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ", " + std::to_string(vec.z) + ")";
+		if (log_output == Log_Output::File)
+		{
+			log_file << message << std::endl;
+		}
+		else
+		{
+			std::cout << message << std::endl;
+		}
+	}
 
 	void Log_Vec(const glm::vec3 vec)
 	{
-		std::string message = "Position: (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ", " + std::to_string(vec.z) + ")";
+		std::string message = "Vector(floats): (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ", " + std::to_string(vec.z) + ")";
 		if (log_output == Log_Output::File)
 		{
 			log_file << message << std::endl;
@@ -158,7 +170,7 @@ class Logger
 
 	void Log_Vec(const glm::vec2 vec)
 	{
-		std::string message = "Position: (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ")";
+		std::string message = "Position(floats): (" + std::to_string(vec.x) + ", " + std::to_string(vec.y) + ")";
 		if (log_output == Log_Output::File)
 		{
 			log_file << message << std::endl;
