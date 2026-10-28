@@ -561,6 +561,19 @@ namespace engine
             Notify();
             invalidate_buffers = false;
         }
+        Buffer* Clear_Buffer(const std::string name)
+        {
+            auto command_executor = std::make_unique<Execute_Once_Command>(core);
+            auto command_buffer = command_executor->Begin_Command_Buffer();
+            Buffer* buffer = Get_Buff_From_Name(name);
+            if (!buffer)
+            {
+                return nullptr;
+            }
+            command_buffer.fillBuffer(buffer->buffer_handle.get(), 0, VK_WHOLE_SIZE, 0);
+            command_executor->End_Command_Buffer();
+            return buffer;
+        }
 
         void End_Frame_Dynamic_Updates(vk::CommandBuffer command_buffer)
         {

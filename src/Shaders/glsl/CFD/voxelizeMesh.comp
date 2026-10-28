@@ -30,9 +30,9 @@ layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
 
     uint vertex_idx = gl_GlobalInvocationID.x;
-    if(vertex_idx > 100000){
-        return;
-    }
+//    if(vertex_idx > 100000){
+//        return;
+//    }
     U_Vertex vertex_ref = vertex[vertex_idx];
     mat4 model = models[vertex_ref.id];
     vec4 vertex_pos_ws = model * vec4(vertex_ref.pos, 1.0);

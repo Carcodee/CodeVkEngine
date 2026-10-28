@@ -52,6 +52,7 @@ namespace rendering
                 [this, model_to_voxelize]()
                 {
                     voxel_grid.Reset();
+                    render_graph->resources_manager->Clear_Buffer(voxel_grid.name);
                 }));
 
             voxelizer_node->G_Set_Render_Operation(new std::function<void()>(
@@ -151,7 +152,6 @@ namespace rendering
                     pc_voxel_proj.plane_selected = glm::uvec3(1, 1, 0);
                     pc_voxel_proj.selected_dimension_offset = 0;
 
-                    systems::Logger::Get_Instance()->Log_Vec(voxel_grid.pc_voxel_grid.origin);
                     node->Get_Curr_Cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
                                                        vk::ShaderStageFlagBits::eVertex |
                                                        vk::ShaderStageFlagBits::eFragment,

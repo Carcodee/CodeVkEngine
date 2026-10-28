@@ -248,7 +248,7 @@ vec3 U_Compute_Sh(vec3 ray_dir,in vec3 sh_coef[MAX_SH_COEFFS], int band_size) {
 }
 uint U_Grid_To_Linear_Idx(uvec3 dimensions, uvec3 pos){
 
-    return pos.z * (dimensions.x + dimensions.y) + (pos.y * dimensions.x) + pos.x;
+    return pos.z * (dimensions.x * dimensions.y) + (pos.y * dimensions.x) + pos.x;
 }
 
 

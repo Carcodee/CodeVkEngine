@@ -27,15 +27,17 @@ layout (set = 0, binding = 0, scalar) buffer Voxels{
 void main() {
 
     vec2 uv = text_coord;
-    uvec3 voxel_pos = uvec3(0, uv.y * pc.dimensions.y, uv.x * pc.dimensions.z);
+    uvec3 voxel_pos = uvec3(int((uv.x) * pc.dimensions.x), int((1.0 - uv.y) * pc.dimensions.y), 5);
     //this indexing is wrong to the plane selected
     uint idx = U_Grid_To_Linear_Idx(pc.dimensions, voxel_pos);
     uint cell_value = cells[idx];
+
     if(cell_value > 0){
-        out_color = vec4(1.0, 0.0, 0.0, 1.0);
+        out_color = vec4(cell_value, 0.0, 0.0, 1.0);
     }else{
-        out_color = vec4(0.0, 0.0, 0.0, 1.0);
+        out_color = vec4(cell_value, 0.0, 0.0, 1.0) + float(idx)/88.0f;
     }
-    out_color = vec4(float(idx)/18.0f, 0.0, 0.0, 1.0);
+//    out_color = vec4(float(idx)/float(pc.dimensions.x * pc.dimensions.y * pc.dimensions.z), 0.0, 0.0, 1.0);
+//    out_color = vec4(vec2(voxel_pos.xy)/vec2(pc.dimensions.xy), 0.0, 1.0);
 
 }

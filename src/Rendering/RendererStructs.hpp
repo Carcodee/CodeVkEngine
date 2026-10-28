@@ -297,7 +297,7 @@ namespace rendering
             name = "CellsBuffer_" + voxel_name;
             this->render_graph = render_graph_in;
             render_graph->resources_manager->Get_Buffer(engine::Resources_Manager::Buffer_Params{
-                name, vk::BufferUsageFlagBits::eStorageBuffer,
+                name, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
                 {vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible},
                 sizeof(uint32_t) * pc_voxel_grid.Get_Size(),
                 sizeof(uint32_t),nullptr
