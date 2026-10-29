@@ -102,7 +102,7 @@ void Run(::Window_Provider* window_provider)
 	
     std::unique_ptr<rendering::Debug_Renderer> debug_renderer = std::make_unique<rendering::Debug_Renderer>(
         core.get(), window_provider, renderers);
-	   
+
     debug_renderer->Set_Render_Operation();
 	
 	render_graph->Create_Utility();

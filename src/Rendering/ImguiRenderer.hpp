@@ -366,7 +366,7 @@ class Imgui_Renderer
 		}
 		if (!emitters.empty())
 		{
-			auto *cuda_node = render_graph->Get_Node("CudaNode");
+			auto *cuda_node = render_graph->Get_Node("cuda_smoke_node");
 			if (!cuda_node || !cuda_node->cuda_pipeline || !cuda_node->cuda_pipeline->context)
 			{
 				simulation_action_fail = true;
@@ -1635,7 +1635,7 @@ class Imgui_Renderer
 					break;
 				case 6:
 				{
-					auto *cuda_node = render_graph ? render_graph->Get_Node("CudaNode") : nullptr;
+					auto *cuda_node = render_graph ? render_graph->Get_Node("cuda_smoke_node") : nullptr;
 					if (!cuda_node || !cuda_node->cuda_pipeline || !cuda_node->cuda_pipeline->context)
 					{
 						simulation_action_fail = true;
@@ -2798,15 +2798,16 @@ class Imgui_Renderer
 			return;
 		}
 		bool selection_changed = false;
-		if (ImGui::BeginTable("##engine_buffers", 3,
+		// Discard NaN weights saved by the old proportional layout.
+		if (ImGui::BeginTable("##engine_buffers_v2", 3,
 		                      ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable |
-		                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp,
+		                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchSame,
 		                      ImVec2(0.0f, 180.0f)))
 		{
 			ImGui::TableSetupScrollFreeze(0, 1);
 			ImGui::TableSetupColumn("Buffer", ImGuiTableColumnFlags_WidthStretch, 2.0f);
-			ImGui::TableSetupColumn("Allocation");
-			ImGui::TableSetupColumn("Bytes");
+			ImGui::TableSetupColumn("Allocation", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthStretch, 1.0f);
 			ImGui::TableHeadersRow();
 			for (const auto& entry : entries)
 			{

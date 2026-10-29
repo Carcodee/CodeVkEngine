@@ -185,7 +185,6 @@ class Flat_Renderer : public Base_Renderer
 		    ->C_Build_Cuda_Pipeline();
 
 		auto cuda_vel = render_graph->Add_Cuda_Pass(cuda_pi_vel, "CudaVelNode");
-
 		//
 
 		paint_comp_shader = render_graph->resources_manager->Get_Shader(

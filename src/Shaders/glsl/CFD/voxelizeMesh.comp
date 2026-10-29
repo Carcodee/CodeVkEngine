@@ -14,22 +14,39 @@
 layout (set = 0, binding = 1, scalar) buffer Model_Vertices{
     U_Vertex vertex[];
 };
-layout (set = 0, binding = 2, scalar) buffer Model_Mats{
+
+layout (set = 0, binding = 2, scalar) buffer Model_Indices{
+    uint indices[];
+};
+layout (set = 0, binding = 3, scalar) buffer Model_Mats{
     mat4 models[];
 };
-layout (set = 0, binding = 3, scalar) buffer Voxels{
+layout (set = 0, binding = 4, scalar) buffer Voxels{
     uint cells[];
 };
+
+layout(set = 0, binding = 5, scalar) uniform Model_Properties{
+    uint indices_count;
+    uint vertex_cunt;
+    uint triangle_count;
+}m_props;
 
 
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
 
-    uint vertex_idx = gl_GlobalInvocationID.x;
+    uint triangle_id = gl_GlobalInvocationID.x;
 //    if(vertex_idx > 100000){
 //        return;
 //    }
-    U_Vertex vertex_ref = vertex[vertex_idx];
+    uint index_0 = indices[triangle_id * 3 + 0];
+    uint index_1 = indices[triangle_id * 3 + 1];
+    uint index_2 = indices[triangle_id * 3 + 2];
+
+    U_Vertex vertex_ref_1 = vertex[index_0];
+    U_Vertex vertex_ref_2 = vertex[index_1];
+    U_Vertex vertex_ref = vertex[index_2];
+
     mat4 model = models[vertex_ref.id];
     vec4 vertex_pos_ws = model * vec4(vertex_ref.pos, 1.0);
     int collision_idx = -1;

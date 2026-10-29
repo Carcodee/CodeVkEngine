@@ -118,6 +118,7 @@ namespace rendering
             }
             model.Set_World_Matrices();
             model.Set_Meshes_Spheres();
+            model.Calculate_Vertex_Index_Data();
             Load_Gltf_Materials(gltf_model, path);
             systems::Logger::Get_Instance()->Log_Message("Model loader Errors: " + err);
             systems::Logger::Get_Instance()->Log_Message("Model loader Warns: " + warn);

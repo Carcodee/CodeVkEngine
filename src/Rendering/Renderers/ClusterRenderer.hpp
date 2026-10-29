@@ -395,7 +395,7 @@ class Cluster_Renderer : public Base_Renderer
 		render_node->G_Set_Color_Image_Attachment_Binding(3, met_rough_attachment_view);
 		render_node->G_Set_Color_Image_Attachment_Binding(4, uv_attachment_view);
 		render_node->G_Set_Depth_Image_Resource(depth_attachment_view);
-		render_node->G_Set_Graphics_Pipeline_Configs({R_Fill, T_Triangle});
+		render_node->G_Set_Graphics_Pipeline_Configs({R_Line, T_Triangle});
 		render_node->Add_Buffer_Sync({B_Compute_Write, B_Draw_Indirect});
 		render_node->Depends_On(mesh_cull_pass_name);
 		render_node->Build_Render_Graph_Node();
