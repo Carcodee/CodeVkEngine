@@ -5,6 +5,7 @@
 #ifndef IMGUI_RENDERER_HPP
 #define IMGUI_RENDERER_HPP
 #include "CodeCuda.cuh"
+#include <imgui_internal.h>
 #include <cstdio>
 #include <cstring>
 
@@ -300,6 +301,7 @@ class Imgui_Renderer
 		this->dsets_arrays = std::make_unique<Imgui_Dsets_Array>(core, &descriptor_allocator);
 
 		ImGui::CreateContext();
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 		ImGui_ImplGlfw_InitForVulkan(window_provider->window, true);
 
@@ -429,15 +431,20 @@ class Imgui_Renderer
 		Profiler
 	};
 
+	static constexpr Debugger_Page debugger_pages[] = {
+	    Debugger_Page::Render_Graph, Debugger_Page::Engine, Debugger_Page::Textures,
+	    Debugger_Page::Buffers, Debugger_Page::Fluid_Simulation, Debugger_Page::Cluster_Renderer,
+	    Debugger_Page::Radiance_Cascades, Debugger_Page::Gaussian_Splatting, Debugger_Page::Profiler};
+
 	struct Debugger_Page_Info
 	{
 		const char *title;
 		const char *description;
 	};
 
-	Debugger_Page_Info Get_Debugger_Page_Info() const
+	Debugger_Page_Info Get_Debugger_Page_Info(Debugger_Page page) const
 	{
-		switch (active_page)
+		switch (page)
 		{
 			case Debugger_Page::Render_Graph:
 				return {"Render graph", "Inspect passes, resources, and node connections."};
@@ -514,52 +521,24 @@ class Imgui_Renderer
 		ImGui::EndChild();
 	}
 
-	void Render_Sidebar()
+	bool Is_Debugger_Page_Available(Debugger_Page page) const
 	{
-		const Debugger_Page_Info active_page_info = Get_Debugger_Page_Info();
-		auto                   navigate       = [this](const char *label, Debugger_Page page) {
-            const bool selected = active_page == page;
-            if (ImGui::Selectable(label, selected))
-            {
-                active_page = page;
-            }
-            if (selected)
-            {
-                ImGui::SetItemDefaultFocus();
-            }
-		};
-
-		ImGui::PushFont(fonts.caption);
-		ImGui::TextDisabled("WORKSPACE");
-		ImGui::PopFont();
-		ImGui::SetNextItemWidth(-1.0f);
-		if (ImGui::BeginCombo("##workspace_page", active_page_info.title))
+		switch (page)
 		{
-			navigate("Render graph", Debugger_Page::Render_Graph);
-			navigate("Engine overview", Debugger_Page::Engine);
-			navigate("Texture inspector", Debugger_Page::Textures);
-			navigate("Buffer inspector", Debugger_Page::Buffers);
-			navigate("Fluid simulation", Debugger_Page::Fluid_Simulation);
-			if (cluster_renderer)
-			{
-				navigate("Cluster lighting", Debugger_Page::Cluster_Renderer);
-			}
-			if (flat_renderer)
-			{
-				navigate("Radiance cascades", Debugger_Page::Radiance_Cascades);
-			}
-			if (gs_renderer)
-			{
-				navigate("Gaussian splatting", Debugger_Page::Gaussian_Splatting);
-			}
-			navigate("Performance", Debugger_Page::Profiler);
-			ImGui::EndCombo();
+			case Debugger_Page::Cluster_Renderer:
+				return cluster_renderer != nullptr;
+			case Debugger_Page::Radiance_Cascades:
+				return flat_renderer != nullptr;
+			case Debugger_Page::Gaussian_Splatting:
+				return gs_renderer != nullptr;
+			default:
+				return true;
 		}
 	}
 
-	void Render_Active_Page()
+	void Render_Debugger_Page(Debugger_Page page)
 	{
-		switch (active_page)
+		switch (page)
 		{
 			case Debugger_Page::Render_Graph:
 				Start_Node_Editor();
@@ -678,103 +657,61 @@ class Imgui_Renderer
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.024f, 0.026f, 1.0f));
 		const ImGuiWindowFlags root_flags =
-		    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-		    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+		    ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+		    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNavFocus |
 		    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-		if (ImGui::Begin("CodeVK Engine Workspace", nullptr, root_flags))
+		ImGui::Begin("CodeVK Engine Workspace", nullptr, root_flags);
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(2);
+		Render_Application_Header();
+
+		const ImGuiID dockspace_id = ImGui::GetID("CodeVK Workspace Dockspace");
+		if (!ImGui::DockBuilderGetNode(dockspace_id))
 		{
-			const ImVec2 available     = ImGui::GetContentRegionAvail();
-			const float  splitter_width = 6.0f;
-			const float  minimum_panel_width =
-			    std::min(360.0f, std::max(220.0f, available.x * 0.45f));
-			const float maximum_panel_width =
-			    std::max(minimum_panel_width, available.x - 280.0f - splitter_width);
+			ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+			ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetContentRegionAvail());
+			ImGuiID viewport_dock = 0;
+			ImGuiID tools_dock = 0;
+			ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.36f,
+			                            &tools_dock, &viewport_dock);
+			ImGui::DockBuilderDockWindow("Scene viewport", viewport_dock);
+			for (Debugger_Page page : debugger_pages)
+			{
+				if (Is_Debugger_Page_Available(page))
+					ImGui::DockBuilderDockWindow(Get_Debugger_Page_Info(page).title, tools_dock);
+			}
+			ImGui::DockBuilderFinish(dockspace_id);
+		}
+		ImGui::DockSpace(dockspace_id);
+		ImGui::End();
 
-			if (inspector_panel_width <= 0.0f)
-			{
-				inspector_panel_width = available.x * 0.36f;
-			}
-			if (inspector_panel_resizing && ImGui::IsMouseDown(ImGuiMouseButton_Left))
-			{
-				inspector_panel_width -= ImGui::GetIO().MouseDelta.x;
-			}
-			else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
-			{
-				inspector_panel_resizing = false;
-			}
-			inspector_panel_width =
-			    std::clamp(inspector_panel_width, minimum_panel_width, maximum_panel_width);
-			const float viewport_width =
-			    std::max(1.0f, available.x - inspector_panel_width - splitter_width);
-
-			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.015f, 0.015f, 0.017f, 1.0f));
-			if (ImGui::BeginChild("##scene_viewport", ImVec2(viewport_width, 0.0f),
-			                      ImGuiChildFlags_None,
-			                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
-			{
-				Render_Scene_Viewport();
-			}
-			ImGui::EndChild();
-			ImGui::PopStyleColor();
-
-			ImGui::SameLine(0.0f, 0.0f);
-			ImGui::InvisibleButton("##inspector_splitter", ImVec2(splitter_width, available.y),
-			                       ImGuiButtonFlags_MouseButtonLeft);
-			const bool splitter_hovered = ImGui::IsItemHovered();
-			const bool splitter_active  = ImGui::IsItemActive();
-			if (splitter_hovered || splitter_active || inspector_panel_resizing)
-			{
-				ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-			}
-			if (ImGui::IsItemActivated())
-			{
-				inspector_panel_resizing = true;
-			}
-			if (splitter_hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-			{
-				inspector_panel_width = std::clamp(available.x * 0.36f,
-				                                 minimum_panel_width, maximum_panel_width);
-			}
-			const ImVec2 splitter_min = ImGui::GetItemRectMin();
-			const ImVec2 splitter_max = ImGui::GetItemRectMax();
-			ImGui::GetWindowDrawList()->AddRectFilled(
-			    splitter_min, splitter_max,
-			    ImGui::GetColorU32(splitter_hovered || splitter_active ? imgui_renderer_ui::Accent_Color() : ImVec4(0.18f, 0.16f, 0.16f, 0.75f)));
-
-			ImGui::SameLine(0.0f, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
-			ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.045f, 0.042f, 0.045f, 0.98f));
-			if (ImGui::BeginChild("##docked_inspector", ImVec2(inspector_panel_width, 0.0f),
-			                      ImGuiChildFlags_None))
-			{
-				Render_Application_Header();
-				ImGui::Spacing();
-				Render_Sidebar();
-				ImGui::Spacing();
-
-				const Debugger_Page_Info page_info = Get_Debugger_Page_Info();
-				ImGui::PushFont(fonts.heading);
-				ImGui::TextUnformatted(page_info.title);
-				ImGui::PopFont();
-				ImGui::TextDisabled("%s", page_info.description);
-				ImGui::Separator();
-				ImGui::Spacing();
-
-				if (ImGui::BeginChild("##page_content", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None,
-				                      ImGuiWindowFlags_HorizontalScrollbar))
-				{
-					Render_Active_Page();
-				}
-				ImGui::EndChild();
-			}
-			ImGui::EndChild();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleVar();
+		// Hidden or inactive viewport tabs must not retain the previous frame's brush target.
+		scene_viewport_valid = false;
+		scene_viewport_hovered = false;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.015f, 0.015f, 0.017f, 1.0f));
+		if (ImGui::Begin("Scene viewport", nullptr,
+		                 ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			Render_Scene_Viewport();
 		}
 		ImGui::End();
 		ImGui::PopStyleColor();
-		ImGui::PopStyleVar(2);
+
+		for (Debugger_Page page : debugger_pages)
+		{
+			if (!Is_Debugger_Page_Available(page))
+				continue;
+			const Debugger_Page_Info page_info = Get_Debugger_Page_Info(page);
+			if (ImGui::Begin(page_info.title, nullptr, ImGuiWindowFlags_HorizontalScrollbar))
+			{
+				ImGui::TextDisabled("%s", page_info.description);
+				ImGui::Separator();
+				ImGui::Spacing();
+				Render_Debugger_Page(page);
+			}
+			ImGui::End();
+		}
 	}
 	void Render_Graph_Profiler()
 	{
@@ -976,14 +913,96 @@ class Imgui_Renderer
 				draw->AddLine(project(start), project(end), edge_color, 1.5f);
 			}
 		}
+		const int slice_axis = lattice_config.plane_selected == glm::uvec3(1, 0, 1) ? 1 :
+		                       (lattice_config.plane_selected == glm::uvec3(0, 1, 1) ? 0 : 2);
+		const uint32_t slice = std::min(lattice_config.selected_dimension_offset,
+		                                lattice_config.dimensions[slice_axis] - 1);
+		const int next = (slice_axis + 1) % 3;
+		const int last = (slice_axis + 2) % 3;
+		ImVec2 slice_corners[4];
+		for (int corner = 0; corner < 4; ++corner)
+		{
+			glm::vec3 point(0.0f);
+			// Show the selected voxel layer at its cell center, in clockwise order.
+			point[slice_axis] = (static_cast<float>(slice) + 0.5f) * lattice_config.cell_size;
+			point[next] = (corner == 2 || corner == 3) ? extent[next] : 0.0f;
+			point[last] = (corner == 1 || corner == 2) ? extent[last] : 0.0f;
+			slice_corners[corner] = project(point);
+		}
+		const ImVec4 slice_color = imgui_renderer_ui::Accent_Color();
+		draw->AddQuadFilled(slice_corners[0], slice_corners[1], slice_corners[2], slice_corners[3],
+		                    ImGui::GetColorU32(imgui_renderer_ui::With_Alpha(slice_color, 0.24f)));
+		draw->AddQuad(slice_corners[0], slice_corners[1], slice_corners[2], slice_corners[3],
+		              ImGui::GetColorU32(slice_color), 2.5f);
 		draw->PopClipRect();
-		ImGui::TextWrapped("Preview settings only. Grid lines are sampled for readability.");
+		ImGui::TextDisabled("Selected slice: %s plane, %s = %u (0-%u)",
+		                    slice_axis == 0 ? "YZ" : (slice_axis == 1 ? "XZ" : "XY"),
+		                    slice_axis == 0 ? "X" : (slice_axis == 1 ? "Y" : "Z"),
+		                    slice, lattice_config.dimensions[slice_axis] - 1);
+		ImGui::TextWrapped("The highlighted plane marks the selected voxel slice. Grid lines are sampled for readability.");
+		ImGui::Spacing();
+	}
+
+	void Voxel_Projection_Info()
+	{
+		if (!ImGui::CollapsingHeader("Voxel projection###fluid_voxel_projection", ImGuiTreeNodeFlags_DefaultOpen))
+			return;
+		if (!cfd_renderer)
+		{
+			ImGui::TextDisabled("CFD renderer is unavailable.");
+			return;
+		}
+
+		Pc_Voxel_Grid& lattice_config = cfd_renderer->voxel_grid.pc_voxel_grid;
+		if (ImGui::BeginTable("##fluid_voxel_projection_properties", 2,
+		                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
+		{
+			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
+			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+			auto property = [](const char* label) {
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::TextUnformatted(label);
+				ImGui::TableSetColumnIndex(1);
+				ImGui::SetNextItemWidth(-1.0f);
+			};
+
+			const glm::uvec3 planes[] = {glm::uvec3(1, 1, 0), glm::uvec3(1, 0, 1), glm::uvec3(0, 1, 1)};
+			int plane = lattice_config.plane_selected == planes[1] ? 1 :
+			            (lattice_config.plane_selected == planes[2] ? 2 : 0);
+			property("Plane");
+			if (ImGui::Combo("##voxel_projection_plane", &plane, "XY (slice Z)\0XZ (slice Y)\0YZ (slice X)\0"))
+			{
+				lattice_config.plane_selected = planes[plane];
+			}
+
+			const int slice_axis = 2 - plane;
+			const int max_slice = std::max(0, static_cast<int>(lattice_config.dimensions[slice_axis]) - 1);
+			int slice = static_cast<int>(std::min(lattice_config.selected_dimension_offset,
+			                                     static_cast<uint32_t>(max_slice)));
+			property("Slice offset");
+			ImGui::SliderInt("##voxel_projection_slice", &slice, 0, max_slice, "%d",
+			                 ImGuiSliderFlags_AlwaysClamp);
+			lattice_config.selected_dimension_offset = static_cast<uint32_t>(slice);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Zero-based cell index along the %s axis.", slice_axis == 0 ? "X" : (slice_axis == 1 ? "Y" : "Z"));
+
+			property("Cells (X, Y, Z)");
+			ImGui::TextDisabled("%u x %u x %u", lattice_config.dimensions.x,
+			                    lattice_config.dimensions.y, lattice_config.dimensions.z);
+			property("Cell size");
+			ImGui::TextDisabled("%.4f", lattice_config.cell_size);
+			ImGui::EndTable();
+		}
+		ImGui::TextWrapped("Grid dimensions and cell size follow the Lattice settings.");
 		ImGui::Spacing();
 	}
 
 	void Fluid_Sim_Info()
 	{
 		Lattice_Info();
+		Voxel_Projection_Info();
 		CodeCuda::FluidSimulation::sim_params fluid_sim_params{};
 		if (CodeCuda::FluidSimulation::C_GetSimulationParams(&fluid_sim_params) != CodeCuda::C_Res::OK)
 		{
@@ -2632,7 +2651,7 @@ class Imgui_Renderer
 	// Called after the frame's GPU work has completed, before the next CPU updates.
 	void Capture_Buffer_Inspector()
 	{
-		if (!buffer_inspection_requested || active_page != Debugger_Page::Buffers)
+		if (!buffer_inspection_requested)
 			return;
 		buffer_inspection_requested = false;
 		buffer_inspection_bytes.clear();
@@ -3016,13 +3035,10 @@ class Imgui_Renderer
 	ImGuiUtils::ProfilersWindow                           profilers_window{};
 	ui::Rg_Node_Editor                                     node_editor;
 	imgui_renderer_ui::Fonts                                fonts{};
-	Debugger_Page                                          active_page           = Debugger_Page::Render_Graph;
 	bool                                                  scene_viewport_valid   = false;
 	bool                                                  scene_viewport_hovered = false;
 	ImVec2                                                scene_viewport_min{};
 	ImVec2                                                scene_viewport_max{};
-	float                                                 inspector_panel_width    = 0.0f;
-	bool                                                  inspector_panel_resizing = false;
 	glm::vec2                                             pretty_smoke_last_mouse_position{};
 	glm::vec4                                             pretty_smoke_last_color{0.15f, 0.05f, 0.25f, 1.0f};
 	bool                                                  pretty_smoke_stroke_active    = false;

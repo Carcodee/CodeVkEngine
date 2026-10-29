@@ -250,12 +250,15 @@ uint U_Grid_To_Linear_Idx(uvec3 dimensions, uvec3 pos){
 
     return pos.z * (dimensions.x * dimensions.y) + (pos.y * dimensions.x) + pos.x;
 }
+uvec3 U_Linear_To_Grid_Idx(uvec3 dimensions, uint idx){
+
+    return uvec3(idx % dimensions.x, (idx / dimensions.x) % dimensions.y, idx / (dimensions.x * dimensions.y));
+}
 
 
 
-mat4 U_Grid_3d_Pos_From_1d(float cell_size, uvec3 dimensions, vec3 origin, uint cell_id){
+mat4 U_Grid_3d_World_Pos(float cell_size, uvec3 dimensions, vec3 origin, uvec3 pos_in_grid){
 
-    uvec3 pos_in_grid = uvec3(cell_id % dimensions.x, (cell_id / dimensions.x) % dimensions.y, cell_id / (dimensions.x * dimensions.y));
     vec3 offset= vec3(pos_in_grid.x, pos_in_grid.y, pos_in_grid.z) * cell_size;
 
     mat4 model = mat4(1.0);

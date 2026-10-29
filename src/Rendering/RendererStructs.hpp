@@ -17,6 +17,8 @@ namespace rendering
         glm::vec3 origin = glm::vec3{0.0f, 0.0f, 0.0f};
         alignas(16) glm::uvec3 dimensions = glm::uvec3{100, 100, 100};
         float cell_size = 0.5f;
+        alignas(16) glm::uvec3 plane_selected = glm::uvec3{1, 1, 0};
+        uint32_t selected_dimension_offset = 0;
     };
     struct Mvp_Pc
     {
@@ -266,6 +268,8 @@ namespace rendering
         glm::vec3 origin = glm::vec3{0.0f, 0.0f, 0.0f};
         alignas(16) glm::uvec3 dimensions = glm::uvec3{10, 10, 10};
         float cell_size = 0.5f;
+        alignas(16) glm::uvec3 plane_selected = glm::uvec3{1, 1, 0};
+        uint32_t selected_dimension_offset = 0;
         uint64_t Get_Size() const
         {
             return uint64_t(dimensions.x) * dimensions.y * dimensions.z;
@@ -285,7 +289,9 @@ namespace rendering
     };
     static_assert(offsetof(Pc_Voxel_Grid, dimensions) == 16);
     static_assert(offsetof(Pc_Voxel_Grid, cell_size) == 28);
-    static_assert(sizeof(Pc_Voxel_Grid) == 32);
+    static_assert(offsetof(Pc_Voxel_Grid, plane_selected) == 32);
+    static_assert(offsetof(Pc_Voxel_Grid, selected_dimension_offset) == 44);
+    static_assert(sizeof(Pc_Voxel_Grid) == 48);
 
     struct Voxel_Grid
     {
@@ -309,6 +315,7 @@ namespace rendering
         }
 
     };
+
 } // namespace rendering
 
 

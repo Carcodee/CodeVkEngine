@@ -99,15 +99,6 @@ namespace rendering
                                                                          vk::Format::eR32G32B32A32Sfloat,
                                                                          vk::AttachmentLoadOp::eLoad);
 
-            struct Pc_Voxel_Proj
-            {
-                glm::uvec3 dimensions = glm::uvec3{10, 10, 10};
-                glm::uvec3 plane_selected = glm::uvec3{1, 1, 0};
-                uint32_t selected_dimension_offset;
-                float cell_size = 0.5f;
-                uint32_t padding;
-            };
-
             auto* proj_voxel_slice_node = render_graph->Add_Pass("proj_voxel_slice_node");
             proj_voxel_slice_node->G_Set_Vert_Shader(proj_grid_v_shader);
             proj_voxel_slice_node->G_Set_Frag_Shader(proj_grid_f_shader);
@@ -122,7 +113,7 @@ namespace rendering
             });
             proj_voxel_slice_node->G_Set_Depth_Config(Depth_Configs::D_None);
             proj_voxel_slice_node->Depends_On("voxelizer");
-            proj_voxel_slice_node->G_Set_Push_Constant_Size(sizeof(Pc_Voxel_Proj));
+            proj_voxel_slice_node->G_Set_Push_Constant_Size(sizeof(Pc_Voxel_Grid));
             proj_voxel_slice_node->Build_Render_Graph_Node();
 
             proj_voxel_slice_node->G_Set_Render_Operation(new std::function<void()>(
@@ -143,19 +134,17 @@ namespace rendering
                                     ->buffer_handle.get(), 0,
                         vk::IndexType::eUint32);
 
-                    Pc_Voxel_Proj pc_voxel_proj = {};
-                    pc_voxel_proj.dimensions = voxel_grid.pc_voxel_grid.dimensions;
-                    pc_voxel_proj.cell_size = voxel_grid.pc_voxel_grid.cell_size;
-
-
-                    // 0 == x, 1 == y, 2 == z
-                    pc_voxel_proj.plane_selected = glm::uvec3(1, 1, 0);
-                    pc_voxel_proj.selected_dimension_offset = 0;
+                    auto& voxel_pc = voxel_grid.pc_voxel_grid;
+                    const int slice_axis = voxel_pc.plane_selected == glm::uvec3(1, 0, 1) ? 1 :
+                                           (voxel_pc.plane_selected == glm::uvec3(0, 1, 1) ? 0 : 2);
+                    const uint32_t slice_count = voxel_pc.dimensions[slice_axis];
+                    voxel_pc.selected_dimension_offset = std::min(
+                        voxel_pc.selected_dimension_offset, slice_count > 0 ? slice_count - 1 : 0u);
 
                     node->Get_Curr_Cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
                                                        vk::ShaderStageFlagBits::eVertex |
                                                        vk::ShaderStageFlagBits::eFragment,
-                                                       0, sizeof(Pc_Voxel_Proj), &pc_voxel_proj);
+                                                       0, sizeof(Pc_Voxel_Grid), &voxel_pc);
                     node->Get_Curr_Cmd().drawIndexed(Vertex_2d::Get_Quad_Indices().size(), 1, 0, 0, 0);
                 }));
         }

@@ -153,6 +153,8 @@ namespace rendering
                         debug_voxels_pc.origin = cfd_renderer->voxel_grid.pc_voxel_grid.origin;
                         debug_voxels_pc.cell_size = cfd_renderer->voxel_grid.pc_voxel_grid.cell_size;
                         debug_voxels_pc.dimensions = cfd_renderer->voxel_grid.pc_voxel_grid.dimensions;
+                        debug_voxels_pc.plane_selected = cfd_renderer->voxel_grid.pc_voxel_grid.plane_selected;
+                        debug_voxels_pc.selected_dimension_offset = cfd_renderer->voxel_grid.pc_voxel_grid.selected_dimension_offset;
 
                         vk::DeviceSize offset = 0;
                         auto node = render_graph->Get_Node("voxelizer_viewer");

@@ -8,6 +8,7 @@
 #include "../Utils/uRendering.glsl"
 #include "../Utils/uStructs.glsl"
 #include "../Utils/uMath.glsl"
+#include "../Utils/uPushConstants.glsl"
 
 
 layout (set = 0, binding = 1, scalar) buffer Model_Vertices{
@@ -20,11 +21,6 @@ layout (set = 0, binding = 3, scalar) buffer Voxels{
     uint cells[];
 };
 
-layout(push_constant)uniform Push_Constants{
-        vec3 origin;
-        uvec3 dimensions;
-        float cell_size;
-}voxel_grid;
 
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 void main() {
@@ -38,7 +34,9 @@ void main() {
     vec4 vertex_pos_ws = model * vec4(vertex_ref.pos, 1.0);
     int collision_idx = -1;
     for(int idx = 0; idx < (voxel_grid.dimensions.x * voxel_grid.dimensions.y * voxel_grid.dimensions.z); idx++){
-        mat4 model = U_Grid_3d_Pos_From_1d(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, idx);
+
+        uvec3 pos_in_grid = U_Linear_To_Grid_Idx(voxel_grid.dimensions, idx);
+        mat4 model = U_Grid_3d_World_Pos(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
         vec3 cell_ws_pos = vec3(model[3][0], model[3][1], model[3][2]);
         vec3 half_size = vec3(model[0][0], model[1][1], model[2][2]) / 2.0f;
         vec3 min = cell_ws_pos - half_size;
