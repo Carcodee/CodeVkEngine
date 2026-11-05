@@ -2,6 +2,7 @@
 #define U_MATH 
 #define PI 3.1415
 #define INVERSE_PI 3.1415
+#define EPS 1e-5
 
 #define MAGIC 0x4d415449u
 
@@ -259,7 +260,7 @@ uvec3 U_Linear_To_Grid_Idx(uvec3 dimensions, uint idx){
 
 mat4 U_Grid_3d_World_Pos(float cell_size, uvec3 dimensions, vec3 origin, uvec3 pos_in_grid){
 
-    vec3 offset= vec3(pos_in_grid.x, pos_in_grid.y, pos_in_grid.z) * cell_size;
+    vec3 offset= (vec3(pos_in_grid.x, pos_in_grid.y, pos_in_grid.z) * cell_size) - (vec3(cell_size, cell_size, cell_size) / 2.0f);
 
     mat4 model = mat4(1.0);
     model[0][0] = cell_size;
@@ -271,4 +272,125 @@ mat4 U_Grid_3d_World_Pos(float cell_size, uvec3 dimensions, vec3 origin, uvec3 p
     model[3][2] = origin.z + offset.z;
     return model;
 }
-#endif 
+
+
+float U_Get_T_For_Square(float half_side_lenght, float o, float d, bool positive){
+    if(positive == true){
+        return ((half_side_lenght) - o) / d;
+    }else{
+
+        return (((half_side_lenght) + o) / d) * -1;
+    }
+}
+vec3 U_Map_T_Value(float t, vec3 origin, vec3 dir){
+    return origin + dir *t;
+}
+bool U_Is_T_Valid(float half_side_lenght, vec3 t_mapped, int axis, float t){
+    if(t < 0){
+        return false;
+    }
+    if(axis == 0 && (t_mapped.y > (half_side_lenght) || t_mapped.y < -half_side_lenght || t_mapped.z > (half_side_lenght) || t_mapped.z < -half_side_lenght)){
+        return false;
+    }
+    if(axis == 1 && (t_mapped.x > (half_side_lenght) || t_mapped.x < -half_side_lenght || t_mapped.z > (half_side_lenght) || t_mapped.z < -half_side_lenght)){
+        return false;
+    }
+    if(axis == 2 && (t_mapped.x > (half_side_lenght) || t_mapped.x < -half_side_lenght || t_mapped.y > (half_side_lenght) || t_mapped.y < -half_side_lenght)){
+        return false;
+    }
+    return true;
+}
+//line must be in cube local space, for now
+bool U_Line_Cube_Intersection(float side_lenght, vec3 origin, vec3 dir, inout float t){
+    //based on max(|x|, |y|) = side_length
+    //p(t) = o + dt
+    //max(|Ox + Dxt|, |Oy + Dyt|) = side_length
+
+    side_lenght /= 2.0f;
+    float tx_plus = U_Get_T_For_Square(side_lenght, origin.x, dir.x, true);
+    float ty_plus = U_Get_T_For_Square(side_lenght, origin.y, dir.y, true);
+    float tz_plus = U_Get_T_For_Square(side_lenght, origin.z, dir.z, true);
+    float tx_minus = U_Get_T_For_Square(side_lenght, origin.x, dir.x, false);
+    float ty_minus = U_Get_T_For_Square(side_lenght, origin.y, dir.y, false);
+    float tz_minus = U_Get_T_For_Square(side_lenght, origin.z, dir.z, false);
+
+    vec3 t_mapped = U_Map_T_Value(tx_plus, origin, dir);
+    if(U_Is_T_Valid(side_lenght, t_mapped, 0, tx_plus)){
+        t = tx_plus;
+        return true;
+    }
+    t_mapped = U_Map_T_Value(tx_minus, origin, dir);
+    if(U_Is_T_Valid(side_lenght, t_mapped, 0, tx_minus)){
+        t = tx_minus;
+        return true;
+    }
+
+    t_mapped = U_Map_T_Value(ty_plus, origin, dir);
+    if(U_Is_T_Valid(side_lenght, t_mapped, 1, ty_plus)){
+        t = ty_plus;
+        return true;
+    }
+    t_mapped = U_Map_T_Value(ty_minus, origin, dir);
+    if(U_Is_T_Valid(side_lenght, t_mapped, 1, ty_minus)){
+        t = ty_minus;
+        return true;
+    }
+
+    t_mapped = U_Map_T_Value(tz_plus, origin, dir);
+    if(U_Is_T_Valid(side_lenght, t_mapped, 2, tz_plus)){
+        t = tz_plus;
+        return true;
+    }
+    t_mapped = U_Map_T_Value(tz_minus, origin, dir);
+    if(U_Is_T_Valid(side_lenght, t_mapped, 2, tz_minus)){
+        t = tz_minus;
+        return true;
+    }
+
+    return false;
+}
+//normalized dir
+void Get_Intersection_Data(vec3 start, vec3 end, inout vec3 origin, inout vec3 dir){
+    dir = normalize(end - start);
+    origin = start;
+}
+
+bool U_Test_Triangle_Voxel_Intersection(float side_length, vec3 p_0, vec3 p_1, vec3 p_2, inout float t){
+
+    vec3 origin;
+    vec3 dir;
+    t = -1;
+    Get_Intersection_Data(p_0, p_1, origin, dir);
+    if(U_Line_Cube_Intersection(side_length, origin, dir, t)){
+        float test_l = length(dir*t);
+        float edge_size = length(p_1 - p_0);
+        if(abs(test_l - edge_size) <= EPS){
+            return false;
+        }
+        return true;
+    }
+    Get_Intersection_Data(p_1, p_2, origin, dir);
+    if(U_Line_Cube_Intersection(side_length, origin, dir, t)){
+        float test_l = length(dir*t);
+        float edge_size = length(p_2 - p_1);
+        if(abs(test_l - edge_size) <= EPS){
+            return false;
+        }
+        return true;
+    }
+
+    Get_Intersection_Data(p_0, p_2, origin, dir);
+    if(U_Line_Cube_Intersection(side_length, origin, dir, t)){
+        float test_l = length(dir*t);
+        float edge_size = length(p_2 - p_0);
+        if(abs(test_l - edge_size) <= EPS){
+            return false;
+        }
+        return true;
+    }
+
+    return false;
+
+
+}
+#endif

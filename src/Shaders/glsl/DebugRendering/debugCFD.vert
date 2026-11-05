@@ -27,9 +27,9 @@ layout (set = 0, binding = 0, scalar) buffer Voxels{
 void main() {
     uvec3 pos_in_grid = U_Linear_To_Grid_Idx(pc.dimensions, gl_InstanceIndex);
     mat4 model = U_Grid_3d_World_Pos(pc.cell_size, pc.dimensions, pc.origin, pos_in_grid);
-
     gl_Position = pc.proj_view * model * vec4(pos, 1.0f);
     out_count = int(cells[gl_InstanceIndex]);
+
     if(out_count > 0){
         return;
     }
