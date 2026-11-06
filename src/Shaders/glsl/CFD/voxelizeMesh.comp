@@ -58,22 +58,20 @@ void main() {
     vec3 p_0, p_1, p_2;
     bool intersects = false;
     for(int idx = 0; idx < (voxel_grid.dimensions.x * voxel_grid.dimensions.y * voxel_grid.dimensions.z); idx++){
-
         //check convention with my voxel actual size vs what the function expects if lenght is 1 the function is max(|x|, |y|) = L/2
         uvec3 pos_in_grid = U_Linear_To_Grid_Idx(voxel_grid.dimensions, idx);
-        mat4 voxel_to_world = U_Grid_3d_World_Pos(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
-        mat4 world_to_voxel = inverse(voxel_to_world);
-        p_0 = ((world_to_voxel * vertex_pos_ws_0).xyz) / voxel_grid.cell_size;
-        p_1 = ((world_to_voxel * vertex_pos_ws_1).xyz) / voxel_grid.cell_size;
-        p_2 = ((world_to_voxel * vertex_pos_ws_2).xyz) / voxel_grid.cell_size;
-        float t = -1;
+        vec3 dir = U_Grid_Get_Cell_Position_Centered(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
+        p_0 = vertex_pos_ws_0.xyz - dir;
+        p_1 = vertex_pos_ws_1.xyz - dir;
+        p_2 = vertex_pos_ws_2.xyz - dir;
+        float t = -99999;
         intersects = U_Test_Triangle_Voxel_Intersection(voxel_grid.cell_size, p_0.xyz, p_1.xyz, p_2.xyz, t);
-
-
         if(intersects){
             collision_idx = idx;
             break;
+            
         }
+
     }
 
     if(collision_idx > -1){

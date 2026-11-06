@@ -145,7 +145,7 @@ namespace rendering
                 render_node->G_Set_Vertex_Input(D_Vertex_3d::Get_Vertex_Input());
                 render_node->G_Add_Color_Attachment_Output(0, col_info);
                 render_node->G_Set_Depth_Attachment_Output(depth_config);
-                render_node->G_Set_Depth_Config(Depth_Configs::D_Enable);
+                render_node->G_Set_Depth_Config(Depth_Configs::D_Disable);
                 render_node->G_Set_Depth_Image_Resource(depth);
                 render_node->G_Set_Color_Image_Attachment_Binding(0, render_graph->current_back_buffer);
                 render_node->G_Set_Graphics_Pipeline_Configs({

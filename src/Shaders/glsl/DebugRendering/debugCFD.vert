@@ -29,7 +29,6 @@ void main() {
     mat4 model = U_Grid_3d_World_Pos(pc.cell_size, pc.dimensions, pc.origin, pos_in_grid);
     gl_Position = pc.proj_view * model * vec4(pos, 1.0f);
     out_count = int(cells[gl_InstanceIndex]);
-
     if(out_count > 0){
         return;
     }

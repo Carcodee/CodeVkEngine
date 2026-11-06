@@ -80,7 +80,7 @@ namespace rendering
                                                               vk::ShaderStageFlagBits::eCompute,
                                                               0, sizeof(Pc_Voxel_Grid), &voxel_grid.pc_voxel_grid);
                     render_node->Get_Curr_Cmd().dispatch(
-                        static_cast<uint32_t>(((model_to_voxelize->model_properties.index_count/3) + 31) / 32), 1, 1);
+                        static_cast<uint32_t>(((model_to_voxelize->model_properties.triangle_count) + 31) / 32), 1, 1);
                 }));
 
             auto proj_grid_v_shader = render_graph->resources_manager->Get_Shader(
