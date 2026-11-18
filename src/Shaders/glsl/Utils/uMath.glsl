@@ -3,6 +3,8 @@
 #define PI 3.1415
 #define INVERSE_PI 3.1415
 #define EPS 1e-5
+#define BIG_NUM 1e10
+#define SMALL_NUM -1e10
 
 #define MAGIC 0x4d415449u
 
@@ -170,6 +172,10 @@ vec3 U_Line_Intersection_To_Z_Plane(vec3 a, vec3 b, float z_distance){
     return result;
 }
 
+bool U_Aabb(float min_aabb, float max_aabb, float pos){
+    bool x_check = bool(pos > min_aabb && pos < max_aabb);
+    return x_check;
+}
 bool U_Aabb(vec2 min_aabb, vec2 max_aabb, vec2 pos){
     bool x_check = bool(pos.x > min_aabb.x && pos.x < max_aabb.x);
     bool y_check = bool(pos.y > min_aabb.y && pos.y < max_aabb.y);
@@ -409,4 +415,102 @@ bool U_Test_Triangle_Voxel_Intersection(float side_length, vec3 p_0, vec3 p_1, v
 
 
 }
+
+void U_Get_Axis_Centered_Voxel_Corners(float edge_size, inout vec3 p0, inout vec3 p1,  inout vec3 p2, inout vec3 p3,  inout vec3 p4, inout vec3 p5,  inout vec3 p6, inout vec3 p7){
+    float half_size = edge_size/2.0f;
+
+    p0 = vec3(-half_size, half_size, half_size);
+    p1 = vec3(half_size, half_size, half_size);
+    p2 = vec3(-half_size, -half_size, half_size);
+    p3 = vec3(half_size, -half_size, half_size);
+
+    p4 = vec3(-half_size, half_size, -half_size);
+    p5 = vec3(half_size, half_size, -half_size);
+    p6 = vec3(-half_size, -half_size, -half_size);
+    p7 = vec3(half_size, -half_size, -half_size);
+}
+bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3,
+        vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
+
+    float min_tri = BIG_NUM;
+    float max_tri = SMALL_NUM;
+
+    float min_cube = BIG_NUM;
+    float max_cube = SMALL_NUM;
+    float proj_tri_p0 = dot(normal, tri_p0);
+    float proj_tri_p1 = dot(normal, tri_p1);
+    float proj_tri_p2 = dot(normal, tri_p2);
+
+    min_tri = min(min_tri, proj_tri_p0);
+    min_tri = min(min_tri, proj_tri_p1);
+    min_tri = min(min_tri, proj_tri_p2);
+
+    max_tri = max(max_tri, proj_tri_p0);
+    max_tri = max(max_tri, proj_tri_p1);
+    max_tri = max(max_tri, proj_tri_p2);
+
+
+    float proj_cube_p0 = dot(normal, cube_p0);
+    float proj_cube_p1 = dot(normal, cube_p1);
+    float proj_cube_p2 = dot(normal, cube_p2);
+    float proj_cube_p3 = dot(normal, cube_p3);
+    float proj_cube_p4 = dot(normal, cube_p4);
+    float proj_cube_p5 = dot(normal, cube_p5);
+    float proj_cube_p6 = dot(normal, cube_p6);
+    float proj_cube_p7 = dot(normal, cube_p7);
+
+    min_cube = min(min_cube, proj_cube_p0);
+    min_cube = min(min_cube, proj_cube_p1);
+    min_cube = min(min_cube, proj_cube_p2);
+    min_cube = min(min_cube, proj_cube_p3);
+    min_cube = min(min_cube, proj_cube_p4);
+    min_cube = min(min_cube, proj_cube_p5);
+    min_cube = min(min_cube, proj_cube_p6);
+    min_cube = min(min_cube, proj_cube_p7);
+
+    max_cube = max(max_cube, proj_cube_p0);
+    max_cube = max(max_cube, proj_cube_p1);
+    max_cube = max(max_cube, proj_cube_p2);
+    max_cube = max(max_cube, proj_cube_p3);
+    max_cube = max(max_cube, proj_cube_p4);
+    max_cube = max(max_cube, proj_cube_p5);
+    max_cube = max(max_cube, proj_cube_p6);
+    max_cube = max(max_cube, proj_cube_p7);
+
+    bool min_tri_inside = min_tri >= min_cube && min_tri <= max_cube;
+    bool max_tri_inside = max_tri >= min_cube && max_tri <= max_cube;
+    bool SAT = !(min_tri_inside || min_tri_inside);
+
+    return SAT;
+
+}
+
+bool U_Test_Tri_Cube_Edges(vec3 edge0, vec3 edge1, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3, vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
+    vec3 normal = normalize(cross(edge0, edge1));
+    return U_Does_SAT_Exist(normal, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+}
+
+bool U_Test_Tringle_Cube(vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3, vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
+    bool SAT_exist = true;
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, tri_p2 - tri_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(cube_p2 - cube_p0, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(cube_p4 - cube_p0, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(cube_p1 - cube_p0, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p0, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p0, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p0, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p1, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p1, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p1, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+
+    return !SAT_exist;
+}
+
+
 #endif
