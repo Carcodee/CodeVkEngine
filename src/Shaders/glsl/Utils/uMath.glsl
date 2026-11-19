@@ -285,137 +285,6 @@ vec3 U_Grid_Get_Cell_Position_Centered(float cell_size, uvec3 dimensions, vec3 o
     return offset;
 }
 
-
-
-float U_Get_T_For_Square(float half_side_lenght, float o, float d, bool positive){
-    if(positive == true){
-        return (half_side_lenght - o) / d;
-    }else{
-
-        return (-half_side_lenght - o) / d;
-    }
-}
-vec3 U_Map_T_Value(float t, vec3 origin, vec3 dir){
-    return origin + dir *t;
-}
-bool U_Test_Faces(float half_side_lenght, vec3 t_mapped, int axis, float t){
-    if(t < 0){
-        return false;
-    }
-    if(axis == 0 && ((abs(t_mapped.x) >= half_side_lenght + EPS) || t_mapped.y > (half_side_lenght) || t_mapped.y < -half_side_lenght || t_mapped.z > (half_side_lenght) || t_mapped.z < -half_side_lenght)){
-        return false;
-    }
-    if(axis == 1 && ((abs(t_mapped.y) >= half_side_lenght + EPS) || t_mapped.x > (half_side_lenght) || t_mapped.x < -half_side_lenght || t_mapped.z > (half_side_lenght) || t_mapped.z < -half_side_lenght)){
-        return false;
-    }
-    if(axis == 2 && ((abs(t_mapped.z) >= half_side_lenght + EPS) || t_mapped.x > (half_side_lenght) || t_mapped.x < -half_side_lenght || t_mapped.y > (half_side_lenght) || t_mapped.y < -half_side_lenght)){
-        return false;
-    }
-    return true;
-}
-//line must be in cube local space, for now
-bool U_Line_Cube_Intersection(float side_lenght, vec3 origin, vec3 dir, inout float t){
-    //based on max(|x|, |y|) = side_length
-    //p(t) = o + dt
-    //max(|Ox + Dxt|, |Oy + Dyt|) = side_length
-
-    side_lenght /= 2.0f;
-    float tx_plus = U_Get_T_For_Square(side_lenght, origin.x, dir.x, true);
-    float ty_plus = U_Get_T_For_Square(side_lenght, origin.y, dir.y, true);
-    float tz_plus = U_Get_T_For_Square(side_lenght, origin.z, dir.z, true);
-    float tx_minus = U_Get_T_For_Square(side_lenght, origin.x, dir.x, false);
-    float ty_minus = U_Get_T_For_Square(side_lenght, origin.y, dir.y, false);
-    float tz_minus = U_Get_T_For_Square(side_lenght, origin.z, dir.z, false);
-
-    vec3 t_mapped = U_Map_T_Value(tx_plus, origin, dir);
-    bool valid = false;
-    if(U_Test_Faces(side_lenght, t_mapped, 0, tx_plus) && tx_plus > 0){
-        t = tx_plus;
-        valid = true;
-    }
-    t_mapped = U_Map_T_Value(tx_minus, origin, dir);
-    if(U_Test_Faces(side_lenght, t_mapped, 0, tx_minus) && tx_minus > 0){
-        t = min(tx_minus, t);
-        valid = true;
-    }
-
-    t_mapped = U_Map_T_Value(ty_plus, origin, dir);
-    if(U_Test_Faces(side_lenght, t_mapped, 1, ty_plus) && ty_plus > 0){
-        t = min(ty_plus, t);
-        valid = true;
-    }
-    t_mapped = U_Map_T_Value(ty_minus, origin, dir);
-    if(U_Test_Faces(side_lenght, t_mapped, 1, ty_minus) && ty_minus > 0){
-        t = min(ty_minus, t);
-        valid = true;
-    }
-
-    t_mapped = U_Map_T_Value(tz_plus, origin, dir);
-    if(U_Test_Faces(side_lenght, t_mapped, 2, tz_plus) && tz_plus > 0){
-        t = min(tz_plus, t);
-        valid = true;
-    }
-    t_mapped = U_Map_T_Value(tz_minus, origin, dir);
-    if(U_Test_Faces(side_lenght, t_mapped, 2, tz_minus) && tz_minus > 0){
-        t = min(tz_minus, t);
-        valid = true;
-    }
-    if(t < 0){
-        valid = false;
-    }
-
-    return valid;
-}
-//normalized dir
-void Get_Intersection_Data(vec3 start, vec3 end, inout vec3 origin, inout vec3 dir){
-    dir = normalize(end - start);
-    origin = start;
-}
-
-bool U_Test_Triangle_Voxel_Intersection(float side_length, vec3 p_0, vec3 p_1, vec3 p_2, inout float t){
-
-    vec3 max = vec3(side_length / 2.0f, side_length / 2.0f, side_length / 2.0f);
-    vec3 min = vec3(-side_length / 2.0f,- side_length / 2.0f, -side_length / 2.0f);
-    if(U_Aabb(min, max, p_0) || U_Aabb(min, max, p_2) || U_Aabb(min, max, p_1)){
-        return true;
-    }
-    vec3 origin;
-    vec3 dir;
-    t = -1;
-    bool valid = false;
-    Get_Intersection_Data(p_0, p_1, origin, dir);
-    if(U_Line_Cube_Intersection(side_length, origin, dir, t)){
-        valid = true;
-        float edge_size = length(p_1 - p_0);
-        if(t >= edge_size + EPS || t < 0){
-            valid = false;
-        }
-    }
-    if(valid){return true;}
-    Get_Intersection_Data(p_1, p_2, origin, dir);
-    if(U_Line_Cube_Intersection(side_length, origin, dir, t)){
-        valid = true;
-        float edge_size = length(p_2 - p_1);
-        if(t >= edge_size + EPS || t < 0){
-            valid = false;
-        }
-    }
-    if(valid){return true;}
-
-    Get_Intersection_Data(p_0, p_2, origin, dir);
-    if(U_Line_Cube_Intersection(side_length, origin, dir, t)){
-        valid = true;
-        float edge_size = length(p_2 - p_0);
-        if(t >= edge_size + EPS || t < 0){
-            valid = false;
-        }
-    }
-
-    return valid;
-
-
-}
-
 void U_Get_Axis_Centered_Voxel_Corners(float edge_size, inout vec3 p0, inout vec3 p1,  inout vec3 p2, inout vec3 p3,  inout vec3 p4, inout vec3 p5,  inout vec3 p6, inout vec3 p7){
     float half_size = edge_size/2.0f;
 
@@ -477,9 +346,8 @@ bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 c
     max_cube = max(max_cube, proj_cube_p6);
     max_cube = max(max_cube, proj_cube_p7);
 
-    bool min_tri_inside = min_tri >= min_cube && min_tri <= max_cube;
-    bool max_tri_inside = max_tri >= min_cube && max_tri <= max_cube;
-    bool SAT = !(min_tri_inside || min_tri_inside);
+
+    bool SAT = max_tri < min_cube || max_cube < min_tri;
 
     return SAT;
 
@@ -487,29 +355,45 @@ bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 c
 
 bool U_Test_Tri_Cube_Edges(vec3 edge0, vec3 edge1, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3, vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
     vec3 normal = normalize(cross(edge0, edge1));
+    if(dot(normal, normal) < SMALL_NUM){
+        return false;
+    }
     return U_Does_SAT_Exist(normal, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
 }
 
 bool U_Test_Tringle_Cube(vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3, vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
-    bool SAT_exist = true;
-    SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, tri_p2 - tri_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+
+    bool SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, tri_p2 - tri_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(cube_p2 - cube_p0, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(cube_p4 - cube_p0, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(cube_p1 - cube_p0, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
 
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p1 - tri_p0, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
 
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p0, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p0, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p0, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
 
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p1, cube_p1 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p1, cube_p2 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
     SAT_exist = U_Test_Tri_Cube_Edges(tri_p2 - tri_p1, cube_p4 - cube_p0, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    if(SAT_exist){return false;}
 
-    return !SAT_exist;
+    return true;
 }
 
 
