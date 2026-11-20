@@ -6,6 +6,8 @@
 #define IMGUI_RENDERER_HPP
 #include "CodeCuda.cuh"
 #include <imgui_internal.h>
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -22,6 +24,56 @@ struct Fonts
 	ImFont *heading = nullptr;
 	ImFont *strong  = nullptr;
 };
+
+inline bool Drag_Logarithmic_Float(const char *label, float *value, float min_value, float max_value,
+                                   const char *format)
+{
+	// ImGui divides logarithmic drag speed by the range to get the fraction moved per pixel.
+	const float speed = (max_value - min_value) * 0.004f;
+	return ImGui::DragFloat(label, value, speed, min_value, max_value, format,
+	                        ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+}
+
+inline float Position_Drag_Speed(float coordinate, float minimum_speed)
+{
+	return std::max(minimum_speed, std::abs(coordinate) * 0.005f);
+}
+
+inline void Drag_Position(const char *id, glm::vec3 &position)
+{
+	ImGui::BeginGroup();
+	ImGui::PushID(id);
+	ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+	for (int axis = 0; axis < 3; ++axis)
+	{
+		if (axis > 0)
+		{
+			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+		}
+
+		ImGui::PushID(axis);
+		float &coordinate = position[axis];
+		ImGui::DragFloat("", &coordinate, Position_Drag_Speed(coordinate, 0.001f));
+		ImGui::PopID();
+		ImGui::PopItemWidth();
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+}
+
+inline void Drag_Grid_Position(const char *label, int &coordinate, int max_coordinate)
+{
+	const float speed = Position_Drag_Speed(static_cast<float>(coordinate), 0.25f);
+	ImGui::DragInt(label, &coordinate, speed, 0, max_coordinate, "%d",
+	               ImGuiSliderFlags_AlwaysClamp);
+}
+
+inline void Camera_Speed_Slider(Camera &camera)
+{
+	ImGui::SliderFloat("Camera Speed", &camera.movement_speed, Camera::min_movement_speed,
+	                   Camera::max_movement_speed, "%.3f",
+	                   ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+}
 
 inline ImVec4 With_Alpha(const ImVec4 &color, float alpha)
 {
@@ -631,6 +683,19 @@ class Imgui_Renderer
 		scene_viewport_valid   = true;
 		scene_viewport_hovered = ImGui::IsItemHovered();
 
+		const float wheel_delta = ImGui::GetIO().MouseWheel;
+		if (scene_viewport_hovered && wheel_delta != 0.0f)
+		{
+			if (cluster_renderer)
+			{
+				cluster_renderer->camera.Adjust_Movement_Speed(wheel_delta);
+			}
+			if (gs_renderer)
+			{
+				gs_renderer->camera.Adjust_Movement_Speed(wheel_delta);
+			}
+		}
+
 		ImDrawList *draw_list    = ImGui::GetWindowDrawList();
 		const ImU32 border_color = ImGui::GetColorU32(
 		    scene_viewport_hovered ? imgui_renderer_ui::Accent_Color() : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
@@ -836,7 +901,7 @@ class Imgui_Renderer
 				ImGui::SetNextItemWidth(-1.0f);
 			};
 			property("Origin (X, Y, Z)");
-			ImGui::DragFloat3("##lattice_origin", &lattice_config.origin.x, 0.1f);
+			imgui_renderer_ui::Drag_Position("##lattice_origin", lattice_config.origin);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Minimum corner in the mesh coordinate space.");
 
@@ -849,9 +914,8 @@ class Imgui_Renderer
 				lattice_config.dimensions = glm::uvec3(dimensions[0], dimensions[1], dimensions[2]);
 			}
 			property("Cell size");
-			 ImGui::DragFloat("##lattice_cell_size", &lattice_config.cell_size,
-			                                        0.01f, 0.0001f, 10000.0f, "%.4f",
-			                                        ImGuiSliderFlags_AlwaysClamp);
+			imgui_renderer_ui::Drag_Logarithmic_Float("##lattice_cell_size",
+			    &lattice_config.cell_size, 0.0001f, 10000.0f, "%.4f");
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Edge length of each cubic cell, in mesh units.");
 			ImGui::EndTable();
@@ -983,7 +1047,7 @@ class Imgui_Renderer
 			                                     static_cast<uint32_t>(max_slice)));
 			property("Slice offset");
 			ImGui::SliderInt("##voxel_projection_slice", &slice, 0, max_slice, "%d",
-			                 ImGuiSliderFlags_AlwaysClamp);
+			                 ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
 			lattice_config.selected_dimension_offset = static_cast<uint32_t>(slice);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Zero-based cell index along the %s axis.", slice_axis == 0 ? "X" : (slice_axis == 1 ? "Y" : "Z"));
@@ -1324,7 +1388,8 @@ class Imgui_Renderer
 				            color_animator.animation_info.sprite_size_px.y,
 				            color_animator.animation_info.current_frame + 1);
 			}
-			ImGui::SliderInt("Frame spacing##ColorSequence", &sequence_frame_spacing, 1, 120);
+			ImGui::SliderInt("Frame spacing##ColorSequence", &sequence_frame_spacing, 1, 120,
+		                     "%d", ImGuiSliderFlags_Logarithmic);
 			color_animator.frame_spacing = sequence_frame_spacing;
 
 			if (!sequence_loaded)
@@ -1454,20 +1519,21 @@ class Imgui_Renderer
 			else if (fluid_tool == 1)
 			{
 				begin_property("Velocity strength");
-				ImGui::DragFloat("##fluid_velocity_strength", &fluid_velocity_strength,
-				                 0.01f, 0.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+				imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_velocity_strength",
+				    &fluid_velocity_strength, 0.0f, 10.0f, "%.2f");
 			}
 			else if (fluid_tool == 4)
 			{
 				begin_property("Radial strength");
-				ImGui::DragFloat("##fluid_radial_strength", &fluid_radial_velocity_strength,
-				                 0.05f, -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+				imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_radial_strength",
+				    &fluid_radial_velocity_strength, -100.0f, 100.0f, "%.2f");
 			}
 			else if (fluid_tool == 5)
 			{
 				begin_property("Emitter velocity");
 				ImGui::DragFloat2("##fluid_emitter_velocity", fluid_emitter_velocity_direction,
-				                  0.05f, -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+				                  0.08f, -10.0f, 10.0f, "%.2f",
+				                  ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
 				begin_property("Emitter color");
 				ImGui::ColorEdit4("##fluid_emitter_color", fluid_emitter_color);
 			}
@@ -1530,8 +1596,8 @@ class Imgui_Renderer
 						pretty_smoke_preset = 4;
 					}
 					begin_property("Opacity");
-					if (ImGui::DragFloat("##pretty_smoke_opacity", &pretty_smoke_opacity,
-					                     0.01f, 0.01f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
+					if (imgui_renderer_ui::Drag_Logarithmic_Float("##pretty_smoke_opacity",
+					    &pretty_smoke_opacity, 0.01f, 1.0f, "%.2f"))
 					{
 						pretty_smoke_preset = 4;
 					}
@@ -1539,20 +1605,20 @@ class Imgui_Renderer
 					ImGui::DragInt("##pretty_smoke_brush_radius", &pretty_smoke_brush_radius,
 					               1.0f, 1, max_brush_radius, "%d px", ImGuiSliderFlags_AlwaysClamp);
 					begin_property("Flow strength");
-					ImGui::DragFloat("##pretty_smoke_flow_strength", &pretty_smoke_flow_strength,
-					                 0.01f, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+					imgui_renderer_ui::Drag_Logarithmic_Float("##pretty_smoke_flow_strength",
+					    &pretty_smoke_flow_strength, 0.0f, 2.0f, "%.2f");
 					begin_property("Color spread");
-					if (ImGui::DragFloat("##pretty_smoke_color_spread", &pretty_smoke_color_spread,
-					                     0.005f, 0.0f, 0.5f, "%.3f", ImGuiSliderFlags_AlwaysClamp))
+					if (imgui_renderer_ui::Drag_Logarithmic_Float("##pretty_smoke_color_spread",
+					    &pretty_smoke_color_spread, 0.0f, 0.5f, "%.3f"))
 					{
 						pretty_smoke_preset = 4;
 					}
 					begin_property("Trail smoothness");
 					ImGui::SliderFloat("##pretty_smoke_trail_smoothness", &pretty_smoke_trail_smoothness,
-					                   0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+					                   0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
 					begin_property("Turbulence");
 					if (ImGui::SliderFloat("##pretty_smoke_turbulence", &pretty_smoke_turbulence,
-					                       0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
+					                       0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic))
 					{
 						pretty_smoke_preset = 4;
 					}
@@ -1561,8 +1627,8 @@ class Imgui_Renderer
 			else if (fluid_tool == 7)
 			{
 				begin_property("Pressure strength");
-				ImGui::DragFloat("##fluid_pressure_strength", &fluid_pressure_strength,
-				                 0.05f, -100.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+				imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_pressure_strength",
+				    &fluid_pressure_strength, -100.0f, 100.0f, "%.2f");
 			}
 
 			begin_property("Random force");
@@ -1703,12 +1769,14 @@ class Imgui_Renderer
 
 				if (ImGui::TreeNode("Emitter", "Emitter %d", i + 1))
 				{
-					ImGui::DragInt("X", &active_emitter.x_pos, 1.0f, 0, CodeCuda::FluidSimulation::s_width - 1);
-					ImGui::DragInt("Y", &active_emitter.y_pos, 1.0f, 0, CodeCuda::FluidSimulation::s_height - 1);
+					imgui_renderer_ui::Drag_Grid_Position("X", active_emitter.x_pos,
+					                                      CodeCuda::FluidSimulation::s_width - 1);
+					imgui_renderer_ui::Drag_Grid_Position("Y", active_emitter.y_pos,
+					                                      CodeCuda::FluidSimulation::s_height - 1);
 					ImGui::DragInt("Radius", &active_emitter.radius, 1.0f, 1,
 					               std::max(CodeCuda::FluidSimulation::s_width, CodeCuda::FluidSimulation::s_height));
-					ImGui::DragFloat2("Velocity", &active_emitter.velocity.x, 0.05f,
-					                  -10.0f, 10.0f);
+					ImGui::DragFloat2("Velocity", &active_emitter.velocity.x, 0.08f,
+					                  -10.0f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
 					ImGui::ColorEdit4("Color", &active_emitter.color.x);
 
 					if (ImGui::Button("Remove emitter"))
@@ -1808,19 +1876,14 @@ class Imgui_Renderer
 				ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
 				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 				begin_settings_property("Density");
-				params_changed |= ImGui::DragFloat("##fluid_density", &fluid_sim_params.density,
-				                                  0.01f, 0.001f, 100.0f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_density",
+				    &fluid_sim_params.density, 0.001f, 100.0f, "%.3f");
 				begin_settings_property("Velocity dissipation");
-				params_changed |= ImGui::DragFloat("##fluid_velocity_dissipation",
-				                                  &fluid_sim_params.velocity_dissipation,
-				                                  0.001f, 0.0f, 0.2f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_velocity_dissipation",
+				    &fluid_sim_params.velocity_dissipation, 0.0f, 0.2f, "%.3f");
 				begin_settings_property("Smoke dissipation");
-				params_changed |= ImGui::DragFloat("##fluid_smoke_dissipation",
-				                                  &fluid_sim_params.smoke_dissipation,
-				                                  0.001f, 0.0f, 0.2f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_smoke_dissipation",
+				    &fluid_sim_params.smoke_dissipation, 0.0f, 0.2f, "%.3f");
 
 				int time_step_denominator = fluid_sim_params.dt > 0.0f ? static_cast<int>((1.0f / fluid_sim_params.dt) + 0.5f) : 120;
 				begin_settings_property("Time step");
@@ -1831,22 +1894,17 @@ class Imgui_Renderer
 					params_changed     = true;
 				}
 				begin_settings_property("Gravity");
-				params_changed |= ImGui::DragFloat("##fluid_gravity", &fluid_sim_params.g,
-				                                  0.01f, -100.0f, 100.0f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_gravity",
+				    &fluid_sim_params.g, -100.0f, 100.0f, "%.3f");
 				begin_settings_property("Wind speed");
-				params_changed |= ImGui::DragFloat("##fluid_wind_speed", &fluid_sim_params.wind_speed,
-				                                  0.01f, -100.0f, 100.0f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_wind_speed",
+				    &fluid_sim_params.wind_speed, -100.0f, 100.0f, "%.3f");
 				begin_settings_property("Viscosity");
-				params_changed |= ImGui::DragFloat("##fluid_viscosity", &fluid_sim_params.viscosity,
-				                                  0.01f, 0.0f, 100.0f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_viscosity",
+				    &fluid_sim_params.viscosity, 0.0f, 100.0f, "%.3f");
 				begin_settings_property("Smoke diffusion");
-				params_changed |= ImGui::DragFloat("##fluid_smoke_diffusion",
-				                                  &fluid_sim_params.smoke_diffuse_coef,
-				                                  0.01f, 0.0f, 100.0f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_smoke_diffusion",
+				    &fluid_sim_params.smoke_diffuse_coef, 0.0f, 100.0f, "%.3f");
 				ImGui::EndTable();
 			}
 		}
@@ -1859,9 +1917,8 @@ class Imgui_Renderer
 				ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 140.0f);
 				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 				begin_settings_property("SOR weight");
-				params_changed |= ImGui::DragFloat("##fluid_sor_weight", &fluid_sim_params.weight_sor,
-				                                  0.01f, 0.0f, 2.0f, "%.3f",
-				                                  ImGuiSliderFlags_AlwaysClamp);
+				params_changed |= imgui_renderer_ui::Drag_Logarithmic_Float("##fluid_sor_weight",
+				    &fluid_sim_params.weight_sor, 0.0f, 2.0f, "%.3f");
 				begin_settings_property("GPU iterations");
 				params_changed |= ImGui::DragInt("##fluid_gpu_iterations",
 				                                &fluid_sim_params.total_iter_gpu, 1.0f,
@@ -2029,7 +2086,8 @@ class Imgui_Renderer
 			point_light.Calculate_Q_Attenuation_From_Radius();
 		}
 		static float point_light_radiuses = 1.0f;
-		if (ImGui::SliderFloat("Point lights Radiuses", &point_light_radiuses, 1.0f, 20.0f))
+		if (ImGui::SliderFloat("Point lights Radiuses", &point_light_radiuses, 1.0f, 20.0f,
+		                       "%.3f", ImGuiSliderFlags_Logarithmic))
 		{
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
@@ -2038,7 +2096,8 @@ class Imgui_Renderer
 			}
 		}
 		static float point_quadratic_attenuation = 1.0f;
-		if (ImGui::SliderFloat("Point lights Quadratic Attenuation", &point_quadratic_attenuation, 1.0f, 30.0f))
+		if (ImGui::SliderFloat("Point lights Quadratic Attenuation", &point_quadratic_attenuation, 1.0f, 30.0f,
+		                       "%.3f", ImGuiSliderFlags_Logarithmic))
 		{
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
@@ -2048,7 +2107,8 @@ class Imgui_Renderer
 			}
 		}
 		static float point_light_linear_attenuation = 1.0f;
-		if (ImGui::SliderFloat("Point lights Linear Attenuation", &point_light_linear_attenuation, 1.0f, 30.0f))
+		if (ImGui::SliderFloat("Point lights Linear Attenuation", &point_light_linear_attenuation, 1.0f, 30.0f,
+		                       "%.3f", ImGuiSliderFlags_Logarithmic))
 		{
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
@@ -2058,7 +2118,8 @@ class Imgui_Renderer
 			}
 		}
 		static float point_light_intensity = 1.0f;
-		if (ImGui::SliderFloat("Point lights Intensity", &point_light_intensity, 0.0f, 30.0f))
+		if (ImGui::SliderFloat("Point lights Intensity", &point_light_intensity, 0.0f, 30.0f,
+		                       "%.3f", ImGuiSliderFlags_Logarithmic))
 		{
 			for (auto &point_light : cluster_renderer->point_lights)
 			{
@@ -2074,11 +2135,13 @@ class Imgui_Renderer
 		static int y_tile_size_px = 256;
 		static int z_slices_size = 24;
 
-		if (ImGui::SliderInt("x tile size (px): ", &x_tile_size_px, 32, 512))
+		if (ImGui::SliderInt("x tile size (px): ", &x_tile_size_px, 32, 512,
+		                     "%d", ImGuiSliderFlags_Logarithmic))
 		{
 			cluster_renderer->x_tile_size_px = x_tile_size_px;
 		}
-		if (ImGui::SliderInt("y tile size (px): ", &y_tile_size_px, 32, 512))
+		if (ImGui::SliderInt("y tile size (px): ", &y_tile_size_px, 32, 512,
+		                     "%d", ImGuiSliderFlags_Logarithmic))
 		{
 			cluster_renderer->y_tile_size_px = y_tile_size_px;
 		}
@@ -2094,6 +2157,7 @@ class Imgui_Renderer
 		ImGui::Text("%s", cull_count.c_str());
 
 		ImGui::SeparatorText("First Person Camera Info");
+		imgui_renderer_ui::Camera_Speed_Slider(cluster_renderer->camera);
 
 		std::string camera_pos = "Position: (" + std::to_string(cluster_renderer->camera.position.x) + ", " + std::to_string(cluster_renderer->camera.position.y) + ", " + std::to_string(cluster_renderer->camera.position.z) + ")";
 
@@ -2422,7 +2486,8 @@ class Imgui_Renderer
 
 	void Painting_Info()
 	{
-		ImGui::SliderInt("Brush Radius", &flat_renderer->painting_pc.radius, 1, 100);
+		ImGui::SliderInt("Brush Radius", &flat_renderer->painting_pc.radius, 1, 100,
+		                     "%d", ImGuiSliderFlags_Logarithmic);
 
 		static float color[4] = {1.0f, 1.0f, 1.0f, 1.0};
 		if (ImGui::ColorEdit4("Brush Radius", color))
@@ -2450,7 +2515,8 @@ class Imgui_Renderer
 		{
 			auto        animator         = Rendering_Res_Manager::Get_Instance()->Get_Animator_By_Name(animator_pair.first);
 			std::string frame_spacing_name = animator_pair.first + ": Frame Spacing";
-			ImGui::SliderInt(frame_spacing_name.c_str(), &animator->frame_spacing, 1, 1000);
+			ImGui::SliderInt(frame_spacing_name.c_str(), &animator->frame_spacing, 1, 1000,
+			                 "%d", ImGuiSliderFlags_Logarithmic);
 
 			std::string frame_info = animator_pair.first + " Frames Info: " + std::to_string(animator->animation_info.current_frame) + " / " + std::to_string(animator->animation_info.frame_count);
 			ImGui::Text("%s", frame_info.c_str());
@@ -2491,7 +2557,8 @@ class Imgui_Renderer
 		//
 		ImGui::SeparatorText("Cascades Configs");
 		static int probe_size_px = flat_renderer->cascades_info.probe_size_px;
-		if (ImGui::SliderInt("Probe Size in Px", &probe_size_px, 2, 1024))
+		if (ImGui::SliderInt("Probe Size in Px", &probe_size_px, 2, 1024,
+		                     "%d", ImGuiSliderFlags_Logarithmic))
 		{
 			flat_renderer->cascades_info.probe_size_px = probe_size_px;
 		}
@@ -2502,7 +2569,8 @@ class Imgui_Renderer
 		}
 
 		static int base_interval_length = flat_renderer->cascades_info.base_interval_length;
-		if (ImGui::SliderInt("Base Interval Length", &base_interval_length, 1, 1000))
+		if (ImGui::SliderInt("Base Interval Length", &base_interval_length, 1, 1000,
+		                     "%d", ImGuiSliderFlags_Logarithmic))
 		{
 			flat_renderer->cascades_info.base_interval_length = base_interval_length;
 		}
@@ -2519,7 +2587,8 @@ class Imgui_Renderer
 			flat_renderer->light.col = glm::make_vec3(light_col);
 		}
 		static float intensity = flat_renderer->light.intensity;
-		if (ImGui::SliderFloat("Light Intensity", &intensity, 0.0, 1.0))
+		if (ImGui::SliderFloat("Light Intensity", &intensity, 0.0, 1.0,
+		                       "%.3f", ImGuiSliderFlags_Logarithmic))
 		{
 			flat_renderer->light.intensity = intensity;
 		}
@@ -2572,18 +2641,18 @@ class Imgui_Renderer
 		ImGui::SeparatorText("GS Configs");
 
 		// Bind to GSConfigsPc fields
-		ImGui::SliderFloat("Global Scale", &gs_renderer->gs_configs_pc.scale_mod, 0.01f, 10.0f);
+		ImGui::SliderFloat("Global Scale", &gs_renderer->gs_configs_pc.scale_mod, 0.01f, 10.0f,
+		                       "%.3f", ImGuiSliderFlags_Logarithmic);
 
 		// static const char* renderModes[] = {"Default", "Debug Ellipsoids", "BBox Only"};
 		// ImGui::Combo("Render Mode", &gs_renderer->gs_configs_pc.renderMode, renderModes, IM_ARRAYSIZE(renderModes));
 
 		ImGui::SeparatorText("Camera Info");
-		ImGui::SliderFloat("Camera Speed", &gs_renderer->camera.movement_speed, 0.01f, 100.0f);
+		imgui_renderer_ui::Camera_Speed_Slider(gs_renderer->camera);
 
 		const auto &cam = gs_renderer->camera;
 		ImGui::Text("Position: (%.2f, %.2f, %.2f)", cam.position.x, cam.position.y, cam.position.z);
 		ImGui::Text("Forward: (%.2f, %.2f, %.2f)", cam.forward.x, cam.forward.y, cam.forward.z);
-		ImGui::Text("Movement Speed: %.2f", cam.movement_speed);
 
 		if (ImGui::Button("Update Sort"))
 		{

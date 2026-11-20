@@ -41,7 +41,7 @@ namespace rendering
             auto voxelizer_comp = render_graph->resources_manager->Get_Shader(
                 shader_path + "\\spirvGlsl\\CFD\\voxelizeMesh.comp.spv", S_Comp);
             auto model_to_voxelize = Rendering_Res_Manager::Get_Instance()->Get_Model(
-                systems::Os::Get_Instance()->Get_Assets_Path() + "\\Models\\porsche\\scene.gltf");
+                systems::Os::Get_Instance()->Get_Assets_Path() + "\\Models\\porsche\\scene.gltf", false);
 
             auto* voxelizer_node = render_graph->Add_Pass("voxelizer");
             voxelizer_node->G_Set_Comp_Shader(voxelizer_comp);
@@ -67,11 +67,21 @@ namespace rendering
                         }
                     }
 
+                    std::vector<glm::uint> model_vertices_offsets;
+                    for (auto& model : Rendering_Res_Manager::Get_Instance()->models)
+                    {
+                        for (int i = 0; i < model->vertices_count.size(); ++i)
+                        {
+                            model_vertices_offsets.push_back(model->vertices_count[i]);
+                        }
+                    }
+
                     auto& render_node = render_graph->render_nodes.at("voxelizer");
 
                     render_node->G_Set_Buffer("Model_Vertices", model_to_voxelize->vert_buffer->device_buffer.get());
-                    render_node->G_Set_Buffer("Model_Indices", model_to_voxelize->index_buffer->device_buffer.get());
+                    render_node->G_Set_Buffer("Model_Indices", model_to_voxelize->global_indices);
                     render_node->G_Set_Buffer("Model_Mats", model_mats);
+                    render_node->G_Set_Buffer("Vertices_Offsets", model_vertices_offsets);
                     render_node->G_Set_Buffer(
                         "Voxels", render_graph->resources_manager->Get_Buff_From_Name(voxel_grid.name));
                     render_node->G_Set_Buffer("Model_Properties", model_to_voxelize->model_properties);

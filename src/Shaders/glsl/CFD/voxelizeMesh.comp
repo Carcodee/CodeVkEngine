@@ -21,11 +21,14 @@ layout (set = 0, binding = 2, scalar) buffer Model_Indices{
 layout (set = 0, binding = 3, scalar) buffer Model_Mats{
     mat4 models[];
 };
-layout (set = 0, binding = 4, scalar) buffer Voxels{
+layout (set = 0, binding = 4, scalar) buffer Vertices_Offsets{
+    uint models_vertex_offsets[];
+};
+layout (set = 0, binding = 5, scalar) buffer Voxels{
     uint cells[];
 };
 
-layout(set = 0, binding = 5, scalar) uniform Model_Properties{
+layout(set = 0, binding = 6, scalar) uniform Model_Properties{
     uint indices_count;
     uint vertex_cunt;
     uint triangle_count;
@@ -55,20 +58,51 @@ void main() {
     vec4 vertex_pos_ws_1 = vert_to_world_1 * vec4(vertex_ref_1.pos, 1.0);
     vec4 vertex_pos_ws_2 = vert_to_world_2 * vec4(vertex_ref_2.pos, 1.0);
 
-    int collision_idx = -1;
+    vec4 v_center = (vertex_pos_ws_0 + vertex_pos_ws_1 + vertex_pos_ws_2) / 3.0f;
+    float r = -1;
+    r = max(distance(vertex_pos_ws_0, v_center), r);
+    r = max(distance(vertex_pos_ws_1, v_center), r);
+    r = max(distance(vertex_pos_ws_2, v_center), r);
     vec3 p_0, p_1, p_2;
     vec3 v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7;
     bool intersects = false;
-    for(int idx = 0; idx < (voxel_grid.dimensions.x * voxel_grid.dimensions.y * voxel_grid.dimensions.z); idx++){
-        uvec3 pos_in_grid = U_Linear_To_Grid_Idx(voxel_grid.dimensions, idx);
-        vec3 dir = U_Grid_Get_Cell_Position_Centered(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
-        U_Get_Axis_Centered_Voxel_Corners(voxel_grid.cell_size, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
-        p_0 = vertex_pos_ws_0.xyz - dir;
-        p_1 = vertex_pos_ws_1.xyz - dir;
-        p_2 = vertex_pos_ws_2.xyz - dir;
-        intersects = U_Test_Tringle_Cube(p_0, p_1, p_2, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
-        if(intersects){
-            atomicAdd(cells[idx], 1);
+
+    ivec3 tri_in_grid = U_World_Pos_To_Voxel_Grid(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz);
+    if(tri_in_grid.x < 0){
+        return;
+    }
+    ivec3 tri_in_grid_min = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz - vec3(r, r, r));
+    ivec3 tri_in_grid_max = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz + vec3(r, r, r));
+
+    for(int z = tri_in_grid_min.z; z < tri_in_grid_max.z; z++){
+        for(int y = tri_in_grid_min.y; y < tri_in_grid_max.y; y++){
+            for(int x = tri_in_grid_min.x; x < tri_in_grid_max.x; x++){
+                ivec3 pos_in_grid = ivec3(x, y, z);
+                vec3 dir = U_Grid_Get_Cell_Position_Centered(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
+                U_Get_Axis_Centered_Voxel_Corners(voxel_grid.cell_size, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
+                p_0 = vertex_pos_ws_0.xyz - dir;
+                p_1 = vertex_pos_ws_1.xyz - dir;
+                p_2 = vertex_pos_ws_2.xyz - dir;
+
+                intersects = U_Test_Tringle_Cube(p_0, p_1, p_2, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
+                uint idx = U_Grid_To_Linear_Idx(voxel_grid.dimensions, pos_in_grid);
+                if(intersects){
+                    atomicAdd(cells[idx], 1);
+                }
+            }
         }
     }
+
+//    for(int idx = 0; idx < (voxel_grid.dimensions.x * voxel_grid.dimensions.y * voxel_grid.dimensions.z); idx++){
+//        uvec3 pos_in_grid = U_Linear_To_Grid_Idx(voxel_grid.dimensions, idx);
+//        vec3 dir = U_Grid_Get_Cell_Position_Centered(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
+//        U_Get_Axis_Centered_Voxel_Corners(voxel_grid.cell_size, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
+//        p_0 = vertex_pos_ws_0.xyz - dir;
+//        p_1 = vertex_pos_ws_1.xyz - dir;
+//        p_2 = vertex_pos_ws_2.xyz - dir;
+//        intersects = U_Test_Tringle_Cube(p_0, p_1, p_2, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
+//        if (intersects){
+//            atomicAdd(cells[idx], 1);
+//        }
+//    }
 }

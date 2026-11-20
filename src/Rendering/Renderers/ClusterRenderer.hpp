@@ -507,21 +507,15 @@ class Cluster_Renderer : public Base_Renderer
 		{
 			input += glm::vec2(-1.0f, 0.0f);
 		}
-		if (glfwGetKey(window_provider->window, GLFW_KEY_LEFT_SHIFT))
-		{
-			camera.movement_speed = 40;
-		}
-		else
-		{
-			camera.movement_speed = 5;
-		}
 		input                = glm::clamp(input, glm::vec2(-1.0, -1.0), glm::vec2(1.0, 1.0));
 		glm::vec2 mouse_input = glm::vec2(-ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 		camera.mouse_input    = mouse_input;
 		if (glfwGetMouseButton(window_provider->window, GLFW_MOUSE_BUTTON_2))
 		{
 			camera.Rotate_Camera();
-			camera.Move(delta_time, input);
+			const float speed_multiplier =
+			    glfwGetKey(window_provider->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ? 8.0f : 1.0f;
+			camera.Move(delta_time, input, speed_multiplier);
 		}
 		else
 		{

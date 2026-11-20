@@ -156,6 +156,8 @@ namespace rendering
 
             if (node.mesh > -1)
             {
+
+                int vertices_size = model.vertices.size();
                 model.node_mats.push_back(node_material);
                 model.first_vertices.push_back(model.vertices.size());
                 model.first_indices.push_back(model.indices.size());
@@ -258,6 +260,7 @@ namespace rendering
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
                                     model.indices.push_back(buff[j]);
+                                    model.global_indices.push_back(buff[j] + vertices_size);
                                 }
                                 break;
                             }
@@ -268,6 +271,7 @@ namespace rendering
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
                                     model.indices.push_back(buff[j]);
+                                    model.global_indices.push_back(buff[j] + vertices_size);
                                 }
                                 break;
                             }
@@ -278,6 +282,7 @@ namespace rendering
                                 for (size_t j = 0; j < accessor.count; ++j)
                                 {
                                     model.indices.push_back(buff[j]);
+                                    model.global_indices.push_back(buff[j] + vertices_size);
                                 }
                                 break;
                             }
@@ -629,7 +634,7 @@ namespace rendering
             return material_packed_datas;
         }
 
-        rendering::Model* Get_Model(std::string path)
+        rendering::Model* Get_Model(std::string path, bool compact_indices)
         {
             if (models_names.contains(path))
             {
@@ -638,7 +643,7 @@ namespace rendering
             models_names.try_emplace(path, models.size());
             rendering::Model* model = models.emplace_back(std::make_unique<rendering::Model>()).get();
             model->id = models.size() - 1;
-            Load_Gltf(path, *model, false);
+            Load_Gltf(path, *model, compact_indices);
 
             std::string vert_buff_name = "VertBuff_" + std::to_string(model->id);
             std::string index_buff_name = "IndexBuff_" + std::to_string(model->id);
@@ -753,7 +758,7 @@ namespace rendering
             {
                 return indirect_models_to_draw.at(name);
             }
-            rendering::Model* model = Get_Model(name);
+            rendering::Model* model = Get_Model(name, false);
             indirect_models_to_draw.try_emplace(name, model);
             return model;
         }
@@ -764,7 +769,7 @@ namespace rendering
             {
                 return individual_draw_models.at(name);
             }
-            rendering::Model* model = Get_Model(name);
+            rendering::Model* model = Get_Model(name, false);
             individual_draw_models.try_emplace(name, model);
             return model;
         }

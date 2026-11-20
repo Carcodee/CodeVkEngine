@@ -39,6 +39,7 @@ namespace rendering
         int id;
         std::vector<engine::M_Vertex_3d> vertices;
         std::vector<uint32_t> indices;
+        std::vector<uint32_t> global_indices;
 
         // map with mesh number
         int mesh_count;

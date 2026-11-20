@@ -285,6 +285,27 @@ vec3 U_Grid_Get_Cell_Position_Centered(float cell_size, uvec3 dimensions, vec3 o
     return offset;
 }
 
+
+ivec3 U_World_Pos_To_Voxel_Grid_Clamped(vec3 origin, float cell_size, uvec3 dimensions, vec3 pos){
+    vec3 physical_size = vec3(dimensions) * cell_size;
+    vec3 normalized_pos = (pos - origin)/physical_size;
+    ivec3 grid_pos = ivec3(normalized_pos * vec3(dimensions));
+    grid_pos.x = clamp(grid_pos.x, 0, int(dimensions.x));
+    grid_pos.y = clamp(grid_pos.y, 0, int(dimensions.y));
+    grid_pos.z = clamp(grid_pos.z, 0, int(dimensions.z));
+    return grid_pos;
+}
+ivec3 U_World_Pos_To_Voxel_Grid(vec3 origin, float cell_size, uvec3 dimensions, vec3 pos){
+    vec3 physical_size = vec3(dimensions) * cell_size;
+    vec3 normalized_pos = (pos - origin)/physical_size;
+    ivec3 grid_pos = ivec3(normalized_pos * vec3(dimensions));
+    bool negative = min(grid_pos.x, min(grid_pos.y, grid_pos.z)) < 0 ;
+    if(negative || grid_pos.x > dimensions.x || grid_pos.y > dimensions.y || grid_pos.z > dimensions.z){
+        return ivec3(-1, -1, -1);
+    }
+    return grid_pos;
+}
+
 void U_Get_Axis_Centered_Voxel_Corners(float edge_size, inout vec3 p0, inout vec3 p1,  inout vec3 p2, inout vec3 p3,  inout vec3 p4, inout vec3 p5,  inout vec3 p6, inout vec3 p7){
     float half_size = edge_size/2.0f;
 

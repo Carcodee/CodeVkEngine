@@ -5,6 +5,8 @@
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
 
+#include <cmath>
+
 namespace rendering
 {
 class Camera
@@ -46,10 +48,21 @@ class Camera
 		// }
 	}
 
-	void Move(float delta_time, glm::vec2 input)
+	static constexpr float min_movement_speed = 0.01f;
+	static constexpr float max_movement_speed = 100.0f;
+
+	void Adjust_Movement_Speed(float wheel_delta)
 	{
-		position += forward * input.y * movement_speed * delta_time;
-		position += right * input.x * movement_speed * delta_time;
+		constexpr float speed_per_notch = 1.2f;
+		movement_speed = glm::clamp(movement_speed * std::pow(speed_per_notch, wheel_delta),
+		                            min_movement_speed, max_movement_speed);
+	}
+
+	void Move(float delta_time, glm::vec2 input, float speed_multiplier = 1.0f)
+	{
+		const float distance = movement_speed * speed_multiplier * delta_time;
+		position += forward * input.y * distance;
+		position += right * input.x * distance;
 	}
 	void Update_Cam()
 	{
