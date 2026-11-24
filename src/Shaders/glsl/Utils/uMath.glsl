@@ -278,6 +278,7 @@ mat4 U_Grid_3d_World_Pos(float cell_size, uvec3 dimensions, vec3 origin, uvec3 p
     model[3][2] = origin.z + offset.z;
     return model;
 }
+
 vec3 U_Grid_Get_Cell_Position_Centered(float cell_size, uvec3 dimensions, vec3 origin, uvec3 pos_in_grid){
 
     vec3 centered_offet = vec3(cell_size, cell_size, cell_size) / 2.0f;
@@ -290,17 +291,17 @@ ivec3 U_World_Pos_To_Voxel_Grid_Clamped(vec3 origin, float cell_size, uvec3 dime
     vec3 physical_size = vec3(dimensions) * cell_size;
     vec3 normalized_pos = (pos - origin)/physical_size;
     ivec3 grid_pos = ivec3(normalized_pos * vec3(dimensions));
-    grid_pos.x = clamp(grid_pos.x, 0, int(dimensions.x));
-    grid_pos.y = clamp(grid_pos.y, 0, int(dimensions.y));
-    grid_pos.z = clamp(grid_pos.z, 0, int(dimensions.z));
+    grid_pos.x = clamp(grid_pos.x, 0, int(dimensions.x - 1));
+    grid_pos.y = clamp(grid_pos.y, 0, int(dimensions.y - 1));
+    grid_pos.z = clamp(grid_pos.z, 0, int(dimensions.z - 1));
     return grid_pos;
 }
 ivec3 U_World_Pos_To_Voxel_Grid(vec3 origin, float cell_size, uvec3 dimensions, vec3 pos){
     vec3 physical_size = vec3(dimensions) * cell_size;
     vec3 normalized_pos = (pos - origin)/physical_size;
     ivec3 grid_pos = ivec3(normalized_pos * vec3(dimensions));
-    bool negative = min(grid_pos.x, min(grid_pos.y, grid_pos.z)) < 0 ;
-    if(negative || grid_pos.x > dimensions.x || grid_pos.y > dimensions.y || grid_pos.z > dimensions.z){
+    bool negative = min(grid_pos.x, min(grid_pos.y, grid_pos.z)) < 0;
+    if(negative || grid_pos.x >= dimensions.x || grid_pos.y >= dimensions.y || grid_pos.z >= dimensions.z){
         return ivec3(-1, -1, -1);
     }
     return grid_pos;

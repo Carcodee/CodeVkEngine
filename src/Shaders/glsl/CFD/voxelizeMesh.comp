@@ -67,17 +67,14 @@ void main() {
     vec3 v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7;
     bool intersects = false;
 
-    ivec3 tri_in_grid = U_World_Pos_To_Voxel_Grid(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz);
-    if(tri_in_grid.x < 0){
-        return;
-    }
     ivec3 tri_in_grid_min = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz - vec3(r, r, r));
     ivec3 tri_in_grid_max = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz + vec3(r, r, r));
 
-    for(int z = tri_in_grid_min.z; z < tri_in_grid_max.z; z++){
-        for(int y = tri_in_grid_min.y; y < tri_in_grid_max.y; y++){
-            for(int x = tri_in_grid_min.x; x < tri_in_grid_max.x; x++){
+    for(int z = tri_in_grid_min.z; z <= tri_in_grid_max.z; z++){
+        for(int y = tri_in_grid_min.y; y <= tri_in_grid_max.y; y++){
+            for(int x = tri_in_grid_min.x; x <= tri_in_grid_max.x; x++){
                 ivec3 pos_in_grid = ivec3(x, y, z);
+
                 vec3 dir = U_Grid_Get_Cell_Position_Centered(voxel_grid.cell_size, voxel_grid.dimensions, voxel_grid.origin, pos_in_grid);
                 U_Get_Axis_Centered_Voxel_Corners(voxel_grid.cell_size, v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7);
                 p_0 = vertex_pos_ws_0.xyz - dir;
