@@ -280,10 +280,7 @@ mat4 U_Grid_3d_World_Pos(float cell_size, uvec3 dimensions, vec3 origin, uvec3 p
 }
 
 vec3 U_Grid_Get_Cell_Position_Centered(float cell_size, uvec3 dimensions, vec3 origin, uvec3 pos_in_grid){
-
-    vec3 offet = vec3(cell_size, cell_size, cell_size) / 2.0f;
-    vec3 offset=origin + ((vec3(pos_in_grid.x, pos_in_grid.y, pos_in_grid.z) + offet) * cell_size);
-    return offset;
+    return origin + vec3(pos_in_grid) * cell_size;
 }
 
 
@@ -321,23 +318,12 @@ void U_Get_Axis_Centered_Voxel_Corners(float edge_size, inout vec3 p0, inout vec
 bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3,
         vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
 
-    float min_tri = BIG_NUM;
-    float max_tri = SMALL_NUM;
-
-    float min_cube = BIG_NUM;
-    float max_cube = SMALL_NUM;
     float proj_tri_p0 = dot(normal, tri_p0);
     float proj_tri_p1 = dot(normal, tri_p1);
     float proj_tri_p2 = dot(normal, tri_p2);
 
-    min_tri = min(min_tri, proj_tri_p0);
-    min_tri = min(min_tri, proj_tri_p1);
-    min_tri = min(min_tri, proj_tri_p2);
-
-    max_tri = max(max_tri, proj_tri_p0);
-    max_tri = max(max_tri, proj_tri_p1);
-    max_tri = max(max_tri, proj_tri_p2);
-
+    float min_tri = min(proj_tri_p0, min(proj_tri_p1, proj_tri_p2));
+    float max_tri = max(proj_tri_p0, max(proj_tri_p1, proj_tri_p2));
 
     float proj_cube_p0 = dot(normal, cube_p0);
     float proj_cube_p1 = dot(normal, cube_p1);
@@ -348,7 +334,7 @@ bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 c
     float proj_cube_p6 = dot(normal, cube_p6);
     float proj_cube_p7 = dot(normal, cube_p7);
 
-    min_cube = min(min_cube, proj_cube_p0);
+    float min_cube = proj_cube_p0;
     min_cube = min(min_cube, proj_cube_p1);
     min_cube = min(min_cube, proj_cube_p2);
     min_cube = min(min_cube, proj_cube_p3);
@@ -357,7 +343,7 @@ bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 c
     min_cube = min(min_cube, proj_cube_p6);
     min_cube = min(min_cube, proj_cube_p7);
 
-    max_cube = max(max_cube, proj_cube_p0);
+    float max_cube = proj_cube_p0;
     max_cube = max(max_cube, proj_cube_p1);
     max_cube = max(max_cube, proj_cube_p2);
     max_cube = max(max_cube, proj_cube_p3);
@@ -374,11 +360,12 @@ bool U_Does_SAT_Exist(vec3 normal, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 c
 }
 
 bool U_Test_Tri_Cube_Edges(vec3 edge0, vec3 edge1, vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3, vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){
-    vec3 normal = normalize(cross(edge0, edge1));
-    if(dot(normal, normal) < SMALL_NUM){
+
+    vec3 candidate_normal = cross(edge0, edge1);
+    if(all(equal(candidate_normal, vec3(0.0)))){
         return false;
     }
-    return U_Does_SAT_Exist(normal, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
+    return U_Does_SAT_Exist(candidate_normal, tri_p0, tri_p1, tri_p2, cube_p0, cube_p1, cube_p2, cube_p3, cube_p4, cube_p5, cube_p6, cube_p7);
 }
 
 bool U_Test_Tringle_Cube(vec3 tri_p0, vec3 tri_p1, vec3 tri_p2, vec3 cube_p0, vec3 cube_p1, vec3 cube_p2, vec3 cube_p3, vec3 cube_p4, vec3 cube_p5, vec3 cube_p6, vec3 cube_p7){

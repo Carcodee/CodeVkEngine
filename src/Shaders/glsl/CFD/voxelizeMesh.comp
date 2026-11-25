@@ -58,16 +58,23 @@ void main() {
     vec4 vertex_pos_ws_1 = vert_to_world_1 * vec4(vertex_ref_1.pos, 1.0);
     vec4 vertex_pos_ws_2 = vert_to_world_2 * vec4(vertex_ref_2.pos, 1.0);
 
-    vec4 v_center = (vertex_pos_ws_0 + vertex_pos_ws_1 + vertex_pos_ws_2) / 3.0f;
-    float r = -1;
-    r = max(distance(vertex_pos_ws_0, v_center), r);
-    r = max(distance(vertex_pos_ws_1, v_center), r);
-    r = max(distance(vertex_pos_ws_2, v_center), r);
+    vec3 triangle_min = min(vertex_pos_ws_0.xyz, min(vertex_pos_ws_1.xyz, vertex_pos_ws_2.xyz));
+    vec3 triangle_max = max(vertex_pos_ws_0.xyz, max(vertex_pos_ws_1.xyz, vertex_pos_ws_2.xyz));
+    vec3 grid_min = (triangle_min - voxel_grid.origin) / voxel_grid.cell_size;
+    vec3 grid_max = (triangle_max - voxel_grid.origin) / voxel_grid.cell_size;
+
+    // Include boxes that touch the triangle bounds at half a cell from their centers.
+    vec3 first_cell = max(ceil(grid_min - 0.5), vec3(0.0));
+    vec3 last_cell = min(floor(grid_max + 0.5), vec3(voxel_grid.dimensions) - 1.0);
+    if (any(greaterThan(first_cell, last_cell))) {
+        return;
+    }
+
+    ivec3 tri_in_grid_min = ivec3(first_cell);
+    ivec3 tri_in_grid_max = ivec3(last_cell);
     vec3 p_0, p_1, p_2;
     vec3 v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7;
     bool intersects = false;
-    ivec3 tri_in_grid_min = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz - vec3(r, r, r));
-    ivec3 tri_in_grid_max = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz + vec3(r, r, r));
     for(int z = tri_in_grid_min.z; z <= tri_in_grid_max.z; z++){
         for(int y = tri_in_grid_min.y; y <= tri_in_grid_max.y; y++){
             for(int x = tri_in_grid_min.x; x <= tri_in_grid_max.x; x++){
