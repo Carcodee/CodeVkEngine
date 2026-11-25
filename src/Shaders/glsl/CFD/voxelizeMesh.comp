@@ -66,10 +66,8 @@ void main() {
     vec3 p_0, p_1, p_2;
     vec3 v_p_0, v_p_1, v_p_2, v_p_3, v_p_4, v_p_5, v_p_6, v_p_7;
     bool intersects = false;
-
     ivec3 tri_in_grid_min = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz - vec3(r, r, r));
     ivec3 tri_in_grid_max = U_World_Pos_To_Voxel_Grid_Clamped(voxel_grid.origin, voxel_grid.cell_size, voxel_grid.dimensions, v_center.xyz + vec3(r, r, r));
-
     for(int z = tri_in_grid_min.z; z <= tri_in_grid_max.z; z++){
         for(int y = tri_in_grid_min.y; y <= tri_in_grid_max.y; y++){
             for(int x = tri_in_grid_min.x; x <= tri_in_grid_max.x; x++){
