@@ -20,8 +20,6 @@ namespace imgui_renderer_ui
 struct Fonts
 {
 	ImFont *body    = nullptr;
-	ImFont *caption = nullptr;
-	ImFont *heading = nullptr;
 	ImFont *strong  = nullptr;
 };
 
@@ -82,7 +80,7 @@ inline ImVec4 With_Alpha(const ImVec4 &color, float alpha)
 
 inline ImVec4 Accent_Color()
 {
-	return ImVec4(1.00f, 0.32f, 0.08f, 1.00f);
+	return ImVec4(0.22f, 0.45f, 0.74f, 1.00f);
 }
 
 inline ImVec4 Success_Color()
@@ -90,19 +88,9 @@ inline ImVec4 Success_Color()
 	return ImVec4(0.78f, 0.82f, 0.74f, 1.00f);
 }
 
-inline ImVec4 Selection_Color()
-{
-	return ImVec4(0.94f, 0.93f, 0.91f, 1.00f);
-}
-
-inline ImVec4 Ink_Color()
-{
-	return ImVec4(0.075f, 0.070f, 0.072f, 1.00f);
-}
-
 inline ImVec4 Raised_Surface_Color()
 {
-	return ImVec4(0.095f, 0.087f, 0.088f, 0.92f);
+	return ImVec4(0.030f, 0.037f, 0.048f, 1.0f);
 }
 
 inline Fonts Configure_Fonts(const std::string &resources_path)
@@ -117,26 +105,16 @@ inline Fonts Configure_Fonts(const std::string &resources_path)
 	Fonts fonts{};
 	if (std::filesystem::exists(regular_ttf))
 	{
-		fonts.body    = io.Fonts->AddFontFromFileTTF(regular_ttf.c_str(), 16.0f);
-		fonts.caption = io.Fonts->AddFontFromFileTTF(regular_ttf.c_str(), 13.0f);
+		fonts.body = io.Fonts->AddFontFromFileTTF(regular_ttf.c_str(), 16.0f);
 	}
 	if (!fonts.body)
 	{
 		fonts.body = io.Fonts->AddFontDefault();
 	}
-	if (!fonts.caption)
-	{
-		fonts.caption = fonts.body;
-	}
 
 	if (std::filesystem::exists(bold_ttf))
 	{
-		fonts.heading = io.Fonts->AddFontFromFileTTF(bold_ttf.c_str(), 22.0f);
-		fonts.strong  = io.Fonts->AddFontFromFileTTF(bold_ttf.c_str(), 16.0f);
-	}
-	if (!fonts.heading)
-	{
-		fonts.heading = fonts.body;
+		fonts.strong = io.Fonts->AddFontFromFileTTF(bold_ttf.c_str(), 16.0f);
 	}
 	if (!fonts.strong)
 	{
@@ -148,122 +126,110 @@ inline Fonts Configure_Fonts(const std::string &resources_path)
 	return fonts;
 }
 
-inline void Apply_Modern_Theme()
+inline void Apply_Debugger_Theme()
 {
 	ImGuiStyle &style = ImGui::GetStyle();
 	ImGui::StyleColorsDark(&style);
 
-	style.WindowPadding            = ImVec2(9.0f, 9.0f);
-	style.FramePadding             = ImVec2(9.0f, 6.0f);
-	style.CellPadding              = ImVec2(9.0f, 7.0f);
-	style.ItemSpacing              = ImVec2(8.0f, 7.0f);
-	style.ItemInnerSpacing         = ImVec2(7.0f, 5.0f);
-	style.TouchExtraPadding        = ImVec2(0.0f, 0.0f);
-	style.IndentSpacing            = 18.0f;
-	style.ScrollbarSize            = 9.0f;
-	style.GrabMinSize              = 9.0f;
+	style.WindowPadding            = ImVec2(9.0f, 8.0f);
+	style.FramePadding             = ImVec2(7.0f, 4.0f);
+	style.CellPadding              = ImVec2(6.0f, 4.0f);
+	style.ItemSpacing              = ImVec2(7.0f, 6.0f);
+	style.ItemInnerSpacing         = ImVec2(6.0f, 4.0f);
+	style.IndentSpacing            = 16.0f;
+	style.ScrollbarSize            = 10.0f;
+	style.GrabMinSize              = 8.0f;
 	style.WindowBorderSize         = 0.0f;
-	style.ChildBorderSize          = 0.0f;
+	style.ChildBorderSize          = 1.0f;
 	style.PopupBorderSize          = 1.0f;
 	style.FrameBorderSize          = 0.0f;
 	style.TabBorderSize            = 0.0f;
-	style.WindowRounding           = 12.0f;
-	style.ChildRounding            = 9.0f;
-	style.FrameRounding            = 7.0f;
-	style.PopupRounding            = 9.0f;
-	style.ScrollbarRounding        = 10.0f;
-	style.GrabRounding             = 8.0f;
-	style.TabRounding              = 7.0f;
-	style.SeparatorTextBorderSize  = 0.0f;
-	style.SeparatorTextAlign       = ImVec2(0.0f, 0.5f);
-	style.SeparatorTextPadding     = ImVec2(0.0f, 11.0f);
-	style.SelectableTextAlign      = ImVec2(0.0f, 0.5f);
-	style.WindowTitleAlign         = ImVec2(0.0f, 0.5f);
+	style.TabBarBorderSize         = 1.0f;
+	style.TabBarOverlineSize       = 2.0f;
+	style.DockingSeparatorSize     = 2.0f;
+	style.WindowRounding           = 0.0f;
+	style.ChildRounding            = 0.0f;
+	style.FrameRounding            = 0.0f;
+	style.PopupRounding            = 0.0f;
+	style.ScrollbarRounding        = 0.0f;
+	style.GrabRounding             = 0.0f;
+	style.TabRounding              = 0.0f;
+	style.SeparatorTextBorderSize  = 1.0f;
+	style.SeparatorTextPadding     = ImVec2(0.0f, 6.0f);
 	style.WindowMenuButtonPosition = ImGuiDir_None;
 	style.ColorButtonPosition      = ImGuiDir_Right;
 
-	const ImVec4 accent      = Accent_Color();
-	const ImVec4 text        = ImVec4(0.90f, 0.89f, 0.88f, 1.00f);
-	const ImVec4 text_muted   = ImVec4(0.50f, 0.47f, 0.47f, 1.00f);
-	const ImVec4 canvas      = ImVec4(0.055f, 0.050f, 0.052f, 0.88f);
-	const ImVec4 surface     = ImVec4(0.045f, 0.042f, 0.045f, 0.91f);
-	const ImVec4 surface_high = Raised_Surface_Color();
-	const ImVec4 interaction = ImVec4(0.145f, 0.132f, 0.132f, 1.00f);
-	const ImVec4 border      = ImVec4(0.28f, 0.24f, 0.23f, 0.38f);
-	ImVec4      *colors      = style.Colors;
+	const ImVec4 accent = Accent_Color();
+	const ImVec4 canvas(0.017f, 0.021f, 0.028f, 1.0f);
+	const ImVec4 inset(0.011f, 0.014f, 0.019f, 1.0f);
+	const ImVec4 field = Raised_Surface_Color();
+	const ImVec4 hovered(0.045f, 0.055f, 0.070f, 1.0f);
+	const ImVec4 selected(0.043f, 0.073f, 0.113f, 1.0f);
+	const ImVec4 border(0.047f, 0.056f, 0.070f, 1.0f);
+	ImVec4 *colors = style.Colors;
 
-	colors[ImGuiCol_Text]                 = text;
-	colors[ImGuiCol_TextDisabled]         = text_muted;
-	colors[ImGuiCol_WindowBg]             = canvas;
-	colors[ImGuiCol_ChildBg]              = surface;
-	colors[ImGuiCol_PopupBg]              = surface;
-	colors[ImGuiCol_Border]               = border;
-	colors[ImGuiCol_BorderShadow]         = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-	colors[ImGuiCol_FrameBg]              = surface_high;
-	colors[ImGuiCol_FrameBgHovered]       = interaction;
-	colors[ImGuiCol_FrameBgActive]        = With_Alpha(accent, 0.22f);
-	colors[ImGuiCol_TitleBg]              = surface;
-	colors[ImGuiCol_TitleBgActive]        = surface;
-	colors[ImGuiCol_TitleBgCollapsed]     = surface;
-	colors[ImGuiCol_MenuBarBg]            = surface;
-	colors[ImGuiCol_ScrollbarBg]          = ImVec4(0.03f, 0.028f, 0.03f, 0.35f);
-	colors[ImGuiCol_ScrollbarGrab]        = ImVec4(0.28f, 0.25f, 0.25f, 0.82f);
-	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.34f, 0.32f, 0.92f);
-	colors[ImGuiCol_ScrollbarGrabActive]  = With_Alpha(accent, 0.78f);
-	colors[ImGuiCol_CheckMark]            = accent;
-	colors[ImGuiCol_SliderGrab]           = With_Alpha(accent, 0.78f);
-	colors[ImGuiCol_SliderGrabActive]     = accent;
-	colors[ImGuiCol_Button]               = surface_high;
-	colors[ImGuiCol_ButtonHovered]        = interaction;
-	colors[ImGuiCol_ButtonActive]         = With_Alpha(accent, 0.26f);
-	colors[ImGuiCol_Header]               = surface_high;
-	colors[ImGuiCol_HeaderHovered]        = interaction;
-	colors[ImGuiCol_HeaderActive]         = With_Alpha(accent, 0.24f);
-	colors[ImGuiCol_Separator]            = border;
-	colors[ImGuiCol_SeparatorHovered]     = With_Alpha(accent, 0.65f);
-	colors[ImGuiCol_SeparatorActive]      = accent;
-	colors[ImGuiCol_ResizeGrip]           = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-	colors[ImGuiCol_ResizeGripHovered]    = With_Alpha(accent, 0.65f);
-	colors[ImGuiCol_ResizeGripActive]     = accent;
-	colors[ImGuiCol_Tab]                  = surface;
-	colors[ImGuiCol_TabHovered]           = interaction;
-	colors[ImGuiCol_TabSelected]          = With_Alpha(accent, 0.22f);
-	colors[ImGuiCol_TabDimmed]            = canvas;
-	colors[ImGuiCol_TabDimmedSelected]    = surface_high;
-	colors[ImGuiCol_PlotLines]            = accent;
-	colors[ImGuiCol_PlotLinesHovered]     = ImVec4(1.00f, 0.58f, 0.30f, 1.00f);
-	colors[ImGuiCol_PlotHistogram]        = accent;
-	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.58f, 0.30f, 1.00f);
-	colors[ImGuiCol_TableHeaderBg]        = surface_high;
-	colors[ImGuiCol_TableBorderStrong]    = border;
-	colors[ImGuiCol_TableBorderLight]     = With_Alpha(border, 0.50f);
-	colors[ImGuiCol_TableRowBg]           = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-	colors[ImGuiCol_TableRowBgAlt]        = ImVec4(1.0f, 1.0f, 1.0f, 0.025f);
-	colors[ImGuiCol_TextSelectedBg]       = With_Alpha(accent, 0.30f);
-	colors[ImGuiCol_NavHighlight]         = accent;
-	colors[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.01f, 0.015f, 0.025f, 0.76f);
+	colors[ImGuiCol_Text]                      = ImVec4(0.83f, 0.87f, 0.92f, 1.0f);
+	colors[ImGuiCol_TextDisabled]              = ImVec4(0.34f, 0.39f, 0.46f, 1.0f);
+	colors[ImGuiCol_WindowBg]                  = canvas;
+	colors[ImGuiCol_ChildBg]                   = inset;
+	colors[ImGuiCol_PopupBg]                   = canvas;
+	colors[ImGuiCol_Border]                    = border;
+	colors[ImGuiCol_BorderShadow]              = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	colors[ImGuiCol_FrameBg]                   = field;
+	colors[ImGuiCol_FrameBgHovered]            = hovered;
+	colors[ImGuiCol_FrameBgActive]             = selected;
+	colors[ImGuiCol_TitleBg]                   = inset;
+	colors[ImGuiCol_TitleBgActive]             = field;
+	colors[ImGuiCol_TitleBgCollapsed]          = inset;
+	colors[ImGuiCol_MenuBarBg]                 = canvas;
+	colors[ImGuiCol_ScrollbarBg]               = inset;
+	colors[ImGuiCol_ScrollbarGrab]             = ImVec4(0.077f, 0.090f, 0.111f, 1.0f);
+	colors[ImGuiCol_ScrollbarGrabHovered]      = ImVec4(0.117f, 0.138f, 0.168f, 1.0f);
+	colors[ImGuiCol_ScrollbarGrabActive]       = colors[ImGuiCol_ScrollbarGrabHovered];
+	colors[ImGuiCol_CheckMark]                 = accent;
+	colors[ImGuiCol_SliderGrab]                = ImVec4(0.13f, 0.25f, 0.40f, 1.0f);
+	colors[ImGuiCol_SliderGrabActive]          = accent;
+	colors[ImGuiCol_Button]                    = field;
+	colors[ImGuiCol_ButtonHovered]             = hovered;
+	colors[ImGuiCol_ButtonActive]              = selected;
+	colors[ImGuiCol_Header]                    = selected;
+	colors[ImGuiCol_HeaderHovered]             = hovered;
+	colors[ImGuiCol_HeaderActive]              = selected;
+	colors[ImGuiCol_Separator]                 = border;
+	colors[ImGuiCol_SeparatorHovered]          = accent;
+	colors[ImGuiCol_SeparatorActive]           = accent;
+	colors[ImGuiCol_ResizeGrip]                = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	colors[ImGuiCol_ResizeGripHovered]         = With_Alpha(accent, 0.65f);
+	colors[ImGuiCol_ResizeGripActive]          = accent;
+	colors[ImGuiCol_Tab]                       = inset;
+	colors[ImGuiCol_TabHovered]                = hovered;
+	colors[ImGuiCol_TabSelected]               = field;
+	colors[ImGuiCol_TabSelectedOverline]       = accent;
+	colors[ImGuiCol_TabDimmed]                 = inset;
+	colors[ImGuiCol_TabDimmedSelected]         = field;
+	colors[ImGuiCol_TabDimmedSelectedOverline] = With_Alpha(accent, 0.60f);
+	colors[ImGuiCol_DockingEmptyBg]            = inset;
+	colors[ImGuiCol_DockingPreview]            = With_Alpha(accent, 0.50f);
+	colors[ImGuiCol_PlotLines]                 = accent;
+	colors[ImGuiCol_PlotHistogram]             = accent;
+	colors[ImGuiCol_PlotLinesHovered]          = colors[ImGuiCol_Text];
+	colors[ImGuiCol_PlotHistogramHovered]      = colors[ImGuiCol_Text];
+	colors[ImGuiCol_TableHeaderBg]             = field;
+	colors[ImGuiCol_TableBorderStrong]         = border;
+	colors[ImGuiCol_TableBorderLight]          = With_Alpha(border, 0.60f);
+	colors[ImGuiCol_TableRowBg]                = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+	colors[ImGuiCol_TableRowBgAlt]             = ImVec4(1.0f, 1.0f, 1.0f, 0.012f);
+	colors[ImGuiCol_TextSelectedBg]            = With_Alpha(accent, 0.30f);
+	colors[ImGuiCol_NavHighlight]              = accent;
+	colors[ImGuiCol_ModalWindowDimBg]          = ImVec4(0.0f, 0.0f, 0.0f, 0.65f);
 }
 
-inline bool Navigation_Item(const char *label, bool selected)
+inline bool Section_Header(const char *label, ImGuiTreeNodeFlags flags = 0)
 {
-	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.08f, 0.5f));
-	ImGui::PushStyleColor(ImGuiCol_Text, selected ? Ink_Color() : ImGui::GetStyleColorVec4(ImGuiCol_Text));
-	ImGui::PushStyleColor(ImGuiCol_Button, selected ? Selection_Color() : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, selected ? Selection_Color() : Raised_Surface_Color());
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-	                      selected ? ImVec4(0.83f, 0.81f, 0.79f, 1.0f) : With_Alpha(Accent_Color(), 0.20f));
-	const bool pressed = ImGui::Button(label, ImVec2(ImGui::GetContentRegionAvail().x, 34.0f));
-	ImGui::PopStyleColor(4);
-	ImGui::PopStyleVar();
-
-	if (selected)
-	{
-		const ImVec2 min = ImGui::GetItemRectMin();
-		const ImVec2 max = ImGui::GetItemRectMax();
-		ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(max.x - 14.0f, (min.y + max.y) * 0.5f),
-		                                            3.0f, ImGui::GetColorU32(Accent_Color()));
-	}
-	return pressed;
+	ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+	const bool open = ImGui::CollapsingHeader(label, flags);
+	ImGui::PopStyleColor();
+	return open;
 }
 }        // namespace imgui_renderer_ui
 
@@ -384,6 +350,16 @@ class Imgui_Renderer
 		ed::Config config;
 		config.SettingsFile = "Simple.json";
 		m_context           = ed::CreateEditor(&config);
+		ed::SetCurrentEditor(m_context);
+		auto &node_style = ed::GetStyle();
+		node_style.NodeRounding = 0.0f;
+		node_style.PinRounding = 0.0f;
+		node_style.GroupRounding = 0.0f;
+		node_style.Colors[ed::StyleColor_Bg] = ImGui::GetStyleColorVec4(ImGuiCol_ChildBg);
+		node_style.Colors[ed::StyleColor_NodeBg] = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
+		node_style.Colors[ed::StyleColor_NodeBorder] = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+		node_style.Colors[ed::StyleColor_SelNodeBorder] = imgui_renderer_ui::Accent_Color();
+		ed::SetCurrentEditor(nullptr);
 
 		std::string resources_path = systems::Os::Get_Instance()->Get_Engine_Resources_Path();
 		std::string file_name      = resources_path + "\\Images\\f3.png";
@@ -477,6 +453,7 @@ class Imgui_Renderer
 		Textures,
 		Buffers,
 		Fluid_Simulation,
+		Voxel_Grid,
 		Cluster_Renderer,
 		Radiance_Cascades,
 		Gaussian_Splatting,
@@ -485,89 +462,49 @@ class Imgui_Renderer
 
 	static constexpr Debugger_Page debugger_pages[] = {
 	    Debugger_Page::Render_Graph, Debugger_Page::Engine, Debugger_Page::Textures,
-	    Debugger_Page::Buffers, Debugger_Page::Fluid_Simulation, Debugger_Page::Cluster_Renderer,
-	    Debugger_Page::Radiance_Cascades, Debugger_Page::Gaussian_Splatting, Debugger_Page::Profiler};
+	    Debugger_Page::Buffers, Debugger_Page::Fluid_Simulation, Debugger_Page::Voxel_Grid,
+	    Debugger_Page::Cluster_Renderer, Debugger_Page::Radiance_Cascades,
+	    Debugger_Page::Gaussian_Splatting, Debugger_Page::Profiler};
 
-	struct Debugger_Page_Info
-	{
-		const char *title;
-		const char *description;
-	};
-
-	Debugger_Page_Info Get_Debugger_Page_Info(Debugger_Page page) const
+	const char *Get_Debugger_Page_Title(Debugger_Page page) const
 	{
 		switch (page)
 		{
-			case Debugger_Page::Render_Graph:
-				return {"Render graph", "Inspect passes, resources, and node connections."};
-			case Debugger_Page::Engine:
-				return {"Engine overview", "Queues, execution order, and runtime scheduling."};
-			case Debugger_Page::Textures:
-				return {"Texture inspector", "Browse images currently registered with the renderer."};
-			case Debugger_Page::Buffers:
-				return {"Buffer inspector", "Browse engine buffers and inspect completed GPU results."};
-			case Debugger_Page::Fluid_Simulation:
-				return {"Fluid simulation", "Control simulation inputs, tools, emitters, and solver parameters."};
-			case Debugger_Page::Cluster_Renderer:
-				return {"Cluster renderer", "Lighting, culling, camera, and render-node controls."};
-			case Debugger_Page::Radiance_Cascades:
-				return {"Radiance cascades", "Configure cascades, materials, lighting, and painting."};
-			case Debugger_Page::Gaussian_Splatting:
-				return {"Gaussian splatting", "Inspect splat data, scale, camera, and sort state."};
-			case Debugger_Page::Profiler:
-				return {"Performance", "Review CPU and GPU timing for the current frame."};
+			case Debugger_Page::Render_Graph:         return "Render graph";
+			case Debugger_Page::Engine:               return "Engine overview";
+			case Debugger_Page::Textures:             return "Texture inspector";
+			case Debugger_Page::Buffers:              return "Buffer inspector";
+			case Debugger_Page::Fluid_Simulation:     return "Fluid simulation";
+			case Debugger_Page::Voxel_Grid:           return "Voxel grid";
+			case Debugger_Page::Cluster_Renderer:     return "Cluster renderer";
+			case Debugger_Page::Radiance_Cascades:    return "Radiance cascades";
+			case Debugger_Page::Gaussian_Splatting:  return "Gaussian splatting";
+			case Debugger_Page::Profiler:            return "Performance";
 		}
-		return {"Engine", "Runtime tools and diagnostics."};
+		return "Engine";
 	}
 
 	void Render_Application_Header()
 	{
-		const ImGuiIO &io = ImGui::GetIO();
-		if (ImGui::BeginChild("##application_header", ImVec2(0.0f, 54.0f), ImGuiChildFlags_None,
+		const float height = ImGui::GetTextLineHeight() + 2.0f * ImGui::GetStyle().WindowPadding.y;
+		if (ImGui::BeginChild("##application_header", ImVec2(0.0f, height), ImGuiChildFlags_AlwaysUseWindowPadding,
 		                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 		{
-			if (ImGui::BeginTable("##application_header_layout", 4,
-			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings |
-			                          ImGuiTableFlags_NoPadOuterX))
+			const float right = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x;
+			ImGui::PushFont(fonts.strong);
+			ImGui::TextUnformatted("CodeVK");
+			ImGui::PopFont();
+
+			const float fps = ImGui::GetIO().Framerate;
+			char timing[48];
+			std::snprintf(timing, sizeof(timing), "%.0f FPS   %.2f ms", fps, fps > 0.0f ? 1000.0f / fps : 0.0f);
+			const float timing_start = right - ImGui::CalcTextSize(timing).x;
+			const float title_end = ImGui::GetItemRectMax().x - ImGui::GetWindowPos().x;
+			if (timing_start > title_end + ImGui::GetStyle().ItemSpacing.x)
 			{
-				ImGui::TableSetupColumn("Workspace", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-				ImGui::TableSetupColumn("Frame rate", ImGuiTableColumnFlags_WidthFixed, 112.0f);
-				ImGui::TableSetupColumn("Frame time", ImGuiTableColumnFlags_WidthFixed, 112.0f);
-				ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 76.0f);
-				ImGui::TableNextRow();
-
-				ImGui::TableSetColumnIndex(0);
-				ImGui::PushFont(fonts.strong);
-				ImGui::TextUnformatted("CODEVK");
-				ImGui::PopFont();
 				ImGui::SameLine();
-				ImGui::TextColored(imgui_renderer_ui::Accent_Color(), "RENDERER");
-				ImGui::PushFont(fonts.caption);
-				ImGui::TextDisabled("ENGINE TOOLS");
-				ImGui::PopFont();
-
-				ImGui::TableSetColumnIndex(1);
-				ImGui::PushFont(fonts.caption);
-				ImGui::TextDisabled("FRAME RATE");
-				ImGui::PopFont();
-				ImGui::PushFont(fonts.strong);
-				ImGui::Text("%.0f FPS", io.Framerate);
-				ImGui::PopFont();
-
-				ImGui::TableSetColumnIndex(2);
-				ImGui::PushFont(fonts.caption);
-				ImGui::TextDisabled("FRAME TIME");
-				ImGui::PopFont();
-				ImGui::PushFont(fonts.strong);
-				ImGui::Text("%.2f ms", io.Framerate > 0.0f ? 1000.0f / io.Framerate : 0.0f);
-				ImGui::PopFont();
-
-				ImGui::TableSetColumnIndex(3);
-				ImGui::PushFont(fonts.caption);
-				ImGui::TextDisabled("STATUS");
-				ImGui::PopFont();
-				ImGui::TextColored(imgui_renderer_ui::Accent_Color(), "ACTIVE");
-				ImGui::EndTable();
+				ImGui::SetCursorPosX(timing_start);
+				ImGui::TextDisabled("%s", timing);
 			}
 		}
 		ImGui::EndChild();
@@ -577,6 +514,8 @@ class Imgui_Renderer
 	{
 		switch (page)
 		{
+			case Debugger_Page::Voxel_Grid:
+				return cfd_renderer != nullptr;
 			case Debugger_Page::Cluster_Renderer:
 				return cluster_renderer != nullptr;
 			case Debugger_Page::Radiance_Cascades:
@@ -607,6 +546,10 @@ class Imgui_Renderer
 			case Debugger_Page::Fluid_Simulation:
 				Fluid_Sim_Info();
 				break;
+			case Debugger_Page::Voxel_Grid:
+				Voxel_Projection_Info();
+				Lattice_Info();
+				break;
 			case Debugger_Page::Cluster_Renderer:
 				if (cluster_renderer)
 				{
@@ -629,6 +572,222 @@ class Imgui_Renderer
 				Render_Graph_Profiler();
 				break;
 		}
+	}
+
+	enum class Voxel_Gizmo_Mode
+	{
+		Move,
+		Cell_Size,
+		Cell_Count
+	};
+
+	struct Voxel_Gizmo_Drag
+	{
+		ImGuiID id = 0;
+		int axis = 0;
+		glm::vec2 mouse_start{};
+		glm::vec2 world_per_pixel{};
+		Pc_Voxel_Grid start{};
+		uint32_t max_cell_count = 4096;
+	};
+
+	uint64_t Max_Voxel_Cells() const
+	{
+		return core->physical_device.getProperties().limits.maxStorageBufferRange / sizeof(uint32_t);
+	}
+
+	void Set_Voxel_Grid_Dimensions(glm::uvec3 dimensions)
+	{
+		auto& voxel_grid = cfd_renderer->voxel_grid;
+		auto& grid = voxel_grid.pc_voxel_grid;
+		if (dimensions == grid.dimensions)
+			return;
+
+		Pc_Voxel_Grid next = grid;
+		next.dimensions = dimensions;
+		if (!next.Is_Valid() || next.Get_Size() > Max_Voxel_Cells())
+			return;
+
+		auto* resources = render_graph->resources_manager;
+		const vk::DeviceSize bytes = next.Get_Size() * sizeof(uint32_t);
+		const auto* buffer = resources->Get_Buff_From_Name(voxel_grid.name);
+		if (bytes > buffer->device_size)
+		{
+			// Queue growth for Prepare_Rendering before the next voxelizer dispatch.
+			resources->Set_Buffer(voxel_grid.name, bytes, sizeof(uint32_t), nullptr);
+		}
+
+		const int slice_axis = next.plane_selected == glm::uvec3(0, 1, 1) ? 0 :
+		                       (next.plane_selected == glm::uvec3(1, 0, 1) ? 1 : 2);
+		next.selected_dimension_offset = std::min(next.selected_dimension_offset, dimensions[slice_axis] - 1u);
+		grid = next;
+	}
+
+	void Render_Voxel_Gizmo_Toolbar()
+	{
+		ImGui::Checkbox("Voxel gizmo", &voxel_gizmo_visible);
+		if (!voxel_gizmo_visible)
+			return;
+
+		const char* modes[] = {"Move", "Cell size", "Cell count"};
+		for (int index = 0; index < IM_ARRAYSIZE(modes); ++index)
+		{
+			const auto mode = static_cast<Voxel_Gizmo_Mode>(index);
+			ImGui::SameLine();
+			const bool selected = voxel_gizmo_mode == mode;
+			ImGui::PushStyleColor(ImGuiCol_Button, selected ? ImGui::GetStyleColorVec4(ImGuiCol_Header) :
+			                                         ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+			if (ImGui::SmallButton(modes[index]))
+				voxel_gizmo_mode = mode;
+			if (mode == Voxel_Gizmo_Mode::Cell_Size)
+				ImGui::SetItemTooltip("Change the shared size of the cubic cells.");
+			ImGui::PopStyleColor();
+		}
+	}
+
+	void Update_Voxel_Gizmo_Drag()
+	{
+		auto& drag = voxel_gizmo_drag;
+		if (drag.id == 0)
+			return;
+		if (ImGui::GetActiveID() != drag.id)
+		{
+			drag.id = 0;
+			return;
+		}
+
+		ImGui::KeepAliveID(drag.id);
+		const ImVec2 mouse = ImGui::GetMousePos();
+		const float delta = glm::dot(glm::vec2(mouse.x, mouse.y) - drag.mouse_start, drag.world_per_pixel);
+		auto& grid = cfd_renderer->voxel_grid.pc_voxel_grid;
+		if (ImGui::IsMousePosValid(&mouse) && std::isfinite(delta))
+		{
+			Pc_Voxel_Grid next = grid;
+			switch (voxel_gizmo_mode)
+			{
+				case Voxel_Gizmo_Mode::Move:
+					next.origin[drag.axis] = drag.start.origin[drag.axis] + delta;
+					break;
+				case Voxel_Gizmo_Mode::Cell_Size:
+					next.cell_size = std::clamp(drag.start.cell_size + delta / drag.start.dimensions[drag.axis],
+					                            0.0001f, 10000.0f);
+					break;
+				case Voxel_Gizmo_Mode::Cell_Count:
+					const float count = std::round(drag.start.dimensions[drag.axis] + delta / drag.start.cell_size);
+					next.dimensions[drag.axis] = static_cast<uint32_t>(
+					    std::clamp(count, 1.0f, float(drag.max_cell_count)));
+					break;
+			}
+			if (voxel_gizmo_mode == Voxel_Gizmo_Mode::Cell_Count)
+				Set_Voxel_Grid_Dimensions(next.dimensions);
+			else if (next.Is_Valid())
+				grid = next;
+		}
+
+		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+		{
+			ImGui::ClearActiveID();
+			drag.id = 0;
+		}
+	}
+
+	void Render_Voxel_Gizmo()
+	{
+		const auto& grid = cfd_renderer->voxel_grid.pc_voxel_grid;
+		if (!grid.Is_Valid())
+			return;
+
+		const ImRect viewport(scene_viewport_min, scene_viewport_max);
+		const glm::vec2 half_viewport(viewport.GetWidth() * 0.5f, viewport.GetHeight() * 0.5f);
+		const glm::vec3 center = grid.origin + (glm::vec3(grid.dimensions) - 1.0f) * (grid.cell_size * 0.5f);
+		const glm::mat4 view_projection = cluster_renderer->camera.Get_View_Proj();
+		const glm::vec4 clip = view_projection * glm::vec4(center, 1.0f);
+		if (!(clip.w > 0.0f && clip.z >= 0.0f && clip.z <= clip.w))
+			return;
+
+		const glm::vec2 ndc = glm::vec2(clip) / clip.w;
+		const glm::vec2 anchor = glm::vec2(viewport.Min.x, viewport.Min.y) + (ndc + 1.0f) * half_viewport;
+		const ImVec2 anchor_pos(anchor.x, anchor.y);
+		if (!viewport.Contains(anchor_pos))
+			return;
+
+		const char* axis_labels[] = {"X", "Y", "Z"};
+		const ImU32 axis_colors[] = {IM_COL32(251, 122, 116, 255), IM_COL32(142, 224, 152, 255),
+		                            IM_COL32(112, 181, 255, 255)};
+		const glm::vec2 edge_on_directions[] = {{1.0f, 0.0f}, {0.0f, -1.0f}, {0.6f, 0.8f}};
+		const ImU32 shadow = IM_COL32(22, 20, 22, 235);
+		const float handle_radius = 10.0f;
+		auto* draw = ImGui::GetWindowDrawList();
+		draw->PushClipRect(viewport.Min, viewport.Max, true);
+		ImGui::PushID("voxel_grid_axes");
+		for (int axis = 0; axis < 3; ++axis)
+		{
+			const glm::vec4 clip_axis = view_projection[axis];
+			// Differentiate the perspective projection along the world axis at the grid center.
+			const glm::vec2 pixels = (glm::vec2(clip_axis) - ndc * clip_axis.w) * (half_viewport / clip.w);
+			const float speed = glm::length(pixels);
+			if (!std::isfinite(speed))
+				continue;
+
+			const bool edge_on = speed * grid.cell_size < 0.25f;
+			const glm::vec2 direction = edge_on ? edge_on_directions[axis] : pixels / speed;
+			const float world_step = edge_on ? grid.cell_size / 24.0f : 1.0f / speed;
+			const glm::vec2 arm = direction * (44.0f + 22.0f * axis);
+			ImVec2 tip(anchor.x + arm.x, anchor.y + arm.y);
+			if (!viewport.Contains(tip))
+				tip = ImVec2(anchor.x - arm.x, anchor.y - arm.y);
+
+			const ImGuiID id = ImGui::GetID(axis_labels[axis]);
+			ImRect hit(ImVec2(tip.x - handle_radius, tip.y - handle_radius),
+			           ImVec2(tip.x + handle_radius, tip.y + handle_radius));
+			hit.ClipWith(viewport);
+			bool hovered = false;
+			bool held = false;
+			if (voxel_gizmo_drag.id == 0 && scene_viewport_hovered && !hit.IsInverted() &&
+			    ImGui::ItemAdd(hit, id, nullptr, ImGuiItemFlags_NoNav))
+			{
+				ImGui::ButtonBehavior(hit, id, &hovered, &held, ImGuiButtonFlags_MouseButtonLeft);
+			}
+			if (held)
+			{
+				const ImVec2 mouse = ImGui::GetMousePos();
+				auto& drag = voxel_gizmo_drag;
+				drag = {id, axis, {mouse.x, mouse.y}, direction * world_step, grid};
+				if (voxel_gizmo_mode == Voxel_Gizmo_Mode::Cell_Count)
+				{
+					const uint64_t other_cells = grid.Get_Size() / grid.dimensions[axis];
+					drag.max_cell_count = static_cast<uint32_t>(
+					    std::clamp(Max_Voxel_Cells() / other_cells, uint64_t(1), uint64_t(4096)));
+				}
+			}
+
+			const bool active = voxel_gizmo_drag.id == id;
+			const ImU32 color = active || hovered ? IM_COL32(255, 239, 227, 255) : axis_colors[axis];
+			draw->AddLine(anchor_pos, tip, shadow, 5.0f);
+			draw->AddLine(anchor_pos, tip, color, 2.0f);
+			draw->AddCircleFilled(tip, handle_radius, shadow);
+			draw->AddCircle(tip, handle_radius, color, 0, 1.5f);
+			const ImVec2 label_size = ImGui::CalcTextSize(axis_labels[axis]);
+			draw->AddText(ImVec2(tip.x - label_size.x * 0.5f, tip.y - label_size.y * 0.5f), color, axis_labels[axis]);
+			if (active || hovered)
+			{
+				ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+				switch (voxel_gizmo_mode)
+				{
+					case Voxel_Gizmo_Mode::Move:
+						ImGui::SetTooltip("Move %s   %.3f", axis_labels[axis], grid.origin[axis]);
+						break;
+					case Voxel_Gizmo_Mode::Cell_Size:
+						ImGui::SetTooltip("Uniform cell size   %.4f", grid.cell_size);
+						break;
+					case Voxel_Gizmo_Mode::Cell_Count:
+						ImGui::SetTooltip("%s cells   %u", axis_labels[axis], grid.dimensions[axis]);
+						break;
+				}
+			}
+		}
+		ImGui::PopID();
+		draw->PopClipRect();
 	}
 
 	void Render_Scene_Viewport()
@@ -655,6 +814,12 @@ class Imgui_Renderer
 		}
 
 		Add_Image("bf", scene_image);
+		const bool has_voxel_gizmo = cfd_renderer && cluster_renderer;
+		if (has_voxel_gizmo)
+		{
+			Render_Voxel_Gizmo_Toolbar();
+			ImGui::Separator();
+		}
 
 		const ImVec2     available   = ImGui::GetContentRegionAvail();
 		const glm::uvec2 image_extent = scene_image->image_metadata->Get_Image_Size();
@@ -696,19 +861,12 @@ class Imgui_Renderer
 			}
 		}
 
-		ImDrawList *draw_list    = ImGui::GetWindowDrawList();
-		const ImU32 border_color = ImGui::GetColorU32(
-		    scene_viewport_hovered ? imgui_renderer_ui::Accent_Color() : ImVec4(0.30f, 0.27f, 0.27f, 0.72f));
-		draw_list->AddRect(scene_viewport_min, scene_viewport_max, border_color, 4.0f, 0,
-		                  scene_viewport_hovered ? 2.0f : 1.0f);
-
-		const ImVec2 badge_min(scene_viewport_min.x + 12.0f, scene_viewport_min.y + 12.0f);
-		const ImVec2 badge_max(badge_min.x + 122.0f, badge_min.y + 27.0f);
-		draw_list->AddRectFilled(badge_min, badge_max, IM_COL32(18, 17, 18, 220), 6.0f);
-		draw_list->AddCircleFilled(ImVec2(badge_min.x + 13.0f, badge_min.y + 13.5f), 3.0f,
-		                          ImGui::GetColorU32(imgui_renderer_ui::Accent_Color()));
-		draw_list->AddText(ImVec2(badge_min.x + 23.0f, badge_min.y + 5.0f),
-		                  IM_COL32(232, 229, 226, 255), "VIEWPORT  /  bf");
+		ImGui::GetWindowDrawList()->AddRect(scene_viewport_min, scene_viewport_max, ImGui::GetColorU32(ImGuiCol_Border));
+		if (has_voxel_gizmo && voxel_gizmo_visible)
+		{
+			Render_Voxel_Gizmo();
+			Update_Voxel_Gizmo_Drag();
+		}
 	}
 
 	void Render_Debugger_Window()
@@ -719,16 +877,13 @@ class Imgui_Renderer
 		ImGui::SetNextWindowViewport(main_viewport->ID);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.025f, 0.024f, 0.026f, 1.0f));
 		const ImGuiWindowFlags root_flags =
 		    ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
 		    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNavFocus |
 		    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
 		ImGui::Begin("CodeVK Engine Workspace", nullptr, root_flags);
-		ImGui::PopStyleColor();
-		ImGui::PopStyleVar(2);
+		ImGui::PopStyleVar();
 		Render_Application_Header();
 
 		const ImGuiID dockspace_id = ImGui::GetID("CodeVK Workspace Dockspace");
@@ -744,7 +899,7 @@ class Imgui_Renderer
 			for (Debugger_Page page : debugger_pages)
 			{
 				if (Is_Debugger_Page_Available(page))
-					ImGui::DockBuilderDockWindow(Get_Debugger_Page_Info(page).title, tools_dock);
+					ImGui::DockBuilderDockWindow(Get_Debugger_Page_Title(page), tools_dock);
 			}
 			ImGui::DockBuilderFinish(dockspace_id);
 		}
@@ -754,7 +909,7 @@ class Imgui_Renderer
 		// Hidden or inactive viewport tabs must not retain the previous frame's brush target.
 		scene_viewport_valid = false;
 		scene_viewport_hovered = false;
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.015f, 0.015f, 0.017f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_ChildBg));
 		if (ImGui::Begin("Scene viewport", nullptr,
 		                 ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 		{
@@ -762,19 +917,22 @@ class Imgui_Renderer
 		}
 		ImGui::End();
 		ImGui::PopStyleColor();
+		if (!scene_viewport_valid || !voxel_gizmo_visible)
+			voxel_gizmo_drag.id = 0;
 
+		ImGuiID fluid_dock_id = 0;
 		for (Debugger_Page page : debugger_pages)
 		{
 			if (!Is_Debugger_Page_Available(page))
 				continue;
-			const Debugger_Page_Info page_info = Get_Debugger_Page_Info(page);
-			if (ImGui::Begin(page_info.title, nullptr, ImGuiWindowFlags_HorizontalScrollbar))
-			{
-				ImGui::TextDisabled("%s", page_info.description);
-				ImGui::Separator();
-				ImGui::Spacing();
+			// Add the new tab beside Fluid simulation in workspaces with saved docking layouts.
+			if (page == Debugger_Page::Voxel_Grid && fluid_dock_id != 0)
+				ImGui::SetNextWindowDockID(fluid_dock_id, ImGuiCond_FirstUseEver);
+			const bool visible = ImGui::Begin(Get_Debugger_Page_Title(page), nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+			if (page == Debugger_Page::Fluid_Simulation)
+				fluid_dock_id = ImGui::GetWindowDockID();
+			if (visible)
 				Render_Debugger_Page(page);
-			}
 			ImGui::End();
 		}
 	}
@@ -873,7 +1031,7 @@ class Imgui_Renderer
 
 	void Lattice_Info()
 	{
-		if (!ImGui::CollapsingHeader("Lattice###fluid_lattice", ImGuiTreeNodeFlags_DefaultOpen))
+		if (!imgui_renderer_ui::Section_Header("Lattice###fluid_lattice", ImGuiTreeNodeFlags_DefaultOpen))
 			return;
 		if (!cfd_renderer)
 		{
@@ -911,7 +1069,7 @@ class Imgui_Renderer
 			if (ImGui::DragInt3("##lattice_dimensions", dimensions, 1.0f, 1, 4096, "%d",
 			                    ImGuiSliderFlags_AlwaysClamp))
 			{
-				lattice_config.dimensions = glm::uvec3(dimensions[0], dimensions[1], dimensions[2]);
+				Set_Voxel_Grid_Dimensions(glm::uvec3(dimensions[0], dimensions[1], dimensions[2]));
 			}
 			property("Cell size");
 			imgui_renderer_ui::Drag_Logarithmic_Float("##lattice_cell_size",
@@ -934,12 +1092,14 @@ class Imgui_Renderer
 		}
 
 		ImGui::TextDisabled("Lattice preview");
+		ImGui::SetItemTooltip("Grid lines are sampled for readability.");
 		const ImVec2 canvas_min = ImGui::GetCursorScreenPos();
 		const ImVec2 canvas_size(std::max(1.0f, ImGui::GetContentRegionAvail().x), 220.0f);
 		ImGui::InvisibleButton("##lattice_preview", canvas_size);
 		auto* draw = ImGui::GetWindowDrawList();
 		const ImVec2 canvas_max(canvas_min.x + canvas_size.x, canvas_min.y + canvas_size.y);
-		draw->AddRectFilled(canvas_min, canvas_max, ImGui::GetColorU32(ImGuiCol_FrameBg), 7.0f);
+		draw->AddRectFilled(canvas_min, canvas_max, ImGui::GetColorU32(ImGuiCol_ChildBg));
+		draw->AddRect(canvas_min, canvas_max, ImGui::GetColorU32(ImGuiCol_Border));
 		draw->PushClipRect(canvas_min, canvas_max, true);
 		const float projected_width = 0.866f * (extent.x + extent.z);
 		const float projected_height = 0.5f * (extent.x + extent.z) + extent.y;
@@ -1003,21 +1163,18 @@ class Imgui_Renderer
 		                    slice_axis == 0 ? "YZ" : (slice_axis == 1 ? "XZ" : "XY"),
 		                    slice_axis == 0 ? "X" : (slice_axis == 1 ? "Y" : "Z"),
 		                    slice, lattice_config.dimensions[slice_axis] - 1);
-		ImGui::TextWrapped("The highlighted plane marks the selected voxel slice. Grid lines are sampled for readability.");
 		ImGui::Spacing();
 	}
 
 	void Voxel_Projection_Info()
 	{
-		if (!ImGui::CollapsingHeader("Voxel projection###fluid_voxel_projection", ImGuiTreeNodeFlags_DefaultOpen))
+		if (!imgui_renderer_ui::Section_Header("Slice projection###fluid_voxel_projection", ImGuiTreeNodeFlags_DefaultOpen))
 			return;
-		if (!cfd_renderer)
-		{
-			ImGui::TextDisabled("CFD renderer is unavailable.");
-			return;
-		}
 
 		Pc_Voxel_Grid& lattice_config = cfd_renderer->voxel_grid.pc_voxel_grid;
+		const glm::uvec3 planes[] = {glm::uvec3(1, 1, 0), glm::uvec3(1, 0, 1), glm::uvec3(0, 1, 1)};
+		int plane = lattice_config.plane_selected == planes[1] ? 1 :
+		            (lattice_config.plane_selected == planes[2] ? 2 : 0);
 		if (ImGui::BeginTable("##fluid_voxel_projection_properties", 2,
 		                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
 		{
@@ -1032,9 +1189,6 @@ class Imgui_Renderer
 				ImGui::SetNextItemWidth(-1.0f);
 			};
 
-			const glm::uvec3 planes[] = {glm::uvec3(1, 1, 0), glm::uvec3(1, 0, 1), glm::uvec3(0, 1, 1)};
-			int plane = lattice_config.plane_selected == planes[1] ? 1 :
-			            (lattice_config.plane_selected == planes[2] ? 2 : 0);
 			property("Plane");
 			if (ImGui::Combo("##voxel_projection_plane", &plane, "XY (slice Z)\0XZ (slice Y)\0YZ (slice X)\0"))
 			{
@@ -1045,28 +1199,48 @@ class Imgui_Renderer
 			const int max_slice = std::max(0, static_cast<int>(lattice_config.dimensions[slice_axis]) - 1);
 			int slice = static_cast<int>(std::min(lattice_config.selected_dimension_offset,
 			                                     static_cast<uint32_t>(max_slice)));
-			property("Slice offset");
+			property("Slice index");
 			ImGui::SliderInt("##voxel_projection_slice", &slice, 0, max_slice, "%d",
 			                 ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
 			lattice_config.selected_dimension_offset = static_cast<uint32_t>(slice);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Zero-based cell index along the %s axis.", slice_axis == 0 ? "X" : (slice_axis == 1 ? "Y" : "Z"));
 
-			property("Cells (X, Y, Z)");
-			ImGui::TextDisabled("%u x %u x %u", lattice_config.dimensions.x,
-			                    lattice_config.dimensions.y, lattice_config.dimensions.z);
-			property("Cell size");
-			ImGui::TextDisabled("%.4f", lattice_config.cell_size);
 			ImGui::EndTable();
 		}
-		ImGui::TextWrapped("Grid dimensions and cell size follow the Lattice settings.");
+
+		if (!lattice_config.Is_Valid())
+			return;
+
+		const char* projection_name = "slice_projection";
+		auto* projection = render_graph->resources_manager->Get_Image_View_From_Name(projection_name);
+		if (!projection || !projection->image_metadata)
+		{
+			ImGui::TextDisabled("Slice projection is unavailable.");
+			return;
+		}
+
+		const glm::uvec3& dimensions = lattice_config.dimensions;
+		const float width = static_cast<float>(dimensions[plane == 2 ? 2 : 0]);
+		const float height = static_cast<float>(dimensions[plane == 1 ? 2 : 1]);
+		const ImVec2 available = ImGui::GetContentRegionAvail();
+		if (available.x <= 0.0f)
+			return;
+
+		// Leave room for the Lattice header below the preview.
+		const float max_height = std::clamp(
+		    available.y - ImGui::GetFrameHeightWithSpacing() - ImGui::GetStyle().ItemSpacing.y,
+		    120.0f, 320.0f);
+		const float scale = std::min(available.x / width, max_height / height);
+		const ImVec2 image_size(width * scale, height * scale);
+		Add_Image(projection_name, projection);
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (available.x - image_size.x) * 0.5f);
+		ImGui::Image((ImTextureID) dsets_arrays->Get_Dset_By_Name(projection_name), image_size);
 		ImGui::Spacing();
 	}
 
 	void Fluid_Sim_Info()
 	{
-		Lattice_Info();
-		Voxel_Projection_Info();
 		CodeCuda::FluidSimulation::sim_params fluid_sim_params{};
 		if (CodeCuda::FluidSimulation::C_GetSimulationParams(&fluid_sim_params) != CodeCuda::C_Res::OK)
 		{
@@ -1174,7 +1348,7 @@ class Imgui_Renderer
 			scan_sequence_folders();
 		}
 
-		if (ImGui::CollapsingHeader("Image import###fluid_image_import"))
+		if (imgui_renderer_ui::Section_Header("Image import###fluid_image_import"))
 		{
 			ImGui::TextDisabled("Load an image as smoke density or a solid mask.");
 
@@ -1447,45 +1621,25 @@ class Imgui_Renderer
 		    CodeCuda::FluidSimulation::s_width > CodeCuda::FluidSimulation::s_height ? CodeCuda::FluidSimulation::s_width : CodeCuda::FluidSimulation::s_height;
 		const int max_brush_radius = max_simulation_dimension > 0 ? max_simulation_dimension : 1;
 
-		ImGui::TextDisabled("Tool");
-		if (ImGui::BeginTable("##fluid_tool_selector", 2,
-		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+		if (ImGui::BeginCombo("Tool", fluid_tools[fluid_tool]))
 		{
 			for (int tool_index = 0; tool_index < IM_ARRAYSIZE(fluid_tools); ++tool_index)
 			{
-				ImGui::TableNextColumn();
-				ImGui::PushID(tool_index);
 				const bool selected = fluid_tool == tool_index;
-				if (selected)
+				if (ImGui::Selectable(fluid_tools[tool_index], selected) && !selected)
 				{
-					const ImVec4 accent = imgui_renderer_ui::Accent_Color();
-					ImGui::PushStyleColor(ImGuiCol_Button, accent);
-					ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-					                      ImVec4(accent.x, accent.y, accent.z, 0.90f));
-					ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-					                      ImVec4(accent.x, accent.y, accent.z, 0.78f));
-					ImGui::PushStyleColor(ImGuiCol_Text, imgui_renderer_ui::Ink_Color());
-				}
-
-				if (ImGui::Button(fluid_tools[tool_index], ImVec2(-FLT_MIN, 30.0f)))
-				{
-					if (fluid_tool != tool_index)
-					{
-						pretty_smoke_stroke_active = false;
-					}
+					pretty_smoke_stroke_active = false;
 					fluid_tool = tool_index;
 				}
-				if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-				{
-					ImGui::SetTooltip("%s", fluid_tool_descriptions[tool_index]);
-				}
+				ImGui::SetItemTooltip("%s", fluid_tool_descriptions[tool_index]);
 				if (selected)
-				{
-					ImGui::PopStyleColor(4);
-				}
-				ImGui::PopID();
+					ImGui::SetItemDefaultFocus();
 			}
-			ImGui::EndTable();
+			ImGui::EndCombo();
+		}
+		else
+		{
+			ImGui::SetItemTooltip("%s", fluid_tool_descriptions[fluid_tool]);
 		}
 
 		if (ImGui::BeginTable("##fluid_tool_properties", 2,
@@ -1754,7 +1908,7 @@ class Imgui_Renderer
 
 		const std::string emitter_section_label =
 		    "Emitters (" + std::to_string(emitters.size()) + ")###fluid_emitters";
-		if (ImGui::CollapsingHeader(emitter_section_label.c_str()))
+		if (imgui_renderer_ui::Section_Header(emitter_section_label.c_str()))
 		{
 			if (emitters.empty())
 			{
@@ -1825,7 +1979,7 @@ class Imgui_Renderer
 		bool width_active   = false;
 		bool height_changed = false;
 		bool height_active  = false;
-		if (ImGui::CollapsingHeader("Resolution###fluid_resolution"))
+		if (imgui_renderer_ui::Section_Header("Resolution###fluid_resolution"))
 		{
 			if (ImGui::BeginTable("##fluid_resolution_properties", 2,
 			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
@@ -1867,7 +2021,7 @@ class Imgui_Renderer
 			                   "Unable to update fluid simulation resolution.");
 		}
 
-		if (ImGui::CollapsingHeader("Simulation###fluid_simulation",
+		if (imgui_renderer_ui::Section_Header("Simulation###fluid_simulation",
 		                            ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			if (ImGui::BeginTable("##fluid_simulation_properties", 2,
@@ -1909,7 +2063,7 @@ class Imgui_Renderer
 			}
 		}
 
-		if (ImGui::CollapsingHeader("Solver###fluid_solver"))
+		if (imgui_renderer_ui::Section_Header("Solver###fluid_solver"))
 		{
 			if (ImGui::BeginTable("##fluid_solver_properties", 2,
 			                      ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
@@ -1941,32 +2095,13 @@ class Imgui_Renderer
 
 	void Set_Style()
 	{
-		imgui_renderer_ui::Apply_Modern_Theme();
+		imgui_renderer_ui::Apply_Debugger_Theme();
 		fonts = imgui_renderer_ui::Configure_Fonts(systems::Os::Get_Instance()->Get_Engine_Resources_Path());
 	}
 	void Display_General_Engine_Info()
 	{
 		Display_Engine_Info();
 		Display_All_Textures();
-	}
-
-	void Render_Metric_Card(const char *id, const char *label, const std::string &value)
-	{
-		ImGui::PushID(id);
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, imgui_renderer_ui::Raised_Surface_Color());
-		if (ImGui::BeginChild("##metric", ImVec2(0.0f, 62.0f), ImGuiChildFlags_None,
-		                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
-		{
-			ImGui::PushFont(fonts.caption);
-			ImGui::TextDisabled("%s", label);
-			ImGui::PopFont();
-			ImGui::PushFont(fonts.strong);
-			ImGui::TextUnformatted(value.c_str());
-			ImGui::PopFont();
-		}
-		ImGui::EndChild();
-		ImGui::PopStyleColor();
-		ImGui::PopID();
 	}
 
 	void Display_Engine_Info()
@@ -1984,17 +2119,22 @@ class Imgui_Renderer
 			}
 		}
 
-		if (ImGui::BeginTable("engine_summary", 4,
-		                      ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+		if (ImGui::BeginTable("engine_summary", 4, ImGuiTableFlags_SizingStretchSame |
+		                      ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerH))
 		{
+			ImGui::TableSetupColumn("Queues");
+			ImGui::TableSetupColumn("Render passes");
+			ImGui::TableSetupColumn("Active passes");
+			ImGui::TableSetupColumn("Queue batches");
+			ImGui::TableHeadersRow();
 			ImGui::TableNextColumn();
-			Render_Metric_Card("queues", "QUEUES", std::to_string(engine_queue_count));
+			ImGui::Text("%d", engine_queue_count);
 			ImGui::TableNextColumn();
-			Render_Metric_Card("passes", "RENDER PASSES", std::to_string(render_node_count));
+			ImGui::Text("%d", render_node_count);
 			ImGui::TableNextColumn();
-			Render_Metric_Card("active", "ACTIVE PASSES", std::to_string(active_node_count));
+			ImGui::Text("%d", active_node_count);
 			ImGui::TableNextColumn();
-			Render_Metric_Card("batches", "QUEUE BATCHES", std::to_string(queue_batch_count));
+			ImGui::Text("%d", queue_batch_count);
 			ImGui::EndTable();
 		}
 
@@ -2300,21 +2440,21 @@ class Imgui_Renderer
 		            empty_batch_count);
 
 		const ImU32 queue_colors[] = {
-		    IM_COL32(119, 69, 48, 255),
-		    IM_COL32(93, 85, 69, 255),
-		    IM_COL32(88, 70, 77, 255),
-		    IM_COL32(74, 83, 82, 255),
-		    IM_COL32(112, 82, 52, 255),
-		    IM_COL32(96, 72, 65, 255),
+		    IM_COL32(14, 23, 36, 255),
+		    IM_COL32(19, 29, 30, 255),
+		    IM_COL32(25, 24, 37, 255),
+		    IM_COL32(18, 31, 46, 255),
+		    IM_COL32(28, 27, 20, 255),
+		    IM_COL32(25, 28, 32, 255),
 		};
-		const ImU32 lane_fill      = IM_COL32(18, 17, 18, 245);
-		const ImU32 lane_border    = IM_COL32(84, 75, 73, 125);
-		const ImU32 selected_color = IM_COL32(255, 82, 20, 255);
-		const ImU32 node_fill      = IM_COL32(36, 32, 33, 255);
-		const ImU32 inactive_fill  = IM_COL32(49, 40, 41, 255);
-		const ImU32 empty_fill     = IM_COL32(47, 41, 34, 255);
-		const ImU32 text_color     = IM_COL32(235, 231, 228, 255);
-		const ImU32 muted_color    = IM_COL32(151, 143, 141, 255);
+		const ImU32 lane_fill      = ImGui::GetColorU32(ImGuiCol_ChildBg);
+		const ImU32 lane_border    = ImGui::GetColorU32(ImGuiCol_Border);
+		const ImU32 selected_color = ImGui::GetColorU32(ImGuiCol_TabSelectedOverline);
+		const ImU32 node_fill      = ImGui::GetColorU32(ImGuiCol_FrameBg);
+		const ImU32 inactive_fill  = lane_fill;
+		const ImU32 empty_fill     = ImGui::GetColorU32(ImGuiCol_WindowBg);
+		const ImU32 text_color     = ImGui::GetColorU32(ImGuiCol_Text);
+		const ImU32 muted_color    = ImGui::GetColorU32(ImGuiCol_TextDisabled);
 
 		const float  label_width  = 150.0f;
 		const float  lane_height  = 94.0f;
@@ -2339,8 +2479,8 @@ class Imgui_Renderer
 			float  y = origin.y + padding.y + lane * lane_height;
 			ImVec2 lane_min(origin.x + padding.x, y);
 			ImVec2 lane_max(origin.x + timeline_width - padding.x, y + lane_height - 12.0f);
-			draw_list->AddRectFilled(lane_min, lane_max, lane_fill, 6.0f);
-			draw_list->AddRect(lane_min, lane_max, lane_border, 6.0f);
+			draw_list->AddRectFilled(lane_min, lane_max, lane_fill);
+			draw_list->AddRect(lane_min, lane_max, lane_border);
 			draw_list->AddText(ImVec2(lane_min.x + 10.0f, lane_min.y + 9.0f), text_color, queue_names[lane].c_str());
 			std::string lane_meta = "batches " + std::to_string(queue_batch_count[queue_names[lane]]) +
 			                       " | nodes " + std::to_string(queue_node_count[queue_names[lane]]);
@@ -2359,8 +2499,8 @@ class Imgui_Renderer
 			bool        selected = selected_batch_idx == batch_idx;
 			ImU32       fill     = batch.sorted_nodes.empty() ? empty_fill : queue_colors[lane % IM_ARRAYSIZE(queue_colors)];
 
-			draw_list->AddRectFilled(min_pos, max_pos, fill, 6.0f);
-			draw_list->AddRect(min_pos, max_pos, selected ? selected_color : lane_border, 6.0f, 0, selected ? 3.0f : 1.0f);
+			draw_list->AddRectFilled(min_pos, max_pos, fill);
+			draw_list->AddRect(min_pos, max_pos, selected ? selected_color : lane_border, 0.0f, 0, selected ? 2.0f : 1.0f);
 
 			std::string batch_title = "#" + std::to_string(batch_idx) + " batch " + std::to_string(batch.id);
 			draw_list->AddText(ImVec2(min_pos.x + 9.0f, min_pos.y + 7.0f), text_color, batch_title.c_str());
@@ -2380,8 +2520,7 @@ class Imgui_Renderer
 					float            chip_width = std::min(96.0f, std::max(48.0f, (batch_width - 18.0f) / static_cast<float>(batch.sorted_nodes.size()) - 4.0f));
 					ImVec2           chip_min(node_x, min_pos.y + 41.0f);
 					ImVec2           chip_max(node_x + chip_width, chip_min.y + node_height);
-					draw_list->AddRectFilled(chip_min, chip_max, node && node->active ? node_fill : inactive_fill, 4.0f);
-					draw_list->AddRect(chip_min, chip_max, IM_COL32(118, 104, 101, 130), 4.0f);
+					draw_list->AddRectFilled(chip_min, chip_max, node && node->active ? node_fill : inactive_fill);
 					std::string node_label = node ? node->pass_name : "null";
 					if (node_label.size() > 10)
 					{
@@ -3109,6 +3248,9 @@ class Imgui_Renderer
 	bool                                                  scene_viewport_hovered = false;
 	ImVec2                                                scene_viewport_min{};
 	ImVec2                                                scene_viewport_max{};
+	bool                                                  voxel_gizmo_visible = true;
+	Voxel_Gizmo_Mode                                      voxel_gizmo_mode = Voxel_Gizmo_Mode::Move;
+	Voxel_Gizmo_Drag                                      voxel_gizmo_drag{};
 	glm::vec2                                             pretty_smoke_last_mouse_position{};
 	glm::vec4                                             pretty_smoke_last_color{0.15f, 0.05f, 0.25f, 1.0f};
 	bool                                                  pretty_smoke_stroke_active    = false;
@@ -3278,8 +3420,8 @@ inline void Imgui_Renderer::Display_Render_Graph_Dag()
 		}
 	}
 
-	const ImU32 edge_color      = IM_COL32(126, 108, 103, 160);
-	const ImU32 edge_arrow_color = IM_COL32(176, 145, 135, 205);
+	const ImU32 edge_color       = ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.60f);
+	const ImU32 edge_arrow_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
 	for (auto *node : graph_nodes)
 	{
 		if (!node || !node_min_by_name.contains(node->pass_name))
@@ -3304,15 +3446,15 @@ inline void Imgui_Renderer::Display_Render_Graph_Dag()
 		}
 	}
 
-	const ImU32 active_fill          = IM_COL32(50, 42, 40, 255);
-	const ImU32 inactive_fill        = IM_COL32(38, 34, 36, 255);
-	const ImU32 selected_fill        = IM_COL32(76, 45, 34, 255);
-	const ImU32 warning_fill         = IM_COL32(80, 54, 36, 255);
-	const ImU32 border_color         = IM_COL32(125, 111, 107, 185);
-	const ImU32 selected_border_color = IM_COL32(255, 82, 20, 255);
-	const ImU32 warning_color        = IM_COL32(245, 172, 95, 255);
-	const ImU32 text_color           = IM_COL32(235, 231, 228, 255);
-	const ImU32 muted_color          = IM_COL32(151, 143, 141, 255);
+	const ImU32 active_fill           = ImGui::GetColorU32(ImGuiCol_FrameBg);
+	const ImU32 inactive_fill         = ImGui::GetColorU32(ImGuiCol_ChildBg);
+	const ImU32 selected_fill         = ImGui::GetColorU32(ImGuiCol_Header);
+	const ImU32 warning_fill          = IM_COL32(39, 23, 10, 255);
+	const ImU32 border_color          = ImGui::GetColorU32(ImGuiCol_Border);
+	const ImU32 selected_border_color = ImGui::GetColorU32(ImGuiCol_TabSelectedOverline);
+	const ImU32 warning_color         = IM_COL32(224, 130, 63, 255);
+	const ImU32 text_color            = ImGui::GetColorU32(ImGuiCol_Text);
+	const ImU32 muted_color           = ImGui::GetColorU32(ImGuiCol_TextDisabled);
 	for (auto *node : graph_nodes)
 	{
 		if (!node || !node_min_by_name.contains(node->pass_name))
@@ -3332,8 +3474,8 @@ inline void Imgui_Renderer::Display_Render_Graph_Dag()
 		}
 		bool  selected  = selected_node_name == node->pass_name;
 		ImU32 fill_color = has_missing_dependency ? warning_fill : (selected ? selected_fill : (node->active ? active_fill : inactive_fill));
-		draw_list->AddRectFilled(min_pos, max_pos, fill_color, 6.0f);
-		draw_list->AddRect(min_pos, max_pos, selected ? selected_border_color : (has_missing_dependency ? warning_color : border_color), 6.0f, 0, selected ? 3.0f : 1.0f);
+		draw_list->AddRectFilled(min_pos, max_pos, fill_color);
+		draw_list->AddRect(min_pos, max_pos, selected ? selected_border_color : (has_missing_dependency ? warning_color : border_color), 0.0f, 0, selected ? 2.0f : 1.0f);
 		draw_list->AddText(ImVec2(min_pos.x + 10.0f, min_pos.y + 7.0f), text_color, node->pass_name.c_str());
 		std::string node_meta = node->worker_queue_name + (node->active ? " | active" : " | inactive");
 		draw_list->AddText(ImVec2(min_pos.x + 10.0f, min_pos.y + 24.0f), muted_color, node_meta.c_str());
