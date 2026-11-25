@@ -104,7 +104,9 @@ namespace engine
                                 .setAlphaBlendOp(vk::BlendOp::eAdd)
                                 .setColorBlendOp(vk::BlendOp::eAdd)
                                 .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-                                .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
+                                .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                                .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                                .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
             break;
         default:
             assert(false&&"Invalid blend config");

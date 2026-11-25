@@ -128,9 +128,10 @@ namespace rendering
             }
             if (cfd_renderer)
             {
-                auto depth = render_graph->resources_manager->Get_Image_View_From_Name("depthAttachment");
-                auto depth_config = Get_Depth_Attachment_Info();
-                depth_config.vk_attachment_info.loadOp = vk::AttachmentLoadOp::eLoad;
+                auto overlay_attachment = Get_Color_Attachment_Info(Blend_Configs::B_Alpha_Blend,
+                                                                    glm::vec4(0.0f),
+                                                                    core->swapchain_ref->Get_Format(),
+                                                                    vk::AttachmentLoadOp::eLoad);
 
                 auto model_v_shader = render_graph->resources_manager->Get_Shader(
                     shader_path + "\\spirvGlsl\\DebugRendering\\debugCFD.vert.spv", S_Vert);
@@ -143,13 +144,11 @@ namespace rendering
                     G_Set_Framebuffer_Size(render_graph->current_back_buffer->image_metadata->Get_Image_Size());
                 render_node->G_Set_Push_Constant_Size(sizeof(Debug_Voxels_Mvp));
                 render_node->G_Set_Vertex_Input(D_Vertex_3d::Get_Vertex_Input());
-                render_node->G_Add_Color_Attachment_Output(0, col_info);
-                render_node->G_Set_Depth_Attachment_Output(depth_config);
-                render_node->G_Set_Depth_Config(Depth_Configs::D_Disable);
-                render_node->G_Set_Depth_Image_Resource(depth);
+                render_node->G_Add_Color_Attachment_Output(0, overlay_attachment);
+                render_node->G_Set_Depth_Config(Depth_Configs::D_None);
                 render_node->G_Set_Color_Image_Attachment_Binding(0, render_graph->current_back_buffer);
                 render_node->G_Set_Graphics_Pipeline_Configs({
-                    Rasterization_Configs::R_Line, Topology_Configs::T_Triangle
+                    Rasterization_Configs::R_Fill, Topology_Configs::T_Triangle
                 });
                 if (cluster_renderer)
                 {
@@ -162,13 +161,21 @@ namespace rendering
                 render_node->G_Set_Render_Operation(new std::function<void()>(
                     [this]()
                     {
+                        const auto& grid = cfd_renderer->voxel_grid.pc_voxel_grid;
+                        const uint64_t voxel_count = grid.Get_Size();
+                        // Draw the bounds and selected slice before the voxel instances.
+                        constexpr uint32_t overlay_instances = 2;
+                        if (!grid.Is_Valid() || voxel_count > UINT32_MAX - overlay_instances)
+                        {
+                            return;
+                        }
+
                         debug_voxels_pc.proj_view = current_view_cam->Get_View_Proj();
-                        debug_voxels_pc.origin = cfd_renderer->voxel_grid.pc_voxel_grid.origin;
-                        debug_voxels_pc.cell_size = cfd_renderer->voxel_grid.pc_voxel_grid.cell_size;
-                        debug_voxels_pc.dimensions = cfd_renderer->voxel_grid.pc_voxel_grid.dimensions;
-                        debug_voxels_pc.plane_selected = cfd_renderer->voxel_grid.pc_voxel_grid.plane_selected;
-                        debug_voxels_pc.selected_dimension_offset = cfd_renderer->voxel_grid.pc_voxel_grid.
-                            selected_dimension_offset;
+                        debug_voxels_pc.origin = grid.origin;
+                        debug_voxels_pc.cell_size = grid.cell_size;
+                        debug_voxels_pc.dimensions = grid.dimensions;
+                        debug_voxels_pc.plane_selected = grid.plane_selected;
+                        debug_voxels_pc.selected_dimension_offset = grid.selected_dimension_offset;
 
                         vk::DeviceSize offset = 0;
                         auto node = render_graph->Get_Node("voxelizer_viewer");
@@ -188,8 +195,8 @@ namespace rendering
                             render_graph->resources_manager->Get_Staged_Buff_From_Name("cube_index_default")->
                                           device_buffer->buffer_handle.get(), 0,
                             vk::IndexType::eUint32);
-                        node->Get_Curr_Cmd().
-                              drawIndexed(36, cfd_renderer->voxel_grid.pc_voxel_grid.Get_Size(), 0, 0, 0);
+                        node->Get_Curr_Cmd().drawIndexed(
+                            36, static_cast<uint32_t>(voxel_count) + overlay_instances, 0, 0, 0);
                     }));
             }
         }
