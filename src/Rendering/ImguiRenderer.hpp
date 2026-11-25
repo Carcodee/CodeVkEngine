@@ -1201,7 +1201,7 @@ class Imgui_Renderer
 			                                     static_cast<uint32_t>(max_slice)));
 			property("Slice index");
 			ImGui::SliderInt("##voxel_projection_slice", &slice, 0, max_slice, "%d",
-			                 ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+			                 ImGuiSliderFlags_AlwaysClamp);
 			lattice_config.selected_dimension_offset = static_cast<uint32_t>(slice);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Zero-based cell index along the %s axis.", slice_axis == 0 ? "X" : (slice_axis == 1 ? "Y" : "Z"));
