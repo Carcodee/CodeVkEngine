@@ -936,6 +936,7 @@ namespace engine
                                                     engine::Vertex_2d::Get_Quad_Indices().data())
                                                 ->device_buffer.get();
 
+
             engine::Buffer* cube_verts = Get_Stage_Buffer(
                                              "cube_verts_default", vk::BufferUsageFlagBits::eVertexBuffer,
                                              sizeof(D_Vertex_3d) * D_Vertex_3d::Get_Cube_Vertices().size(),

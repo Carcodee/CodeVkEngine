@@ -161,6 +161,9 @@ namespace rendering
                                                        0, sizeof(Pc_Voxel_Grid), &voxel_pc);
                     node->Get_Curr_Cmd().drawIndexed(Vertex_2d::Get_Quad_Indices().size(), 1, 0, 0, 0);
                 }));
+
+
+
             //
             // auto cuda_buffer_smoke = render_graph->resources_manager->Get_Buffer(
             //     engine::Resources_Manager::Buffer_Params{

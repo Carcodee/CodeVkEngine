@@ -198,6 +198,69 @@ namespace rendering
                         node->Get_Curr_Cmd().drawIndexed(
                             36, static_cast<uint32_t>(voxel_count) + overlay_instances, 0, 0, 0);
                     }));
+
+
+
+                auto slice_attachment = Get_Color_Attachment_Info(Blend_Configs::B_Opaque,
+                                                                    glm::vec4(0.0f),
+                                                                    core->swapchain_ref->Get_Format(),
+                                                                    vk::AttachmentLoadOp::eLoad);
+                auto slice_projection_v_shader = render_graph->resources_manager->Get_Shader(
+                    shader_path + "\\spirvGlsl\\Common\\meshDraw.vert.spv", S_Vert);
+                auto slice_projection_f_shader = render_graph->resources_manager->Get_Shader(
+                    shader_path + "\\spirvGlsl\\DebugRendering\\sliceProj.frag.spv", S_Frag);
+                auto render_node_slice_proj = render_graph->Add_Pass("slice_proj_mesh");
+                render_node_slice_proj->G_Set_Vert_Shader(slice_projection_v_shader);
+                render_node_slice_proj->G_Set_Frag_Shader(slice_projection_f_shader);
+                render_node_slice_proj->
+                    G_Set_Framebuffer_Size(render_graph->current_back_buffer->image_metadata->Get_Image_Size());
+                render_node_slice_proj->G_Set_Vertex_Input(Vertex_2d::Get_Vertex_Input());
+                render_node_slice_proj->G_Add_Color_Attachment_Output(0, slice_attachment);
+                render_node_slice_proj->G_Set_Depth_Config(Depth_Configs::D_None);
+                render_node_slice_proj->G_Set_Push_Constant_Size(sizeof(Mvp_Pc));
+                render_node_slice_proj->G_Set_Color_Image_Attachment_Binding(0, render_graph->current_back_buffer);
+                render_node_slice_proj->G_Set_Graphics_Pipeline_Configs({
+                    Rasterization_Configs::R_Fill, Topology_Configs::T_Triangle
+                });
+                render_node_slice_proj->Depends_On(render_node);
+                render_node_slice_proj->Build_Render_Graph_Node();
+
+                render_node_slice_proj->G_Set_Render_Operation(new std::function<void()>(
+                    [this]()
+                    {
+                        const auto& grid = cfd_renderer->voxel_grid.pc_voxel_grid;
+                        const uint64_t voxel_count = grid.Get_Size();
+                        // Draw the bounds and selected slice before the voxel instances.
+                        if (!grid.Is_Valid())
+                        {
+                            return;
+                        }
+                        pc_projection.model = glm::mat4(5.0);
+                        pc_projection.proj_view = current_view_cam->Get_View_Proj();
+
+                        vk::DeviceSize offset = 0;
+                        auto node = render_graph->Get_Node("slice_proj_mesh");
+                        node->G_Set_Buffer(
+                            "Voxels",
+                            render_graph->resources_manager->Get_Buff_From_Name(cfd_renderer->voxel_grid.name));
+
+                        node->Get_Curr_Cmd().pushConstants(node->gpu_pipeline_ref->pipeline_layout.get(),
+                                                           vk::ShaderStageFlagBits::eVertex |
+                                                           vk::ShaderStageFlagBits::eFragment,
+                                                           0, sizeof(Mvp_Pc), &pc_projection);
+                        node->Get_Curr_Cmd().bindVertexBuffers(
+                            0, 1, &render_graph->
+                                   resources_manager->Get_Staged_Buff_From_Name("quad_default")->device_buffer->
+                                   buffer_handle.
+                                   get(), &offset);
+                        node->Get_Curr_Cmd().bindIndexBuffer(
+                            render_graph->resources_manager->Get_Staged_Buff_From_Name("quad_index_default")->
+                                          device_buffer->buffer_handle.get(), 0,
+                            vk::IndexType::eUint32);
+                        node->Get_Curr_Cmd().drawIndexed(
+                            6, 1, 0, 0, 0);
+                    }));
+
             }
         }
 
@@ -293,6 +356,7 @@ namespace rendering
         rendering::Camera* current_view_cam;
 
         Mvp_Pc pc{};
+        Mvp_Pc pc_projection{};
         Debug_Voxels_Mvp debug_voxels_pc{};
         rendering::Cluster_Renderer* cluster_renderer = nullptr;
         rendering::Cfd_Renderer* cfd_renderer = nullptr;
